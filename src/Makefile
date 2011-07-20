@@ -70,6 +70,7 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 # source files
 SRC := $(BOARD).c
 SRC += util.c uart.c uartutil.c timer.c
+SRC += par_low.c
 SRC += main.c
 
 # output format

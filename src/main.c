@@ -24,11 +24,14 @@
  *
  */
 
+#include <util/delay_basic.h>
+
 #include "global.h"
 #include "board.h"
 #include "uart.h"
 #include "timer.h"
 #include "uartutil.h"
+#include "par_low.h"
 
 int main (void){
   // board init. e.g. switch off watchdog
@@ -37,18 +40,40 @@ int main (void){
   timer_init();
   // setup serial
   uart_init();
+  // setup par
+  par_low_init();
   
   uart_send_string("plip2slip");
   uart_send_crlf();
   
+  u16 count = 0;
+  u16 hash = 0;
   while(1) {
     led_on();
-    timer_delay_10ms(50);
-    led_off();
-    timer_delay_10ms(50);
     
-    uart_send_string("hello, world!");
-    uart_send_crlf();
+    // wait for strobe
+    timer_100us = 0;
+    while(!par_strobe_flag) {
+      if(timer_100us == 5000) {
+        // dump state
+        uart_send_hex_word_crlf(count);
+        count = 0;
+        hash = 0;
+      }
+    }
+    u08 d = par_strobe_data;  
+    par_strobe_flag = 0;
+
+    led_off();
+    
+    // get data
+    count++;
+    hash+=d;
+    
+    // do ack
+    par_low_set_ack_lo();
+    _delay_loop_1(6);
+    par_low_set_ack_hi();
   }
   
   return 0;
