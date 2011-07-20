@@ -51,13 +51,27 @@ u08 uart_send_crlf(void)
   return uart_send_string("\r\n");
 }
 
-static u08 buf[6];
+u08 uart_send_spc(void)
+{
+  return uart_send((u08)' ');
+}
+
+static u08 buf[8];
 
 u08 uart_send_hex_byte_crlf(u08 data)
 {
   byte_to_hex(data,buf);
   if(uart_send_data(buf,2))
     return uart_send_crlf();
+  else
+    return 0;
+}
+
+u08 uart_send_hex_byte_spc(u08 data)
+{
+  byte_to_hex(data,buf);
+  if(uart_send_data(buf,2))
+    return uart_send_spc();
   else
     return 0;
 }
@@ -71,10 +85,10 @@ u08 uart_send_hex_word_crlf(u16 data)
     return 0;
 }
 
-u08 uart_send_hex_dword6_crlf(u32 data)
+u08 uart_send_hex_dword_crlf(u32 data)
 {
-  dword_to_hex6(data,buf);
-  if(uart_send_data(buf,6))
+  dword_to_hex(data,buf);
+  if(uart_send_data(buf,8))
     return uart_send_crlf();
   else
     return 0;

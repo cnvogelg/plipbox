@@ -65,14 +65,31 @@
 #define PAR_ACK_PIN             PINB
 #define PAR_ACK_DDR             DDRB
 
-// ----- Flags -----
+// ----- Input Buffer Handling -----
 
-extern volatile u08 par_strobe_flag;
-extern volatile u08 par_strobe_data;
+#define PAR_IN_BUF_BITS     4
+#define PAR_IN_BUF_SIZE     (1 << PAR_IN_BUF_BITS)
+#define PAR_IN_BUF_MASK     (PAR_IN_BUF_SIZE - 1)
+
+extern volatile u08 par_in_buf[PAR_IN_BUF_SIZE];
+extern volatile u08 par_in_put;
+extern volatile u08 par_in_get;
 
 // ----- Functions -----
 
 extern void par_low_init(void);
+
+inline u08 par_low_has_input(void)
+{
+  return par_in_put != par_in_get;
+}
+
+inline u08 par_low_get_input(void)
+{
+  u08 d = par_in_buf[par_in_get];
+  par_in_get = (par_in_get + 1) & PAR_IN_BUF_MASK;
+  return d;
+}
 
 // ----- Data Bus -----
 
@@ -118,6 +135,15 @@ inline void par_low_set_busy_lo(void)
 inline void par_low_set_busy_hi(void)
 {
   PAR_BUSY_PORT |= PAR_BUSY_MASK;
+}
+
+inline void par_low_toggle_busy(void)
+{
+  if(PAR_BUSY_PORT & PAR_BUSY_MASK) {
+    PAR_BUSY_PORT &= ~PAR_BUSY_MASK;    
+  } else {
+    PAR_BUSY_PORT |= PAR_BUSY_MASK;    
+  }
 }
 
 // STROBE (IN)

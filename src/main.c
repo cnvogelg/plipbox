@@ -32,6 +32,29 @@
 #include "timer.h"
 #include "uartutil.h"
 #include "par_low.h"
+#include "plip.h"
+
+plip_packet_t pkt;
+u08 buf[0x5a];
+u08 do_copy = 0;
+u08 buf_pos = 0;
+
+static u08 begin_rx_frame(plip_packet_t *pkt)
+{
+  if(pkt->size <= 0x5a) {
+    do_copy = 1;
+    buf_pos = 0;
+  }
+  return PLIP_STATUS_OK;
+}
+
+static u08 fill_rx_frame(u08 data)
+{
+  if(do_copy) {
+    buf[buf_pos++] = data;
+  }
+  return PLIP_STATUS_OK;
+}
 
 int main (void){
   // board init. e.g. switch off watchdog
@@ -43,37 +66,35 @@ int main (void){
   // setup par
   par_low_init();
   
+  // setup plip functions
+  plip_init(begin_rx_frame, fill_rx_frame);
+  
   uart_send_string("plip2slip");
   uart_send_crlf();
   
-  u16 count = 0;
-  u16 hash = 0;
-  while(1) {
-    led_on();
-    
-    // wait for strobe
-    timer_100us = 0;
-    while(!par_strobe_flag) {
-      if(timer_100us == 5000) {
-        // dump state
-        uart_send_hex_word_crlf(count);
-        count = 0;
-        hash = 0;
+  while(1) {    
+    // incoming packet?
+    if(plip_is_recv_begin()) {
+      led_on();
+      
+      // receive packet
+      u08 status = plip_recv(&pkt);
+      
+      uart_send_hex_byte_crlf(status);
+      uart_send_hex_word_crlf(pkt.size);
+      uart_send_hex_word_crlf(buf_pos);
+      uart_send_hex_word_crlf(pkt.crc);
+      uart_send_hex_dword_crlf(pkt.type);
+      for(u08 i=0;i<buf_pos;i++) {
+        uart_send_hex_byte_spc(buf[i]);
+        if((i & 15)==15) {
+          uart_send_crlf();
+        }
       }
+      uart_send_crlf();
+      
+      led_off();
     }
-    u08 d = par_strobe_data;  
-    par_strobe_flag = 0;
-
-    led_off();
-    
-    // get data
-    count++;
-    hash+=d;
-    
-    // do ack
-    par_low_set_ack_lo();
-    _delay_loop_1(6);
-    par_low_set_ack_hi();
   }
   
   return 0;

@@ -48,10 +48,10 @@ void word_to_hex(u16 in,u08 *out)
   byte_to_hex((u08)(in&0xff),out+2);
 }
 
-void dword_to_hex6(u32 addr,u08 *out)
+void dword_to_hex(u32 addr,u08 *out)
 {
-  byte_to_hex((u08)(addr>>16),out);
-  word_to_hex((u16)(addr&0xffff),out+2);
+  word_to_hex((u16)(addr>>16),out);
+  word_to_hex((u16)(addr&0xffff),out+4);
 }
 
 // parse
@@ -98,7 +98,7 @@ u08 parse_word(u08 *str,u16 *value)
   return 1;
 }
 
-u08 parse_dword6(u08 *str,u32 *value)
+u08 parse_dword(u08 *str,u32 *value)
 {
   u08 val;
   if(!parse_byte(&str[0],&val))
@@ -109,7 +109,10 @@ u08 parse_dword6(u08 *str,u32 *value)
   u08 val3;
   if(!parse_byte(&str[4],&val3))
     return 0;
-  *value = (u32)val << 16 | (u32)val2 << 8 | val3;
+  u08 val4;
+  if(!parse_byte(&str[6],&val4))
+    return 0;
+  *value = (u32)val << 24 | (u32)val2 << 16 | (u32)val3 << 8 | val4;
   return 1;
 }
 

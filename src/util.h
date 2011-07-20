@@ -37,7 +37,7 @@ extern void byte_to_hex(u08 in,u08 *out);
 // convert word to 4 hex chars
 extern void word_to_hex(u16 in,u08 *out);
 // convert dword to 6 hex chars
-extern void dword_to_hex6(u32 in,u08 *out);
+extern void dword_to_hex(u32 in,u08 *out);
 
 // ----- parse functions: 01=ok, 00=error -----
 // parse a nybble
@@ -47,7 +47,7 @@ extern u08 parse_byte(u08 *str,u08 *value);
 // parse a word
 extern u08 parse_word(u08 *str,u16 *value);
 // parse a 6 byte dword
-extern u08 parse_dword6(u08 *str,u32 *value);
+extern u08 parse_dword(u08 *str,u32 *value);
 
 #endif
 
