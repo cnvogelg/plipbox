@@ -71,25 +71,11 @@
 #define PAR_IN_BUF_SIZE     (1 << PAR_IN_BUF_BITS)
 #define PAR_IN_BUF_MASK     (PAR_IN_BUF_SIZE - 1)
 
-extern volatile u08 par_in_buf[PAR_IN_BUF_SIZE];
-extern volatile u08 par_in_put;
-extern volatile u08 par_in_get;
+extern volatile u08 par_low_strobe_flag;
 
 // ----- Functions -----
 
 extern void par_low_init(void);
-
-inline u08 par_low_has_input(void)
-{
-  return par_in_put != par_in_get;
-}
-
-inline u08 par_low_get_input(void)
-{
-  u08 d = par_in_buf[par_in_get];
-  par_in_get = (par_in_get + 1) & PAR_IN_BUF_MASK;
-  return d;
-}
 
 // ----- Data Bus -----
 
@@ -125,6 +111,8 @@ inline void par_low_set_ack_hi(void)
   PAR_ACK_PORT |= PAR_ACK_MASK;
 }
 
+extern void par_low_pulse_ack(void);
+
 // BUSY (OUT)
 
 inline void par_low_set_busy_lo(void)
@@ -158,6 +146,13 @@ inline u08 par_low_get_strobe(void)
 inline u08 par_low_get_select(void)
 {
   return (PAR_SELECT_PIN & PAR_SELECT_MASK) == PAR_SELECT_MASK;
+}
+
+// POUT (IN)
+
+inline u08 par_low_get_pout(void)
+{
+  return (PAR_POUT_PIN & PAR_POUT_MASK) == PAR_POUT_MASK;
 }
 
 #endif

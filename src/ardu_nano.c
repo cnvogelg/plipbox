@@ -33,7 +33,7 @@ void board_init(void)
 {
    // disable watchdog
    cli();
-   MCUSR &= ~(1<<WDRF);
+   MCUSR &= ~_BV(WDRF);
    WDTCSR |= _BV(WDCE) | _BV(WDE);
    WDTCSR = 0;
    sei();

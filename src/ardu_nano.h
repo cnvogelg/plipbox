@@ -34,12 +34,19 @@
 void board_init(void);
 
 // ----- LEDs -----
-#define LED_MASK        _BV(5)
+#define LED_GREEN_MASK        _BV(3)
+#define LED_YELLOW_MASK       _BV(4)
+#define LED_RED_MASK          _BV(5)
+#define LED_MASK              (LED_GREEN_MASK | LED_YELLOW_MASK | LED_RED_MASK)
 
-// set led on
-#define led_off()       { PORTB &= ~LED_MASK; }
-// set led off 
-#define led_on()        { PORTB |= LED_MASK; }
+#define led_red_on()          { PORTB &= ~LED_RED_MASK; }
+#define led_red_off()         { PORTB |= LED_RED_MASK; }
+
+#define led_yellow_on()       { PORTB &= ~LED_YELLOW_MASK; }
+#define led_yellow_off()      { PORTB |= LED_YELLOW_MASK; }
+
+#define led_green_on()        { PORTB &= ~LED_GREEN_MASK; }
+#define led_green_off()       { PORTB |= LED_GREEN_MASK; }
 
 // ----- RTS/CTS -----
 #define uart_init_rts_cts() // not required
