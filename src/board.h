@@ -29,8 +29,8 @@
 
 #include "global.h"
 
-#ifdef HAVE_ardu_nano
-#include "ardu_nano.h"
+#ifdef HAVE_arduino
+#include "arduino.h"
 #endif
 
 #endif

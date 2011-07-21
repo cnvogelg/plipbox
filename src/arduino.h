@@ -31,7 +31,7 @@
 #include <avr/io.h>
 
 // ----- BOARD -----
-void board_init(void);
+extern void board_init(void);
 
 // ----- LEDs -----
 #define LED_GREEN_MASK        _BV(3)
@@ -49,9 +49,24 @@ void board_init(void);
 #define led_green_off()       { PORTB |= LED_GREEN_MASK; }
 
 // ----- RTS/CTS -----
-#define uart_init_rts_cts() // not required
-#define uart_set_cts(x)     do {} while(0)
-#define uart_get_rts()      1
+// CTS (OUT): D9 = PB1
+// RTS (IN): D10 = PB2
+
+#define RTS_PORT    PORTB
+#define RTS_PIN     PINB
+#define RTS_DDR     DDRB
+#define RTS_BIT     2
+#define RTS_MASK    _BV(RTS_BIT)
+
+#define CTS_PORT    PORTB
+#define CTS_PIN     PINB
+#define CTS_DDR     DDRB
+#define CTS_BIT     1
+#define CTS_MASK    _BV(CTS_BIT)
+
+extern void uart_init_rts_cts(void);
+#define uart_set_cts(on)    {if(on) { CTS_PORT &= ~ CTS_MASK; } else { CTS_PORT |= CTS_MASK; }}
+#define uart_get_rts()      ((RTS_PIN & RTS_MASK)==0)
 
 #endif
 

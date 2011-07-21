@@ -27,7 +27,7 @@
 #include <avr/interrupt.h>
 
 #include "global.h"
-#include "ardu_nano.h"
+#include "arduino.h"
 
 void board_init(void)
 {
@@ -41,4 +41,14 @@ void board_init(void)
    // LED init
    DDRB  |= LED_MASK;
    PORTB |= LED_MASK;
+}
+
+void uart_init_rts_cts(void)
+{
+  // RTS (IN)
+  RTS_DDR  &= ~ RTS_MASK;
+  RTS_PORT |= RTS_MASK;
+  // CTS (OUT) (1=inactive)
+  CTS_DDR  |= CTS_MASK;
+  CTS_PORT |= CTS_MASK;
 }

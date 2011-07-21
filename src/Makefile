@@ -28,14 +28,14 @@
 # install dir of avr libc (here MacPorts location)
 AVRLIBC_DIR = /opt/local/avr
 
-ALL_BOARDS= ardu_nano
-DIST_BOARDS= ardu_nano
+ALL_BOARDS= arduino
+DIST_BOARDS= arduino
 
 # select board
-BOARD ?= ardu_nano
+BOARD ?= arduino
 DEFINES ?= USE_BLA
 
-ifeq "$(BOARD)" "ardu_nano"
+ifeq "$(BOARD)" "arduino"
 
 MCU = atmega168
 F_CPU = 16000000
