@@ -8,6 +8,7 @@
 #define PLIP_STATUS_INVALID_MAGIC   2
 #define PLIP_STATUS_TIMEOUT         3
 #define PLIP_STATUS_INVALID_START   5
+#define PLIP_STATUS_CALLBACK_FAILED 6
 
 #define PLIP_MAGIC        0x42
 #define PLIP_NOCRC        0x02
@@ -20,8 +21,8 @@ typedef struct {
   u32 type;
 } plip_packet_t;
 
-typedef u08 (*plip_begin_frame_func)(plip_packet_t *pkt);
-typedef u08 (*plip_fill_frame_func)(u08 *data);
+typedef u08 (*plip_packet_func)(plip_packet_t *pkt);
+typedef u08 (*plip_data_func)(u08 *data);
 
 // ----- Parameter -----
 
@@ -29,10 +30,11 @@ extern u16 plip_rx_timeout; // timeout for next byte in 100us
 
 // ----- Init -----
 
-extern void plip_init(plip_begin_frame_func rx_begin_func, 
-                      plip_fill_frame_func rx_fill_func,
-                      plip_begin_frame_func tx_begin_func,
-                      plip_fill_frame_func tx_fill_func);
+extern void plip_recv_init(plip_packet_func rx_begin_func, 
+                           plip_data_func rx_fill_func,
+                           plip_packet_func rx_end_func);
+
+extern void plip_send_init(plip_data_func tx_fill_func);
 
 // ----- Recv -----
 

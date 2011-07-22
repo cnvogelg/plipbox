@@ -40,6 +40,7 @@ ifeq "$(BOARD)" "arduino"
 MCU = atmega168
 F_CPU = 16000000
 MAX_SIZE = 14336
+#UART_BAUD = 500000
 UART_BAUD = 19200
 
 LDR_PROG = arduino
@@ -70,7 +71,9 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 # source files
 SRC := $(BOARD).c
 SRC += util.c uart.c uartutil.c timer.c
-SRC += par_low.c plip.c ip.c
+SRC += par_low.c plip.c 
+SRC += ip.c slip.c ser_parse.c slip_rx.c
+SRC += cmd.c
 SRC += main.c
 
 # output format

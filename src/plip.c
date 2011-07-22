@@ -2,22 +2,28 @@
 #include "par_low.h"
 #include "timer.h"
 
-static plip_begin_frame_func begin_rx_frame_func = 0;
-static plip_fill_frame_func fill_rx_frame_func = 0;
-static plip_begin_frame_func begin_tx_frame_func = 0;
-static plip_fill_frame_func fill_tx_frame_func = 0;
+// recv funcs
+static plip_packet_func   begin_rx_func = 0;
+static plip_data_func     fill_rx_func = 0;
+static plip_packet_func   end_rx_func = 0;
+
+// send funcs
+static plip_data_func     fill_tx_func = 0;
 
 u16 plip_timeout = 5000; // in 100us
 
-void plip_init(plip_begin_frame_func rx_begin_func, 
-               plip_fill_frame_func  rx_fill_func,
-               plip_begin_frame_func tx_begin_func,
-               plip_fill_frame_func  tx_fill_func)
+void plip_recv_init(plip_packet_func begin_func, 
+                    plip_data_func   fill_func,
+                    plip_packet_func end_func)
 {
-  begin_rx_frame_func = rx_begin_func;
-  fill_rx_frame_func = rx_fill_func;
-  begin_tx_frame_func = tx_begin_func;
-  fill_tx_frame_func = tx_fill_func;
+  begin_rx_func = begin_func;
+  fill_rx_func  = fill_func;
+  end_rx_func   = end_func;
+}
+
+void plip_send_init(plip_data_func   fill_func)
+{
+  fill_tx_func  = fill_func;
 }
 
 u08 plip_is_recv_begin(void)
@@ -148,10 +154,10 @@ u08 plip_recv(plip_packet_t *pkt)
   }
   size -= 4;
   
-  // report begin frame
+  // report begin of frame
   if(status == PLIP_STATUS_OK) {
     pkt->type = type;
-    status = begin_rx_frame_func(pkt);
+    status = begin_rx_func(pkt);
   }
   
   // read data
@@ -165,12 +171,17 @@ u08 plip_recv(plip_packet_t *pkt)
       }
     
       // report to fill frame func
-      status = fill_rx_frame_func(&b);
+      status = fill_rx_func(&b);
       if(status != PLIP_STATUS_OK) {
         break;
       }
       expect_toggle = !expect_toggle;
     }
+  }
+
+  // report end of frame
+  if(status == PLIP_STATUS_OK) {
+    status = end_rx_func(pkt);
   }
 
   // clear all strobes occurred during recv
@@ -264,18 +275,13 @@ u08 plip_send(plip_packet_t *pkt)
     status = set_next_dword(type, 0);
   }
   
-  // send packet
-  if(status==PLIP_STATUS_OK) {
-    status = begin_tx_frame_func(pkt);
-  }
-  
   // send packet bytes
   if(status==PLIP_STATUS_OK) {
     u08 toggle_expect = 0;
     u16 size = pkt->size;
     for(u16 i=0;i<size;i++) {
       u08 data = 0;
-      status = fill_tx_frame_func(&data);
+      status = fill_tx_func(&data);
       if(status!=PLIP_STATUS_OK) {
         break;
       }
@@ -290,7 +296,7 @@ u08 plip_send(plip_packet_t *pkt)
       status = wait_line_toggle(toggle_expect);
     }
   }
-
+  
   // restore: data input
   par_low_data_set_input();
 
