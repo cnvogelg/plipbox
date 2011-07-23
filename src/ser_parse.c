@@ -84,6 +84,7 @@ static void handle_command_char(void)
         } else if(status != CMD_OK) {
           send_huh();
         }
+        cmd_pos = 0;
       } else {
         send_ok();
       }
@@ -100,10 +101,7 @@ static void handle_command_char(void)
 
 u08 ser_parse_worker(void)
 {
-#define DEBUG_STATE
-#ifdef DEBUG_STATE
   u08 old_state = state;
-#endif
   
   switch(state) {
     // waiting for incoming data
@@ -192,7 +190,8 @@ u08 ser_parse_worker(void)
       }
       break;
   }
-  
+
+//#define DEBUG_STATE  
 #ifdef DEBUG_STATE
   if(state != old_state) {
     uart_send_hex_byte_spc(old_state);
