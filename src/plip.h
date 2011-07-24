@@ -10,6 +10,14 @@
 #define PLIP_STATUS_INVALID_START   5
 #define PLIP_STATUS_CALLBACK_FAILED 6
 
+#define PLIP_STATE_MAGIC            0x10
+#define PLIP_STATE_CRC_TYPE         0x20
+#define PLIP_STATE_SIZE             0x30
+#define PLIP_STATE_CRC              0x40
+#define PLIP_STATE_TYPE             0x50
+#define PLIP_STATE_DATA             0x60
+#define PLIP_STATE_LAST_DATA        0x70
+
 #define PLIP_MAGIC        0x42
 #define PLIP_NOCRC        0x02
 #define PLIP_CRC          0x01
@@ -19,6 +27,7 @@ typedef struct {
   u16 size;
   u16 crc;
   u32 type;
+  u16 real_size; // will be set after tx/rx
 } plip_packet_t;
 
 typedef u08 (*plip_packet_func)(plip_packet_t *pkt);
