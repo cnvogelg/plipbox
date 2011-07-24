@@ -69,10 +69,10 @@ static void send_huh(void)
 static void handle_command_char(void)
 {
   switch(data) {
-    case '\r':
+    case '\n':
       uart_send(data);
       break;
-    case '\n':
+    case '\r':
       uart_send(data);
       cmd_line[cmd_pos] = '\0';
       if(cmd_pos > 0) {

@@ -35,6 +35,7 @@
 #include "plip.h"
 #include "ip.h"
 #include "slip.h"
+#include "slip_rx.h"
 #include "ser_parse.h"
 
 static u08 begin_end_rx_to_slip(plip_packet_t *pkt)
@@ -70,6 +71,7 @@ int main (void){
   
   // setup plip functions
   plip_recv_init(begin_end_rx_to_slip, fill_rx_to_slip, begin_end_rx_to_slip);
+  slip_rx_init();
 
   // enable uart
   uart_start_reception();
@@ -93,6 +95,12 @@ int main (void){
       led_green_on();
     }
     
+    // trigger slip worker
+    u08 slip_status = slip_rx_worker();
+    if(slip_status != SLIP_STATUS_OK) {
+      error_count = 0x2fff;
+    }
+
     // update error LED
     if(error_count > 1) {
       led_red_on();

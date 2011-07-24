@@ -134,6 +134,7 @@ void uart_stop_reception(void)
 
 void uart_start_reception(void)
 {
+#if 0
   // clear buffer
   cli();
   
@@ -142,7 +143,7 @@ void uart_start_reception(void)
   uart_rx_size = 0;
   
   sei();
-
+#endif
   uart_set_cts(1); // set CTS
 }
 
