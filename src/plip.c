@@ -2,6 +2,10 @@
 #include "par_low.h"
 #include "timer.h"
 
+#define SET_REQ         par_low_set_busy_hi
+#define CLR_REQ         par_low_set_busy_lo
+#define TEST_LINE       par_low_get_pout
+
 // recv funcs
 static plip_packet_func   begin_rx_func = 0;
 static plip_data_func     fill_rx_func = 0;
@@ -11,6 +15,7 @@ static plip_packet_func   end_rx_func = 0;
 static plip_data_func     fill_tx_func = 0;
 
 u16 plip_timeout = 5000; // in 100us
+u16 plip_strobe_timeout = 5000;
 
 void plip_recv_init(plip_packet_func begin_func, 
                     plip_data_func   fill_func,
@@ -26,28 +31,12 @@ void plip_send_init(plip_data_func   fill_func)
   fill_tx_func  = fill_func;
 }
 
-u08 plip_is_recv_begin(void)
-{
-  if(par_low_strobe_flag) {
-    par_low_strobe_flag = 0;
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-u08 plip_is_send_allowed(void)
-{
-  // HS_LINE must be low
-  return !par_low_get_pout() && !par_low_strobe_flag;
-}
-
 static u08 wait_line_toggle(u08 toggle_expect, u08 state_flag)
 {
   // wait for new toggle value
   timer_100us = 0;
   while(timer_100us < plip_timeout) {
-    u08 pout = par_low_get_pout();
+    u08 pout = TEST_LINE();
     if((toggle_expect && pout) || (!toggle_expect && !pout)) {
       return PLIP_STATUS_OK;
     }
@@ -75,11 +64,11 @@ static u08 get_next_word(u16 *data, u08 toggle_expect, u08 state_flag)
 {
   u08 a,b;
   u08 status = get_next_byte(&a, toggle_expect, state_flag);
-  if(status) {
+  if(status != PLIP_STATUS_OK) {
     return status;
   }
   status = get_next_byte(&b, !toggle_expect, state_flag);
-  if(status) {
+  if(status != PLIP_STATUS_OK) {
     return status;
   }
   *data = ((u16)a) << 8 | b;
@@ -101,25 +90,29 @@ static u08 get_next_dword(u32 *data, u08 toggle_expect, u08 state_flag)
   return PLIP_STATUS_OK;
 }
 
-u08 plip_recv(plip_packet_t *pkt)
+u08 plip_recv(plip_packet_t *pkt, u08 skip)
 {
+  u08 status = PLIP_STATUS_OK;
+
   pkt->real_size = 0;
-   
-  // make sure my HS_LINE (POUT) is high
-  if(!par_low_get_pout()) {
-    return PLIP_STATUS_INVALID_START;
-  }
   
-  // first byte must be magic (0x42) 
-  // this byte was set by last strobe received before calling this func
-  u08 magic = 0;
-  u08 status = get_next_byte(&magic, 1, PLIP_STATE_MAGIC);
-  if(status == PLIP_STATUS_OK) {
-    if(magic != PLIP_MAGIC) {
-      status = PLIP_STATUS_NO_MAGIC;
+  if(!skip) { 
+    // if LINE is lo then peer did not start send
+    if(!TEST_LINE() || (par_low_strobe_count == 0)) {
+      return PLIP_STATUS_IDLE;
+    }
+  
+    // first byte must be magic (0x42) 
+    // this byte was set by last strobe received before calling this func
+    u08 magic = 0;
+    status = get_next_byte(&magic, 1, PLIP_STATE_MAGIC);
+    if(status == PLIP_STATUS_OK) {
+      if(magic != PLIP_MAGIC) {
+        status = PLIP_STATUS_NO_MAGIC;
+      }
     }
   }
-  
+
   // expect CRC type
   u08 crc_type = 0;
   if(status == PLIP_STATUS_OK) {
@@ -190,10 +183,10 @@ u08 plip_recv(plip_packet_t *pkt)
   }
 
   // clear all strobes occurred during recv
-  par_low_strobe_flag = 0;
+  par_low_strobe_count = 0;
 
   // clear HS_REQUEST (BUSY) to signal end of transmission
-  par_low_set_busy_lo();
+  CLR_REQ();
   
   return status;
 }
@@ -241,16 +234,41 @@ u08 plip_send(plip_packet_t *pkt)
   u08 status = PLIP_STATUS_OK;
   pkt->real_size = 0;
   
-  // set my HS_REQUEST line
-  par_low_set_busy_hi();
+  // reset strobe counter
+  par_low_strobe_count = 0;
   
-  // make sure my HS_LINE is low
-  if(par_low_get_pout()) {
-    // no. abort: clear myHS_REQUEST
-    par_low_set_busy_lo();
-    
-    return PLIP_STATUS_INVALID_START;
+  // did the peer already begin sending?
+  if(TEST_LINE()) {
+    // immediately start the receiption
+    return PLIP_STATUS_RX_BEGUN;
   }
+  
+  // set my HS_REQUEST line
+  SET_REQ();
+  
+  // one/more data byte was written by peer ->
+  // start receiption
+  if((par_low_strobe_count == 1) || (TEST_LINE())) {
+    // second strobe must follow as we set the "clk" already for next byte with SET_REQ above
+    timer_100us = 0;
+    while(par_low_strobe_count < 2) {
+      if(timer_100us > plip_strobe_timeout) {
+        return PLIP_STATUS_NO_SECOND_STROBE;
+      }
+    }
+    return PLIP_STATUS_RX_BEGUN_SKIP;
+  }
+  // second byte already arrived -> begin receive by skipping first (magic) byte
+  else if(par_low_strobe_count == 2) {
+    return PLIP_STATUS_RX_BEGUN_SKIP;
+  }
+  // must not happen
+  else if(par_low_strobe_count > 2) {
+    return PLIP_STATUS_TOO_MANY_STROBES;
+  }
+  
+  // ----- now we are (fairly) sure we can send -----
+  // we arrive here if no strobe occurred and the LINE is low
   
   // set data port to output
   par_low_data_set_output();
@@ -309,8 +327,11 @@ u08 plip_send(plip_packet_t *pkt)
   // restore: data input
   par_low_data_set_input();
 
+  // reset strobe count
+  par_low_strobe_count = 0;
+
   // reset HS_REQUEST line
-  par_low_set_busy_lo();
+  CLR_REQ();
   
   return status;
 }

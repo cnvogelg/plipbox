@@ -2,7 +2,7 @@
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
 
-volatile u08 par_low_strobe_flag = 0;
+volatile u08 par_low_strobe_count = 0;
 
 void par_low_init(void)
 {
@@ -48,8 +48,6 @@ void par_low_data_set_input(void)
 {
   PAR_DATA_LO_DDR &= ~PAR_DATA_LO_MASK;
   PAR_DATA_HI_DDR &= ~PAR_DATA_HI_MASK;
-  
-  par_low_strobe_flag = 0;
 }
 
 void par_low_pulse_ack(void)
@@ -62,5 +60,5 @@ void par_low_pulse_ack(void)
 // INT0 Strobe Handler
 ISR(INT0_vect)
 {
-  par_low_strobe_flag = 1;
+  par_low_strobe_count ++;
 }

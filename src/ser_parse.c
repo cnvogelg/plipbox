@@ -1,11 +1,9 @@
 #include "ser_parse.h"
+
 #include "timer.h"
 #include "board.h"
 #include "uart.h"
 #include "uartutil.h"
-#include "slip.h"
-#include "slip_rx.h"
-#include "cmd.h"
 
 // parser states
 #define STATE_WAIT_FOR_DATA    0
@@ -21,9 +19,6 @@ u16 ser_marker_wait_delay = 100; // 1000 ms
 u16 ser_marker_wait_char = 50; // 500 ms
 u16 ser_command_timeout = 500; // 5000 ms
 
-// public values
-u16 ser_read_errors = 0;
-
 static u08 state = STATE_WAIT_FOR_DATA; // wait for a serial char
 static u08 num_markers = 0;
 static u08 data = 0;
@@ -32,18 +27,19 @@ static u08 data = 0;
 static u08 cmd_line[MAX_CMD_LINE_LEN];
 static u08 cmd_pos;
 
+static ser_parse_data_func_t data_func = 0;
+static ser_parse_cmd_func_t cmd_func = 0;
+
 static u08 read_char(void)
 {
   // a char arrived
-  u08 status = slip_read(&data);
-  if(status == SLIP_STATUS_END) {
-    slip_rx_end();
-  } else if(status == SLIP_STATUS_OK) {
-    slip_rx_data(data);
-  } else {
-    ser_read_errors++;
+  u08 status = uart_read(&data);
+  
+  // pass through data
+  if(data_func != 0) {
+    data_func(data);
   }
-  // reset timer
+  
   timer_10ms = 0;
   return status;
 }
@@ -76,13 +72,19 @@ static void handle_command_char(void)
       uart_send(data);
       cmd_line[cmd_pos] = '\0';
       if(cmd_pos > 0) {
-        u08 status = cmd_parse(cmd_pos, (const char *)cmd_line);
-        if(status == CMD_EXIT) {
+        if(cmd_func != 0) {        
+          u08 status = cmd_func(cmd_pos, (const char *)cmd_line);
+          if(status == SER_PARSE_CMD_EXIT) {
+            send_bye();
+            led_yellow_off();
+            state = STATE_WAIT_FOR_DATA;
+          } else if(status == SER_PARSE_CMD_FAIL) {
+            send_huh();
+          }
+        } else {
           send_bye();
           led_yellow_off();
           state = STATE_WAIT_FOR_DATA;
-        } else if(status != CMD_OK) {
-          send_huh();
         }
         cmd_pos = 0;
       } else {
@@ -99,6 +101,21 @@ static void handle_command_char(void)
   }  
 }
 
+static void ser_echo(u08 data)
+{
+  uart_send(data);
+}
+
+void ser_parse_init(ser_parse_data_func_t df, ser_parse_cmd_func_t cf)
+{
+  if(df == 0) {
+    data_func = ser_echo;
+  } else {
+    data_func = df;
+  }
+  cmd_func = cf;
+}
+
 u08 ser_parse_worker(void)
 {
   u08 old_state = state;
@@ -107,7 +124,7 @@ u08 ser_parse_worker(void)
     // waiting for incoming data
     case STATE_WAIT_FOR_DATA:
       if(uart_read_data_available()) {
-        // get char and go to HAVE_DATA or GOT_SLIP_END
+        // get char and transmit it
         read_char();
       } else {
         // nothing arrived in delay time
@@ -121,7 +138,7 @@ u08 ser_parse_worker(void)
     case STATE_IN_FIRST_DELAY:
       // get a char and check for marker
       if(uart_read_data_available()) {
-        if(read_char() == SLIP_STATUS_OK) {
+        if(read_char()) {
           if(data == ser_marker_char) {
             num_markers = 1;
             state = STATE_GET_MARKERS;
@@ -137,7 +154,7 @@ u08 ser_parse_worker(void)
     case STATE_GET_MARKERS:
       // next marker char?
       if(uart_read_data_available()) {
-        if(read_char() == SLIP_STATUS_OK) {
+        if(read_char()) {
           if(data == ser_marker_char) {
             num_markers ++;
             if(num_markers == ser_marker_count) {
@@ -191,7 +208,7 @@ u08 ser_parse_worker(void)
       break;
   }
 
-//#define DEBUG_STATE  
+//#define DEBUG_STATE
 #ifdef DEBUG_STATE
   if(state != old_state) {
     uart_send_hex_byte_spc(old_state);

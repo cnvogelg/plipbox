@@ -71,7 +71,7 @@
 #define PAR_IN_BUF_SIZE     (1 << PAR_IN_BUF_BITS)
 #define PAR_IN_BUF_MASK     (PAR_IN_BUF_SIZE - 1)
 
-extern volatile u08 par_low_strobe_flag;
+extern volatile u08 par_low_strobe_count;
 
 // ----- Functions -----
 

@@ -3,12 +3,16 @@
 
 #include "global.h"
 
-#define PLIP_STATUS_OK              0
-#define PLIP_STATUS_NO_MAGIC        1
-#define PLIP_STATUS_INVALID_MAGIC   2
-#define PLIP_STATUS_TIMEOUT         3
-#define PLIP_STATUS_INVALID_START   5
-#define PLIP_STATUS_CALLBACK_FAILED 6
+#define PLIP_STATUS_IDLE              0
+#define PLIP_STATUS_OK                1
+#define PLIP_STATUS_NO_MAGIC          2
+#define PLIP_STATUS_INVALID_MAGIC     3
+#define PLIP_STATUS_TIMEOUT           4
+#define PLIP_STATUS_CALLBACK_FAILED   5
+#define PLIP_STATUS_RX_BEGUN          6
+#define PLIP_STATUS_RX_BEGUN_SKIP     7
+#define PLIP_STATUS_NO_SECOND_STROBE  8
+#define PLIP_STATUS_TOO_MANY_STROBES  9
 
 #define PLIP_STATE_MAGIC            0x10
 #define PLIP_STATE_CRC_TYPE         0x20
@@ -45,14 +49,9 @@ extern void plip_recv_init(plip_packet_func rx_begin_func,
 
 extern void plip_send_init(plip_data_func tx_fill_func);
 
-// ----- Recv -----
+// ----- Rx/Tx -----
 
-extern u08 plip_is_recv_begin(void);
-extern u08 plip_recv(plip_packet_t *pkt);
-
-// ----- Send -----
-
-extern u08 plip_is_send_allowed(void);
+extern u08 plip_recv(plip_packet_t *pkt, u08 skip);
 extern u08 plip_send(plip_packet_t *pkt);
 
 #endif
