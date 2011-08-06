@@ -61,7 +61,7 @@ void transfer_worker(void)
         uart_stop_reception();
 
         // receive packet -> transfer to slip
-        u08 status = plip_recv(&pkt, rx_skip);
+        u08 status = plip_recv(&pkt);
         rx_skip = 0;
         if(status > PLIP_STATUS_IDLE) {
           error_count = 0x2fff;

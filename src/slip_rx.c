@@ -165,11 +165,8 @@ u08 slip_rx_worker(void)
 #endif
 
     // a receive is pending -> do this first
-    if(status == PLIP_STATUS_RX_BEGUN) {
+    if(status == PLIP_STATUS_PEER_WRITE_BEGIN) {
       return SLIP_RX_RESULT_PLIP_RX_BEGUN;
-    }
-    else if(status == PLIP_STATUS_RX_BEGUN_SKIP) {
-      return SLIP_RX_RESULT_PLIP_RX_BEGUN_SKIP;
     }
 
     // some error occurred while sending

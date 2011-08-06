@@ -9,10 +9,8 @@
 #define PLIP_STATUS_INVALID_MAGIC     3
 #define PLIP_STATUS_TIMEOUT           4
 #define PLIP_STATUS_CALLBACK_FAILED   5
-#define PLIP_STATUS_RX_BEGUN          6
-#define PLIP_STATUS_RX_BEGUN_SKIP     7
-#define PLIP_STATUS_NO_SECOND_STROBE  8
-#define PLIP_STATUS_TOO_MANY_STROBES  9
+#define PLIP_STATUS_PEER_WRITE_BEGIN  6
+#define PLIP_STATUS_PEER_TOGGLED_SEL  7
 
 #define PLIP_STATE_MAGIC            0x10
 #define PLIP_STATE_CRC_TYPE         0x20
@@ -21,6 +19,7 @@
 #define PLIP_STATE_TYPE             0x50
 #define PLIP_STATE_DATA             0x60
 #define PLIP_STATE_LAST_DATA        0x70
+#define PLIP_STATE_PULSE_ACK        0x80
 
 #define PLIP_MAGIC        0x42
 #define PLIP_NOCRC        0x02
@@ -51,7 +50,7 @@ extern void plip_send_init(plip_data_func tx_fill_func);
 
 // ----- Rx/Tx -----
 
-extern u08 plip_recv(plip_packet_t *pkt, u08 skip);
+extern u08 plip_recv(plip_packet_t *pkt);
 extern u08 plip_send(plip_packet_t *pkt);
 
 #endif

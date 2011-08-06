@@ -50,10 +50,10 @@ void par_low_data_set_input(void)
   PAR_DATA_HI_DDR &= ~PAR_DATA_HI_MASK;
 }
 
-void par_low_pulse_ack(void)
+void par_low_pulse_ack(u08 delay)
 {
   par_low_set_ack_lo();
-  _delay_loop_1((F_CPU + 2999999) / 3000000); // approx 1us if delay approx 3 instr
+  _delay_loop_1(delay);
   par_low_set_ack_hi();
 }
 

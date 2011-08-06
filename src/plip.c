@@ -5,6 +5,7 @@
 #define SET_REQ         par_low_set_busy_hi
 #define CLR_REQ         par_low_set_busy_lo
 #define TEST_LINE       par_low_get_pout
+#define TEST_SELECT     par_low_get_select
 
 // recv funcs
 static plip_packet_func   begin_rx_func = 0;
@@ -14,8 +15,7 @@ static plip_packet_func   end_rx_func = 0;
 // send funcs
 static plip_data_func     fill_tx_func = 0;
 
-u16 plip_timeout = 5000; // in 100us
-u16 plip_strobe_timeout = 5000;
+u16 plip_timeout = 5000; // = 500ms in 100us ticks
 
 void plip_recv_init(plip_packet_func begin_func, 
                     plip_data_func   fill_func,
@@ -31,6 +31,8 @@ void plip_send_init(plip_data_func   fill_func)
   fill_tx_func  = fill_func;
 }
 
+static u08 select_state = 0;
+
 static u08 wait_line_toggle(u08 toggle_expect, u08 state_flag)
 {
   // wait for new toggle value
@@ -39,6 +41,11 @@ static u08 wait_line_toggle(u08 toggle_expect, u08 state_flag)
     u08 pout = TEST_LINE();
     if((toggle_expect && pout) || (!toggle_expect && !pout)) {
       return PLIP_STATUS_OK;
+    }
+    // during transfer peer switched from rx to tx or vice versa -> arbitration lost!
+    u08 select = TEST_SELECT();
+    if(select != select_state) {
+      return PLIP_STATUS_PEER_TOGGLED_SEL | state_flag;
     }
   }
   return PLIP_STATUS_TIMEOUT | state_flag;
@@ -90,26 +97,32 @@ static u08 get_next_dword(u32 *data, u08 toggle_expect, u08 state_flag)
   return PLIP_STATUS_OK;
 }
 
-u08 plip_recv(plip_packet_t *pkt, u08 skip)
+u08 plip_recv(plip_packet_t *pkt)
 {
   u08 status = PLIP_STATUS_OK;
 
   pkt->real_size = 0;
   
-  if(!skip) { 
-    // if LINE is lo then peer did not start send
-    if(!TEST_LINE() || (par_low_strobe_count == 0)) {
-      return PLIP_STATUS_IDLE;
-    }
+  // check PTRSEL -> is 1=write loop in magplip (SETCIAOUTPUT)
+  if(!TEST_SELECT()) {
+    return PLIP_STATUS_IDLE;
+  }
   
-    // first byte must be magic (0x42) 
-    // this byte was set by last strobe received before calling this func
-    u08 magic = 0;
-    status = get_next_byte(&magic, 1, PLIP_STATE_MAGIC);
-    if(status == PLIP_STATUS_OK) {
-      if(magic != PLIP_MAGIC) {
-        status = PLIP_STATUS_NO_MAGIC;
-      }
+  // if LINE is lo then peer did not start send
+  if(!TEST_LINE() || (par_low_strobe_count == 0)) {
+    return PLIP_STATUS_IDLE;
+  }
+
+  // assume all get_next to have select state == 1 
+  select_state = 1;
+
+  // first byte must be magic (0x42) 
+  // this byte was set by last strobe received before calling this func
+  u08 magic = 0;
+  status = get_next_byte(&magic, 1, PLIP_STATE_MAGIC);
+  if(status == PLIP_STATUS_OK) {
+    if(magic != PLIP_MAGIC) {
+      status = PLIP_STATUS_NO_MAGIC;
     }
   }
 
@@ -234,48 +247,26 @@ u08 plip_send(plip_packet_t *pkt)
   u08 status = PLIP_STATUS_OK;
   pkt->real_size = 0;
   
-  // reset strobe counter
-  par_low_strobe_count = 0;
-  
   // did the peer already begin sending?
-  if(TEST_LINE()) {
+  if(TEST_LINE() || TEST_SELECT()) {
     // immediately start the receiption
-    return PLIP_STATUS_RX_BEGUN;
+    return PLIP_STATUS_PEER_WRITE_BEGIN;
   }
   
   // set my HS_REQUEST line
   SET_REQ();
   
-  // one/more data byte was written by peer ->
-  // start receiption
-  if((par_low_strobe_count == 1) || (TEST_LINE())) {
-    // second strobe must follow as we set the "clk" already for next byte with SET_REQ above
-    timer_100us = 0;
-    while(par_low_strobe_count < 2) {
-      if(timer_100us > plip_strobe_timeout) {
-        return PLIP_STATUS_NO_SECOND_STROBE;
-      }
-    }
-    return PLIP_STATUS_RX_BEGUN_SKIP;
-  }
-  // second byte already arrived -> begin receive by skipping first (magic) byte
-  else if(par_low_strobe_count == 2) {
-    return PLIP_STATUS_RX_BEGUN_SKIP;
-  }
-  // must not happen
-  else if(par_low_strobe_count > 2) {
-    return PLIP_STATUS_TOO_MANY_STROBES;
-  }
-  
-  // ----- now we are (fairly) sure we can send -----
-  // we arrive here if no strobe occurred and the LINE is low
-  
-  // set data port to output
+  // set data bus to output
   par_low_data_set_output();
-  
-  // set magic on data bus and perform an ACK pulse to trigger receiption 
+
+  // set magic on data bus
   par_low_data_out(PLIP_MAGIC);
-  par_low_pulse_ack();
+  
+  // make 1us ACK pulse to amiga -> triggers CIA irq
+  par_low_pulse_ack(1);
+  
+  // assume all set_next_ to have select state = 0 -> amiga is rx
+  select_state = 0;
   
   // send crc type
   u08 crc_type = pkt->crc_type;

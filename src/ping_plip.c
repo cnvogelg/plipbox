@@ -50,7 +50,7 @@ void ping_plip_loop(void)
   while(1) {
     ser_parse_worker();
     
-    u08 status = plip_recv(&pkt, 0);
+    u08 status = plip_recv(&pkt);
     if(status != PLIP_STATUS_IDLE) {
       led_green_off();
 
@@ -63,9 +63,11 @@ void ping_plip_loop(void)
           // send reply
           pos = 0;
           status = plip_send(&pkt);
-          if(status != PLIP_STATUS_OK) {
+          if(status == PLIP_STATUS_PEER_WRITE_BEGIN) {
+            uart_send('C');
+          } else if(status != PLIP_STATUS_OK) {
             uart_send('T');
-            uart_send_hex_byte_crlf(status);            
+            uart_send_hex_byte_crlf(status);
             uart_send_hex_word_crlf(pkt.real_size);
             uart_send_hex_word_crlf(pkt.size);
           } else {

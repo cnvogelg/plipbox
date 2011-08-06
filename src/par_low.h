@@ -111,7 +111,7 @@ inline void par_low_set_ack_hi(void)
   PAR_ACK_PORT |= PAR_ACK_MASK;
 }
 
-extern void par_low_pulse_ack(void);
+extern void par_low_pulse_ack(u08 delay);
 
 // BUSY (OUT)
 
