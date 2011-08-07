@@ -6,6 +6,7 @@
 // ----- IP Header -----
 extern u08 ip_hdr_check(const u08 *buf);
 extern void ip_hdr_calc_check(u08 *buf);
+extern u16 ip_hdr_get_size(const u08 *buf);
 
 // ----- ICMP Ping -----
 extern u08 ip_icmp_is_ping_request(const u08 *buf);

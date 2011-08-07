@@ -74,7 +74,7 @@ SRC := $(BOARD).c
 SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c plip.c 
 SRC += ip.c pkt_buf.c slip.c ser_parse.c slip_rx.c
-SRC += transfer.c ping_plip.c
+SRC += transfer.c ping_plip.c stats.c
 SRC += cmd.c
 SRC += main.c
 

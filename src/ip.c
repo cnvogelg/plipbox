@@ -35,6 +35,11 @@ void ip_hdr_calc_check(u08 *buf)
   buf[11] = (u08)(check & 0xff);
 }
 
+u16 ip_hdr_get_size(const u08 *buf)
+{
+  return (u16)buf[2] << 8 | (u16)buf[3];
+}
+
 u08 ip_icmp_is_ping_request(const u08 *buf)
 {
   return( 

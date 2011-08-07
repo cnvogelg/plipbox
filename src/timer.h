@@ -35,6 +35,7 @@ void timer_init(void);
 // a 100 Hz = 10ms timer
 // 16bit: 0,10ms...~10hours
 extern volatile u16 timer_10ms;
+extern volatile u16 timer2_10ms;
 
 // a 99.83ms ~ 100ms timer
 // 16bit: 0,100us...6.5s

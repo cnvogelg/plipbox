@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "uartutil.h"
 #include "ip.h"
+#include "stats.h"
 
 static u08 pos;
 
@@ -46,17 +47,23 @@ void ping_plip_init(void)
 
 void ping_plip_loop(void)
 {  
+  stats_reset();
+  
   led_green_on(); 
   while(1) {
     ser_parse_worker();
     
     u08 status = plip_recv(&pkt);
     if(status != PLIP_STATUS_IDLE) {
+      stats.pkt_count++;
+
       led_green_off();
 
       if(status == PLIP_STATUS_OK) {
         // is a ping packet?
         if(ip_icmp_is_ping_request(pkt_buf)) {
+          stats.pkt_bytes += ip_hdr_get_size(pkt_buf);
+          
           // make reply
           ip_icmp_ping_request_to_reply(pkt_buf);
 
@@ -64,27 +71,28 @@ void ping_plip_loop(void)
           pos = 0;
           status = plip_send(&pkt);
           if(status == PLIP_STATUS_CANT_SEND) {
+            stats.pkt_last_tx_err = status;
+            stats.pkt_tx_err++;
             uart_send('C');
           } else if(status != PLIP_STATUS_OK) {
+            stats.pkt_last_tx_err = status;
+            stats.pkt_tx_err++;
             uart_send('T');
-            uart_send_hex_byte_crlf(status);
-            uart_send_hex_word_crlf(pkt.real_size);
-            uart_send_hex_word_crlf(pkt.size);
-          } else {
-            uart_send('.');
           }
-
+          
         } else {
           // no ICMP request
           uart_send('?');
-          uart_send_crlf();
         }
       } else {
-        // show plip_recv error
+        stats.pkt_rx_err++;
+        stats.pkt_last_rx_err = status;
         uart_send('R');
-        uart_send_hex_byte_crlf(status);
-        uart_send_hex_word_crlf(pkt.real_size);
-        uart_send_hex_word_crlf(pkt.size);
+      }
+
+      // give summary
+      if(stats.pkt_count == 256) {
+        stats_dump();
       }
 
       led_green_on();
