@@ -1,0 +1,95 @@
+Hardware for the plip2slip device
+---------------------------------
+
+1. Arduino 2009
+---------------
+
+Currently the firmware is implemented on an Arduino 2009 board with an
+ATmega168 running at 16 MHz. Similar AVR board should work, too, but note that
+an FT232 USB-to-serial bridge with RTS/CTS hand shaking pins available at the
+AVR is required.
+
+The additional hardware required for the Arduino board consists of an adapter
+for the Amiga parallel port, the RTS/CTS handshake lines on the board itself,
+and 3 LEDs to show the operation modes.
+
+All parts are fairly simple to construct.
+
+1.1 Amiga Parallel Port Cable
+
+You need to build a cable from the Amiga Parallel Port (DB 25 male) to the
+Arduino. Try to use only a short wire length otherwise signal quality will suffer.
+Up to 10 cm are suitable lengths.
+
+Amiga Parallel Port         Function          Arduino
+    17 ... 22                GND               GND Pin
+    1                        /STROBE           DIGITAL 2 (PD2)
+    13                       SELECT            DIGITAL 3 (PD3)
+    11                       BUSY              DIGITAL 4 (PD4)
+    12                       POUT              DIGITAL 5 (PD5)
+    8                        DATA 6            DIGITAL 6 (PD6)
+    9                        DATA 7            DIGITAL 7 (PD7)
+    10                       /ACK              DIGITAL 8 (PB0)
+    2 ... 7                  DATA 0 ... 5      ANALOG 0 ... 5 (PC0 ... PC5)
+
+1.2 RTS/CTS RS 232 Handshaking
+
+You need to connect the RTS/CTS lines from the FT232 to your AVR. On the
+Arduino 2009 the RTS/CTS lines are available on solder pads on the board. Just
+solder a wire and connect them to the given AVR pin:
+
+  Arduino
+    CTS (OUT):     DIGITAL 9 (PB1)
+    RTS (IN):      DIGITAL 10 (PB2)
+
+1.2.1 CTS Solder Pad:
+
+.  Solder Pad X3                              DIGITAL .
+.  4   3   2   1                                      .
+.  (x) (x) (x) (x)                                    .
+.               |                 CTS                 * 10
+.               +---------------------------------->  * 9
+.                                                     * 8
+.                                                     .
+
+The vanilla Arduino board does not allow to control the HW CTS serial signal
+from the AVR chip. But this is required to allow high performance data
+transfer for the dtv2ser firmware. Fortunately,this signal of the FT232 chip
+is available on the solder pad X3 and can be added by soldering a wire from
+there to a pin that is connected to the AVR port labeled "DIGITAL 9". 
+
+1.2.2 RTS Solder Pad:
+
+.  Solder Pad X3                              DIGITAL .
+.  4   3   2   1                                      .
+.  (x) (x) (x) (x)                RTS                 .
+.                          +---------------------->   * 10
+.                          |                          * 9
+.                          *  *                       .
+.                       unpopulated solder pads       .
+
+The RTS line is available on the left solder pad of the unpopulated resistor
+found on the right hand side of the X3 pads. The RTS line needs to be
+connected to port DIGITAL 10 on the AVR.
+
+NOTE: Do NOT connect the line to the right pad and do NOT short circuit poth
+pads. The right line is the RESET line and will restart your board every time
+RTS is triggered…You have been warned ;)
+
+1.3 Adding LEDs
+
+Three LEDs with colors red, orange/yellow and green are soldered with 220 Ohm
+resistors to +5V and the following DIGITAL pins:
+
+.                      Red LED
+.  Reset *         +------>|----| 220 |--------------* DIGITAL 13
+.    3V3 *         |  Orange LED
+.     5V *---------+------>|----| 220 |--------------* DIGITAL 12
+.    GND *         |  Green LED
+.    GND *--+      +------>|----| 220 |--------------* DIGITAL 11
+.    Vin *  |
+.           |
+.           v  This line is used for the Amiga parallel port
+
+That's it! Your plip2slip HW is ready!
+

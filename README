@@ -1,0 +1,55 @@
+plip2slip
+=========
+
+"Build a PLIP-to-SLIP HW Bridge device using an Arduino board for speeding up
+Internet on a stock Amiga 500."
+
+Introduction
+------------
+
+An Amiga 500 has no special ethernet or other network ports for connecting to
+the Internet. Typically a SLIP (serial line internet protocol) device is used
+to transfer all IP packets via the serial RS 232 interface to another computer
+with fast ethernet connection. With the on-board serial port a maximum speed
+of 9600 Baud (~ 1 KiB/s) could be achieved running Amiga OS.
+
+Faster speeds could be achieved by using a PLIP (parallel port IP) device that
+uses the parallel port to transfer IP packets to another host. Since the Amiga
+parallel port is fully bi-directional you can use a half-duplex protocol and
+then transfer an IP packet byte-by-byte over the port. This is done in the
+magPLIP driver available on Aminet[1]. Unfortunately, this approach requires
+an Amiga or another Computer with a fully bi-directional port on the peer side.
+With this parallel approach you can achieve up to 15-20 KiB/s transfer speeds.
+
+The idea in this project is to use the custom I/O ports of an AVR microcontroller
+board (here an Arduino 2009) and implement the parallel port there. The mcu
+implements the magPLIP protocol and can then receive and send packets to/from
+the Amiga.
+
+On the other hand the Arduino uses an FTDI 232 USB-to-Serial bridge to allow
+fast serial data transfers. On a 16 MHz AVR you can use serial rates up to 500
+KiBit/s (~ 55 KiB/s). With proper RTS/CTS flow control the AVR can handle
+these data rates easily.
+
+The "plip2slip" firmware developed in this project now bridges these two
+ports. A PC is connected with a fast serial link to the AVR and the Amiga is
+connected with its parallel port. As a result the amiga can achieve full PLIP
+speed while the PC runs a fast SLIP link.
+
+On the PC I use Linux with a patched slipattach tool to support the fast
+serial rates. The Amiga magPLIP device is slightly patched to better support
+the AVR. All patches are available in this project.
+
+The data flow is as follows:
+
+Internet <->   PC   <--SLIP-->  Arduino  <--PLIP-->  Amiga 500
+              Linux            plip2slip            magPLIP + AmiTCP
+
+[1] http://aminet.net/package/comm/net/magPLIP38.1
+
+
+More Documentation
+------------------
+
+ doc/hardware.txt     How to build the device hardware
+
