@@ -31,8 +31,6 @@ void plip_send_init(plip_data_func   fill_func)
   fill_tx_func  = fill_func;
 }
 
-static u08 select_state = 0;
-
 static u08 wait_line_toggle(u08 toggle_expect, u08 state_flag)
 {
   // wait for new toggle value
@@ -44,8 +42,8 @@ static u08 wait_line_toggle(u08 toggle_expect, u08 state_flag)
     }
     // during transfer peer switched from rx to tx or vice versa -> arbitration lost!
     u08 select = TEST_SELECT();
-    if(select != select_state) {
-      return PLIP_STATUS_PEER_TOGGLED_SEL | state_flag;
+    if(!select) {
+      return PLIP_STATUS_LOST_SELECT | state_flag;
     }
   }
   return PLIP_STATUS_TIMEOUT | state_flag;
@@ -123,9 +121,6 @@ u08 plip_recv(plip_packet_t *pkt)
   if(!TEST_LINE() || (par_low_strobe_count == 0)) {
     return PLIP_STATUS_IDLE;
   }
-
-  // assume all get_next to have select state == 1 
-  select_state = 1;
 
   // first byte must be magic (0x42) 
   // this byte was set by last strobe received before calling this func
@@ -214,7 +209,7 @@ u08 plip_recv(plip_packet_t *pkt)
   
   // wait for output state to end -> SELECT=0
   if(status == PLIP_STATUS_OK) {
-    status = wait_for_select(0, PLIP_STATE_END_RECEIVE);
+    status = wait_for_select(0, PLIP_STATE_END);
   }
   
   return status;
@@ -266,7 +261,7 @@ u08 plip_send(plip_packet_t *pkt)
   // did the peer already begin sending?
   if(TEST_LINE() || TEST_SELECT()) {
     // immediately start the receiption
-    return PLIP_STATUS_PEER_WRITE_BEGIN;
+    return PLIP_STATUS_CANT_SEND;
   }
   
   // set my HS_REQUEST line
@@ -281,8 +276,8 @@ u08 plip_send(plip_packet_t *pkt)
   // make 1us ACK pulse to amiga -> triggers CIA irq
   par_low_pulse_ack(1);
   
-  // assume all set_next_ to have select state = 0 -> amiga is rx
-  select_state = 0;
+  // wait for amiga to enter recv loop
+  status = wait_for_select(1, PLIP_STATE_START);
   
   // send crc type
   u08 crc_type = pkt->crc_type;
@@ -339,6 +334,11 @@ u08 plip_send(plip_packet_t *pkt)
 
   // reset HS_REQUEST line
   CLR_REQ();
+  
+  // wait for output state to end -> SELECT=0
+  if(status == PLIP_STATUS_OK) {
+    status = wait_for_select(0, PLIP_STATE_END);
+  }
   
   return status;
 }

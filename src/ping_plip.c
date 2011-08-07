@@ -63,7 +63,7 @@ void ping_plip_loop(void)
           // send reply
           pos = 0;
           status = plip_send(&pkt);
-          if(status == PLIP_STATUS_PEER_WRITE_BEGIN) {
+          if(status == PLIP_STATUS_CANT_SEND) {
             uart_send('C');
           } else if(status != PLIP_STATUS_OK) {
             uart_send('T');

@@ -9,8 +9,8 @@
 #define PLIP_STATUS_INVALID_MAGIC     3
 #define PLIP_STATUS_TIMEOUT           4
 #define PLIP_STATUS_CALLBACK_FAILED   5
-#define PLIP_STATUS_PEER_WRITE_BEGIN  6
-#define PLIP_STATUS_PEER_TOGGLED_SEL  7
+#define PLIP_STATUS_CANT_SEND         6
+#define PLIP_STATUS_LOST_SELECT       7
 
 #define PLIP_STATE_MAGIC            0x10
 #define PLIP_STATE_CRC_TYPE         0x20
@@ -19,7 +19,8 @@
 #define PLIP_STATE_TYPE             0x50
 #define PLIP_STATE_DATA             0x60
 #define PLIP_STATE_LAST_DATA        0x70
-#define PLIP_STATE_END_RECEIVE      0x80
+#define PLIP_STATE_END              0x80
+#define PLIP_STATE_START            0x90
 
 #define PLIP_MAGIC        0x42
 #define PLIP_NOCRC        0x02
