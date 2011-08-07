@@ -7,8 +7,8 @@ typedef struct {
   u16 pkt_count;
   u16 pkt_tx_err;
   u16 pkt_rx_err;
-  u16 pkt_bytes;
   u16 pkt_time;
+  u32 pkt_bytes;
   u08 pkt_last_tx_err;
   u08 pkt_last_rx_err;
 } stats_t;

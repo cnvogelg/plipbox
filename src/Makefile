@@ -149,7 +149,7 @@ dirs:
 	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
 	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
 
-build: dirs hdr hex lss size_code size_data
+build: dirs hdr hex lss size
 
 hdr:
 	@echo "--- building BOARD=$(BOARD) F_CPU=$(F_CPU) MCU=$(MCU) ---"
@@ -162,6 +162,8 @@ elf: $(OUTPUT).elf $(OUTPUT).lss $(OUTPUT).sym
 hex: $(OUTPUT).hex
 
 lss: $(OUTPUT).lss
+
+size: size_code size_data
 
 size_code: $(OUTPUT).hex
 	@SIZE=`$(SIZE) -A --target=$(FORMAT) $(OUTPUT).hex | grep Total | awk '{ print $$2 }'` ; \
@@ -236,7 +238,7 @@ $(OBJDIR)/%.o : %.c
 -include $(shell mkdir -p $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*.d)
 
 .PRECIOUS: $(OBJ)
-.PHONY: all dirs elf hex prog clean avrlib clean.edit hdr size_code size_data
+.PHONY: all dirs elf hex prog clean avrlib clean.edit hdr size_code size_data size
 
 # ----- AVRdude --------------------------------------------------------------
 

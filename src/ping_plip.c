@@ -9,7 +9,7 @@
 #include "ip.h"
 #include "stats.h"
 
-static u08 pos;
+static u16 pos;
 
 static u08 begin_rx(plip_packet_t *pkt)
 {
@@ -83,6 +83,9 @@ void ping_plip_loop(void)
         } else {
           // no ICMP request
           uart_send('?');
+          uart_send_hex_byte_spc(pkt_buf[0]);
+          uart_send_hex_byte_spc(pkt_buf[9]);
+          uart_send_hex_byte_spc(pkt_buf[20]);
         }
       } else {
         stats.pkt_rx_err++;
@@ -92,7 +95,15 @@ void ping_plip_loop(void)
 
       // give summary
       if(stats.pkt_count == 256) {
+        u08 err = (stats.pkt_tx_err > 0) || (stats.pkt_rx_err > 0);
+        if(err) {
+          led_red_on();
+        } else {
+          led_red_off();
+        }
+        
         stats_dump();
+        
       }
 
       led_green_on();

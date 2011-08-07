@@ -45,7 +45,7 @@ void stats_dump(void)
   }
   
   uart_send('b');
-  uart_send_hex_word_crlf(stats.pkt_bytes);
+  uart_send_hex_dword_crlf(stats.pkt_bytes);
   uart_send('t');
   uart_send_hex_word_crlf(stats.pkt_time);
 
