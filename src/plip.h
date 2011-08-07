@@ -19,7 +19,7 @@
 #define PLIP_STATE_TYPE             0x50
 #define PLIP_STATE_DATA             0x60
 #define PLIP_STATE_LAST_DATA        0x70
-#define PLIP_STATE_PULSE_ACK        0x80
+#define PLIP_STATE_END_RECEIVE      0x80
 
 #define PLIP_MAGIC        0x42
 #define PLIP_NOCRC        0x02

@@ -97,6 +97,17 @@ static u08 get_next_dword(u32 *data, u08 toggle_expect, u08 state_flag)
   return PLIP_STATUS_OK;
 }
 
+static u08 wait_for_select(u08 select_state, u08 state_flag)
+{
+  timer_100us = 0;
+  while(timer_100us < plip_timeout) {
+    if(TEST_SELECT() == select_state) {
+      return PLIP_STATUS_OK;
+    }
+  }
+  return PLIP_STATUS_TIMEOUT | state_flag;
+}
+
 u08 plip_recv(plip_packet_t *pkt)
 {
   u08 status = PLIP_STATUS_OK;
@@ -200,6 +211,11 @@ u08 plip_recv(plip_packet_t *pkt)
 
   // clear HS_REQUEST (BUSY) to signal end of transmission
   CLR_REQ();
+  
+  // wait for output state to end -> SELECT=0
+  if(status == PLIP_STATUS_OK) {
+    status = wait_for_select(0, PLIP_STATE_END_RECEIVE);
+  }
   
   return status;
 }
