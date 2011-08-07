@@ -40,6 +40,7 @@ ifeq "$(BOARD)" "arduino"
 MCU = atmega168
 F_CPU = 16000000
 MAX_SIZE = 14336
+MAX_SRAM = 1024
 UART_BAUD = 500000
 #UART_BAUD = 19200
 #UART_BAUD = 250000
@@ -148,7 +149,7 @@ dirs:
 	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
 	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
 
-build: dirs hdr hex lss size
+build: dirs hdr hex lss size_code size_data
 
 hdr:
 	@echo "--- building BOARD=$(BOARD) F_CPU=$(F_CPU) MCU=$(MCU) ---"
@@ -162,12 +163,22 @@ hex: $(OUTPUT).hex
 
 lss: $(OUTPUT).lss
 
-size: $(OUTPUT).hex
+size_code: $(OUTPUT).hex
 	@SIZE=`$(SIZE) -A --target=$(FORMAT) $(OUTPUT).hex | grep Total | awk '{ print $$2 }'` ; \
 	if [ $$SIZE -gt $(MAX_SIZE) ] ; then \
-		echo "  $$SIZE >  $(MAX_SIZE) bytes: TOO LARGE" ; exit 1 ; \
+		echo "  $$SIZE >  $(MAX_SIZE) bytes: code TOO LARGE" ; exit 1 ; \
 	else \
-		echo "  $$SIZE <= $(MAX_SIZE) bytes: ok" ; \
+		echo "  $$SIZE <= $(MAX_SIZE) bytes: code ok" ; \
+	fi
+
+size_data: $(OUTPUT).elf
+	@DATA=`$(SIZE) -A $(OUTPUT).elf | fgrep .data | awk '{ print $$2 }'` ; \
+	BSS=`$(SIZE) -A $(OUTPUT).elf | fgrep .bss | awk '{ print $$2 }'` ; \
+	SUM=$$(( $$DATA + $$BSS )) ; \
+	if [ $$SUM -gt $(MAX_SRAM) ] ; then \
+		echo "  $$SUM >  $(MAX_SRAM) bytes: sram TOO LARGE" ; exit 1 ; \
+	else \
+		echo "  $$SUM <= $(MAX_SRAM) bytes: sram ok" ; \
 	fi
 
 clean:
@@ -225,7 +236,7 @@ $(OBJDIR)/%.o : %.c
 -include $(shell mkdir -p $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*.d)
 
 .PRECIOUS: $(OBJ)
-.PHONY: all dirs elf hex prog clean avrlib clean.edit hdr
+.PHONY: all dirs elf hex prog clean avrlib clean.edit hdr size_code size_data
 
 # ----- AVRdude --------------------------------------------------------------
 
