@@ -1,0 +1,12 @@
+--- net-tools-1.60/slattach.c	2000-10-28 12:59:41.000000000 +0200
++++ net-tools-1.60-patch/slattach.c	2011-07-21 22:29:11.056217345 +0200
+@@ -101,6 +101,9 @@
+ #ifdef B115200
+   { "115200",	B115200	},
+ #endif
++#ifdef B500000
++  { "500000",   B500000 },  
++#endif
+   { NULL,	0	}
+ };
+ struct termios	tty_saved,		/* saved TTY device state	*/
