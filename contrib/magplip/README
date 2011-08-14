@@ -1,0 +1,59 @@
+magPLIP Setup on Amiga
+----------------------
+
+Purpose: patch Aminet magPLIP driver to support features required by plip2slip.
+Input:   magPLIP 38.1 from http://aminet.net/package/comm/net/magPLIP38.1
+Patch:   magplip.patch
+Output:  magplip.device.000   # m68000 version
+         magplip.device.020   # m68020 version
+
+1. Build magPLIP from Source
+
+ - Only for advanced users! All others can use the supplied binaries!
+ - AMIGA: First setup latest SAS C++ V6.58
+ - AMIGA: Install AmiTCP SDK (e.g http://aminet.net/package/comm/tcp/AmiTCP-SDK-4.3)
+
+        > assign amitcpsdk: <set your sdk path herer>
+
+ - Download and extract mapPLIP source from aminet
+ - On Unix host: Apply patch: 
+
+        > patch -p0 < magplip.patch
+
+ - AMIGA CLI:
+
+        > cd magplip/source
+        > assign includeasm: include:
+        > assign netinclude: amitcpsdk:netinclude
+        > smake clean all_opt
+        > list /devs/networks
+
+ - The resulting binaries reside in /devs/networks/magplip.device.*
+
+
+2. Setup network stack
+
+ - I am using AmiTCP (V3.x,4.x) here, but other Network Stacks work similar
+ 
+ - For a very simply setup you can use the "Network Boot Disk for Amiga"
+   and start with this: http://jpv.wmhost.com/NetworkBootDisk/ 
+   Insert this disk into your emulator and perform the following steps
+   to prepare the disk.
+        
+ - Copy magplip.device to your AmiTCP. Select the m680x0 version and copy
+   the magplip.device without the .000 or .020 extension to your AmiTCP
+   installation:
+
+        > copy magplip.device.000 df0:devs/networks/magplip.device
+
+ - Edit the file "AmiTCP/db/interfaces" and add:
+ 
+        magplip dev=devs:networks/magplip.device
+
+ - Adjust your AmiTCP:bin/startnet to setup the interface to "magplip0".
+ - In the network boot disk: Edit "df0:s/Prefs/Env-Archive/nbddriver" and
+   set "magplip0"
+
+ - In EnvARC:sana2 (Network Boot Disk: "df0:s/Prefs/Env-Archive") you can
+   place an optional configuration file called "magplip.config".
+   For options see the magPLIP documentation.
