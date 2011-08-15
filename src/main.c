@@ -31,6 +31,7 @@
 #include "par_low.h"
 
 #include "ping_plip.h"
+#include "ping_slip.h"
 
 int main (void){
   // board init. e.g. switch off watchdog, init led
@@ -45,8 +46,13 @@ int main (void){
   // enable uart
   uart_start_reception();
 
+#if 0
   ping_plip_init();
   ping_plip_loop();
+#else
+  ping_slip_init();
+  ping_slip_loop();
+#endif
 
   return 0;
 } 

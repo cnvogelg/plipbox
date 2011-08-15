@@ -6,6 +6,39 @@
 #define SLIP_ESC_END  0334
 #define SLIP_ESC_ESC  0335
 
+static slip_data_func_t the_data_func = 0;
+static slip_end_func_t the_end_func = 0;
+static u08 state = 0; // 0=normal 1=escape
+
+void slip_push_init(slip_data_func_t data_func, slip_end_func_t end_func)
+{
+  the_data_func = data_func;
+  the_end_func = end_func;
+  state = 0;
+}
+
+void slip_push(u08 data)
+{
+  if(state == 0) {
+    if(data == SLIP_END) {
+      the_end_func();
+    } else if(data == SLIP_ESC) {
+      state = 1;
+    } else {
+      the_data_func(data);
+    }
+  } else {
+    if(data == SLIP_ESC_END) {
+      the_data_func(SLIP_END);
+    } else if(data == SLIP_ESC_ESC) {
+      the_data_func(SLIP_ESC);
+    } else {
+      // invalid escaping
+    }
+    state = 0;
+  }
+}
+
 u08 slip_read(u08 *data)
 {
   u08 d;
