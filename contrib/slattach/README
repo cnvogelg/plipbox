@@ -51,8 +51,13 @@ Using slattach to setup SLIP
 
    - Attach SLIP device to serial:
    
-        > sudo ./slattach -p slip -s 500000 /dev/ttyUSB0
+        > sudo ./slattach -H -p slip -s 500000 /dev/ttyUSB0
         
+        Note: the high baud rate only works with the patched version
+        Note2: the -H is also added by the patched version. It avoids
+               resetting the Arduino before/after connecting.
+               Otherwise you can't read out stats from the board later on.
+
    - If you get the following error then you don't have patched slattach:
    
         slattach: tty_open: cannot set 500000 bps!
@@ -92,7 +97,7 @@ Using slattach to setup SLIP
         	address 192.168.0.1
         	netmask 255.255.255.0
         	mtu 512
-        	pre-up /usr/local/bin/slattach -l -p slip -s 500000 /dev/ttyUSB0 &
+        	pre-up /usr/local/bin/slattach -H -l -p slip -s 500000 /dev/ttyUSB0 &
         	pre-up sleep 1
         	post-down kill `cat /var/lock/LCK..ttyUSB0`
 

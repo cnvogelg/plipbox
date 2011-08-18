@@ -1,5 +1,5 @@
---- net-tools-1.60/slattach.c	2000-10-28 12:59:41.000000000 +0200
-+++ net-tools-1.60-patch/slattach.c	2011-07-21 22:29:11.056217345 +0200
+--- net-tools-1.60/slattach.c	2011-08-18 21:39:28.780454378 +0200
++++ net-tools-1.60-patch/slattach.c	2011-08-18 21:42:15.666356007 +0200
 @@ -101,6 +101,9 @@
  #ifdef B115200
    { "115200",	B115200	},
@@ -10,3 +10,42 @@
    { NULL,	0	}
  };
  struct termios	tty_saved,		/* saved TTY device state	*/
+@@ -111,6 +114,7 @@
+ int		opt_c = 0;		/* "command" to run at exit	*/
+ int		opt_e = 0;		/* "activate only" flag		*/
+ int		opt_h = 0;		/* "hangup" on carrier loss	*/
++int		opt_H = 0;		/* no "hangup" control 		*/
+ #ifdef SIOCSKEEPALIVE
+ int		opt_k = 0;		/* "keepalive" value		*/
+ #endif
+@@ -342,7 +346,9 @@
+   tty->c_oflag = (0);				/* output flags		*/
+   tty->c_lflag = (0);				/* local flags		*/
+   speed = (tty->c_cflag & CBAUD);		/* save current speed	*/
+-  tty->c_cflag = (HUPCL | CREAD);		/* UART flags		*/
++  tty->c_cflag = CREAD;				/* UART flags		*/
++  if (!opt_H)
++	tty->c_cflag |= HUPCL;
+   if (opt_L) 
+ 	tty->c_cflag |= CLOCAL;
+   else
+@@ -600,7 +606,7 @@
+ 
+   /* Scan command line for any arguments. */
+   opterr = 0;
+-  while ((s = getopt_long(argc, argv, "c:ehlLmnp:qs:vdVk:o:", longopts, NULL)) != EOF) switch(s) {
++  while ((s = getopt_long(argc, argv, "c:ehHlLmnp:qs:vdVk:o:", longopts, NULL)) != EOF) switch(s) {
+ 	case 'c':
+ 		extcmd = optarg;
+ 		break;
+@@ -613,6 +619,10 @@
+ 		opt_h = 1 - opt_h;
+ 		break;
+ 
++	case 'H':
++		opt_H = 1 - opt_H;
++		break;
++
+ #ifdef SIOCSKEEPALIVE
+ 	case 'k':
+ 		opt_k = atoi(optarg);
