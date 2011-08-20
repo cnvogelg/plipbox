@@ -25,8 +25,14 @@
 
 # ----- Config Options -----
  
+OS=$(system uname -s)
+
 # install dir of avr libc (here MacPorts location)
+ifeq "$(OS)" "Darwin"
 AVRLIBC_DIR = /opt/local/avr
+else
+AVRLIBC_DIR = /usr/lib/avr
+endif
 
 ALL_BOARDS= arduino
 DIST_BOARDS= arduino
@@ -242,7 +248,11 @@ $(OBJDIR)/%.o : %.c
 
 # ----- AVRdude --------------------------------------------------------------
 
+ifeq "$(OS)" "Darwin"
 LDR_PORT ?= $(shell ls /dev/cu.usbserial-* | tail -n 1)
+else
+LDR_PORT ?= $(shell ls /dev/ttyUSB* | tail -n 1)
+endif
 
 # commands
 AVRDUDE_WRITE_FLASH  = -U flash:w:$(OUTPUT).hex
