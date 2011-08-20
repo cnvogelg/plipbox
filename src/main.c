@@ -29,7 +29,11 @@
 #include "uart.h"
 #include "timer.h"
 #include "par_low.h"
+#include "param.h"
+#include "ser_parse.h"
+#include "cmd.h"
 
+#include "transfer.h"
 #include "ping_plip.h"
 #include "ping_slip.h"
 
@@ -42,17 +46,29 @@ int main (void){
   uart_init();
   // setup par
   par_low_init();
+  // param init
+  param_init();
+  
+  // setup command handler
+  ser_parse_set_cmd_func(cmd_parse);
   
   // enable uart
   uart_start_reception();
 
-#if 0
-  ping_plip_init();
-  ping_plip_loop();
-#else
-  ping_slip_init();
-  ping_slip_loop();
-#endif
+  // main loop
+  while(1) {
+    switch(param.mode) {
+      case PARAM_MODE_TRANSFER:
+        transfer_loop();
+        break;
+      case PARAM_MODE_PING_PLIP:
+        ping_plip_loop();
+        break;
+      case PARAM_MODE_PING_SLIP:
+        ping_slip_loop();
+        break;
+    }
+  }
 
   return 0;
 } 

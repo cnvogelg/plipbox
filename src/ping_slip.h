@@ -3,7 +3,6 @@
 
 #include "global.h"
 
-extern void ping_slip_init(void);
 extern void ping_slip_loop(void);
 
 #endif

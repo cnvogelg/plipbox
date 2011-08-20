@@ -25,7 +25,7 @@
 
 # ----- Config Options -----
  
-OS=$(system uname -s)
+OS=$(shell uname -s)
 
 # install dir of avr libc (here MacPorts location)
 ifeq "$(OS)" "Darwin"
@@ -82,7 +82,7 @@ SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c plip.c 
 SRC += ip.c pkt_buf.c slip.c ser_parse.c slip_rx.c
 SRC += transfer.c ping_plip.c ping_slip.c stats.c
-SRC += cmd.c
+SRC += cmd.c param.c
 SRC += main.c
 
 # output format
@@ -142,6 +142,7 @@ endif
 all: build
 
 help:
+	@echo "$(OS)"
 	@echo
 	@echo "  supported boards: $(ALL_BOARDS)"
 	@echo

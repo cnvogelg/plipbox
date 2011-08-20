@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "ser_parse.h"
 #include "ip.h"
+#include "param.h"
 
 static u16 pos;
 static u16 size;
@@ -24,17 +25,15 @@ static void slip_end(void)
   pos = 0;
 }
 
-void ping_slip_init(void)
+void ping_slip_loop(void)
 {
   slip_push_init(slip_data, slip_end);
-  ser_parse_init(slip_push,0);
-  pos = 0;
-}
+  ser_parse_set_data_func(slip_push);
 
-void ping_slip_loop(void)
-{  
+  pos = 0;
+
   led_green_on(); 
-  while(1) {
+  while(param.mode == PARAM_MODE_PING_SLIP) {
     // receive from serial and trigger slip_push
     ser_parse_worker();
     
@@ -62,5 +61,6 @@ void ping_slip_loop(void)
       size = 0;
     }
   }
+  led_green_off();
 }
 

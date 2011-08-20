@@ -8,6 +8,7 @@
 #include "uartutil.h"
 #include "ip.h"
 #include "stats.h"
+#include "param.h"
 
 static u16 pos;
 
@@ -38,19 +39,15 @@ static u08 end_rx(plip_packet_t *pkt)
   return PLIP_STATUS_OK;
 }
 
-void ping_plip_init(void)
+void ping_plip_loop(void)
 {
   plip_recv_init(begin_rx, fill_rx, end_rx);
   plip_send_init(fill_tx);
-  ser_parse_init(0,0); // use serial echo
-}
-
-void ping_plip_loop(void)
-{  
+  ser_parse_set_data_func(0); // use serial echo
   stats_reset();
   
   led_green_on(); 
-  while(1) {
+  while(param.mode == PARAM_MODE_PING_PLIP) {
     ser_parse_worker();
     
     u08 status = plip_recv(&pkt);
@@ -109,5 +106,6 @@ void ping_plip_loop(void)
       led_green_on();
     }
   }
+  led_green_off();
 }
 

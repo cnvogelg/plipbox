@@ -3,7 +3,6 @@
 
 #include "global.h"
 
-extern void transfer_init(void);
-extern void transfer_worker(void);
+extern void transfer_loop(void);
 
 #endif

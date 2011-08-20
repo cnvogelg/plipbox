@@ -17,7 +17,7 @@ u08 ser_marker_char = '+'; // send DELAY +++ DELAY to enter command mode
 u08 ser_marker_count = 3;
 u16 ser_marker_wait_delay = 100; // 1000 ms
 u16 ser_marker_wait_char = 50; // 500 ms
-u16 ser_command_timeout = 500; // 5000 ms
+u16 ser_command_timeout = 1000; // 10 s
 
 static u08 state = STATE_WAIT_FOR_DATA; // wait for a serial char
 static u08 num_markers = 0;
@@ -56,39 +56,69 @@ static void send_bye(void)
   uart_send_crlf();
 }
 
+static void send_fail(void)
+{
+  uart_send_string("FAIL");
+  uart_send_crlf();
+}
+
 static void send_huh(void)
 {
   uart_send_string("??");
   uart_send_crlf();
 }
 
+static void send_prompt(void)
+{
+  uart_send_string("> ");
+}
+
 static void handle_command_char(void)
 {
   switch(data) {
-    case '\n':
-      uart_send(data);
-      break;
     case '\r':
       uart_send(data);
+      break;
+    case '\n':
+      uart_send(data);
       cmd_line[cmd_pos] = '\0';
+      // command is not empty
       if(cmd_pos > 0) {
+        // we have a command handler installed -> call it!
         if(cmd_func != 0) {        
           u08 status = cmd_func(cmd_pos, (const char *)cmd_line);
+          // handler told us to exit
           if(status == SER_PARSE_CMD_EXIT) {
             send_bye();
             led_yellow_off();
             state = STATE_WAIT_FOR_DATA;
-          } else if(status == SER_PARSE_CMD_FAIL) {
+          } 
+          // handler does not know this command
+          else if(status == SER_PARSE_CMD_FAIL) {
+            send_fail();
+          }
+          else if(status == SER_PARSE_CMD_UNKNOWN) {
             send_huh();
           }
-        } else {
+          else if(status == SER_PARSE_CMD_OK) {
+            send_ok();
+          }
+        } 
+        // no command handler -> exit command mode now
+        else {
           send_bye();
           led_yellow_off();
           state = STATE_WAIT_FOR_DATA;
         }
         cmd_pos = 0;
-      } else {
+      } 
+      // empty command gives ok
+      else {
         send_ok();
+      }
+      // show prompt for next command if its no exit
+      if(state != STATE_WAIT_FOR_DATA) {
+        send_prompt();
       }
       break;
     default:
@@ -98,7 +128,7 @@ static void handle_command_char(void)
         uart_send(data); // echo character
       }
       break;
-  }  
+  }
 }
 
 static void ser_echo(u08 data)
@@ -106,13 +136,17 @@ static void ser_echo(u08 data)
   uart_send(data);
 }
 
-void ser_parse_init(ser_parse_data_func_t df, ser_parse_cmd_func_t cf)
+void ser_parse_set_data_func(ser_parse_data_func_t df)
 {
   if(df == 0) {
     data_func = ser_echo;
   } else {
     data_func = df;
   }
+}
+
+void ser_parse_set_cmd_func(ser_parse_cmd_func_t cf)
+{
   cmd_func = cf;
 }
 
@@ -186,6 +220,7 @@ u08 ser_parse_worker(void)
         // enter command mode
         led_yellow_on();
         send_ok();
+        send_prompt();
         cmd_pos = 0;
       }
       break;
