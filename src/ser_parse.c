@@ -29,6 +29,8 @@ static u08 cmd_pos;
 
 static ser_parse_data_func_t data_func = 0;
 static ser_parse_cmd_func_t cmd_func = 0;
+static ser_parse_func_t cmd_enter_func = 0;
+static ser_parse_func_t cmd_leave_func = 0;
 
 static u08 read_char(void)
 {
@@ -82,6 +84,7 @@ static void handle_command_char(void)
     case '\n':
       uart_send(data);
       cmd_line[cmd_pos] = '\0';
+      u08 exit_cmd = 0;
       // command is not empty
       if(cmd_pos > 0) {
         // we have a command handler installed -> call it!
@@ -89,9 +92,7 @@ static void handle_command_char(void)
           u08 status = cmd_func(cmd_pos, (const char *)cmd_line);
           // handler told us to exit
           if(status == SER_PARSE_CMD_EXIT) {
-            send_bye();
-            led_yellow_off();
-            state = STATE_WAIT_FOR_DATA;
+            exit_cmd = 1;
           } 
           // handler does not know this command
           else if(status == SER_PARSE_CMD_FAIL) {
@@ -106,9 +107,16 @@ static void handle_command_char(void)
         } 
         // no command handler -> exit command mode now
         else {
+          exit_cmd = 1;
+        }
+        // exit command mode
+        if(exit_cmd) {
           send_bye();
           led_yellow_off();
           state = STATE_WAIT_FOR_DATA;
+          if(cmd_leave_func != 0) {
+            cmd_leave_func();
+          }
         }
         cmd_pos = 0;
       } 
@@ -148,6 +156,12 @@ void ser_parse_set_data_func(ser_parse_data_func_t df)
 void ser_parse_set_cmd_func(ser_parse_cmd_func_t cf)
 {
   cmd_func = cf;
+}
+
+void ser_parse_set_cmd_enter_leave_func(ser_parse_func_t enter_func, ser_parse_func_t leave_func)
+{
+  cmd_enter_func = enter_func;
+  cmd_leave_func = leave_func;
 }
 
 u08 ser_parse_worker(void)
@@ -218,6 +232,9 @@ u08 ser_parse_worker(void)
         state = STATE_COMMAND_MODE;
 
         // enter command mode
+        if(cmd_enter_func != 0) {
+          cmd_enter_func();
+        }
         led_yellow_on();
         send_ok();
         send_prompt();

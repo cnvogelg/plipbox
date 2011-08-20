@@ -29,6 +29,7 @@ void ping_slip_loop(void)
 {
   slip_push_init(slip_data, slip_end);
   ser_parse_set_data_func(slip_push);
+  stats_reset();
 
   pos = 0;
 

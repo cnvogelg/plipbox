@@ -4,6 +4,7 @@
 #include "util.h"
 #include "ser_parse.h"
 #include "param.h"
+#include "stats.h"
 
 u08 cmd_parse(u08 len, const char *cmd)
 {
@@ -19,6 +20,22 @@ u08 cmd_parse(u08 len, const char *cmd)
     // ----- x) exit -----
     case 'x':
       return SER_PARSE_CMD_EXIT;
+    
+    // ----- s) stats -----
+    case 's':
+      if(len==1) {
+        // show stats
+        stats_dump();
+        return SER_PARSE_CMD_OK;
+      } else {
+        switch(cmd[1]) {
+          case 'r': // stats reset
+            stats_reset();
+            return SER_PARSE_CMD_OK;        
+          default:
+            return SER_PARSE_CMD_UNKNOWN;
+        }
+      }
     
     // ----- p) param -----
     case 'p':

@@ -44,7 +44,9 @@ void ping_plip_loop(void)
   plip_recv_init(begin_rx, fill_rx, end_rx);
   plip_send_init(fill_tx);
   ser_parse_set_data_func(0); // use serial echo
+
   stats_reset();
+  stats_reset_timing();
   
   led_green_on(); 
   while(param.mode == PARAM_MODE_PING_PLIP) {
@@ -52,14 +54,15 @@ void ping_plip_loop(void)
     
     u08 status = plip_recv(&pkt);
     if(status != PLIP_STATUS_IDLE) {
-      stats.pkt_count++;
-
       led_green_off();
 
       if(status == PLIP_STATUS_OK) {
+        stats.pkt_rx_cnt++;
+        
         // is a ping packet?
         if(ip_icmp_is_ping_request(pkt_buf)) {
-          stats.pkt_bytes += ip_hdr_get_size(pkt_buf);
+          u16 pkt_size = ip_hdr_get_size(pkt_buf);
+          stats.pkt_rx_bytes += pkt_size;
           
           // make reply
           ip_icmp_ping_request_to_reply(pkt_buf);
@@ -75,6 +78,9 @@ void ping_plip_loop(void)
             stats.pkt_last_tx_err = status;
             stats.pkt_tx_err++;
             uart_send('T');
+          } else {
+            stats.pkt_tx_cnt ++;
+            stats.pkt_tx_bytes += pkt_size;
           }
           
         } else {
@@ -91,7 +97,7 @@ void ping_plip_loop(void)
       }
 
       // give summary
-      if(stats.pkt_count == 256) {
+      if(stats.pkt_rx_cnt == 256) {
         u08 err = (stats.pkt_tx_err > 0) || (stats.pkt_rx_err > 0);
         if(err) {
           led_red_on();
@@ -99,8 +105,12 @@ void ping_plip_loop(void)
           led_red_off();
         }
         
+        stats_capture_timing();
+
+        uart_send_crlf();
         stats_dump();
-        
+
+        stats_reset_timing();
       }
 
       led_green_on();

@@ -30,6 +30,7 @@
 #include "timer.h"
 #include "par_low.h"
 #include "param.h"
+#include "stats.h"
 #include "ser_parse.h"
 #include "cmd.h"
 
@@ -51,6 +52,7 @@ int main (void){
   
   // setup command handler
   ser_parse_set_cmd_func(cmd_parse);
+  ser_parse_set_cmd_enter_leave_func(stats_capture_timing, stats_reset_timing);
   
   // enable uart
   uart_start_reception();
