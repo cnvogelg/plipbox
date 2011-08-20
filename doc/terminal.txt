@@ -1,0 +1,95 @@
+The slip2plip Terminal
+----------------------
+
+The serial port of the slip2plip firmware is usually used to transmit IP
+traffic from/to your PC. The firmware also allows you to enter a command
+mode and then you can talk to the plip2slip device via the serial port. You
+can query status and statistics information of previous IP connections and
+give commands to alter its behavior.
+
+You can use a terminal program to talk to plip2slip every time it is not
+connected via SLIP (see contrib/slattach/README for more details).
+
+1. Choose a Terminal Program
+----------------------------
+
+There are many terminal programs available. You can choose your favorite but
+keep two things in mind:
+
+  * The terminal must support the high baud rate of 5.000.000 
+
+  * The terminal must NOT alter the DTR level on startup or exit (Otherwise
+    the Arduino will reset and all previous information on the device is lost)
+
+As a portable console-based (i.e. non GUI) solution I can recommend
+miniterm.py, a small python terminal program available in the PySerial package
+[1]. Actually, this is a library to enhance Python with commands to control
+the serial port and miniterm.py is only an example on how to use the lib, but
+it really works great!
+
+See the supplied documentation on how to install it on your platform.
+
+[1] http://pyserial.sourceforge.net/
+
+
+2. Using miniterm.py
+--------------------
+
+On Ubuntu Linux you simply install the "python-serial" package:
+
+  > sudo apt-get install python-serial
+
+Then you can directly call miniterm.py as follows:
+
+  > miniterm.py --rtscts -b 5000000 /dev/ttyUSB0
+
+This assumes that your Arduino registered the ttyUSB0 serial port.
+See the output of dmesg when attaching the Arduino for details.
+
+On windows you would call it like this:
+
+  > python.exe miniterm.py --rtscts -b 5000000 com8
+
+You have to find out what com port the Arduino is attached to.
+
+You can leave miniterm.py at any time by pressing Ctrl + ]
+
+
+3. Enter/Leave Command Mode
+---------------------------
+
+After a reset the plip2slip device automatically enters IP mode and therefore
+does interpret all serial input as packet data received from the PC. In this
+mode you cannot talk to the device via serial. You first have to enter the
+command mode.
+
+Command mode is entered with the typical sequence also used in Hayes modems:
+
+  * Pause for at least 500 ms and send no character
+  * Enter three plus '+' characters with no delay in between
+  * Pause for at least 500 ms again
+
+If command mode is entered the device answers with 'OK'.
+Now you can enter your commands and press Return after each one.
+
+You can leave the command mode by entering the 'x' (exit) command and then
+press return.
+
+Additionally, the command mode has a time out: If you enter no command for at
+least 5 seconds then the command mode is automatically left.
+
+After exiting the command mode the device prints 'BYE' and after that returns
+to data mode and is ready to transfer IP packets again. Now its safe to attach
+your SLIP device again.
+
+
+4. Commands
+-----------
+
+  'x' - Exit
+
+    Exit the command mode.
+
+
+
+

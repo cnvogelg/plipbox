@@ -26,7 +26,7 @@ board (here an Arduino 2009) and implement the parallel port there. The mcu
 implements the magPLIP protocol and can then receive and send packets to/from
 the Amiga.
 
-On the other hand the Arduino uses an FTDI 232 USB-to-Serial bridge to allow
+On the other hand, the Arduino uses an FTDI 232 USB-to-Serial bridge to allow
 fast serial data transfers. On a 16 MHz AVR you can use serial rates up to 500
 KiBit/s (~ 55 KiB/s). With proper RTS/CTS flow control the AVR can handle
 these data rates easily.
@@ -36,9 +36,9 @@ ports. A PC is connected with a fast serial link to the AVR and the Amiga is
 connected with its parallel port. As a result the amiga can achieve full PLIP
 speed while the PC runs a fast SLIP link.
 
-On the PC I use Linux with a patched slipattach tool to support the fast
-serial rates. The Amiga magPLIP device is slightly patched to better support
-the AVR. All patches are available in this project.
+On the PC I use Linux with a patched slattach tool to support the fast serial
+rates. The Amiga magPLIP device is slightly patched to better support the AVR.
+All patches are available in this project.
 
 The data flow is as follows:
 
@@ -48,8 +48,10 @@ Internet <->   PC   <--SLIP-->  Arduino  <--PLIP-->  Amiga 500
 [1] http://aminet.net/package/comm/net/magPLIP38.1
 
 
-More Documentation
-------------------
+plip2slip Documentation
+-----------------------
 
- doc/hardware.txt     How to build the device hardware
-
+ doc/hardware.txt               How to build the device hardware
+ doc/terminal.txt               How to setup a serial terminal for command mode
+ contrib/magplip/README         How to install the AMIGA network module
+ contrib/slattach/README        How to patch and setup SLIP on Linux
