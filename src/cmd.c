@@ -31,6 +31,7 @@
 #include "ser_parse.h"
 #include "param.h"
 #include "stats.h"
+#include "bench.h"
 
 u08 cmd_parse(u08 len, const char *cmd)
 {
@@ -62,6 +63,11 @@ u08 cmd_parse(u08 len, const char *cmd)
             return SER_PARSE_CMD_UNKNOWN;
         }
       }
+    
+    // ----- b) bench -----
+    case 'b':
+      bench_dump();
+      return SER_PARSE_CMD_OK;
     
     // ----- p) param -----
     case 'p':

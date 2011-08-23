@@ -26,7 +26,7 @@
 
 #include "ping_slip.h"
 #include "slip.h"
-#include "stats.h"
+#include "bench.h"
 #include "board.h"
 #include "pkt_buf.h"
 #include "uart.h"
@@ -55,9 +55,10 @@ void ping_slip_loop(void)
 {
   slip_push_init(slip_data, slip_end);
   ser_parse_set_data_func(slip_push);
-  stats_reset();
+  bench_begin();
 
   pos = 0;
+  u16 count = 0;
 
   led_green_on(); 
   while(param.mode == PARAM_MODE_PING_SLIP) {
@@ -80,6 +81,14 @@ void ping_slip_loop(void)
           slip_send(pkt_buf[i]);
         }
         slip_send_end();
+        
+        // do bench marks
+        count++;
+        if(count == 256) {
+          count = 0;
+          bench_end();
+          bench_begin();
+        }
       }
       
       // start receiption again
@@ -89,5 +98,7 @@ void ping_slip_loop(void)
     }
   }
   led_green_off();
+  
+  bench_end();
 }
 

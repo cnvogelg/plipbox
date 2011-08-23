@@ -25,7 +25,6 @@
  */
 
 #include "stats.h"
-#include "timer.h"
 #include "uartutil.h"
 #include "uart.h"
 
@@ -39,18 +38,6 @@ void stats_reset(void)
   stats.pkt_tx_err = 0;
   stats.pkt_rx_bytes = 0;
   stats.pkt_tx_bytes = 0;
-  
-  stats.pkt_time = 0;
-}
-
-void stats_reset_timing(void)
-{  
-  timer2_10ms = 0;
-}
-
-void stats_capture_timing(void)
-{
-  stats.pkt_time = timer2_10ms;
 }
 
 void stats_dump(void)
@@ -80,7 +67,4 @@ void stats_dump(void)
     uart_send_string(" last:");
     uart_send_hex_byte_crlf(stats.pkt_last_tx_err);
   }
-  
-  uart_send_string("t(10ms):");
-  uart_send_hex_word_crlf(stats.pkt_time);
 }

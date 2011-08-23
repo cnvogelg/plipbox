@@ -52,7 +52,6 @@ int main (void){
   
   // setup command handler
   ser_parse_set_cmd_func(cmd_parse);
-  ser_parse_set_cmd_enter_leave_func(stats_capture_timing, stats_reset_timing);
   
   // enable uart
   uart_start_reception();
