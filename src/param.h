@@ -32,10 +32,13 @@
 #define PARAM_MODE_TRANSFER     0
 #define PARAM_MODE_PING_PLIP    1
 #define PARAM_MODE_PING_SLIP    2
-#define PARAM_MODE_TOTAL_NUMBER 3
+#define PARAM_MODE_ONLY_PLIP_RX 3
+#define PARAM_MODE_ONLY_SLIP_RX 4
+#define PARAM_MODE_TOTAL_NUMBER 5
 
 typedef struct {
   u08 mode;
+  u08 fake_tx;
 } param_t;
   
 extern param_t param;  

@@ -29,15 +29,24 @@
 
 #include "global.h"
 
+/*
+  rx: PLIP rx, SLIP tx
+  tx: PLIP tx, SLIP rx
+*/
+
 typedef struct {
-  u16 pkt_rx_cnt;
-  u16 pkt_tx_cnt;
-  u16 pkt_tx_err;
-  u16 pkt_rx_err;
-  u32 pkt_rx_bytes;
-  u32 pkt_tx_bytes;
-  u08 pkt_last_tx_err;
-  u08 pkt_last_rx_err;
+  u16 rx_cnt;
+  u16 tx_cnt;
+  u32 rx_bytes;
+  u32 tx_bytes;
+  u16 tx_err;
+  u16 rx_err;
+  u08 last_tx_err;
+  u08 last_rx_err;
+  u16 rx_drop;
+  u16 tx_drop;
+  u16 rx_coll;
+  u16 tx_coll;
 } stats_t;
 
 extern stats_t stats;

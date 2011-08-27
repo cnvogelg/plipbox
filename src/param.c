@@ -40,14 +40,28 @@ uint16_t eeprom_crc16 EEMEM;
 
 // default 
 static param_t default_param = {
-  .mode = PARAM_MODE_TRANSFER
+  .mode = PARAM_MODE_TRANSFER,
+  .fake_tx = 0
+};
+
+static const char *mode_str[] = {
+  "transfer",
+  "ping_plip",
+  "ping_slip",
+  "only_plip_rx",
+  "only_slip_rx"
 };
 
 // dump all params
 void param_dump(void)
 {
   uart_send_string("mode: ");
-  uart_send_hex_byte_crlf(param.mode);
+  uart_send_hex_byte_spc(param.mode);
+  uart_send_string(mode_str[param.mode]);
+  uart_send_crlf();
+
+  uart_send_string("fake_tx: ");
+  uart_send_hex_byte_crlf(param.fake_tx);
 }
 
 // build check sum for parameter block

@@ -32,39 +32,69 @@ stats_t stats;
 
 void stats_reset(void)
 {
-  stats.pkt_rx_cnt = 0;
-  stats.pkt_tx_cnt = 0;
-  stats.pkt_rx_err = 0;
-  stats.pkt_tx_err = 0;
-  stats.pkt_rx_bytes = 0;
-  stats.pkt_tx_bytes = 0;
+  stats.rx_cnt = 0;
+  stats.tx_cnt = 0;
+  stats.rx_err = 0;
+  stats.tx_err = 0;
+  stats.rx_bytes = 0;
+  stats.tx_bytes = 0;
+  stats.rx_drop = 0;
+  stats.tx_drop = 0;
+  stats.rx_coll = 0;
+  stats.tx_coll = 0;
 }
 
 void stats_dump(void)
 {
+  // ----- rx -----
   uart_send_string("rx_cnt: ");
-  uart_send_hex_word_crlf(stats.pkt_rx_cnt);
+  uart_send_hex_word_crlf(stats.rx_cnt);
   uart_send_string("rx_byte:");
-  uart_send_hex_dword_crlf(stats.pkt_rx_bytes);
+  uart_send_hex_dword_crlf(stats.rx_bytes);
 
-  u16 rx = stats.pkt_rx_err;
+  u16 rx = stats.rx_err;
   if(rx > 0) {
     uart_send_string("rx_err: ");
     uart_send_hex_word_crlf(rx);
     uart_send_string(" last:");
-    uart_send_hex_byte_crlf(stats.pkt_last_rx_err);
+    uart_send_hex_byte_crlf(stats.last_rx_err);
   }
 
-  uart_send_string("tx_cnt: ");
-  uart_send_hex_word_crlf(stats.pkt_tx_cnt);
-  uart_send_string("tx_byte:");
-  uart_send_hex_dword_crlf(stats.pkt_tx_bytes);
+  rx = stats.rx_drop;
+  if(rx > 0) {
+    uart_send_string("rx_drop:");
+    uart_send_hex_word_crlf(rx);
+  }
 
-  u16 tx = stats.pkt_tx_err;
+  rx = stats.rx_coll;
+  if(rx > 0) {
+    uart_send_string("rx_coll:");
+    uart_send_hex_word_crlf(rx);
+  }
+
+  // ----- tx -----
+  uart_send_string("tx_cnt: ");
+  uart_send_hex_word_crlf(stats.tx_cnt);
+  uart_send_string("tx_byte:");
+  uart_send_hex_dword_crlf(stats.tx_bytes);
+
+  u16 tx = stats.tx_err;
   if(tx > 0) {
     uart_send_string("tx_err:");
     uart_send_hex_word_crlf(tx);
     uart_send_string(" last:");
-    uart_send_hex_byte_crlf(stats.pkt_last_tx_err);
+    uart_send_hex_byte_crlf(stats.last_tx_err);
+  }
+  
+  tx = stats.tx_drop;
+  if(tx > 0) {
+    uart_send_string("tx_drop:");
+    uart_send_hex_word_crlf(tx);
+  }
+
+  tx = stats.tx_coll;
+  if(tx > 0) {
+    uart_send_string("tx_coll:");
+    uart_send_hex_word_crlf(tx);
   }
 }

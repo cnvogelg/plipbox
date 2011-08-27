@@ -33,6 +33,8 @@
 #include "ser_parse.h"
 #include "ip.h"
 #include "param.h"
+#include "uartutil.h"
+#include "stats.h"
 
 static u16 pos;
 static u16 size;
@@ -58,13 +60,17 @@ void ping_slip_loop(void)
   bench_begin();
 
   pos = 0;
+  size = 0;
   u16 count = 0;
 
+  uart_send_string("huhu");
+  uart_send_crlf();
+  
   led_green_on(); 
   while(param.mode == PARAM_MODE_PING_SLIP) {
     // receive from serial and trigger slip_push
     ser_parse_worker();
-    
+        
     // do we receive a slip end?
     if(size > 0) {
       // stop receiption
@@ -89,6 +95,11 @@ void ping_slip_loop(void)
           bench_end();
           bench_begin();
         }
+        
+        stats.tx_cnt++;
+        stats.tx_bytes+=size;
+      } else {
+        stats.tx_drop++;
       }
       
       // start receiption again

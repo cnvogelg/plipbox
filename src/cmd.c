@@ -32,6 +32,7 @@
 #include "param.h"
 #include "stats.h"
 #include "bench.h"
+#include "log.h"
 
 u08 cmd_parse(u08 len, const char *cmd)
 {
@@ -104,7 +105,37 @@ u08 cmd_parse(u08 len, const char *cmd)
         return SER_PARSE_CMD_OK;
       }
       return SER_PARSE_CMD_UNKNOWN;
-      
+    
+    // ----- f) fake_tx -----
+    case 'f':
+      if(len==2) {
+        u08 value;
+        status = parse_nybble(cmd[1],&value);
+        if(!status) {
+          return SER_PARSE_CMD_FAIL;
+        }
+        param.fake_tx = value ? 1 : 0;
+        return SER_PARSE_CMD_OK;
+      }
+      return SER_PARSE_CMD_UNKNOWN;
+    
+    // ----- l) log -----
+    case 'l':
+      if(len==1) {
+        // show log
+        log_dump();
+        return SER_PARSE_CMD_OK;
+      } else {
+        switch(cmd[1]) {
+          case 'r': // reset log
+            log_init();
+            return SER_PARSE_CMD_OK;
+          default:
+            return SER_PARSE_CMD_UNKNOWN;
+        }
+      }
+      return SER_PARSE_CMD_UNKNOWN;
+    
     // unknown command
     default:
       return SER_PARSE_CMD_UNKNOWN;

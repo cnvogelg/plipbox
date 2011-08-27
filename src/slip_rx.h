@@ -12,8 +12,6 @@
 #define SLIP_RX_RESULT_PLIP_RX_BEGUN_SKIP 6 
 
 extern void slip_rx_init(void);
-extern void slip_rx_data(u08 data);
-extern void slip_rx_end(void);
 extern u08 slip_rx_worker(void);
 
 #endif

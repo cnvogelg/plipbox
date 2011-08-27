@@ -35,6 +35,7 @@
 #include "ip.h"
 #include "bench.h"
 #include "param.h"
+#include "stats.h"
 
 static u16 pos;
 
@@ -84,7 +85,12 @@ void ping_plip_loop(void)
     if(status != PLIP_STATUS_IDLE) {
       led_green_off();
 
-      if(status == PLIP_STATUS_OK) {        
+      if(status == PLIP_STATUS_OK) {
+        
+        // account receive
+        stats.rx_cnt ++;
+        stats.rx_bytes += pkt.size;
+         
         // is a ping packet?
         if(ip_icmp_is_ping_request(pkt_buf)) {
           u16 pkt_size = ip_hdr_get_size(pkt_buf);
@@ -98,12 +104,21 @@ void ping_plip_loop(void)
           if(status == PLIP_STATUS_CANT_SEND) {
             uart_send('C');
             error++;
+            
+            stats.tx_drop ++;
           } else if(status != PLIP_STATUS_OK) {
             uart_send('T');
             error++;
+            
+            stats.tx_err ++;
           } else {
+            // send ok!
             bench_submit(pkt_size);
             count++;
+            
+            // update send stats
+            stats.tx_cnt ++;
+            stats.tx_bytes += pkt.size;
           }          
         } else {
           // no ICMP request
@@ -113,6 +128,9 @@ void ping_plip_loop(void)
           uart_send_hex_byte_spc(pkt_buf[20]);
         }
       } else {
+        // receive error
+        stats.rx_err ++;
+        
         uart_send('R');
       }
 
@@ -128,6 +146,7 @@ void ping_plip_loop(void)
         
         bench_end();
         
+        // send bench result via serial
         uart_send_crlf();
         bench_dump();
 

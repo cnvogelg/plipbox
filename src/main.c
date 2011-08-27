@@ -33,10 +33,16 @@
 #include "stats.h"
 #include "ser_parse.h"
 #include "cmd.h"
+#include "slip.h"
+#include "uartutil.h"
+#include "stats.h"
+#include "log.h"
 
 #include "transfer.h"
 #include "ping_plip.h"
 #include "ping_slip.h"
+#include "only_plip_rx.h"
+#include "only_slip_rx.h"
 
 int main (void){
   // board init. e.g. switch off watchdog, init led
@@ -56,8 +62,20 @@ int main (void){
   // enable uart
   uart_start_reception();
 
+  // send welcome
+  // encapsulated into an invalid SLIP packet to not disturb an attached SLIP
+  slip_send_end();
+  uart_send_string("plip2slip: ");
+  uart_send_hex_byte_crlf(param.mode);
+  slip_send_end();
+
   // main loop
   while(1) {
+    // reset stats & log
+    stats_reset();
+    log_init();
+    
+    // now enter mode loop
     switch(param.mode) {
       case PARAM_MODE_TRANSFER:
         transfer_loop();
@@ -67,6 +85,12 @@ int main (void){
         break;
       case PARAM_MODE_PING_SLIP:
         ping_slip_loop();
+        break;
+      case PARAM_MODE_ONLY_PLIP_RX:
+        only_plip_rx_loop();
+        break;
+      case PARAM_MODE_ONLY_SLIP_RX:
+        only_slip_rx_loop();
         break;
     }
   }
