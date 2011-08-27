@@ -81,10 +81,13 @@ void ping_plip_loop(void)
   while(param.mode == PARAM_MODE_PING_PLIP) {
     ser_parse_worker();
     
-    u08 status = plip_recv(&pkt);
+    // is a PLIP packet ready to receive?
+    u08 status = plip_can_recv();
     if(status != PLIP_STATUS_IDLE) {
       led_green_off();
 
+      // get PLIP packet
+      status = plip_recv(&pkt);
       if(status == PLIP_STATUS_OK) {
         
         // account receive
@@ -95,10 +98,10 @@ void ping_plip_loop(void)
         if(ip_icmp_is_ping_request(pkt_buf)) {
           u16 pkt_size = ip_hdr_get_size(pkt_buf);
           
-          // make reply
+          // transform into reply packet
           ip_icmp_ping_request_to_reply(pkt_buf);
 
-          // send reply
+          // send reply packet via PLIP
           pos = 0;
           status = plip_send(&pkt);
           if(status == PLIP_STATUS_CANT_SEND) {

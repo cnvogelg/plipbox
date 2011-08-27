@@ -32,6 +32,10 @@
 #define SLIP_STATUS_ERROR    0
 #define SLIP_STATUS_OK       1
 #define SLIP_STATUS_END      2
+// extra for slip_rx:
+#define SLIP_STATUS_IDLE     3
+#define SLIP_STATUS_ABORT    4
+#define SLIP_STATUS_DROP     5
 
 typedef void (*slip_end_func_t)(void);
 typedef void (*slip_data_func_t)(u08 data);

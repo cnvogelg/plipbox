@@ -77,6 +77,7 @@ extern void plip_send_init(plip_data_func tx_fill_func);
 
 // ----- Rx/Tx -----
 
+extern u08 plip_can_recv(void);
 extern u08 plip_recv(plip_packet_t *pkt);
 extern u08 plip_send(plip_packet_t *pkt);
 

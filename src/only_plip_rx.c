@@ -17,24 +17,21 @@ void only_plip_rx_loop(void)
 
   bench_begin();
   
+  // ----- main loop -----
   led_green_on(); 
   while(param.mode == PARAM_MODE_ONLY_PLIP_RX) {
+    // serial handling
     ser_parse_worker();
     
-    // receive PLIP and send to SLIP
-    u08 status = plip_recv(&pkt);
+    // receive PLIP
+    u08 status = plip_rx_worker();    
     if(status != PLIP_STATUS_IDLE) {
-      led_green_off();
       
       if(status == PLIP_STATUS_OK) {
         bench_submit(pkt.size);
-        stats.rx_cnt++;
-        stats.rx_bytes+=pkt.size;
       } else {
         error ++;
-        stats.rx_err++;
-        stats.last_rx_err=status;
-      }  
+      }
       
       // give summary
       count ++;
@@ -49,8 +46,6 @@ void only_plip_rx_loop(void)
         bench_end();
         bench_begin();
       }
-
-      led_green_on();
     }
   }
   led_green_off();

@@ -132,12 +132,8 @@ static u08 wait_for_select(u08 select_state, u08 state_flag)
   return PLIP_STATUS_TIMEOUT | state_flag;
 }
 
-u08 plip_recv(plip_packet_t *pkt)
+u08 plip_can_recv(void)
 {
-  u08 status = PLIP_STATUS_OK;
-
-  pkt->real_size = 0;
-  
   // check PTRSEL -> is 1=write loop in magplip (SETCIAOUTPUT)
   if(!TEST_SELECT()) {
     return PLIP_STATUS_IDLE;
@@ -148,6 +144,15 @@ u08 plip_recv(plip_packet_t *pkt)
     return PLIP_STATUS_IDLE;
   }
 
+  return PLIP_STATUS_OK;
+}
+
+u08 plip_recv(plip_packet_t *pkt)
+{
+  u08 status = PLIP_STATUS_OK;
+
+  pkt->real_size = 0;
+  
   // first byte must be magic (0x42) 
   // this byte was set by last strobe received before calling this func
   u08 magic = 0;

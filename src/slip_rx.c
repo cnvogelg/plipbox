@@ -140,7 +140,7 @@ void slip_rx_init(void)
 // ----- API: worker -----
 u08 slip_rx_worker(void)
 {
-  u08 result = SLIP_RX_RESULT_IDLE;
+  u08 result = SLIP_STATUS_IDLE;
 
   // a transmit was signalled by last data call
   // (we got the ip header and its length)
@@ -155,17 +155,19 @@ u08 slip_rx_worker(void)
 
     // a receive from plip is pending -> do this first
     if(status == PLIP_STATUS_CANT_SEND) {
-      return SLIP_RX_RESULT_PLIP_RX_BEGUN;
+      return SLIP_STATUS_ABORT;
     }
 
     if(status != PLIP_STATUS_OK) {
       // some error occurred while sending
       stats.tx_err ++;
       stats.last_tx_err = status;
+      result = SLIP_STATUS_ERROR;
     } else {
       // packet sent ok
       stats.tx_cnt ++;
       stats.tx_bytes += ip_size;
+      result = SLIP_STATUS_OK;
     }
       
     // skip remainder of packet
@@ -178,7 +180,7 @@ u08 slip_rx_worker(void)
   // a drop occurred
   if(dropped_packet) {
     dropped_packet = 0;
-    result = SLIP_RX_RESULT_DROP;
+    result = SLIP_STATUS_DROP;
     stats.tx_drop ++;
   }
   
