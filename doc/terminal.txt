@@ -20,6 +20,8 @@ keep two things in mind:
 
   * The terminal must NOT alter the DTR level on startup or exit (Otherwise
     the Arduino will reset and all previous information on the device is lost)
+    
+  * The terminal must support RTS/CTS hardware handshaking
 
 As a portable console-based (i.e. non GUI) solution I can recommend
 miniterm.py, a small python terminal program available in the PySerial package
@@ -41,14 +43,14 @@ On Ubuntu Linux you simply install the "python-serial" package:
 
 Then you can directly call miniterm.py as follows:
 
-  > miniterm.py --rtscts -b 5000000 /dev/ttyUSB0
+  > miniterm.py --dtr=1 --rtscts -b 5000000 /dev/ttyUSB0
 
 This assumes that your Arduino registered the ttyUSB0 serial port.
 See the output of dmesg when attaching the Arduino for details.
 
 On windows you would call it like this:
 
-  > python.exe miniterm.py --rtscts -b 5000000 com8
+  > python.exe miniterm.py --dtr=1 --rtscts -b 5000000 com8
 
 You have to find out what com port the Arduino is attached to.
 

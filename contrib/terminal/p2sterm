@@ -1,0 +1,21 @@
+#!/bin/sh
+# p2sterm
+#
+# a simple wrapper for miniterm.py
+# to use it as a terminal program for plip2slip
+
+OS=`uname -s`
+shopt -u failglob
+shopt -s nullglob
+if [ "$OS" = "Linux" ]; then
+  PORT=`ls /dev/ttyUSB* | tail -n1`
+elif [ "$OS" = "Darwin" ]; then
+  PORT=`ls /dev/cu.usbserial-* | tail -n1`
+else
+  echo "Unknown OS"
+  exit 1
+fi
+echo "PORT=$PORT"
+BAUD=500000
+
+exec miniterm.py --dtr=1 --rtscts -p $PORT -b $BAUD
