@@ -29,6 +29,11 @@ miniterm.py, a small python terminal program available in the PySerial package
 the serial port and miniterm.py is only an example on how to use the lib, but
 it really works great!
 
+As a convenience for Mac OS X or Linux user I have prepared a script called
+p2sterm in contrib/terminal that launches miniterm.py with the correct
+parameters. Just make sure you have only a single serial device connected
+(i.e. the arduino).
+
 See the supplied documentation on how to install it on your platform.
 
 [1] http://pyserial.sourceforge.net/
@@ -90,8 +95,75 @@ your SLIP device again.
 
   'x' - Exit
 
-    Exit the command mode.
+    Exit the command mode. After sending 'BYE' the command mode is left and
+    normal stream operation continues.
 
+  'v' - Show version
 
+    Print the current version of the plip2slip firmware.
 
+  's' - Show statistics
 
+    The device keeps record of transferred packets and bytes. Also dropped
+    packets and transfer errros are recorded. You can show a summary of all
+    stored values with this command. Please note that these values are lost
+    after a reset of the device. So make sure to connect the terminal without
+    altering DTR on your arduino.
+
+  'sr' - Reset the statistics
+
+    Reset all values kept in the statistics. This allows to begin counting the
+    values starting from zero without doing a reset first.
+
+  'b' - Show last benchmark results
+
+    Some modes of the device perform some benchmarks. This command shows the
+    results of the last benchmark.
+
+  'p' - Show the device parameters
+
+    The device stores some parameters that alter its behavior. This command
+    shows all parameters with their current values.
+
+  'pr' - Reset all paramters to factory defaults
+  
+    Reset all paramaters to sensible default values.
+
+  'pl' - Load all parameters from the EEPROM
+  
+   Load the parameter set from the persistent storage in the EEPROM.
+  
+  'ps' - Save all parameters to the EEPROM
+
+   Save the parameter set to the persistent storage in the EEPROM. This
+   ensures that the parameters will survive a reset.
+
+  'm' <n> - Select a new device mode
+
+   The device can operate in different modes. The modes are numbered starting
+   from zero. Give the mode digit right next to the 'm' command.
+   
+   The following modes are available:
+   
+      0 - Transport
+      1 - Ping PLIP
+      2 - Ping SLIP
+      3 - Only PLIP Rx
+      4 - Only SLIP Rx
+
+  'f' <n> - Enable/Disable Fake Transmit
+
+   Some modes support fake transmits, i.e. they perform the receive operation
+   but do not actually send the packet.
+   
+   Enter 'f0' to disable or 'f1' to enable fake mode.
+
+  'l' - Show the error log
+
+   For diagnosis purposes the device records the last error conditions that
+   occurred. Call this command to see the last errors if there were any.
+
+   Note: This is mainly an internal feature. You will need knowledge of the
+   source code to understand the error codes.
+  
+EOF
