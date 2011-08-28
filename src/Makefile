@@ -200,7 +200,7 @@ build_all: clean
 	@for a in $(DIST_BOARDS) ; do \
 		$(MAKE) build BOARD=$$a ;\
 	done
-	$(MAKE) build BOARD=arduino2009 MCU=atmega328
+	$(MAKE) build BOARD=arduino MCU=atmega328
 
 dist: build_all
 	@rm -rf flash
