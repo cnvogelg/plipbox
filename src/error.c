@@ -1,5 +1,5 @@
 /*
- * slip_rx.h: handle slip receiption and plip tx
+ * error.h - error handler
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,45 @@
  *
  */
 
-#ifndef SLIP_RX_H
-#define SLIP_RX_H
+#include "error.h"
+#include "board.h"
 
-#include "global.h"
-#include "slip.h"
+#define ERROR_SPEED   0xfff
+#define MAX_ERROR     10
 
-extern void slip_rx_init(void);
-extern u08 slip_rx_worker(void);
+static u08 count;
+static u16 delay;
+static u08 toggle;
 
-#endif
+void error_init(void)
+{
+  count = 0;
+  toggle = 0;
+  delay = 0;
+  led_red_off();
+}
+
+void error_worker(void)
+{
+  if(count > 0) {
+    if(delay == 0) {
+      toggle = 1 - toggle;
+      if(toggle) {
+        led_red_on();
+      } else {
+        led_red_off();
+        count--;
+      }
+      delay = ERROR_SPEED;
+    } else {
+      delay--;
+    }
+  }
+}
+
+void error_add(void)
+{
+  if(count < MAX_ERROR) {
+    count++;
+  }
+}

@@ -36,6 +36,8 @@
 #include "bench.h"
 #include "param.h"
 #include "stats.h"
+#include "error.h"
+#include "log.h"
 
 static u16 pos;
 
@@ -68,9 +70,6 @@ static u08 end_rx(plip_packet_t *pkt)
 
 void ping_plip_loop(void)
 {
-  u16 count = 0;
-  u16 error = 0;
-  
   plip_recv_init(begin_rx, fill_rx, end_rx);
   plip_send_init(fill_tx);
   ser_parse_set_data_func(0); // use serial echo
@@ -80,8 +79,9 @@ void ping_plip_loop(void)
   led_green_on(); 
   while(param.mode == PARAM_MODE_PING_PLIP) {
     ser_parse_worker();
+    error_worker();
     
-    // is a PLIP packet ready to receive?
+    // is a PLIP packet ready to be received?
     u08 status = plip_can_recv();
     if(status != PLIP_STATUS_IDLE) {
       led_green_off();
@@ -106,18 +106,27 @@ void ping_plip_loop(void)
           status = plip_send(&pkt);
           if(status == PLIP_STATUS_CANT_SEND) {
             uart_send('C');
-            error++;
-            
+            error_add();
             stats.tx_drop ++;
           } else if(status != PLIP_STATUS_OK) {
             uart_send('T');
-            error++;
-            
+            error_add();
+            log_add(status);
             stats.tx_err ++;
           } else {
             // send ok!
-            bench_submit(pkt_size);
-            count++;
+            
+            // do benchmarking
+            u16 count = bench_submit(pkt_size);
+            if(count == 256) {
+              bench_end();
+
+              // send bench result via serial
+              uart_send_crlf();
+              bench_dump();
+
+              bench_begin();
+            }
             
             // update send stats
             stats.tx_cnt ++;
@@ -133,27 +142,9 @@ void ping_plip_loop(void)
       } else {
         // receive error
         stats.rx_err ++;
-        
+        log_add(status);
+        error_add();
         uart_send('R');
-      }
-
-      // give summary
-      if(count == 256) {
-        count = 0;
-        if(error>0) {
-          led_red_on();
-          error = 0;
-        } else {
-          led_red_off();
-        }
-        
-        bench_end();
-        
-        // send bench result via serial
-        uart_send_crlf();
-        bench_dump();
-
-        bench_begin();
       }
 
       led_green_on();

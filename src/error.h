@@ -1,5 +1,5 @@
 /*
- * slip_rx.h: handle slip receiption and plip tx
+ * error.h - error handler
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,13 @@
  *
  */
 
-#ifndef SLIP_RX_H
-#define SLIP_RX_H
+#ifndef ERROR_H
+#define ERROR_H
 
 #include "global.h"
-#include "slip.h"
 
-extern void slip_rx_init(void);
-extern u08 slip_rx_worker(void);
+extern void error_init(void);
+extern void error_worker(void);
+extern void error_add(void);
 
 #endif

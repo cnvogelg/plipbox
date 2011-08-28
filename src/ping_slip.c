@@ -35,6 +35,8 @@
 #include "param.h"
 #include "uartutil.h"
 #include "stats.h"
+#include "error.h"
+#include "log.h"
 
 static u16 pos;
 static u16 size;
@@ -61,21 +63,18 @@ void ping_slip_loop(void)
 
   pos = 0;
   size = 0;
-  u16 count = 0;
 
-  uart_send_string("huhu");
-  uart_send_crlf();
-  
   led_green_on(); 
   while(param.mode == PARAM_MODE_PING_SLIP) {
     // receive from serial and trigger slip_push
     ser_parse_worker();
+    error_worker();
         
     // do we receive a slip end?
     if(size > 0) {
       // stop receiption
       uart_stop_reception();
-      led_green_off();
+      led_yellow_on();
       
       if(ip_icmp_is_ping_request(pkt_buf)) {
         // make reply
@@ -88,10 +87,9 @@ void ping_slip_loop(void)
         }
         slip_send_end();
         
-        // do bench marks
-        count++;
-        if(count == 256) {
-          count = 0;
+        // do benchmarking
+        u16 num = bench_submit(size);
+        if(num == 256) {
           bench_end();
           bench_begin();
         }
@@ -100,10 +98,11 @@ void ping_slip_loop(void)
         stats.tx_bytes+=size;
       } else {
         stats.tx_drop++;
+        error_add();
       }
       
       // start receiption again
-      led_green_on();
+      led_yellow_off();
       uart_start_reception();
       size = 0;
     }

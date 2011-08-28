@@ -33,6 +33,7 @@
 #include "stats.h"
 #include "bench.h"
 #include "log.h"
+#include "error.h"
 
 u08 cmd_parse(u08 len, const char *cmd)
 {
@@ -135,6 +136,23 @@ u08 cmd_parse(u08 len, const char *cmd)
         }
       }
       return SER_PARSE_CMD_UNKNOWN;
+    
+    // ----- e) error sim -----
+    case 'e':
+      if(len==2) {
+        u08 value;
+        status = parse_nybble(cmd[1],&value);
+        if(!status) {
+          return SER_PARSE_CMD_FAIL;
+        }
+        for(u08 i=0;i<value;i++) {
+          error_add();
+        }
+        return SER_PARSE_CMD_OK;
+      } else {
+        error_add();
+      }
+      return SER_PARSE_CMD_OK;
     
     // unknown command
     default:

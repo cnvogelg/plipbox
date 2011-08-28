@@ -30,6 +30,8 @@
 #include "stats.h"
 #include "param.h"
 #include "pkt_buf.h"
+#include "error.h"
+#include "log.h"
 
 static u08 begin_rx(plip_packet_t *pkt)
 {
@@ -80,6 +82,8 @@ u08 plip_rx_worker(void)
       if(status != PLIP_STATUS_OK) {
         stats.last_rx_err = status;
         stats.rx_err++;
+        log_add(status);
+        error_add();
       } 
       // packet ok
       else {

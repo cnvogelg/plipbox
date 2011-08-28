@@ -35,6 +35,8 @@
 #include "uartutil.h"
 #include "param.h"
 #include "stats.h"
+#include "error.h"
+#include "log.h"
 
 static u16 pkt_buf_pos = 0;
 static u16 send_pos = 0;
@@ -181,6 +183,7 @@ u08 slip_rx_worker(void)
 
     // a receive from plip is pending -> do this first
     if(status == PLIP_STATUS_CANT_SEND) {
+      error_add();
       return SLIP_STATUS_ABORT;
     }
 
@@ -188,6 +191,8 @@ u08 slip_rx_worker(void)
       // some error occurred while sending
       stats.tx_err ++;
       stats.last_tx_err = status;
+      log_add(status);
+      error_add();
       result = SLIP_STATUS_ERROR;
     } else {
       // packet sent ok

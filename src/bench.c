@@ -53,10 +53,11 @@ void bench_end(void)
   stored.bytes = current.bytes;
 }
 
-void bench_submit(u16 bytes)
+u16 bench_submit(u16 bytes)
 {
   current.count ++;
   current.bytes += bytes;
+  return current.count;
 }
 
 void bench_dump(void)

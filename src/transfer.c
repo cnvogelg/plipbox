@@ -31,6 +31,7 @@
 #include "plip_rx.h"
 #include "ser_parse.h"
 #include "param.h"
+#include "error.h"
 
 void transfer_loop(void)
 {
@@ -45,6 +46,8 @@ void transfer_loop(void)
     ser_parse_worker();
     // handle receiving SLIP packets
     slip_rx_worker();
+    // error handler
+    error_worker();
   }
   led_green_off();
 }

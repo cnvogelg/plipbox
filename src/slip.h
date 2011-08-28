@@ -29,11 +29,11 @@
 
 #include "global.h"
 
-#define SLIP_STATUS_ERROR    0
+#define SLIP_STATUS_IDLE     0
 #define SLIP_STATUS_OK       1
 #define SLIP_STATUS_END      2
 // extra for slip_rx:
-#define SLIP_STATUS_IDLE     3
+#define SLIP_STATUS_ERROR    3
 #define SLIP_STATUS_ABORT    4
 #define SLIP_STATUS_DROP     5
 

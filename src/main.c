@@ -37,6 +37,7 @@
 #include "uartutil.h"
 #include "stats.h"
 #include "log.h"
+#include "error.h"
 
 #include "transfer.h"
 #include "ping_plip.h"
@@ -74,6 +75,7 @@ int main (void){
     // reset stats & log
     stats_reset();
     log_init();
+    error_init();
     
     // now enter mode loop
     switch(param.mode) {
