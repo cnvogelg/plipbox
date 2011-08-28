@@ -58,18 +58,35 @@ static ser_parse_cmd_func_t cmd_func = 0;
 static ser_parse_func_t cmd_enter_func = 0;
 static ser_parse_func_t cmd_leave_func = 0;
 
-static u08 read_char(void)
+static u08 read_char(u08 echo)
 {
   // a char arrived
   u08 status = uart_read(&data);
   
-  // pass through data
-  if(data_func != 0) {
-    data_func(data);
+  if(echo) {
+    // pass through data
+    if(data_func != 0) {
+      data_func(data);
+    }
   }
   
   timer_10ms = 0;
   return status;
+}
+
+static void push_char(u08 d)
+{
+  // pass through data
+  if(data_func != 0) {
+    data_func(d);
+  }  
+}
+
+static void push_markers(void)
+{
+  for(u08 i=0;i<num_markers;i++) {
+    push_char(ser_marker_char);
+  }
 }
 
 static void send_ok(void)
@@ -199,7 +216,7 @@ u08 ser_parse_worker(void)
     case STATE_WAIT_FOR_DATA:
       if(uart_read_data_available()) {
         // get char and transmit it
-        read_char();
+        read_char(1);
       } else {
         // nothing arrived in delay time
         if(timer_10ms >= ser_marker_wait_delay) {
@@ -212,11 +229,15 @@ u08 ser_parse_worker(void)
     case STATE_IN_FIRST_DELAY:
       // get a char and check for marker
       if(uart_read_data_available()) {
-        if(read_char()) {
+        if(read_char(0)) {
+          // is it the marker char?
           if(data == ser_marker_char) {
             num_markers = 1;
             state = STATE_GET_MARKERS;
-          } else {
+          } 
+          // not a marker char!
+          else {
+            push_char(data);
             state = STATE_WAIT_FOR_DATA;
           }
         } else {
@@ -228,7 +249,8 @@ u08 ser_parse_worker(void)
     case STATE_GET_MARKERS:
       // next marker char?
       if(uart_read_data_available()) {
-        if(read_char()) {
+        if(read_char(0)) {
+          // is it the next marker char?
           if(data == ser_marker_char) {
             num_markers ++;
             if(num_markers == ser_marker_count) {
@@ -236,13 +258,18 @@ u08 ser_parse_worker(void)
             } else {
               state = STATE_GET_MARKERS;
             }
-          } else {
+          } 
+          // no marker char!
+          else {
+            push_markers();
+            push_char(data);
             state = STATE_WAIT_FOR_DATA;
           }
         }
       }
       // no marker char arrived in time
       else if(timer_10ms >= ser_marker_wait_char) {
+        push_markers();
         state = STATE_WAIT_FOR_DATA;
       }
       break;
@@ -250,7 +277,8 @@ u08 ser_parse_worker(void)
     case STATE_IN_LAST_DELAY:
       // if we get a char then abort
       if(uart_read_data_available()) {
-        read_char();
+        push_markers();
+        read_char(1);
         state = STATE_WAIT_FOR_DATA;
       } 
       // delay passed -> enter command mode
