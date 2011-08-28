@@ -57,3 +57,11 @@ Output:  magplip.device.000   # m68000 version
  - In EnvARC:sana2 (Network Boot Disk: "df0:s/Prefs/Env-Archive") you can
    place an optional configuration file called "magplip.config".
    For options see the magPLIP documentation.
+
+ - Do not forget to configure the correct DNS server otherwise you won't be
+   able to resolve non numeric IP addresses. Have a look at the file
+   AmiTCP:db/netdb-myhost and adapt the NAMESERVER entry accordingly. With
+   enabled IP forwarding on your Linux box (see slattch/README) you typically
+   use the IP of your DSL router as your nameserver (in my setup 192.168.2.1)
+
+EOF
