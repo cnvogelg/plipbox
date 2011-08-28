@@ -4,6 +4,10 @@ plip2slip
 "Build a PLIP-to-SLIP HW Bridge device using an Arduino board for speeding up
 Internet on a stock Amiga 500."
 
+Copyright (C) 2011 Christian Vogelgsang <chris@vogelgsang.org>
+
+Released under the GNU Public License V2 (see COPYING for details)
+
 Introduction
 ------------
 
