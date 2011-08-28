@@ -108,6 +108,29 @@ Using slattach to setup SLIP
         > sudo ifup sl0
         > sudo ifdown sl0
 
+3. Configure IP Forwarding
 
-        
-        
+    - If you want to reach other hosts than your Linux box from your Amiga
+      then you have to activate IP Forwarding on your Linux box.
+
+    - This includes enabling IP forwarding and configuring the iptables to do
+      masquerading as your amiga IP is not known in the outside world.
+
+    - I have the following setup on my Linux Box:
+       
+       eth0: (192.168.2.x) connected to my DSL Router (192.168.2.1) -> internet
+       sl0: (192.168.0.1) SLIP to Amiga
+       
+    - As root type the following commands:
+       
+       # sysctl -w net.ipv4.ip_forward=1
+       # iptables -A FORWARD -o eth0 -i sl0 -s 192.168.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
+       # iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+       # iptables -A POSTROUTING -t nat -j MASQUERADE
+       
+      See a Linux Network Reference Manual for more details.
+
+    - That's it! Now the Amiga should be able to ping the DSL Router
+      (192.168.2.1) and reach the hosts on the Internet.
+
+EOF
