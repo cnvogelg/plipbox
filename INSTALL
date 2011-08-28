@@ -1,0 +1,37 @@
+INSTALL
+
+How to setup your plip2slip device!
+
+1. Get an Arduino 2009 board (see http://arduino.cc/)
+
+2. Attach the missing hardware to your board -> see doc/hardware.txt
+
+3. Flash the firmware:
+
+   - Pick the right one for your AVR from the firmware directory
+   - Use avrdude (http://savannah.nongnu.org/projects/avrdude/) to flash it:
+   
+     > avrdude -p m168 -P <your_serial_port> -b 19200 -c arduino -U flash:w:BUILD/plip2slip-0.1-500000-arduino-atmega168.hex
+     > avrdude -p m328p -P <your_serial_port> -b 57600 -c arduino -U flash:w:BUILD/plip2slip-0.1-500000-arduino-atmega328.hex
+   
+   - Your serial port depends on your Operating System: 
+     - Mac OS X uses /dev/cu.usbserial-*
+     - Linux uses /dev/ttyUSB*
+     - Windows uses COM*
+
+   - Note: disconnect your Amiga before flashing!
+
+4. Setup your TCP Stack on the Amiga -> see contrib/magplip/README
+
+5. Setup SLIP on your Linux PC -> see contrib/slattach/README
+
+6. Connect your Amiga and PC to the Arduino and power on both machines.
+
+7. You should be able to communicate with your Amiga to the PC and the Internet...! Yay!
+   Ping is your friend!
+
+8. Check out plip2slip's advanced features -> sse doc/terminal.txt
+
+9. Have fun!
+
+EOF
