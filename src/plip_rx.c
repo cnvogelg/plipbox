@@ -28,6 +28,7 @@
 #include "slip.h"
 #include "board.h"
 #include "stats.h"
+#include "param.h"
 #include "pkt_buf.h"
 
 static u08 begin_rx(plip_packet_t *pkt)
@@ -48,9 +49,24 @@ static u08 end_rx(plip_packet_t *pkt)
   return PLIP_STATUS_OK;
 }
 
+static u08 fake_rx(plip_packet_t *pkt)
+{
+  return PLIP_STATUS_OK;
+}
+
+static u08 fake_fill_rx(u08 *data)
+{
+  return PLIP_STATUS_OK;
+}
+
 void plip_rx_init(void)
 {
-  plip_recv_init(begin_rx, fill_rx, end_rx);
+  // check fake_tx
+  if(param.fake_tx) {
+    plip_recv_init(fake_rx, fake_fill_rx, fake_rx);
+  } else {
+    plip_recv_init(begin_rx, fill_rx, end_rx);
+  }  
 }
 
 u08 plip_rx_worker(void)
