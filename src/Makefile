@@ -75,6 +75,8 @@ VERSION=$(VERSION_MAJ).$(VERSION_MIN)$(VERSION_EXTRA)
 BASENAME = $(PROJECT)-$(VERSION)-$(UART_BAUD)-$(BOARD)-$(MCU)
 # project
 OUTPUT = $(OUTDIR)/$(BASENAME)
+# dist dir
+DISTDIR = ../firmware
 
 # source files
 SRC := $(BOARD).c
@@ -194,7 +196,7 @@ clean:
 	rm -rf $(BUILD)
 
 clean_dist: clean
-	rm -rf flash
+	rm -rf $(DISTDIR)
 
 build_all: clean
 	@for a in $(DIST_BOARDS) ; do \
@@ -203,11 +205,11 @@ build_all: clean
 	$(MAKE) build BOARD=arduino MCU=atmega328
 
 dist: build_all
-	@rm -rf flash
-	@mkdir flash
-	@cp $(BUILD)/*.hex flash/
+	@rm -rf $(DISTDIR)
+	@mkdir -p $(DISTDIR)
+	@cp $(BUILD)/*.hex $(DISTDIR)
 	@rm -rf $(BUILD)
-	@ls -la flash/
+	@ls -la $(DISTDIR)
 
 # ----- Helper Rules -----
 
