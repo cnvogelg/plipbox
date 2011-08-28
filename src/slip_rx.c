@@ -183,7 +183,7 @@ u08 slip_rx_worker(void)
 
     // a receive from plip is pending -> do this first
     if(status == PLIP_STATUS_CANT_SEND) {
-      error_add();
+      stats.tx_coll ++;
       return SLIP_STATUS_ABORT;
     }
 
@@ -213,6 +213,7 @@ u08 slip_rx_worker(void)
     dropped_packet = 0;
     result = SLIP_STATUS_DROP;
     stats.tx_drop ++;
+    error_add();
   }
   
   return result;

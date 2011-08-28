@@ -80,7 +80,7 @@ void stats_dump(void)
 
   u16 tx = stats.tx_err;
   if(tx > 0) {
-    uart_send_string("tx_err:");
+    uart_send_string("tx_err: ");
     uart_send_hex_word_crlf(tx);
     uart_send_string(" last:");
     uart_send_hex_byte_crlf(stats.last_tx_err);
