@@ -43,16 +43,19 @@ DEFINES ?= USE_BLA
 
 ifeq "$(BOARD)" "arduino"
 
-MCU = atmega168
+MCU = atmega328
+FLASH_MCU = m328p
 F_CPU = 16000000
 MAX_SIZE = 14336
 MAX_SRAM = 1024
-UART_BAUD = 500000
+#UART_BAUD = 500000
 #UART_BAUD = 19200
 #UART_BAUD = 250000
+UART_BAUD = 57600
 
 LDR_PROG = arduino
-LDR_SPEED = 19200
+#LDR_SPEED = 19200
+LDR_SPEED = 57600
 
 else
 
@@ -85,7 +88,7 @@ SRC += par_low.c plip.c plip_rx.c
 SRC += ip.c pkt_buf.c slip.c ser_parse.c slip_rx.c
 SRC += transfer.c ping_plip.c ping_slip.c stats.c
 SRC += cmd.c param.c bench.c only_plip_rx.c only_slip_rx.c
-SRC += main.c log.c error.c
+SRC += main.c log.c error.c enc28j60.c
 
 # output format
 FORMAT = ihex
@@ -161,7 +164,7 @@ dirs:
 build: dirs hdr hex lss size
 
 hdr:
-	@echo "--- building BOARD=$(BOARD) F_CPU=$(F_CPU) MCU=$(MCU) ---"
+	@echo "--- building BOARD=$(BOARD) F_CPU=$(F_CPU) MCU=$(MCU) FLASH_MCU=$(FLASH_MCU) ---"
 	@echo "             UART_BAUD=$(UART_BAUD) DEFINES=$(DEFINES)"
 
 elf: $(OUTPUT).elf $(OUTPUT).lss $(OUTPUT).sym
@@ -262,7 +265,7 @@ AVRDUDE_WRITE_FLASH  = -U flash:w:$(OUTPUT).hex
 AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(OUTPUT).eep
 AVRDUDE_WRITE_FUSE   = -U lfuse:w:$(LFUSE_$(MCU)):m -U hfuse:w:$(HFUSE_$(MCU)):m
 
-AVRDUDE_LDR_FLAGS = -p $(MCU) -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
+AVRDUDE_LDR_FLAGS = -p $(FLASH_MCU) -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
 
 ifdef AVRDUDE_DEBUG
 AVRDUDE_LDR_FLAGS += -v -v -v -v

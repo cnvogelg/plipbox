@@ -72,7 +72,9 @@ u16 uart_send_timeout = 500;
 
 void uart_init(void) 
 {
+#ifdef HAVE_SLIP
   uart_init_rts_cts();
+#endif
 
   cli();
 
@@ -103,9 +105,12 @@ ISR(USART_RX_vect)
     uart_rx_end = 0;
     
   uart_rx_size++;
+
+#ifdef HAVE_SLIP
   if(uart_rx_size == UART_RX_CLR_CTS_POS) {
     uart_set_cts(0);
   }
+#endif
 
 //#define CHECK_UART_ERROR
 #ifdef CHECK_UART_ERROR
@@ -129,7 +134,9 @@ u08 uart_read_data_available(void)
 
 void uart_stop_reception(void)
 {
+#ifdef HAVE_SLIP
   uart_set_cts(0); // clear CTS
+#endif
 }
 
 void uart_start_reception(void)
@@ -144,7 +151,9 @@ void uart_start_reception(void)
   
   sei();
 #endif
+#ifdef HAVE_SLIP
   uart_set_cts(1); // set CTS
+#endif
 }
 
 u08 uart_read(u08 *data)
@@ -168,14 +177,18 @@ u08 uart_read(u08 *data)
     uart_rx_start = 0;
   
   uart_rx_size--;  
+#ifdef HAVE_SLIP
   u08 size = uart_rx_size;
-  
+#endif 
+ 
   sei();
 
+#ifdef HAVE_SLIP
   // enable CTS again
   if(size == UART_RX_SET_CTS_POS) {
     uart_set_cts(1);
   }
+#endif
 
   return 1;
 }
@@ -184,6 +197,7 @@ u08 uart_read(u08 *data)
 
 u08 uart_send(u08 data)
 {
+#ifdef HAVE_SLIP
 #ifndef IGNORE_RTS
   // wait for RTS with timeout
   timer_100us = 0;
@@ -194,6 +208,7 @@ u08 uart_send(u08 data)
       return 0;
     }
   }
+#endif
 #endif
 
   // wait for transmitter to become ready

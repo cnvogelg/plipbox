@@ -38,12 +38,15 @@
 #include "stats.h"
 #include "log.h"
 #include "error.h"
+#include "enc28j60.h"
 
 #include "transfer.h"
 #include "ping_plip.h"
 #include "ping_slip.h"
 #include "only_plip_rx.h"
 #include "only_slip_rx.h"
+
+const uint8_t mac[6] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 
 int main (void){
   // board init. e.g. switch off watchdog, init led
@@ -64,12 +67,19 @@ int main (void){
   uart_start_reception();
 
   // send welcome
+#ifdef HAVE_SLIP
   // encapsulated into an invalid SLIP packet to not disturb an attached SLIP
   slip_send_end();
   uart_send_string("plip2slip: ");
   uart_send_hex_byte_crlf(param.mode);
+  uart_send_hex_byte_crlf(rev);
   slip_send_end();
-
+#else
+  uart_send_string("pli2eth: ");
+  u08 rev = enc28j60_init(mac);
+  uart_send_hex_byte_crlf(rev);
+#endif
+  
   // main loop
   while(1) {
     // reset stats & log
