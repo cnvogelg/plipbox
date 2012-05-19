@@ -1,5 +1,5 @@
 /*
- * uartutil.h - serial utility routines
+ * net.h - tool functions for network protocols
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,30 +24,32 @@
  *
  */
 
-#ifndef UARTUTIL_H
-#define UARTUTIL_H
+#ifndef NET_H
+#define NET_H
 
 #include "global.h"
 
-// send a c string
-u08 uart_send_string(const char *data);
-// send data
-u08 uart_send_data(u08 *data,u08 size);
-// send a CR+LF
-u08 uart_send_crlf(void);
-// send a Space
-u08 uart_send_spc(void);
+extern void net_init(const u08 mac[6], const u08 ip[4]);
+ 
+extern void net_copy_my_mac(u08 *out);
+extern void net_copy_my_ip(u08 *out);
 
-// send a hex byte
-u08 uart_send_hex_byte_crlf(u08 data);
-// send a hex byte
-u08 uart_send_hex_byte_spc(u08 data);
-// send a hex word
-u08 uart_send_hex_word_crlf(u16 data);
-// send a hex word
-u08 uart_send_hex_word_spc(u16 data);
-// send a hex6 dword
-u08 uart_send_hex_dword_crlf(u32 data); 
+extern u08 net_compare_my_mac(const u08 *in);
+extern u08 net_compare_my_ip(const u08 *in);
+
+extern void net_copy_mac(const u08 *in, u08 *out);
+extern void net_copy_ip(const u08 *in, u08 *out);
+
+extern u16  net_get_word(const u08 *buf);
+extern void net_put_word(u08 *buf, u16 value);
+
+extern u32  net_get_long(const u08 *buf);
+extern void net_put_long(u08 *buf, u32 value);
+
+extern void net_dump_mac(const u08 *in);
+extern void net_dump_ip(const u08 *in);
+
+extern u08  net_compare_mac(const u08 *a, const u08 *b);
+extern u08  net_compare_ip(const u08 *a, const u08 *b);
 
 #endif
-

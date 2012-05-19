@@ -1,5 +1,5 @@
 /*
- * uartutil.h - serial utility routines
+ * arp.h - handle ARP protocol
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,30 +24,16 @@
  *
  */
 
-#ifndef UARTUTIL_H
-#define UARTUTIL_H
+#ifndef ARP_H
+#define ARP_H
 
 #include "global.h"
 
-// send a c string
-u08 uart_send_string(const char *data);
-// send data
-u08 uart_send_data(u08 *data,u08 size);
-// send a CR+LF
-u08 uart_send_crlf(void);
-// send a Space
-u08 uart_send_spc(void);
+extern u08 arp_is_ipv4(const u08 *buf, u16 len);
+extern u08 arp_is_req_for_me(const u08 *buf);
 
-// send a hex byte
-u08 uart_send_hex_byte_crlf(u08 data);
-// send a hex byte
-u08 uart_send_hex_byte_spc(u08 data);
-// send a hex word
-u08 uart_send_hex_word_crlf(u16 data);
-// send a hex word
-u08 uart_send_hex_word_spc(u16 data);
-// send a hex6 dword
-u08 uart_send_hex_dword_crlf(u32 data); 
+extern void arp_make_reply(u08 *buf);
+
+extern void arp_dump(const u08 *buf);
 
 #endif
-

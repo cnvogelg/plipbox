@@ -85,6 +85,15 @@ u08 uart_send_hex_word_crlf(u16 data)
     return 0;
 }
 
+u08 uart_send_hex_word_spc(u16 data)
+{
+  word_to_hex(data,buf);
+  if(uart_send_data(buf,4))
+    return uart_send_spc();
+  else
+    return 0;
+}
+
 u08 uart_send_hex_dword_crlf(u32 data)
 {
   dword_to_hex(data,buf);

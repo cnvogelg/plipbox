@@ -1,5 +1,5 @@
 /*
- * uartutil.h - serial utility routines
+ * eth.h - working with ethernet packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,30 +24,21 @@
  *
  */
 
-#ifndef UARTUTIL_H
-#define UARTUTIL_H
+#ifndef ETH_H
+#define ETH_H
 
 #include "global.h"
 
-// send a c string
-u08 uart_send_string(const char *data);
-// send data
-u08 uart_send_data(u08 *data,u08 size);
-// send a CR+LF
-u08 uart_send_crlf(void);
-// send a Space
-u08 uart_send_spc(void);
+#define ETH_HDR_SIZE  14
 
-// send a hex byte
-u08 uart_send_hex_byte_crlf(u08 data);
-// send a hex byte
-u08 uart_send_hex_byte_spc(u08 data);
-// send a hex word
-u08 uart_send_hex_word_crlf(u16 data);
-// send a hex word
-u08 uart_send_hex_word_spc(u16 data);
-// send a hex6 dword
-u08 uart_send_hex_dword_crlf(u32 data); 
+extern void eth_get_tgt_mac(const u08 *pkt, u08 mac[6]);
+extern void eth_get_src_mac(const u08 *pkt, u08 mac[6]);
+extern u16  eth_get_pkt_type(const u08 *pkt);
+extern u08  eth_is_arp_pkt(const u08 *pkt);
+extern u08  eth_is_ipv4_pkt(const u08 *pkt);
+
+extern void eth_make_reply(u08 *pkt);
+
+extern void eth_dump(const u08 *pkt);
 
 #endif
-
