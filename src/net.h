@@ -29,8 +29,13 @@
 
 #include "global.h"
 
-extern void net_init(const u08 mac[6], const u08 ip[4]);
+extern void net_init(const u08 mac[6], const u08 ip[4], const u08 gw[4], const u08 nm[4]);
  
+extern const u08* net_get_mac(void);
+extern const u08* net_get_ip(void);
+extern const u08* net_get_gateway(void);
+extern const u08* net_get_netmask(void);
+
 extern void net_copy_my_mac(u08 *out);
 extern void net_copy_my_ip(u08 *out);
 
@@ -39,6 +44,9 @@ extern u08 net_compare_my_ip(const u08 *in);
 
 extern void net_copy_mac(const u08 *in, u08 *out);
 extern void net_copy_ip(const u08 *in, u08 *out);
+
+extern void net_copy_any_mac(u08 *out);
+extern void net_copy_zero_mac(u08 *out);
 
 extern u16  net_get_word(const u08 *buf);
 extern void net_put_word(u08 *buf, u16 value);

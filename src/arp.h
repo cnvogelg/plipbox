@@ -36,4 +36,11 @@ extern void arp_make_reply(u08 *buf);
 
 extern void arp_dump(const u08 *buf);
 
+extern void arp_init(u08 *buf, u16 max_len);
+
+/* return 0 if not handled, >0 if was handled 
+note: pass the raw ethernet frame!
+*/
+extern u08 arp_handle_packet(u08 *ethbuf, u16 ethlen);
+
 #endif

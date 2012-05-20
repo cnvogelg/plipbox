@@ -30,11 +30,35 @@
 
 static u08 mac_addr[6];
 static u08 ip_addr[4];
+static u08 gw_addr[4];
+static u08 net_mask[4];
 
-void net_init(const u08 mac[6], const u08 ip[4])
+void net_init(const u08 mac[6], const u08 ip[4], const u08 gw[4], const u08 nm[4])
 {
   net_copy_mac(mac, mac_addr);
   net_copy_ip(ip, ip_addr);
+  net_copy_ip(gw, gw_addr);
+  net_copy_ip(nm, net_mask);
+}
+
+const u08* net_get_mac(void)
+{
+  return mac_addr;
+}
+  
+const u08* net_get_ip(void)
+{
+  return ip_addr;
+}
+
+const u08* net_get_gateway(void)
+{
+  return gw_addr;
+}
+
+const u08* net_get_netmask(void)
+{
+  return net_mask;
 }
 
 void net_copy_my_mac(u08 *out)
@@ -61,6 +85,20 @@ void net_copy_mac(const u08 *in, u08 *out)
 {
   for(int i=0;i<6;i++) {
     out[i] = in[i];
+  }
+}
+
+void net_copy_any_mac(u08 *out)
+{
+  for(int i=0;i<6;i++) {
+    out[i] = 0xff;
+  }
+}
+
+void net_copy_zero_mac(u08 *out)
+{
+  for(int i=0;i<6;i++) {
+    out[i] = 0;
   }
 }
 

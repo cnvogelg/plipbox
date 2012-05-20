@@ -31,6 +31,9 @@
 
 #define ETH_HDR_SIZE  14
 
+#define ETH_TYPE_IPV4 0x800
+#define ETH_TYPE_ARP  0x806   
+
 extern void eth_get_tgt_mac(const u08 *pkt, u08 mac[6]);
 extern void eth_get_src_mac(const u08 *pkt, u08 mac[6]);
 extern u16  eth_get_pkt_type(const u08 *pkt);
@@ -38,6 +41,8 @@ extern u08  eth_is_arp_pkt(const u08 *pkt);
 extern u08  eth_is_ipv4_pkt(const u08 *pkt);
 
 extern void eth_make_reply(u08 *pkt);
+extern void eth_make_to_tgt(u08 *pkt, u16 type, const u08 mac[6]);
+extern void eth_make_to_any(u08 *pkt, u16 type);
 
 extern void eth_dump(const u08 *pkt);
 

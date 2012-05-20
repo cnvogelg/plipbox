@@ -51,12 +51,12 @@ u16  eth_get_pkt_type(const u08 *pkt)
  
 u08  eth_is_arp_pkt(const u08 *pkt)
 {
-  return eth_get_pkt_type(pkt) == 0x806;
+  return eth_get_pkt_type(pkt) == ETH_TYPE_ARP;
 }
   
 u08  eth_is_ipv4_pkt(const u08 *pkt)
 {
-  return eth_get_pkt_type(pkt) == 0x800;
+  return eth_get_pkt_type(pkt) == ETH_TYPE_IPV4;
 }  
 
 void eth_make_reply(u08 *pkt)
@@ -65,6 +65,20 @@ void eth_make_reply(u08 *pkt)
   net_copy_mac(pkt + ETH_OFF_SRC_MAC, pkt + ETH_OFF_TGT_MAC);
   /* my mac is src */
   net_copy_my_mac(pkt + ETH_OFF_SRC_MAC);
+}
+
+void eth_make_to_tgt(u08 *pkt, u16 type, const u08 mac[6])
+{
+  net_copy_mac(mac, pkt + ETH_OFF_TGT_MAC);
+  net_copy_my_mac(pkt + ETH_OFF_SRC_MAC);
+  net_put_word(pkt + ETH_OFF_TYPE, type);
+}
+
+void eth_make_to_any(u08 *pkt, u16 type)
+{
+  net_copy_any_mac(pkt + ETH_OFF_TGT_MAC);
+  net_copy_my_mac(pkt + ETH_OFF_SRC_MAC);
+  net_put_word(pkt + ETH_OFF_TYPE, type);
 }
 
 extern void eth_dump(const u08 *pkt)
