@@ -43,6 +43,7 @@
 	 
    // eth
 #include "enc28j60.h"
+#include "icmp.h"
 #include "arp.h"
 #include "eth.h"
 #include "net.h"
@@ -151,7 +152,23 @@ int main (void){
 #endif
 
       // handle ARP packets
-      arp_handle_packet(pkt_buf,len);
+      if(!arp_handle_packet(pkt_buf,len)) {
+        // IPv4
+        if(eth_is_ipv4_pkt(pkt_buf)) {
+          u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
+          //u16 ip_size = len - ETH_HDR_SIZE;
+          // reply ping
+          if(icmp_is_ping_request(ip_buf)) {
+            uart_send_string("PING!");
+            uart_send_crlf();
+            
+            icmp_ping_request_to_reply(ip_buf);
+            eth_make_reply(pkt_buf);
+            enc28j60_packet_send(pkt_buf, len);
+          }
+          
+        }
+      }
     }
   }
 #endif

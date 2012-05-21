@@ -1,5 +1,5 @@
 /*
- * ip.h - work with IPv4 headers and ICMP packets
+ * icmp.h - work with ICMP packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,15 @@
  *
  */
 
-#ifndef IP_H
-#define IP_H
+#ifndef ICMP_H
+#define ICMP_H
 
 #include "global.h"
 
-// ----- IP Header -----
-extern u16 ip_hdr_calc_check_var(const u08 *buf, u08 offset, int num_words);
-extern u08 ip_hdr_check(const u08 *buf);
-extern void ip_hdr_calc_check(u08 *buf);
-extern u16 ip_hdr_get_size(const u08 *buf);
+// ----- ICMP Ping -----
+extern u08 icmp_is_ping_request(const u08 *buf);
+extern u08 icmp_check(const u08 *buf);
+extern void icmp_calc_check(u08 *buf);
+extern void icmp_ping_request_to_reply(u08 *buf);
 
 #endif

@@ -32,6 +32,7 @@
 #include "uart.h"
 #include "ser_parse.h"
 #include "ip.h"
+#include "icmp.h"
 #include "param.h"
 #include "uartutil.h"
 #include "stats.h"
@@ -76,9 +77,9 @@ void ping_slip_loop(void)
       uart_stop_reception();
       led_yellow_on();
       
-      if(ip_icmp_is_ping_request(pkt_buf)) {
+      if(icmp_is_ping_request(pkt_buf)) {
         // make reply
-        ip_icmp_ping_request_to_reply(pkt_buf);
+        icmp_ping_request_to_reply(pkt_buf);
 
         // send reply
         slip_send_end();

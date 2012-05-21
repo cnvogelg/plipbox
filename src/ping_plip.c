@@ -33,6 +33,7 @@
 #include "uart.h"
 #include "uartutil.h"
 #include "ip.h"
+#include "icmp.h"
 #include "bench.h"
 #include "param.h"
 #include "stats.h"
@@ -95,11 +96,11 @@ void ping_plip_loop(void)
         stats.rx_bytes += pkt.size;
          
         // is a ping packet?
-        if(ip_icmp_is_ping_request(pkt_buf)) {
+        if(icmp_is_ping_request(pkt_buf)) {
           u16 pkt_size = ip_hdr_get_size(pkt_buf);
           
           // transform into reply packet
-          ip_icmp_ping_request_to_reply(pkt_buf);
+          icmp_ping_request_to_reply(pkt_buf);
 
           // send reply packet via PLIP
           pos = 0;
