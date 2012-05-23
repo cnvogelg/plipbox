@@ -109,6 +109,13 @@ void net_copy_ip(const u08 *in, u08 *out)
   }
 }
 
+void net_copy_zero_ip(u08 *out)
+{
+  for(int i=0;i<4;i++) {
+    out[i] = 0;
+  }
+}
+
 u16  net_get_word(const u08 *buf)
 {
   return (u16)buf[0] << 8 | (u16)buf[1];
@@ -181,6 +188,18 @@ u08  net_compare_ip(const u08 *a, const u08 *b)
 {
   for(int i=0;i<4;i++) {
     if(a[i] != b[i]) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+u08 net_is_my_subnet(const u08 *ip)
+{
+  for(int i=0;i<4;i++) {
+    u08 diff = ip[i] ^ ip_addr[i];
+    diff &= net_mask[i];
+    if(diff != 0) {
       return 0;
     }
   }

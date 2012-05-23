@@ -48,9 +48,28 @@
    /* debug */
 #define DUMP_ARP
 
+#define ARP_CACHE_SIZE  4
+ 
+struct arp_cache_s {
+  u08 ip[4];
+  u08 mac[6];
+};
+
    /* ARP cache */
 static u08 gw_mac[6];
+static u08 has_gw_mac;
 
+static struct arp_cache_s arp_cache[ARP_CACHE_SIZE];
+static u08 arp_cache_total;
+static u08 arp_cache_pos;
+
+const u08 *arp_get_gw_mac(void)
+{
+  if(!has_gw_mac) {
+    return 0;
+  }
+  return gw_mac;
+}
 
 u08 arp_is_ipv4(const u08 *buf, u16 len)
 {
@@ -126,15 +145,21 @@ void arp_dump(const u08 *buf)
 }
 
 void arp_init(u08 *ethbuf, u16 maxlen)
+{  
+  // send arp request for gateway
+  arp_send_request(ethbuf, net_get_gateway());
+}
+
+void arp_send_request(u08 *ethbuf, const u08 *ip)
 {
   // build a request for gw ip
   eth_make_to_any(ethbuf, ETH_TYPE_ARP);
-  u16 len = arp_make_request(ethbuf + ETH_HDR_SIZE, net_get_gateway());
+  u16 len = arp_make_request(ethbuf + ETH_HDR_SIZE, ip);
   len += ETH_HDR_SIZE;
 
 #ifdef DUMP_ARP
-  uart_send_string("arp:req_gw ");
-  net_dump_ip(net_get_gateway());
+  uart_send_string("arp:req ");
+  net_dump_ip(ip);
   uart_send_crlf();
   uart_send_hex_word_spc(len);
   eth_dump(ethbuf);
@@ -143,7 +168,7 @@ void arp_init(u08 *ethbuf, u16 maxlen)
   uart_send_crlf();
 #endif
   
-  enc28j60_packet_send(ethbuf, len);
+  enc28j60_packet_send(ethbuf, len);  
 }
 
 u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
@@ -178,27 +203,123 @@ u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
   
   /* is it a reply for a request of me? */
   else if(arp_is_reply_for_me(buf)) {
+    /* extract IP + MAC of reply */
+    const u08 *ip = buf + ARP_OFF_SRC_IP;
+    const u08 *mac = buf + ARP_OFF_SRC_MAC;
+
 #ifdef DUMP_ARP
-    uart_send_string("REPLY!");
+    uart_send_crlf();
+    uart_send_string("arp:reply ");
+    net_dump_ip(ip);
+    uart_send_spc();
+    net_dump_mac(mac);
 #endif
-    /* we got a reply for the gateway MAC -> keep in cache */
-    if(net_compare_ip(buf + ARP_OFF_SRC_IP, net_get_gateway())) {
-      net_copy_mac(buf + ARP_OFF_SRC_MAC, gw_mac);
+    
+    /* we got a reply for the gateway MAC -> keep in cache */    
+    if(net_compare_ip(ip, net_get_gateway())) {
 #ifdef DUMP_ARP
-      uart_send_crlf();
-      uart_send_string("arp:rep_gw ");
-      net_dump_ip(net_get_gateway());
-      uart_send_spc();
-      net_dump_mac(gw_mac);
+      uart_send_string(" -> GW");
+#endif
+      net_copy_mac(mac, gw_mac);
+      has_gw_mac = 1;
+    }
+    /* non-GW reply -> push into cache */
+    else {
+      u08 pos = arp_cache_find_ip(ip);
+      if(pos == ARP_CACHE_INVALID) {
+        /* add a new entry */
+        pos = arp_cache_add(ip, mac);
+      } else {
+        /* update mac of entry */
+        arp_cache_update(pos, mac);
+      }
+#ifdef DUMP_ARP
+      uart_send_string(" -> cache ");
+      uart_send_hex_byte_crlf(pos);
 #endif
     }
-    
   }
   
 #ifdef DUMP_ARP
-  uart_send_crlf();      
+  uart_send_crlf();
 #endif
   
   return 1;
 }
 
+const u08 *arp_find_mac(u08 *buf, const u08 *ip)
+{
+  /* is GW itself? */
+  if(net_compare_ip(ip, net_get_gateway())) {
+    return arp_get_gw_mac();
+  }
+  
+  /* is IP on my subnet? */
+  u08 is_my_net = net_is_my_subnet(ip);
+  const u08 *mac = 0;
+  if(is_my_net) {
+    /* yes its my subnet -> ask cache */
+    u08 cache_pos = arp_cache_find_ip(ip);
+    if(cache_pos != ARP_CACHE_INVALID) {
+      mac = arp_cache_get_mac(cache_pos);
+    } else {
+      /* not found -> trigger an arp request */
+      arp_send_request(buf, ip);     
+    }
+  } else {
+    /* not my subnet -> use GW
+       if GW mac is available then use it */
+    mac = arp_get_gw_mac();
+  }
+  return mac;
+}
+
+/* ----- arp_cache ----- */
+
+void arp_cache_init(void)
+{
+  // clear arp cache
+  for(int i=0;i<ARP_CACHE_SIZE;i++) {
+    net_copy_zero_ip(arp_cache[i].ip);
+    net_copy_zero_mac(arp_cache[i].mac);
+  }
+  arp_cache_total = 0;
+  arp_cache_pos = 0;
+}
+
+u08 *arp_cache_get_mac(u08 index)
+{
+  return arp_cache[index].mac;
+}
+
+u08 arp_cache_find_ip(const u08 *ip)
+{
+  for(int i=0;i<ARP_CACHE_SIZE;i++) {
+    if(net_compare_ip(ip, arp_cache[i].ip)) {
+      return i;
+    }
+  }
+  return ARP_CACHE_INVALID;
+}
+
+u08 arp_cache_add(const u08 *ip, const u08 *mac)
+{
+  if(arp_cache_total < ARP_CACHE_SIZE) {
+    arp_cache_total ++;
+  }
+
+  u08 i = arp_cache_pos;
+  net_copy_ip(ip, arp_cache[i].ip);
+  net_copy_mac(mac, arp_cache[i].mac);
+
+  arp_cache_pos ++;
+  if(arp_cache_pos == ARP_CACHE_SIZE) {
+    arp_cache_pos = 0;
+  }
+  return i;
+}
+
+void arp_cache_update(u08 index, const u08 *mac)
+{
+  net_copy_mac(mac, arp_cache[index].mac);
+}

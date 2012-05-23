@@ -38,6 +38,7 @@ extern const u08* net_get_netmask(void);
 
 extern void net_copy_my_mac(u08 *out);
 extern void net_copy_my_ip(u08 *out);
+extern void net_copy_zero_ip(u08 *out);
 
 extern u08 net_compare_my_mac(const u08 *in);
 extern u08 net_compare_my_ip(const u08 *in);
@@ -59,5 +60,7 @@ extern void net_dump_ip(const u08 *in);
 
 extern u08  net_compare_mac(const u08 *a, const u08 *b);
 extern u08  net_compare_ip(const u08 *a, const u08 *b);
+
+extern u08  net_is_my_subnet(const u08 *ip);
 
 #endif

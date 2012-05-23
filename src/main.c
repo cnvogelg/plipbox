@@ -24,8 +24,6 @@
  *
  */
 
-#include <avr/delay.h>
-
 #include "global.h"
 #include "board.h"
 #include "uart.h"
@@ -42,24 +40,14 @@
 #include "error.h"
 	 
    // eth
-#include "enc28j60.h"
-#include "icmp.h"
-#include "arp.h"
-#include "eth.h"
-#include "net.h"
-#include "pkt_buf.h"
-#include "uartutil.h"
+#include "eth_rx.h"
+#include "eth_tx.h"
 
 #include "transfer.h"
 #include "ping_plip.h"
 #include "ping_slip.h"
 #include "only_plip_rx.h"
 #include "only_slip_rx.h"
-
-const u08 mac[6] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
-const u08 ip[4] = { 192, 168, 2, 133 };
-const u08 gw[4] = { 192, 168, 2, 1 };
-const u08 nm[4] = { 255, 255, 255, 0 };
 
 int main (void){
   // board init. e.g. switch off watchdog, init led
@@ -118,58 +106,33 @@ int main (void){
   /* ----- network stuff ----- */
   uart_send_string("plip2eth: ");
   
-  /* init ethernet controller */
-  u08 rev = enc28j60_init(mac);
-  uart_send_hex_byte_crlf(rev);
-
-  /* setup network addressing */
-  net_init(mac, ip, gw, nm);
+  eth_rx_init();
   
-  /* wait for link up */
-  for(int i = 0 ; i<10;i++) {
-    if(enc28j60_is_link_up()) {
-      break;
-    }
-    _delay_ms(250);
-    uart_send('.');
-  }
-  uart_send_crlf();
-  
-  /* init ARP: send query for GW MAC */
-  arp_init(pkt_buf, PKT_BUF_SIZE);
-
   while(1) {
-    // get next packet
-	  u16 len = enc28j60_packet_receive(pkt_buf, PKT_BUF_SIZE);
-    if(len > 0) {
-
-#define DUMP_ETH_HDR
-#ifdef DUMP_ETH_HDR
-      // show length and dump eth header
-      uart_send_hex_word_spc(len);
-      eth_dump(pkt_buf);
-      uart_send_crlf();
-#endif
-
-      // handle ARP packets
-      if(!arp_handle_packet(pkt_buf,len)) {
-        // IPv4
-        if(eth_is_ipv4_pkt(pkt_buf)) {
-          u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
-          //u16 ip_size = len - ETH_HDR_SIZE;
-          // reply ping
-          if(icmp_is_ping_request(ip_buf)) {
-            uart_send_string("PING!");
-            uart_send_crlf();
-            
-            icmp_ping_request_to_reply(ip_buf);
-            eth_make_reply(pkt_buf);
-            enc28j60_packet_send(pkt_buf, len);
-          }
-          
+    eth_rx_worker();
+    
+    // small hack to enter commands
+    if(uart_read_data_available()) {
+      u08 cmd;
+      uart_read(&cmd);
+      switch(cmd) {
+        case ' ':
+        {
+          const u08 ip[4] = { 173,194,35,159 }; // google.de
+          u08 result = eth_tx_send_ping_request(ip);
+          uart_send_hex_byte_crlf(result);
+          break;
+        }
+        case 'p':
+        {
+          const u08 ip[4] = { 192,168,2,20 }; // my box
+          u08 result = eth_tx_send_ping_request(ip);
+          uart_send_hex_byte_crlf(result);
+          break;
         }
       }
     }
+    
   }
 #endif
 

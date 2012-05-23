@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * eth_rx.h: handle eth receiption and plip tx
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,11 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#ifndef ETH_RX_H
 
 #include "global.h"
-#include "plip.h"
-
-#define PKT_BUF_SIZE    256
-
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
+   
+extern void eth_rx_init(void);
+extern void eth_rx_worker(void);
 
 #endif

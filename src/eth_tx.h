@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * eth_tx.h: handle eth packet sends
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,10 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#ifndef ETH_TX_H
 
 #include "global.h"
-#include "plip.h"
-
-#define PKT_BUF_SIZE    256
-
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
+   
+extern u08 eth_tx_send_ping_request(const u08 *ip);
 
 #endif

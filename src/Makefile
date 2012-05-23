@@ -90,7 +90,7 @@ SRC += transfer.c ping_plip.c ping_slip.c stats.c
 SRC += cmd.c param.c bench.c only_plip_rx.c only_slip_rx.c
 SRC += main.c log.c error.c 
 # eth
-SRC += enc28j60.c net.c eth.c arp.c ip.c icmp.c
+SRC += enc28j60.c net.c eth.c arp.c ip.c icmp.c eth_rx.c eth_tx.c
 
 # output format
 FORMAT = ihex

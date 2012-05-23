@@ -36,6 +36,11 @@ u08 icmp_is_ping_request(const u08 *buf)
       );
 }
 
+void icmp_make_ping_request(u08 *buf, const u08 *ip)
+{
+  // TODO
+}
+
 static u16 icmp_sum_calc(const u08 *buf)
 {
   u08 num_hdr_words = (buf[0] & 0xf) * 2;

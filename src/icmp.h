@@ -35,4 +35,6 @@ extern u08 icmp_check(const u08 *buf);
 extern void icmp_calc_check(u08 *buf);
 extern void icmp_ping_request_to_reply(u08 *buf);
 
+extern void icmp_make_ping_request(u08 *buf, const u08 *ip);
+
 #endif

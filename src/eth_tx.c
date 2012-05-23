@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * eth_tx.c: handle eth packet sends
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,41 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
-
 #include "global.h"
-#include "plip.h"
+   
+#include "net.h"
+#include "eth.h"
+#include "ip.h"
+#include "arp.h"
+#include "icmp.h"
+#include "pkt_buf.h"
+  
+#include "uart.h"
+#include "uartutil.h"
+   
+#define DEBUG_ETH_TX   
 
-#define PKT_BUF_SIZE    256
-
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
-
+u08 eth_tx_send_ping_request(const u08 *ip)
+{
+#ifdef DEBUG_ETH_TX
+  uart_send_string("send ping: ");
+  net_dump_ip(ip);
 #endif
+
+  const u08 *mac = arp_find_mac(pkt_buf, ip);
+  if(mac == 0) {
+#ifdef DEBUG_ETH_TX
+    uart_send_string("no mac!");
+    uart_send_crlf();
+#endif
+    return 0;
+  }
+  
+#ifdef DEBUG_ETH_TX
+  uart_send_string(" -> ");
+  net_dump_mac(mac);
+  uart_send_crlf();
+#endif
+  
+  return 1;
+}
