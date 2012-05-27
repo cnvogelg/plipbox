@@ -173,11 +173,6 @@ void arp_send_request(u08 *ethbuf, const u08 *ip)
 
 u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
 {
-  /* return if its no ARP packet */
-  if(!eth_is_arp_pkt(ethbuf)) {
-    return 0;
-  }
-  
   u08 *buf = ethbuf + ETH_HDR_SIZE;
   u16 len  = ethlen - ETH_HDR_SIZE;
   
