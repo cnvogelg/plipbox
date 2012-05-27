@@ -97,7 +97,7 @@ void ping_plip_loop(void)
          
         // is a ping packet?
         if(icmp_is_ping_request(pkt_buf)) {
-          u16 pkt_size = ip_hdr_get_size(pkt_buf);
+          u16 pkt_size = ip_get_total_length(pkt_buf);
           
           // transform into reply packet
           icmp_ping_request_to_reply(pkt_buf);

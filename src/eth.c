@@ -34,14 +34,14 @@
    
 #define ETH_SIZE 14
 
-void eth_get_tgt_mac(const u08 *pkt, u08 mac[6])
+const u08 *eth_get_tgt_mac(const u08 *pkt)
 {
-  net_copy_mac(pkt + ETH_OFF_TGT_MAC, mac);
+  return pkt + ETH_OFF_TGT_MAC;
 }
    
-void eth_get_src_mac(const u08 *pkt, u08 mac[6])
+const u08 *eth_get_src_mac(const u08 *pkt)
 {
-  net_copy_mac(pkt + ETH_OFF_SRC_MAC, mac);
+  return pkt + ETH_OFF_SRC_MAC;
 }
   
 u16  eth_get_pkt_type(const u08 *pkt)
@@ -58,6 +58,18 @@ u08  eth_is_ipv4_pkt(const u08 *pkt)
 {
   return eth_get_pkt_type(pkt) == ETH_TYPE_IPV4;
 }  
+
+u08  eth_is_broadcast_tgt(const u08 *pkt)
+{
+  const u08 *mac = eth_get_tgt_mac(pkt);
+  return net_compare_any_mac(mac);
+}
+
+u08  eth_is_tgt_me(const u08 *pkt)
+{
+  const u08 *mac = eth_get_tgt_mac(pkt);
+  return net_compare_my_mac(mac);  
+}
 
 void eth_make_reply(u08 *pkt)
 {

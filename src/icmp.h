@@ -31,10 +31,15 @@
 
 // ----- ICMP Ping -----
 extern u08 icmp_is_ping_request(const u08 *buf);
-extern u08 icmp_check(const u08 *buf);
-extern void icmp_calc_check(u08 *buf);
-extern void icmp_ping_request_to_reply(u08 *buf);
+extern u08 icmp_is_ping_reply(const u08 *buf); 
 
-extern void icmp_make_ping_request(u08 *buf, const u08 *ip);
+extern u16 icmp_get_checksum(const u08 *buf);
+extern u08 icmp_validate_checksum(const u08 *buf);
+extern void icmp_set_checksum(u08 *buf);
+
+extern void icmp_ping_request_to_reply(u08 *buf);
+extern u08  icmp_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 type, u08 code);
+extern void icmp_finish_pkt(u08 *buf, u16 size);
+extern u16  icmp_make_ping_request(u08 *buf, const u08 *tgt_ip, u16 id, u16 seq);
 
 #endif

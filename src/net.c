@@ -184,6 +184,16 @@ u08  net_compare_mac(const u08 *a, const u08 *b)
   return 1;
 }
 
+u08 net_compare_any_mac(const u08 *in)
+{
+  for(int i=0;i<6;i++) {
+    if(in[i] != 0xff) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 u08  net_compare_ip(const u08 *a, const u08 *b)
 {
   for(int i=0;i<4;i++) {

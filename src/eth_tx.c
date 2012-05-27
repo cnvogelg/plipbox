@@ -32,6 +32,7 @@
 #include "arp.h"
 #include "icmp.h"
 #include "pkt_buf.h"
+#include "enc28j60.h"
   
 #include "uart.h"
 #include "uartutil.h"
@@ -59,6 +60,11 @@ u08 eth_tx_send_ping_request(const u08 *ip)
   net_dump_mac(mac);
   uart_send_crlf();
 #endif
+  
+  eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
+  u08 *ip_pkt = pkt_buf + ETH_HDR_SIZE;
+  u16 size = icmp_make_ping_request(ip_pkt, ip, 0, 0);
+  enc28j60_packet_send(pkt_buf, size + ETH_HDR_SIZE);
   
   return 1;
 }

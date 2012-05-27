@@ -42,6 +42,7 @@ extern void net_copy_zero_ip(u08 *out);
 
 extern u08 net_compare_my_mac(const u08 *in);
 extern u08 net_compare_my_ip(const u08 *in);
+extern u08 net_compare_any_mac(const u08 *in);
 
 extern void net_copy_mac(const u08 *in, u08 *out);
 extern void net_copy_ip(const u08 *in, u08 *out);

@@ -29,10 +29,29 @@
 
 #include "global.h"
 
-// ----- IP Header -----
-extern u16 ip_hdr_calc_check_var(const u08 *buf, u08 offset, int num_words);
-extern u08 ip_hdr_check(const u08 *buf);
-extern void ip_hdr_calc_check(u08 *buf);
-extern u16 ip_hdr_get_size(const u08 *buf);
+/* list of IP protocol numbers */
+#define IP_PROTOCOL_ICMP    0x01
+#define IP_PROTOCOL_TCP     0x06
+#define IP_PROTOCOL_UDP     0x11
+
+
+/* generic checksum calculation for header checksum and others */
+extern u16 ip_calc_checksum(const u08 *buf, u08 offset, int num_words);
+ 
+/* header checksum */
+extern u16 ip_hdr_get_checksum(const u08 *buf);
+extern u08 ip_hdr_validate_checksum(const u08 *buf);
+extern void ip_hdr_set_checksum(u08 *buf);
+
+/* query values */
+extern const u08 *ip_get_src_ip(const u08 *buf);
+extern const u08 *ip_get_tgt_ip(const u08 *buf);
+extern u16 ip_get_total_length(const u08 *buf);
+extern u08 ip_get_hdr_length(const u08 *buf);
+extern u08 ip_is_ipv4_protocol(const u08 *buf, u08 protocol);
+
+/* create packet */
+extern u08 ip_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 protocol);
+extern void ip_finish_pkt(u08 *buf, u16 size);
 
 #endif

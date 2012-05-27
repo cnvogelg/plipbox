@@ -26,44 +26,75 @@
 
 #include "ip.h"
 #include "icmp.h"
+#include "net.h"
+
+#define ICMP_TYPE_OFF     0
+#define ICMP_CODE_OFF     1
+#define ICMP_CHECKSUM_OFF 2
+#define ICMP_DATA_OFF     4
+
+#define ICMP_TYPE_ECHO_REPLY    0
+#define ICMP_TYPE_ECHO_REQUEST  8
 
 u08 icmp_is_ping_request(const u08 *buf)
 {
-  return( 
-      (buf[0]==0x45) && // IPv4
-      (buf[9]==0x01) && // ICMP
-      (buf[20]==0x08)  // echo request
-      );
+  return buf[ip_get_hdr_length(buf) + ICMP_TYPE_OFF] == ICMP_TYPE_ECHO_REQUEST;
 }
 
-void icmp_make_ping_request(u08 *buf, const u08 *ip)
+u08 icmp_is_ping_reply(const u08 *buf)
 {
-  // TODO
+  return buf[ip_get_hdr_length(buf) + ICMP_TYPE_OFF] == ICMP_TYPE_ECHO_REPLY;  
 }
 
-static u16 icmp_sum_calc(const u08 *buf)
+u08 icmp_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 type, u08 code)
 {
-  u08 num_hdr_words = (buf[0] & 0xf) * 2;
-  u16 total_size = (u16)buf[2] << 8 | (u16)buf[3];
-  u16 num_words = (total_size >> 1) - num_hdr_words;
-  u08 off = num_hdr_words * 2;
-  return ip_hdr_calc_check_var(buf, off, num_words);  
+  u08 off = ip_begin_pkt(buf, tgt_ip, IP_PROTOCOL_ICMP);
+  buf[off + ICMP_TYPE_OFF] = type;
+  buf[off + ICMP_CODE_OFF] = code;
+  return off + ICMP_DATA_OFF;
 }
 
-u08 icmp_check(const u08 *buf)
+void icmp_finish_pkt(u08 *buf, u16 size)
 {
-  return icmp_sum_calc(buf) == 0xffff;
+  ip_finish_pkt(buf, size);
+  icmp_set_checksum(buf);
 }
 
-void icmp_calc_check(u08 *buf)
+u16 icmp_make_ping_request(u08 *buf, const u08 *tgt_ip, u16 id, u16 seq)
 {
+  u08 data_off = icmp_begin_pkt(buf, tgt_ip, ICMP_TYPE_ECHO_REQUEST, 0);
+
+  // quench
+  net_put_word(buf+data_off, id);
+  net_put_word(buf+data_off+2, seq);
+  
+  icmp_finish_pkt(buf, data_off +4);
+  return data_off + 4;
+}
+
+u16 icmp_get_checksum(const u08 *buf)
+{
+  u08 hdr_len = ip_get_hdr_length(buf);
+  u16 total_len = ip_get_total_length(buf);
+  u16 num_words = (total_len - hdr_len) >> 1; // bytes -> words
+  return ip_calc_checksum(buf, hdr_len, num_words);  
+}
+
+u08 icmp_validate_checksum(const u08 *buf)
+{
+  return icmp_get_checksum(buf) == 0xffff;
+}
+
+void icmp_set_checksum(u08 *buf)
+{
+  u08 off = ip_get_hdr_length(buf) + ICMP_CHECKSUM_OFF;
+  
   // clear check
-  buf[22] = buf[23] = 0;
+  buf[off] = buf[off+1] = 0;
   // calc check
-  u16 check = ~ icmp_sum_calc(buf);
+  u16 check = ~ icmp_get_checksum(buf);
   // store check
-  buf[22] = (u08)(check >> 8);
-  buf[23] = (u08)(check & 0xff);  
+  net_put_word(buf + off, check);
 }
 
 void icmp_ping_request_to_reply(u08 *buf)
@@ -78,6 +109,6 @@ void icmp_ping_request_to_reply(u08 *buf)
   
   // make an ICMP Ping Reply
   buf[20] = 0;
-  icmp_calc_check(buf);
+  icmp_set_checksum(buf);
 }
 

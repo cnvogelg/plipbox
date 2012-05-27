@@ -36,6 +36,7 @@
 #include "pkt_buf.h"
 #include "uartutil.h"
 #include "uart.h"
+#include "ip.h"
 
 const u08 mac[6] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 const u08 ip[4] = { 192, 168, 2, 133 };
@@ -84,20 +85,61 @@ void eth_rx_worker(void)
 
   // handle ARP packets
   if(!arp_handle_packet(pkt_buf,len)) {
+    if(!eth_is_tgt_me(pkt_buf)) {
+      uart_send_string("NOT ME");
+      uart_send_crlf();
+    }
     // IPv4
-    if(eth_is_ipv4_pkt(pkt_buf)) {
+    else if(eth_is_ipv4_pkt(pkt_buf)) {
       u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
-      //u16 ip_size = len - ETH_HDR_SIZE;
-      // reply ping
-      if(icmp_is_ping_request(ip_buf)) {
-        uart_send_string("PING!");
-        uart_send_crlf();
-            
-        icmp_ping_request_to_reply(ip_buf);
-        eth_make_reply(pkt_buf);
-        enc28j60_packet_send(pkt_buf, len);
+      u16 ip_size = len - ETH_HDR_SIZE;
+      
+      // check IP packet
+      u16 total_len = ip_get_total_length(ip_buf);
+      if(ip_size < total_len) {
+        uart_send_string("SIZE? ");
+        uart_send_hex_word_spc(ip_size);
+        uart_send_hex_word_crlf(total_len);
       }
+      else if(!ip_hdr_validate_checksum(ip_buf)) {
+        uart_send_string("HDR_CHECK?");
+        uart_send_crlf();
+      }
+      else {
+        
+        // ICMP
+        if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
+          uart_send_string("icmp: ");
+      
+          if(!icmp_validate_checksum(ip_buf)) {
+            uart_send_string("check?");
+            uart_send_crlf();  
+          } else {
           
+            // incoming request -> generate reply
+            if(icmp_is_ping_request(ip_buf)) {
+              uart_send_string("PING!");
+              uart_send_crlf();
+            
+              icmp_ping_request_to_reply(ip_buf);
+              eth_make_reply(pkt_buf);
+              enc28j60_packet_send(pkt_buf, len);
+            }
+            // incoming reply -> show!
+            else if(icmp_is_ping_reply(ip_buf)) {
+              uart_send_string("PONG: ");
+              net_dump_ip(ip_get_src_ip(ip_buf));
+              uart_send_crlf();
+            }
+            // unknown icmp
+            else {
+              uart_send_string("?");
+              uart_send_crlf();
+            }
+          }
+        }
+      
+      }
     }
   }
 }
