@@ -70,7 +70,7 @@ void eth_rx_init(void)
 void eth_rx_worker(void)
 {
   // get next packet
-  u16 len = enc28j60_packet_receive(pkt_buf, PKT_BUF_SIZE);
+  u16 len = enc28j60_packet_rx(pkt_buf, PKT_BUF_SIZE);
   if(len == 0) {
     return;
   }
@@ -123,7 +123,7 @@ void eth_rx_worker(void)
             
               icmp_ping_request_to_reply(ip_buf);
               eth_make_reply(pkt_buf);
-              enc28j60_packet_send(pkt_buf, len);
+              enc28j60_packet_tx(pkt_buf, len);
             }
             // incoming reply -> show!
             else if(icmp_is_ping_reply(ip_buf)) {

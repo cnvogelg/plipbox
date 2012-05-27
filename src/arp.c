@@ -168,7 +168,7 @@ void arp_send_request(u08 *ethbuf, const u08 *ip)
   uart_send_crlf();
 #endif
   
-  enc28j60_packet_send(ethbuf, len);  
+  enc28j60_packet_tx(ethbuf, len);  
 }
 
 u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
@@ -198,7 +198,7 @@ u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
     /* send a reply with my MAC+IP */
     eth_make_reply(ethbuf);
     arp_make_reply(buf);
-    enc28j60_packet_send(ethbuf, ethlen);
+    enc28j60_packet_tx(ethbuf, ethlen);
   }
   
   /* is it a reply for a request of me? */

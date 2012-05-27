@@ -327,12 +327,60 @@ static void readBuf(uint16_t len, uint8_t* data) {
     disableChip();
 }
 
+inline static void readBufBegin(void)
+{
+  enableChip();
+  xferSPI(ENC28J60_READ_BUF_MEM);  
+}
+
+u08 enc28j60_packet_rx_byte(void)
+{
+  xferSPI(0x00);
+  return SPDR;
+}
+
+void enc28j60_packet_rx_blk(u08 *data, u16 size)
+{
+  while(size--) {
+    xferSPI(0x00);
+    *data++ = SPDR;
+  }
+}
+
+inline static void readBufEnd(void)
+{
+  disableChip();
+}
+
 static void writeBuf(uint16_t len, const uint8_t* data) {
     enableChip();
     xferSPI(ENC28J60_WRITE_BUF_MEM);
     while (len--)
         xferSPI(*data++);
     disableChip();
+}
+
+inline static void writeBufBegin(void)
+{
+  enableChip(),
+  xferSPI(ENC28J60_WRITE_BUF_MEM);  
+}
+
+void enc28j60_packet_tx_byte(u08 data)
+{
+  xferSPI(data);
+}
+
+void enc28j60_packet_tx_blk(const u08 *data, u16 size)
+{
+  while(size--) {
+    xferSPI(*data++);
+  }
+}
+
+inline static void writeBufEnd(void)
+{
+  disableChip();
 }
 
 static void SetBank (uint8_t address) {
@@ -428,7 +476,15 @@ uint8_t enc28j60_is_link_up( void )
     return (readPhyByte(PHSTAT2) >> 2) & 1;
 }
 
-void enc28j60_packet_send(uint8_t *buffer, uint16_t len) {
+void enc28j60_packet_tx(const u08 *data, u16 size)
+{
+  enc28j60_packet_tx_begin(size);
+  enc28j60_packet_tx_blk(data, size);
+  enc28j60_packet_tx_end();
+}
+
+void enc28j60_packet_tx_begin(u16 len) 
+{
     while (readOp(ENC28J60_READ_CTRL_REG, ECON1) & ECON1_TXRTS)
         if (readRegByte(EIR) & EIR_TXERIF) {
             writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
@@ -437,11 +493,39 @@ void enc28j60_packet_send(uint8_t *buffer, uint16_t len) {
     writeReg(EWRPT, TXSTART_INIT);
     writeReg(ETXND, TXSTART_INIT+len);
     writeOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
-    writeBuf(len, buffer);
+    writeBufBegin();
+}
+
+void enc28j60_packet_tx_end(void)
+{  
+    writeBufEnd();
     writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
 }
 
-uint16_t enc28j60_packet_receive(uint8_t *buffer, uint16_t buffer_size) {
+inline static void next_pkt(void)
+{
+  if (gNextPacketPtr - 1 > RXSTOP_INIT)
+      writeReg(ERXRDPT, RXSTOP_INIT);
+  else
+      writeReg(ERXRDPT, gNextPacketPtr - 1);
+  writeOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);  
+}
+
+u16 enc28j60_packet_rx(u08 *data, u16 max_size)
+{
+  u16 size = enc28j60_packet_rx_begin();
+  if(size > 0) {
+    if(size > max_size) {
+      size = max_size;
+    }
+    enc28j60_packet_rx_blk(data,size);
+    enc28j60_packet_rx_end();
+  }
+  return size;
+}
+
+u16 enc28j60_packet_rx_begin(void) 
+{
     uint16_t len = 0;
     if (readRegByte(EPKTCNT) > 0) {
         writeReg(ERDPT, gNextPacketPtr);
@@ -456,19 +540,19 @@ uint16_t enc28j60_packet_receive(uint8_t *buffer, uint16_t buffer_size) {
 
         gNextPacketPtr  = header.nextPacket;
         len = header.byteCount - 4; //remove the CRC count
-        if (len>buffer_size)
-            len=buffer_size;
-        if ((header.status & 0x80)==0)
+        if ((header.status & 0x80)==0) {
             len = 0;
+            next_pkt();
+        }
         else
-            readBuf(len, buffer);
-        if (gNextPacketPtr - 1 > RXSTOP_INIT)
-            writeReg(ERXRDPT, RXSTOP_INIT);
-        else
-            writeReg(ERXRDPT, gNextPacketPtr - 1);
-        writeOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
+            readBufBegin();
     }
     return len;
+}
+
+void enc28j60_packet_rx_end(void)
+{
+  next_pkt();
 }
 
 void enc28j60_copyout (uint8_t page, const uint8_t* data) {

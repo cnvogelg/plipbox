@@ -64,7 +64,7 @@ u08 eth_tx_send_ping_request(const u08 *ip)
   eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
   u08 *ip_pkt = pkt_buf + ETH_HDR_SIZE;
   u16 size = icmp_make_ping_request(ip_pkt, ip, 0, 0);
-  enc28j60_packet_send(pkt_buf, size + ETH_HDR_SIZE);
+  enc28j60_packet_tx(pkt_buf, size + ETH_HDR_SIZE);
   
   return 1;
 }
