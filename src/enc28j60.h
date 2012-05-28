@@ -36,9 +36,11 @@ extern void enc28j60_packet_rx_blk(u08 *data, u16 size);
 extern void enc28j60_packet_rx_end(void);
 
 extern void enc28j60_packet_tx(const u08 *data, u16 size);
-extern void enc28j60_packet_tx_begin(u16 size);
+extern void enc28j60_packet_tx_prepare(void);
+extern void enc28j60_packet_tx_begin_range(u16 offset);
 extern void enc28j60_packet_tx_byte(u08 data);
 extern void enc28j60_packet_tx_blk(const u08 *data, u16 size);
-extern void enc28j60_packet_tx_end(void);
+extern void enc28j60_packet_tx_end_range(void);
+extern void enc28j60_packet_tx_send(u16 len);
 
 #endif

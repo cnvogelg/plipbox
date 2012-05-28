@@ -30,4 +30,7 @@
    
 extern u08 eth_tx_send_ping_request(const u08 *ip);
 
+extern void eth_tx_init(void);
+extern void eth_tx_worker(void);
+
 #endif

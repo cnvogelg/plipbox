@@ -37,11 +37,34 @@
 #include "uartutil.h"
 #include "uart.h"
 #include "ip.h"
+#include "plip.h"
 
 const u08 mac[6] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 const u08 ip[4] = { 192, 168, 2, 133 };
 const u08 gw[4] = { 192, 168, 2, 1 };
 const u08 nm[4] = { 255, 255, 255, 0 };
+
+// parameter
+u08 eth_rx_do_ping = 0;
+u08 eth_rx_do_plip_tx = 1;
+
+static u08 send_pos = ETH_HDR_SIZE;
+static u08 max_pos = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
+
+// callback to retrieve next byte for plip packet send
+static u08 get_plip_data(u08 *data)
+{
+  // fetch data from buffer
+  if(send_pos < max_pos) {
+    *data = pkt_buf[send_pos++];
+    return PLIP_STATUS_OK;
+  } 
+  // fetch data directly from packet buffer on enc28j60
+  else {
+    *data = enc28j60_packet_rx_byte();
+    return PLIP_STATUS_OK;
+  }
+}
 
 void eth_rx_init(void)
 {
@@ -64,7 +87,10 @@ void eth_rx_init(void)
   
   /* init ARP: send query for GW MAC */
   arp_cache_init();
-  arp_init(pkt_buf, PKT_BUF_SIZE);   
+  arp_init(pkt_buf, PKT_BUF_SIZE);
+  
+  // setup plip
+  plip_send_init(get_plip_data);
 }
 
 static void handle_icmp(u08 *ip_buf, u16 ip_len)
@@ -76,8 +102,12 @@ static void handle_icmp(u08 *ip_buf, u16 ip_len)
   } else {
     // incoming request -> generate reply
     if(icmp_is_ping_request(ip_buf)) {
-      uart_send_string("PING!");
-      uart_send_crlf();
+      uart_send_string("PING: ");
+      net_dump_ip(ip_get_src_ip(ip_buf));
+      uart_send_string(" id=");
+      uart_send_hex_word_spc(icmp_get_ping_id(ip_buf));
+      uart_send_string("seq=");
+      uart_send_hex_word_crlf(icmp_get_ping_seqnum(ip_buf));
             
       icmp_ping_request_to_reply(ip_buf);
       eth_make_reply(pkt_buf);
@@ -134,10 +164,9 @@ void eth_rx_worker(void)
     read_len = PKT_BUF_SIZE;
   }
   u16 missing = read_len - ETH_HDR_SIZE;
-  enc28j60_packet_rx_blk(pkt_buf + ETH_HDR_SIZE, missing);
-  enc28j60_packet_rx_end();
+  u16 offset = ETH_HDR_SIZE;
 
-#define DUMP_ETH_HDR
+//#define DUMP_ETH_HDR
 #ifdef DUMP_ETH_HDR
   // show length and dump eth header
   uart_send_hex_word_spc(len);
@@ -147,12 +176,24 @@ void eth_rx_worker(void)
 
   // ----- handle ARP -----
   if(is_arp) {
+    // read missing bytes and finish packet rx
+    enc28j60_packet_rx_blk(pkt_buf + offset, missing);
+    enc28j60_packet_rx_end();
+    
+    // now do ARP stuff
     arp_handle_packet(pkt_buf, len);
   }
   // ----- handle IPv4 -----
-  else {
+  else if(missing >= IP_MIN_HDR_SIZE) {
+    // read IP header
+    enc28j60_packet_rx_blk(pkt_buf + offset, IP_MIN_HDR_SIZE);
+    offset  += IP_MIN_HDR_SIZE;
+    missing -= IP_MIN_HDR_SIZE;
+    
+    // prepare IP packet pointer/size
     u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
     u16 ip_size = len - ETH_HDR_SIZE;
+    u08 finished = 0;
       
     // check IP packet size
     u16 total_len = ip_get_total_length(ip_buf);
@@ -174,11 +215,31 @@ void eth_rx_worker(void)
     }
     // IP packet seems to be ok!
     else {
-      // ICMP
-      if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
+      // do own ping here
+      if(eth_rx_do_ping && ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
+        // read missing bytes and finish as icmp might send a return
+        enc28j60_packet_rx_blk(pkt_buf + offset, missing);
+        enc28j60_packet_rx_end();
+        finished = 1;
+        
         // my custom PING handler
         handle_icmp(ip_buf, ip_size);
-      }      
+      } 
+      // do PLIP transfer of packet (otherwise ignore packet)
+      else if(eth_rx_do_plip_tx) {
+        // reset send_pos (right after the ETH header)
+        send_pos = ETH_HDR_SIZE;
+        // send packet via PLIP
+        pkt.size = ip_size;
+        u08 status = plip_send(&pkt);
+        
+        uart_send('R');
+        uart_send_hex_byte_crlf(status);
+      }
+    }
+    // finish IP packet transfer
+    if(!finished) {
+      enc28j60_packet_rx_end();
     }
   }
 }

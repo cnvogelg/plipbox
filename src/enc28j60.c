@@ -478,28 +478,38 @@ uint8_t enc28j60_is_link_up( void )
 
 void enc28j60_packet_tx(const u08 *data, u16 size)
 {
-  enc28j60_packet_tx_begin(size);
+  enc28j60_packet_tx_prepare();
+  enc28j60_packet_tx_begin_range(0);
   enc28j60_packet_tx_blk(data, size);
-  enc28j60_packet_tx_end();
+  enc28j60_packet_tx_end_range();
+  enc28j60_packet_tx_send(size);
 }
 
-void enc28j60_packet_tx_begin(u16 len) 
+void enc28j60_packet_tx_prepare(void) 
 {
     while (readOp(ENC28J60_READ_CTRL_REG, ECON1) & ECON1_TXRTS)
         if (readRegByte(EIR) & EIR_TXERIF) {
             writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
             writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
         }
-    writeReg(EWRPT, TXSTART_INIT);
-    writeReg(ETXND, TXSTART_INIT+len);
-    writeOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
-    writeBufBegin();
 }
 
-void enc28j60_packet_tx_end(void)
+void enc28j60_packet_tx_send(u16 len)
 {  
-    writeBufEnd();
+    writeReg(ETXND, TXSTART_INIT+len);
     writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
+}
+
+void enc28j60_packet_tx_begin_range(u16 offset)
+{
+  writeReg(EWRPT, TXSTART_INIT+offset);
+  writeOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
+  writeBufBegin();  
+}
+
+void enc28j60_packet_tx_end_range(void)
+{
+  writeBufEnd();
 }
 
 inline static void next_pkt(void)

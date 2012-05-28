@@ -34,6 +34,7 @@
 #define IP_PROTOCOL_TCP     0x06
 #define IP_PROTOCOL_UDP     0x11
 
+#define IP_MIN_HDR_SIZE     20
 
 /* generic checksum calculation for header checksum and others */
 extern u16 ip_calc_checksum(const u08 *buf, u08 offset, int num_words);

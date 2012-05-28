@@ -107,9 +107,11 @@ int main (void){
   uart_send_string("plip2eth: ");
   
   eth_rx_init();
+  eth_tx_init();
   
   while(1) {
     eth_rx_worker();
+    eth_tx_worker();
     
     // small hack to enter commands
     if(uart_read_data_available()) {

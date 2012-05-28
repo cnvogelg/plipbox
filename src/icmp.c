@@ -32,6 +32,9 @@
 #define ICMP_CODE_OFF     1
 #define ICMP_CHECKSUM_OFF 2
 #define ICMP_DATA_OFF     4
+   
+#define ICMP_PING_ID_OFF      4
+#define ICMP_PING_SEQNUM_OFF  6
 
 #define ICMP_TYPE_ECHO_REPLY    0
 #define ICMP_TYPE_ECHO_REQUEST  8
@@ -108,7 +111,17 @@ void icmp_ping_request_to_reply(u08 *buf)
   }
   
   // make an ICMP Ping Reply
-  buf[20] = 0;
+  buf[ip_get_hdr_length(buf) + ICMP_TYPE_OFF] = 0;
   icmp_set_checksum(buf);
+}
+
+u16 icmp_get_ping_id(const u08 *buf)
+{
+  return net_get_word(buf + ip_get_hdr_length(buf) + ICMP_PING_ID_OFF);
+}
+
+u16 icmp_get_ping_seqnum(const u08 *buf)
+{
+  return net_get_word(buf + ip_get_hdr_length(buf) + ICMP_PING_SEQNUM_OFF);  
 }
 
