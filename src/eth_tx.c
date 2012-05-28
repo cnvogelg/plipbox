@@ -77,13 +77,11 @@ static void handle_my_packet(u08 *ip_buf, u16 size)
 }
 
 static u08 offset;
-static u08 size;
 
 static u08 begin_rx(plip_packet_t *pkt)
 {
   // start writing packet after (potential) ETH header
   offset = ETH_HDR_SIZE;
-  size = 0;
   
   // start writing after ETH header
   enc28j60_packet_tx_begin_range(ETH_HDR_SIZE);
@@ -94,10 +92,9 @@ static u08 begin_rx(plip_packet_t *pkt)
 static u08 transfer_rx(u08 *data)
 {
   // clone packet to our packet buffer
-  if(size < (PKT_BUF_SIZE - ETH_HDR_SIZE)) {
+  if(offset < PKT_BUF_SIZE) {
     pkt_buf[offset] = *data;
     offset ++;
-    size ++;
   }
   
   // always copy to TX buffer of enc28j60
@@ -151,6 +148,8 @@ void eth_tx_worker(void)
       else {
         uart_send_string("plip_rx:");
         net_dump_ip(ltgt_ip);
+        uart_send_string(" size=");
+        uart_send_hex_word_spc(pkt.size);
         
         // find a mac address for the target 
         const u08 *mac = arp_find_mac(pkt_buf, ltgt_ip);
