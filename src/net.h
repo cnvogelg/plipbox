@@ -35,6 +35,8 @@ extern const u08* net_get_mac(void);
 extern const u08* net_get_ip(void);
 extern const u08* net_get_gateway(void);
 extern const u08* net_get_netmask(void);
+extern const u08* net_get_p2p_me(void);
+extern const u08* net_get_p2p_amiga(void);
 
 extern void net_copy_my_mac(u08 *out);
 extern void net_copy_my_ip(u08 *out);

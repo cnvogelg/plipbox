@@ -33,6 +33,9 @@ static u08 ip_addr[4];
 static u08 gw_addr[4];
 static u08 net_mask[4];
 
+static u08 p2p_me[4] = { 192, 168, 0, 2 };
+static u08 p2p_amiga[4] = { 192, 168, 0, 1 };
+
 void net_init(const u08 mac[6], const u08 ip[4], const u08 gw[4], const u08 nm[4])
 {
   net_copy_mac(mac, mac_addr);
@@ -59,6 +62,16 @@ const u08* net_get_gateway(void)
 const u08* net_get_netmask(void)
 {
   return net_mask;
+}
+
+const u08* net_get_p2p_me(void)
+{
+  return p2p_me;
+}
+
+const u08* net_get_p2p_amiga(void)
+{
+  return p2p_amiga;
 }
 
 void net_copy_my_mac(u08 *out)

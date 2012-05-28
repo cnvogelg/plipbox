@@ -94,6 +94,16 @@ const u08 *ip_get_tgt_ip(const u08 *buf)
   return buf + 16;
 }
 
+void ip_set_src_ip(u08 *buf, const u08 *ip)
+{
+  net_copy_ip(ip, buf + 12);
+}
+
+void ip_set_tgt_ip(u08 *buf, const u08 *ip)
+{
+  net_copy_ip(ip, buf + 16);
+}
+
 u08 ip_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 protocol)
 {
   memset(buf,0,20);  

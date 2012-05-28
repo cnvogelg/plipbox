@@ -71,19 +71,21 @@ u08 eth_tx_send_ping_request(const u08 *ip)
   return 1;
 }
 
+static void handle_my_packet(u08 *ip_buf, u16 size)
+{
+  // TODO
+}
+
 static u08 offset;
 static u08 size;
-static u08 valid;
 
 static u08 begin_rx(plip_packet_t *pkt)
 {
-  // start writing packet after ETH header
+  // start writing packet after (potential) ETH header
   offset = ETH_HDR_SIZE;
   size = 0;
-  valid = 0;
   
   // start writing after ETH header
-  enc28j60_packet_tx_prepare();
   enc28j60_packet_tx_begin_range(ETH_HDR_SIZE);
   
   return PLIP_STATUS_OK;
@@ -91,8 +93,8 @@ static u08 begin_rx(plip_packet_t *pkt)
 
 static u08 transfer_rx(u08 *data)
 {
-  // first we need to fill our buffer until IP header is complete
-  if(size < IP_MIN_HDR_SIZE) {
+  // clone packet to our packet buffer
+  if(size < (PKT_BUF_SIZE - ETH_HDR_SIZE)) {
     pkt_buf[offset] = *data;
     offset ++;
     size ++;
@@ -106,34 +108,9 @@ static u08 transfer_rx(u08 *data)
 
 static u08 end_rx(plip_packet_t *pkt)
 {
-  // end range
+  // end range in enc28j60 buffer
   enc28j60_packet_tx_end_range();
 
-  uart_send_string("ip: ");
-  const u08 *ip = ip_get_tgt_ip(pkt_buf + ETH_HDR_SIZE);
-  net_dump_ip(ip);
-  const u08 *mac = arp_find_mac(pkt_buf, ip);
-  if(mac == 0) {
-    uart_send_string("??");
-    uart_send_crlf();
-    return PLIP_STATUS_OK;
-  }
-  uart_send_string(" -> mac ");
-  net_dump_mac(mac);
-  uart_send_crlf();
-  
-  // now build ethernet header
-  eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
-  
-  // copy eth header to packet buffer
-  enc28j60_packet_tx_begin_range(0);
-  enc28j60_packet_tx_blk(pkt_buf, ETH_HDR_SIZE);
-  enc28j60_packet_tx_end_range();
-  
-  // finally send packet
-  u16 pkt_size = pkt->size + ETH_HDR_SIZE;
-  enc28j60_packet_tx_send(pkt_size);
-  
   return PLIP_STATUS_OK;
 }
 
@@ -146,10 +123,65 @@ void eth_tx_worker(void)
 {
   // do we have a PLIP packet waiting?
   if(plip_can_recv() == PLIP_STATUS_OK) {
+    
+    // prepare eth chip to get its tx buffer filled
+    enc28j60_packet_tx_prepare();
+    
+    // receive PLIP packet and store it in eth chip tx buffer
+    // also keep a copy in our local pkt_buf (up to max size)
     u08 status = plip_recv(&pkt);
     
-    uart_send('T');
-    uart_send_hex_byte_crlf(status);
+    // if PLIP rx was ok then have a look at the packet
+    if(status == PLIP_STATUS_OK) {
+      
+      // fetch tgt ip of incoming packet
+      u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
+      const u08 *tgt_ip = ip_get_tgt_ip(ip_buf);
+      u08 ltgt_ip[4];
+      net_copy_ip(tgt_ip, ltgt_ip);
+  
+      // if its a packet for me (p2p or eth address) then handle it now
+      if(net_compare_ip(ltgt_ip, net_get_p2p_me()) ||
+         net_compare_ip(ltgt_ip, net_get_ip())) {
+        uart_send_string("plip_rx: ME!");
+        uart_send_crlf();
+        handle_my_packet(ip_buf, pkt.size);
+      } 
+      // pass this packet on to ethernet
+      else {
+        uart_send_string("plip_rx:");
+        net_dump_ip(ltgt_ip);
+        
+        // find a mac address for the target 
+        const u08 *mac = arp_find_mac(pkt_buf, ltgt_ip);
+        if(mac == 0) {
+          uart_send_string("??");
+          uart_send_crlf();
+        }
+        // found mac -> we can send packet
+        else {
+          uart_send_string(" -> mac ");
+          net_dump_mac(mac);
+          uart_send_crlf();
+        
+          // adjust source ip to our eth IP
+          ip_set_src_ip(ip_buf, net_get_ip());
+          ip_hdr_set_checksum(ip_buf);
+        
+          // now build ethernet header
+          eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
+        
+          // copy eth header and ip header to packet buffer
+          enc28j60_packet_tx_begin_range(0);
+          enc28j60_packet_tx_blk(pkt_buf, ETH_HDR_SIZE + IP_MIN_HDR_SIZE);
+          enc28j60_packet_tx_end_range();
+  
+          // finally send packet
+          u16 pkt_size = pkt.size + ETH_HDR_SIZE;
+          enc28j60_packet_tx_send(pkt_size);
+        }
+      }
+    }
   }
 }
 

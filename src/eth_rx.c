@@ -241,5 +241,8 @@ void eth_rx_worker(void)
     if(!finished) {
       enc28j60_packet_rx_end();
     }
+  } else {
+    uart_send_string("SHORT PKT?");
+    uart_send_crlf();
   }
 }
