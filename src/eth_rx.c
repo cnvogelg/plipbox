@@ -227,14 +227,63 @@ void eth_rx_worker(void)
       } 
       // do PLIP transfer of packet (otherwise ignore packet)
       else if(eth_rx_do_plip_tx) {
+
+        // do we need some extra bytes for UDP/TCP checksum correction?
+        u08 extra = 0;
+        u08 protocol = ip_get_protocol(ip_buf);
+        if(protocol == IP_PROTOCOL_TCP) {
+          extra = TCP_CHECKSUM_OFF + 2 + ip_get_hdr_length(ip_buf) - IP_MIN_HDR_SIZE;
+#ifdef DEBUG
+          uart_send('T');
+          uart_send_hex_byte_spc(extra);
+#endif
+        } else if(protocol == IP_PROTOCOL_UDP) {
+          extra = UDP_CHECKSUM_OFF + 2 + ip_get_hdr_length(ip_buf) - IP_MIN_HDR_SIZE;
+#ifdef DEBUG
+          uart_send('U');
+          uart_send_hex_byte_spc(extra);
+#endif
+        }
+        max_pos = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
+        if(extra != 0) {
+          enc28j60_packet_rx_blk(pkt_buf + offset, extra);
+          max_pos += extra;
+        }
+        
+        // adjust ip: eth ip -> p2p amiga ip
+        ip_adjust_checksum(ip_buf, IP_CHECKSUM_OFF, net_get_ip(), net_get_p2p_amiga());
+        if(extra != 0) {
+          ip_adjust_checksum(pkt_buf, max_pos - 2, net_get_ip(), net_get_p2p_amiga());
+        }
+        ip_set_tgt_ip(ip_buf, net_get_p2p_amiga());
+
+#ifdef DEBUG
+        // make sure our checksum was corrected correctly
+        u16 chk = ip_hdr_calc_checksum(ip_buf);
+        if(chk != 0xfff) {
+          uart_send_string("eth_rx:CHECK?");
+          uart_send_hex_word_crlf(chk);          
+        }
+#endif
+
         // reset send_pos (right after the ETH header)
         send_pos = ETH_HDR_SIZE;
         // send packet via PLIP
         pkt.size = ip_size;
         u08 status = plip_send(&pkt);
-        
-        uart_send('R');
+
+        if(status != PLIP_STATUS_OK) {
+          uart_send_string("plip_tx:");
+          uart_send_hex_byte_crlf(status);
+        }
+#ifdef DEBUG
+        uart_send_string("plip_tx:");
+        net_dump_ip(ip_get_src_ip(ip_buf));
+        uart_send_string(" -> ");
+        net_dump_ip(ip_get_tgt_ip(ip_buf));
+        uart_send_string(" : ");
         uart_send_hex_byte_crlf(status);
+#endif
       }
     }
     // finish IP packet transfer

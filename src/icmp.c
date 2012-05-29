@@ -77,6 +77,12 @@ u16 icmp_make_ping_request(u08 *buf, const u08 *tgt_ip, u16 id, u16 seq)
 
 u16 icmp_get_checksum(const u08 *buf)
 {
+  u08 off = ip_get_hdr_length(buf) + ICMP_CHECKSUM_OFF;
+  return net_get_word(buf + off);
+}
+
+u16 icmp_calc_checksum(const u08 *buf)
+{
   u08 hdr_len = ip_get_hdr_length(buf);
   u16 total_len = ip_get_total_length(buf);
   u16 num_words = (total_len - hdr_len) >> 1; // bytes -> words
@@ -85,7 +91,7 @@ u16 icmp_get_checksum(const u08 *buf)
 
 u08 icmp_validate_checksum(const u08 *buf)
 {
-  return icmp_get_checksum(buf) == 0xffff;
+  return icmp_calc_checksum(buf) == 0xffff;
 }
 
 void icmp_set_checksum(u08 *buf)
@@ -95,7 +101,7 @@ void icmp_set_checksum(u08 *buf)
   // clear check
   buf[off] = buf[off+1] = 0;
   // calc check
-  u16 check = ~ icmp_get_checksum(buf);
+  u16 check = ~ icmp_calc_checksum(buf);
   // store check
   net_put_word(buf + off, check);
 }

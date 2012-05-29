@@ -34,6 +34,7 @@ extern u08 icmp_is_ping_request(const u08 *buf);
 extern u08 icmp_is_ping_reply(const u08 *buf); 
 
 extern u16 icmp_get_checksum(const u08 *buf);
+extern u16 icmp_calc_checksum(const u08 *buf);
 extern u08 icmp_validate_checksum(const u08 *buf);
 extern void icmp_set_checksum(u08 *buf);
 

@@ -129,13 +129,23 @@ void eth_tx_worker(void)
     u08 status = plip_recv(&pkt);
     
     // if PLIP rx was ok then have a look at the packet
-    if(status == PLIP_STATUS_OK) {
-      
+    if(status != PLIP_STATUS_OK) {
+      uart_send_string("plip_rx:");
+      uart_send_hex_byte_crlf(status);
+    } else {
       // fetch tgt ip of incoming packet
       u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
       const u08 *tgt_ip = ip_get_tgt_ip(ip_buf);
       u08 ltgt_ip[4];
       net_copy_ip(tgt_ip, ltgt_ip);
+      const u08 *src_ip = ip_get_src_ip(ip_buf);
+  
+      // make sure all packets are coming from amiga
+      if(!net_compare_ip(src_ip, net_get_p2p_amiga())) {
+        uart_send_string("plip_rx: not amiga!");
+        uart_send_crlf();
+        return;
+      }
   
       // if its a packet for me (p2p or eth address) then handle it now
       if(net_compare_ip(ltgt_ip, net_get_p2p_me()) ||
@@ -146,10 +156,12 @@ void eth_tx_worker(void)
       } 
       // pass this packet on to ethernet
       else {
+#ifdef DEBUG
         uart_send_string("plip_rx:");
         net_dump_ip(ltgt_ip);
         uart_send_string(" size=");
         uart_send_hex_word_spc(pkt.size);
+#endif
         
         // find a mac address for the target 
         const u08 *mac = arp_find_mac(pkt_buf, ltgt_ip);
@@ -159,20 +171,49 @@ void eth_tx_worker(void)
         }
         // found mac -> we can send packet
         else {
+#ifdef DEBUG
           uart_send_string(" -> mac ");
           net_dump_mac(mac);
           uart_send_crlf();
+#endif
         
+          // ----- NAT -----
           // adjust source ip to our eth IP
+          ip_adjust_checksum(ip_buf, IP_CHECKSUM_OFF, net_get_p2p_amiga(), net_get_ip());
+          
+          // get protocol
+          u08 protocol = ip_get_protocol(ip_buf);
+          u16 copy_size = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
+          if(protocol == IP_PROTOCOL_TCP) {
+            // adjust TCP checksum
+            u16 off = ip_get_hdr_length(ip_buf) + TCP_CHECKSUM_OFF;
+            ip_adjust_checksum(ip_buf, off, net_get_p2p_amiga(), net_get_ip());
+            copy_size += TCP_CHECKSUM_OFF + 2;
+          } else if(protocol == IP_PROTOCOL_UDP) {
+            // adjust UDP checksum
+            u16 off = ip_get_hdr_length(ip_buf) + UDP_CHECKSUM_OFF;
+            ip_adjust_checksum(ip_buf, off, net_get_p2p_amiga(), net_get_ip());
+            copy_size += UDP_CHECKSUM_OFF + 2;
+          }
+
+          // change src ip to my eth ip
           ip_set_src_ip(ip_buf, net_get_ip());
-          ip_hdr_set_checksum(ip_buf);
+          
+#ifdef DEBUG
+          // make sure our checksum was corrected correctly
+          u16 chk = ip_hdr_calc_checksum(ip_buf);
+          if(chk != 0xffff) {
+            uart_send_string("eth_tx:CHECK?");
+            uart_send_hex_word_crlf(chk);
+          }
+#endif
         
           // now build ethernet header
           eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
         
-          // copy eth header and ip header to packet buffer
+          // copy (created) eth header and (modified) ip header back to packet buffer
           enc28j60_packet_tx_begin_range(0);
-          enc28j60_packet_tx_blk(pkt_buf, ETH_HDR_SIZE + IP_MIN_HDR_SIZE);
+          enc28j60_packet_tx_blk(pkt_buf, copy_size);
           enc28j60_packet_tx_end_range();
   
           // finally send packet

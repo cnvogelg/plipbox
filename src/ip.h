@@ -36,11 +36,18 @@
 
 #define IP_MIN_HDR_SIZE     20
 
+#define IP_CHECKSUM_OFF     10
+   
+#define UDP_CHECKSUM_OFF    6
+#define TCP_CHECKSUM_OFF    16
+
 /* generic checksum calculation for header checksum and others */
 extern u16 ip_calc_checksum(const u08 *buf, u08 offset, int num_words);
- 
+extern void ip_adjust_checksum(u08 *buf, u08 offset, const u08 *old_ip, const u08 *net_ip); 
+
 /* header checksum */
 extern u16 ip_hdr_get_checksum(const u08 *buf);
+extern u16 ip_hdr_calc_checksum(const u08 *buf);
 extern u08 ip_hdr_validate_checksum(const u08 *buf);
 extern void ip_hdr_set_checksum(u08 *buf);
 
@@ -50,6 +57,7 @@ extern const u08 *ip_get_tgt_ip(const u08 *buf);
 extern u16 ip_get_total_length(const u08 *buf);
 extern u08 ip_get_hdr_length(const u08 *buf);
 extern u08 ip_is_ipv4_protocol(const u08 *buf, u08 protocol);
+extern u08 ip_get_protocol(const u08 *buf);
 
 extern void ip_set_src_ip(u08 *buf, const u08 *ip);
 extern void ip_set_tgt_ip(u08 *buf, const u08 *ip);

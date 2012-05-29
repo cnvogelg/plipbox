@@ -25,6 +25,7 @@
  */
 
 #include <string.h>
+#include <inttypes.h>
 
 #include "ip.h"
 #include "net.h"
@@ -43,9 +44,47 @@ u16 ip_calc_checksum(const u08 *buf, u08 offset, int num_words)
   return (u16)(sum & 0xffff) + (u16)(sum >> 16);
 }
 
+void ip_adjust_checksum(u08 *buf, u08 offset, const u08 *old_ip, const u08 *new_ip)
+{
+  u16 sum = net_get_word(buf + offset);
+  sum = ~sum;
+  
+  /* remove old ip */
+  u08 off = 0;
+  for(int i=0;i<2;i++) {
+    u16 v = net_get_word(old_ip + off);
+    u16 old_sum = sum;
+    sum -= v;
+    if(old_sum <= v) {
+      sum --;
+    }
+    off += 2;
+  }
+  
+  /* add new ip */
+  off = 0;
+  for(int i=0;i<2;i++) {
+    u16 v = net_get_word(new_ip + off);
+    u16 max = -(sum+1);
+    sum += v;
+    if(v >= max) {
+      sum++; 
+    }
+    off += 2;
+  }
+
+  sum = ~sum;
+  net_put_word(buf + offset, sum);
+}
+
 /* ----- IP header ----- */
 
 u16 ip_hdr_get_checksum(const u08 *buf)
+{
+  return net_get_word(buf + 10);
+}
+
+u16 ip_hdr_calc_checksum(const u08 *buf)
 {
   // header length in dword * 2 -> word
   u08 num_words = (buf[0] & 0xf) * 2;
@@ -54,7 +93,7 @@ u16 ip_hdr_get_checksum(const u08 *buf)
 
 u08 ip_hdr_validate_checksum(const u08 *buf)
 { 
-  return ip_hdr_get_checksum(buf) == 0xffff;
+  return ip_hdr_calc_checksum(buf) == 0xffff;
 }
 
 void ip_hdr_set_checksum(u08 *buf)
@@ -62,7 +101,7 @@ void ip_hdr_set_checksum(u08 *buf)
   // clear check
   buf[10] = buf[11] = 0;
   // calc check 
-  u16 check = ~ ip_hdr_get_checksum(buf);
+  u16 check = ~ ip_hdr_calc_checksum(buf);
   // store check
   net_put_word(buf+10, check);
 }
@@ -82,6 +121,11 @@ u08 ip_is_ipv4_protocol(const u08 *buf, u08 protocol)
   return
       ((buf[0] & 0xf0)==0x40) && // IPv4
       (buf[9]==protocol);
+}
+
+u08 ip_get_protocol(const u08 *buf)
+{
+  return buf[9];
 }
 
 const u08 *ip_get_src_ip(const u08 *buf)
