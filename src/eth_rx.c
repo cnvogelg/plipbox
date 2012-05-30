@@ -127,11 +127,25 @@ static void handle_icmp(u08 *ip_buf, u16 ip_len)
   }
 }
 
+u08 retry = 0;
+
 void eth_rx_worker(void)
 {
   // get next packet
   u16 len = enc28j60_packet_rx_begin();
   if(len == 0) {
+    // shall we retry to send the last packet
+    if(retry > 0) {
+      u08 status = plip_send(&pkt);
+      if(status == PLIP_STATUS_OK) {
+        uart_send_string("plip_tx:retry ok");
+        uart_send_crlf();
+        retry = 0;
+      } else {
+        uart_send_string("plip_tx:retry ");
+        uart_send_hex_byte_crlf(status);
+      }
+    }  
     return;
   }
 
@@ -179,7 +193,7 @@ void eth_rx_worker(void)
     // read missing bytes and finish packet rx
     enc28j60_packet_rx_blk(pkt_buf + offset, missing);
     enc28j60_packet_rx_end();
-    
+
     // now do ARP stuff
     arp_handle_packet(pkt_buf, len);
   }
@@ -275,6 +289,9 @@ void eth_rx_worker(void)
         if(status != PLIP_STATUS_OK) {
           uart_send_string("plip_tx:");
           uart_send_hex_byte_crlf(status);
+          retry = 1;
+        } else {
+          retry = 0;
         }
 #ifdef DEBUG
         uart_send_string("plip_tx:");

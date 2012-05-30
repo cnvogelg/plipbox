@@ -161,6 +161,8 @@ void arp_send_request(u08 *ethbuf, const u08 *ip)
   uart_send_string("arp:req ");
   net_dump_ip(ip);
   uart_send_crlf();
+#endif
+#ifdef DUMP_DETAIL
   uart_send_hex_word_spc(len);
   eth_dump(ethbuf);
   uart_send_crlf();
@@ -181,65 +183,75 @@ u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
     return 0;
   }
   
-#ifdef DUMP_ARP
-  arp_dump(buf);
-#endif
+  /* extract IP + MAC of reply */
+  const u08 *src_ip = buf + ARP_OFF_SRC_IP;
+  const u08 *src_mac = buf + ARP_OFF_SRC_MAC;
   
   /* is someone asking for our MAC? */
   if(arp_is_req_for_me(buf)) {
-#ifdef DUMP_ARP
+    
+#ifdef DUMP_DETAIL
+    arp_dump(buf);
     uart_send_string("ME! ");
+    uart_send_crlf();
 #endif
+#ifdef DUMP_ARP
+    uart_send_string("arp:me: ");
+    net_dump_ip(src_ip);
+    uart_send_crlf();
+#endif
+    
     /* send a reply with my MAC+IP */
     eth_make_reply(ethbuf);
     arp_make_reply(buf);
     enc28j60_packet_tx(ethbuf, ethlen);
+    return 1;
   }
   
   /* is it a reply for a request of me? */
   else if(arp_is_reply_for_me(buf)) {
-    /* extract IP + MAC of reply */
-    const u08 *ip = buf + ARP_OFF_SRC_IP;
-    const u08 *mac = buf + ARP_OFF_SRC_MAC;
 
-#ifdef DUMP_ARP
+#ifdef DUMP_DETAIL
+    arp_dump(buf);
     uart_send_crlf();
+#endif
+#ifdef DUMP_ARP
     uart_send_string("arp:reply ");
-    net_dump_ip(ip);
+    net_dump_ip(src_ip);
     uart_send_spc();
-    net_dump_mac(mac);
+    net_dump_mac(src_mac);
 #endif
     
     /* we got a reply for the gateway MAC -> keep in cache */    
-    if(net_compare_ip(ip, net_get_gateway())) {
+    if(net_compare_ip(src_ip, net_get_gateway())) {
 #ifdef DUMP_ARP
       uart_send_string(" -> GW");
+      uart_send_crlf();
 #endif
-      net_copy_mac(mac, gw_mac);
+      net_copy_mac(src_mac, gw_mac);
       has_gw_mac = 1;
     }
     /* non-GW reply -> push into cache */
     else {
-      u08 pos = arp_cache_find_ip(ip);
+      u08 pos = arp_cache_find_ip(src_ip);
       if(pos == ARP_CACHE_INVALID) {
         /* add a new entry */
-        pos = arp_cache_add(ip, mac);
+        pos = arp_cache_add(src_ip, src_mac);
       } else {
         /* update mac of entry */
-        arp_cache_update(pos, mac);
+        arp_cache_update(pos, src_mac);
       }
 #ifdef DUMP_ARP
       uart_send_string(" -> cache ");
       uart_send_hex_byte_crlf(pos);
+      uart_send_crlf();
 #endif
     }
+    return 1;
   }
-  
-#ifdef DUMP_ARP
-  uart_send_crlf();
-#endif
-  
-  return 1;
+  else {
+    return 0;
+  }
 }
 
 const u08 *arp_find_mac(u08 *buf, const u08 *ip)
