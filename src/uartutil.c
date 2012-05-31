@@ -26,6 +26,19 @@
 
 #include "uart.h"
 #include "util.h"
+#include "uartutil.h"
+
+void uart_send_pstring(PGM_P data)
+{
+  while(1) {
+    u08 c = pgm_read_byte_near(data);
+    if(c == 0) {
+      break;
+    }
+    uart_send(c);
+    data++;
+  }
+}
 
 u08 uart_send_string(const char *str)
 {

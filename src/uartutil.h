@@ -27,8 +27,11 @@
 #ifndef UARTUTIL_H
 #define UARTUTIL_H
 
+#include <avr/pgmspace.h>
 #include "global.h"
 
+// send a c string from PROGMEM
+void uart_send_pstring(PGM_P data);
 // send a c string
 u08 uart_send_string(const char *data);
 // send data

@@ -104,7 +104,7 @@ int main (void){
   }
 #else
   /* ----- network stuff ----- */
-  uart_send_string("plip2eth: ");
+  uart_send_pstring(PSTR("plip2eth: "));
   
   eth_rx_init();
   eth_tx_init();
