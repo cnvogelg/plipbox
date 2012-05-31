@@ -35,16 +35,10 @@ void uart_init(void);
 // is rx data available?
 u08 uart_read_data_available(void);
 
-// stop reception (clear CTS)
-void uart_stop_reception(void);
-
-// allow reception (clear read buffer and set CTS)
-void uart_start_reception(void);
-
 // read a byte (from buffer) (with cts handshaking)
-u08 uart_read(u08 *data);
+u08 uart_read(void);
 
 // write a byte (with rts handshaking)
-u08 uart_send(u08 data);
+void uart_send(u08 data);
 
 #endif

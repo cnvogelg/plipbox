@@ -40,79 +40,59 @@ void uart_send_pstring(PGM_P data)
   }
 }
 
-u08 uart_send_string(const char *str)
+void uart_send_string(const char *str)
 {
   while(*str) {
-    if(!uart_send((u08)*str))
-      return 0;
+    uart_send((u08)*str);
     str++;
   }
-  return 1;
 }
 
-u08 uart_send_data(u08 *data,u08 len)
+void uart_send_data(u08 *data,u08 len)
 {
   for(u08 i=0;i<len;i++) {
-    if(!uart_send(data[i]))
-      return 0;
+    uart_send(data[i]);
   }
-  return 1;
 }
 
-u08 uart_send_crlf(void)
+void uart_send_crlf(void)
 {
-  return uart_send_string("\r\n");
+  uart_send_pstring(PSTR("\r\n"));
 }
 
-u08 uart_send_spc(void)
+void uart_send_spc(void)
 {
-  return uart_send((u08)' ');
+  uart_send((u08)' ');
 }
 
 static u08 buf[8];
 
-u08 uart_send_hex_byte_crlf(u08 data)
+void uart_send_hex_byte_crlf(u08 data)
 {
   byte_to_hex(data,buf);
-  if(uart_send_data(buf,2))
-    return uart_send_crlf();
-  else
-    return 0;
+  uart_send_data(buf,2);
 }
 
-u08 uart_send_hex_byte_spc(u08 data)
+void uart_send_hex_byte_spc(u08 data)
 {
   byte_to_hex(data,buf);
-  if(uart_send_data(buf,2))
-    return uart_send_spc();
-  else
-    return 0;
+  uart_send_data(buf,2);
 }
 
-u08 uart_send_hex_word_crlf(u16 data)
+void uart_send_hex_word_crlf(u16 data)
 {
   word_to_hex(data,buf);
-  if(uart_send_data(buf,4))
-    return uart_send_crlf();
-  else
-    return 0;
+  uart_send_data(buf,4);
 }
 
-u08 uart_send_hex_word_spc(u16 data)
+void uart_send_hex_word_spc(u16 data)
 {
   word_to_hex(data,buf);
-  if(uart_send_data(buf,4))
-    return uart_send_spc();
-  else
-    return 0;
+  uart_send_data(buf,4);
 }
 
-u08 uart_send_hex_dword_crlf(u32 data)
+void uart_send_hex_dword_crlf(u32 data)
 {
   dword_to_hex(data,buf);
-  if(uart_send_data(buf,8))
-    return uart_send_crlf();
-  else
-    return 0;
+  uart_send_data(buf,8);
 }
-

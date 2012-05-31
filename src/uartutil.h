@@ -33,24 +33,24 @@
 // send a c string from PROGMEM
 void uart_send_pstring(PGM_P data);
 // send a c string
-u08 uart_send_string(const char *data);
+void uart_send_string(const char *data);
 // send data
-u08 uart_send_data(u08 *data,u08 size);
+void uart_send_data(u08 *data,u08 size);
 // send a CR+LF
-u08 uart_send_crlf(void);
+void uart_send_crlf(void);
 // send a Space
-u08 uart_send_spc(void);
+void uart_send_spc(void);
 
 // send a hex byte
-u08 uart_send_hex_byte_crlf(u08 data);
+void uart_send_hex_byte_crlf(u08 data);
 // send a hex byte
-u08 uart_send_hex_byte_spc(u08 data);
+void uart_send_hex_byte_spc(u08 data);
 // send a hex word
-u08 uart_send_hex_word_crlf(u16 data);
+void uart_send_hex_word_crlf(u16 data);
 // send a hex word
-u08 uart_send_hex_word_spc(u16 data);
+void uart_send_hex_word_spc(u16 data);
 // send a hex6 dword
-u08 uart_send_hex_dword_crlf(u32 data); 
+void uart_send_hex_dword_crlf(u32 data); 
 
 #endif
 
