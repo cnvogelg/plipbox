@@ -37,18 +37,4 @@ void board_init(void)
    WDTCSR |= _BV(WDCE) | _BV(WDE);
    WDTCSR = 0;
    sei();
-
-   // LED init
-   DDRB  |= LED_MASK;
-   PORTB |= LED_MASK;
-}
-
-void uart_init_rts_cts(void)
-{
-  // RTS (IN)
-  RTS_DDR  &= ~ RTS_MASK;
-  RTS_PORT |= RTS_MASK;
-  // CTS (OUT) (1=inactive)
-  CTS_DDR  |= CTS_MASK;
-  CTS_PORT |= CTS_MASK;
 }

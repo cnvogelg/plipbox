@@ -28,45 +28,9 @@
 #define ARDU_NANO_BOARD_H
 
 #include "global.h"
-#include <avr/io.h>
 
 // ----- BOARD -----
 extern void board_init(void);
-
-// ----- LEDs -----
-#define LED_GREEN_MASK        _BV(3)
-#define LED_YELLOW_MASK       _BV(4)
-#define LED_RED_MASK          _BV(5)
-#define LED_MASK              (LED_GREEN_MASK | LED_YELLOW_MASK | LED_RED_MASK)
-
-#define led_red_on()          { PORTB &= ~LED_RED_MASK; }
-#define led_red_off()         { PORTB |= LED_RED_MASK; }
-
-#define led_yellow_on()       { PORTB &= ~LED_YELLOW_MASK; }
-#define led_yellow_off()      { PORTB |= LED_YELLOW_MASK; }
-
-#define led_green_on()        { PORTB &= ~LED_GREEN_MASK; }
-#define led_green_off()       { PORTB |= LED_GREEN_MASK; }
-
-// ----- RTS/CTS -----
-// CTS (OUT): D9 = PB1
-// RTS (IN): D10 = PB2
-
-#define RTS_PORT    PORTB
-#define RTS_PIN     PINB
-#define RTS_DDR     DDRB
-#define RTS_BIT     2
-#define RTS_MASK    _BV(RTS_BIT)
-
-#define CTS_PORT    PORTB
-#define CTS_PIN     PINB
-#define CTS_DDR     DDRB
-#define CTS_BIT     1
-#define CTS_MASK    _BV(CTS_BIT)
-
-extern void uart_init_rts_cts(void);
-#define uart_set_cts(on)    {if(on) { CTS_PORT &= ~ CTS_MASK; } else { CTS_PORT |= CTS_MASK; }}
-#define uart_get_rts()      ((RTS_PIN & RTS_MASK)==0)
 
 #endif
 
