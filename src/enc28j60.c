@@ -10,8 +10,6 @@
 //
 // Adjusted by Christian Vogelgsaang to be Arduino-free C code
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
 #include <avr/delay.h>
 
 #include "enc28j60.h"
@@ -246,141 +244,77 @@
 // (note: maximum ethernet frame length would be 1518)
 #define MAX_FRAMELEN      1500        
 
-#define FULL_SPEED  1   // switch to full-speed SPI for bulk transfers
-
 static uint8_t Enc28j60Bank;
 static int gNextPacketPtr;
 
-/* SPI config 
-
-SPI_SS   = Digital 10 = PB2
-SPI_MOSI = Digital 11 = PB3
-SPI_MISO = Digital 12 = PB4
-SPI_SCK  = Digital 13 = PB5
-
-*/
-
-#define SPI_SS_MASK		0x04
-#define SPI_MOSI_MASK	0x08
-#define SPI_MISO_MASK	0x10
-#define SPI_SCK_MASK	0x20
-
-static void initSPI ( void )
-{
-	// output: SS, MOSI, SCK
-	DDRB |= SPI_SS_MASK | SPI_MOSI_MASK | SPI_SCK_MASK;
-	// input: MISO
-	DDRB &= ~(SPI_MISO_MASK);
-	
-	// MOSI, SCK = 0
-	PORTB &= ~(SPI_MOSI_MASK | SPI_SCK_MASK);
-	// SS = 1
-	PORTB |= SPI_SS_MASK;
-
-    SPCR = _BV(SPE) | _BV(MSTR); // 8 MHz @ 16
-	SPSR = _BV(SPI2X);
-}
-
-inline static void enableChip ( void ) 
-{
-    cli();
-	PORTB &= ~SPI_SS_MASK;
-}
-
-inline static void disableChip ( void ) 
-{
-	PORTB |= SPI_SS_MASK;
-    sei();
-}
-
-static void xferSPI (uint8_t data) {
-    SPDR = data;
-    while (!(SPSR&(1<<SPIF)))
-        ;
-}
-
 static uint8_t readOp (uint8_t op, uint8_t address) {
-    enableChip();
-    xferSPI(op | (address & ADDR_MASK));
-    xferSPI(0x00);
+    spi_enable_eth();
+    spi_out(op | (address & ADDR_MASK));
     if (address & 0x80)
-        xferSPI(0x00);
-    uint8_t result = SPDR;
-    disableChip();
+        spi_out(0x00);
+    uint8_t result = spi_in();
+    spi_disable_eth();
     return result;
 }
 
 static void writeOp (uint8_t op, uint8_t address, uint8_t data) {
-    enableChip();
-    xferSPI(op | (address & ADDR_MASK));
-    xferSPI(data);
-    disableChip();
+    spi_enable_eth();
+    spi_out(op | (address & ADDR_MASK));
+    spi_out(data);
+    spi_disable_eth();
 }
 
 static void readBuf(uint16_t len, uint8_t* data) {
-    enableChip();
-    xferSPI(ENC28J60_READ_BUF_MEM);
+    spi_enable_eth();
+    spi_out(ENC28J60_READ_BUF_MEM);
     while (len--) {
-        xferSPI(0x00);
-        *data++ = SPDR;
+        *data++ = spi_in();
     }
-    disableChip();
+    spi_disable_eth();
 }
 
 inline static void readBufBegin(void)
 {
-  enableChip();
-  xferSPI(ENC28J60_READ_BUF_MEM);  
-}
-
-u08 enc28j60_packet_rx_byte(void)
-{
-  xferSPI(0x00);
-  return SPDR;
+  spi_enable_eth();
+  spi_out(ENC28J60_READ_BUF_MEM);  
 }
 
 void enc28j60_packet_rx_blk(u08 *data, u16 size)
 {
   while(size--) {
-    xferSPI(0x00);
-    *data++ = SPDR;
+    *data++ = spi_in();
   }
 }
 
 inline static void readBufEnd(void)
 {
-  disableChip();
+  spi_disable_eth();
 }
 
 static void writeBuf(uint16_t len, const uint8_t* data) {
-    enableChip();
-    xferSPI(ENC28J60_WRITE_BUF_MEM);
+    spi_enable_eth();
+    spi_out(ENC28J60_WRITE_BUF_MEM);
     while (len--)
-        xferSPI(*data++);
-    disableChip();
+        spi_out(*data++);
+    spi_disable_eth();
 }
 
 inline static void writeBufBegin(void)
 {
-  enableChip(),
-  xferSPI(ENC28J60_WRITE_BUF_MEM);  
-}
-
-void enc28j60_packet_tx_byte(u08 data)
-{
-  xferSPI(data);
+  spi_enable_eth(),
+  spi_out(ENC28J60_WRITE_BUF_MEM);  
 }
 
 void enc28j60_packet_tx_blk(const u08 *data, u16 size)
 {
   while(size--) {
-    xferSPI(*data++);
+    spi_out(*data++);
   }
 }
 
 inline static void writeBufEnd(void)
 {
-  disableChip();
+  spi_disable_eth();
 }
 
 static void SetBank (uint8_t address) {
@@ -427,13 +361,19 @@ static void writePhy (uint8_t address, uint16_t data) {
 }
 
 uint8_t enc28j60_init (const uint8_t* macaddr) {
-    initSPI();
-    disableChip();
+    spi_disable_eth();
     
     writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
     _delay_ms(2); // errata B7/2
-    while (!readOp(ENC28J60_READ_CTRL_REG, ESTAT) & ESTAT_CLKRDY)
-        ;
+    
+    // wait or error
+    u16 count = 0;
+    while (!readOp(ENC28J60_READ_CTRL_REG, ESTAT) & ESTAT_CLKRDY) {
+      count ++;
+      if(count == 0xfff) {
+        return 0;
+      }
+    }
         
     gNextPacketPtr = RXSTART_INIT;
     writeReg(ERXST, RXSTART_INIT);
@@ -629,8 +569,7 @@ uint8_t enc28j60_do_BIST ( void )
 	#define RANDOM_RACE		0b1100
 
 // init	
-    initSPI();
-    disableChip();
+    spi_disable_eth();
     
     writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
     _delay_ms(2); // errata B7/2

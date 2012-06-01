@@ -91,7 +91,8 @@ SRC += pkt_buf.c
 #SRC += cmd.c param.c bench.c
 #SRC += log.c error.c 
 # eth
-SRC += enc28j60.c net.c eth.c arp.c ip.c icmp.c eth_rx.c eth_tx.c
+SRC += spi.c enc28j60.c 
+SRC += net.c eth.c arp.c ip.c icmp.c eth_rx.c eth_tx.c
 SRC += main.c
 
 # output format

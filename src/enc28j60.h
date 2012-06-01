@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include "global.h"
+#include "spi.h"
 
 extern uint8_t enc28j60_init(const uint8_t* macaddr);
 extern uint8_t enc28j60_is_link_up ( void );
@@ -31,14 +32,14 @@ extern uint8_t enc28j60_do_BIST ( void );
 /* splitted send/receive */
 extern u16  enc28j60_packet_rx(u08 *data, u16 max_size);
 extern u16  enc28j60_packet_rx_begin(void);
-extern u08  enc28j60_packet_rx_byte(void);
+inline u08  enc28j60_packet_rx_byte(void) { return spi_in(); }
 extern void enc28j60_packet_rx_blk(u08 *data, u16 size);
 extern void enc28j60_packet_rx_end(void);
 
 extern void enc28j60_packet_tx(const u08 *data, u16 size);
 extern void enc28j60_packet_tx_prepare(void);
 extern void enc28j60_packet_tx_begin_range(u16 offset);
-extern void enc28j60_packet_tx_byte(u08 data);
+inline void enc28j60_packet_tx_byte(u08 data) { spi_out(data); }
 extern void enc28j60_packet_tx_blk(const u08 *data, u16 size);
 extern void enc28j60_packet_tx_end_range(void);
 extern void enc28j60_packet_tx_send(u16 len);
