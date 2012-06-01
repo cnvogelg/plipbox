@@ -131,23 +131,17 @@ u16 arp_make_request(u08 *buf, const u08 ip[4])
 
 void arp_dump(const u08 *buf)
 {
-  uart_send_string("ARP:src_mac=");
+  uart_send_pstring(PSTR("ARP:src_mac="));
   net_dump_mac(buf + ARP_OFF_SRC_MAC);
-  uart_send_string(",src_ip=");
+  uart_send_pstring(PSTR(",src_ip="));
   net_dump_ip(buf + ARP_OFF_SRC_IP);
-  uart_send_string(",tgt_mac=");
+  uart_send_pstring(PSTR(",tgt_mac="));
   net_dump_mac(buf + ARP_OFF_TGT_MAC);
-  uart_send_string(",tgt_ip=");
+  uart_send_pstring(PSTR(",tgt_ip="));
   net_dump_ip(buf + ARP_OFF_TGT_IP);
-  uart_send_string(",op=");
+  uart_send_pstring(PSTR(",op="));
   u16 op = arp_get_op(buf);
   uart_send_hex_word_spc(op);
-}
-
-void arp_init(u08 *ethbuf, u16 maxlen)
-{  
-  // send arp request for gateway
-  arp_send_request(ethbuf, net_get_gateway());
 }
 
 void arp_send_request(u08 *ethbuf, const u08 *ip)
@@ -158,7 +152,7 @@ void arp_send_request(u08 *ethbuf, const u08 *ip)
   len += ETH_HDR_SIZE;
 
 #ifdef DUMP_ARP
-  uart_send_string("arp:req ");
+  uart_send_pstring(PSTR("arp: requesting MAC for "));
   net_dump_ip(ip);
   uart_send_crlf();
 #endif
@@ -192,11 +186,11 @@ u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
     
 #ifdef DUMP_DETAIL
     arp_dump(buf);
-    uart_send_string("ME! ");
+    uart_send_pstring(PSTR("ME! "));
     uart_send_crlf();
 #endif
 #ifdef DUMP_ARP
-    uart_send_string("arp:me: ");
+    uart_send_pstring(PSTR("arp: asking for me "));
     net_dump_ip(src_ip);
     uart_send_crlf();
 #endif
@@ -216,16 +210,16 @@ u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
     uart_send_crlf();
 #endif
 #ifdef DUMP_ARP
-    uart_send_string("arp:reply ");
+    uart_send_pstring(PSTR("arp: reply from "));
     net_dump_ip(src_ip);
-    uart_send_spc();
+    uart_send_pstring(PSTR(": MAC="));
     net_dump_mac(src_mac);
 #endif
     
     /* we got a reply for the gateway MAC -> keep in cache */    
     if(net_compare_ip(src_ip, net_get_gateway())) {
 #ifdef DUMP_ARP
-      uart_send_string(" -> GW");
+      uart_send_pstring(PSTR(" -> GW"));
       uart_send_crlf();
 #endif
       net_copy_mac(src_mac, gw_mac);
@@ -242,7 +236,7 @@ u08 arp_handle_packet(u08 *ethbuf, u16 ethlen)
         arp_cache_update(pos, src_mac);
       }
 #ifdef DUMP_ARP
-      uart_send_string(" -> cache ");
+      uart_send_pstring(PSTR(" -> cache "));
       uart_send_hex_byte_crlf(pos);
       uart_send_crlf();
 #endif

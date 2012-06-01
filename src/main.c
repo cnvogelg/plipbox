@@ -40,6 +40,7 @@
 	 
 #include "eth_rx.h"
 #include "eth_tx.h"
+#include "eth_state.h"
 
 const u08 mac[6] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
 const u08 ip[4] = { 192, 168, 2, 133 };
@@ -87,21 +88,15 @@ int main (void)
   // param init
   param_init();  
   param_dump();
-
-  /* wait for link up */
-  for(int i = 0 ; i<10;i++) {
-    if(enc28j60_is_link_up()) {
-      break;
-    }
-    _delay_ms(250);
-    uart_send('.');
-  }
   uart_send_crlf();
-  
+
   eth_rx_init();
   eth_tx_init();
   
+  // main loop
   while(1) {
+    eth_state_worker();
+    
     eth_rx_worker();
     eth_tx_worker();
     

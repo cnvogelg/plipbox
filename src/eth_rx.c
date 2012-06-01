@@ -63,9 +63,8 @@ static u08 get_plip_data(u08 *data)
 
 void eth_rx_init(void)
 {
-  /* init ARP: send query for GW MAC */
+  // prepare cache
   arp_cache_init();
-  arp_init(pkt_buf, PKT_BUF_SIZE);
   
   // setup plip
   plip_send_init(get_plip_data);
