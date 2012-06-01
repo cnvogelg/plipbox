@@ -28,15 +28,16 @@
 #define NET_H
 
 #include "global.h"
+#include "param.h"
 
 extern void net_init(const u08 mac[6], const u08 ip[4], const u08 gw[4], const u08 nm[4]);
  
-extern const u08* net_get_mac(void);
-extern const u08* net_get_ip(void);
-extern const u08* net_get_gateway(void);
-extern const u08* net_get_netmask(void);
-extern const u08* net_get_p2p_me(void);
-extern const u08* net_get_p2p_amiga(void);
+inline const u08* net_get_mac(void) { return param.mac_addr; }
+inline const u08* net_get_ip(void) { return param.ip_eth_addr; }
+inline const u08* net_get_gateway(void) { return param.ip_gw_addr; }
+inline const u08* net_get_netmask(void) { return param.ip_net_mask; }
+inline const u08* net_get_p2p_me(void) { return param.ip_plip_addr; }
+inline const u08* net_get_p2p_amiga(void) { return param.ip_amiga_addr; }
 
 extern void net_copy_my_mac(u08 *out);
 extern void net_copy_my_ip(u08 *out);

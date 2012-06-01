@@ -29,16 +29,14 @@
 
 #include "global.h"
 
-#define PARAM_MODE_TRANSFER     0
-#define PARAM_MODE_PING_PLIP    1
-#define PARAM_MODE_PING_SLIP    2
-#define PARAM_MODE_ONLY_PLIP_RX 3
-#define PARAM_MODE_ONLY_SLIP_RX 4
-#define PARAM_MODE_TOTAL_NUMBER 5
-
 typedef struct {
-  u08 mode;
-  u08 fake_tx;
+  u08 ip_net_mask[4];
+  u08 ip_gw_addr[4];
+  u08 ip_eth_addr[4];
+  u08 ip_plip_addr[4];
+  u08 ip_amiga_addr[4];
+  u08 mac_addr[6];
+  u08 dhcp;
 } param_t;
   
 extern param_t param;  

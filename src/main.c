@@ -46,7 +46,7 @@ const u08 ip[4] = { 192, 168, 2, 133 };
 const u08 gw[4] = { 192, 168, 2, 1 };
 const u08 nm[4] = { 255, 255, 255, 0 };
 
-static void init(void)
+static void init_hw(void)
 {
   // board init. e.g. switch off watchdog, init led
   board_init();  
@@ -58,8 +58,6 @@ static void init(void)
   par_low_init();
   // spi init
   spi_init();
-  // param init
-  //param_init();  
 }
 
 static void init_eth(void)
@@ -77,7 +75,7 @@ static void init_eth(void)
 
 int main (void)
 {
-  init();
+  init_hw();
   
   // send welcome
   uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION "\r\n"));
@@ -86,9 +84,10 @@ int main (void)
   // init ethernet controller
   init_eth();
 
-  /* setup network addressing */
-  net_init(mac, ip, gw, nm);
-  
+  // param init
+  param_init();  
+  param_dump();
+
   /* wait for link up */
   for(int i = 0 ; i<10;i++) {
     if(enc28j60_is_link_up()) {

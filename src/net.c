@@ -28,70 +28,24 @@
 #include "util.h"
 #include "uartutil.h"
 
-static u08 mac_addr[6];
-static u08 ip_addr[4];
-static u08 gw_addr[4];
-static u08 net_mask[4];
-
-static u08 p2p_me[4] = { 192, 168, 0, 2 };
-static u08 p2p_amiga[4] = { 192, 168, 0, 1 };
-
-void net_init(const u08 mac[6], const u08 ip[4], const u08 gw[4], const u08 nm[4])
-{
-  net_copy_mac(mac, mac_addr);
-  net_copy_ip(ip, ip_addr);
-  net_copy_ip(gw, gw_addr);
-  net_copy_ip(nm, net_mask);
-}
-
-const u08* net_get_mac(void)
-{
-  return mac_addr;
-}
-  
-const u08* net_get_ip(void)
-{
-  return ip_addr;
-}
-
-const u08* net_get_gateway(void)
-{
-  return gw_addr;
-}
-
-const u08* net_get_netmask(void)
-{
-  return net_mask;
-}
-
-const u08* net_get_p2p_me(void)
-{
-  return p2p_me;
-}
-
-const u08* net_get_p2p_amiga(void)
-{
-  return p2p_amiga;
-}
-
 void net_copy_my_mac(u08 *out)
 {
-  net_copy_mac(mac_addr, out);
+  net_copy_mac(net_get_mac(), out);
 }
 
 void net_copy_my_ip(u08 *out)
 {
-  net_copy_ip(ip_addr, out);
+  net_copy_ip(net_get_ip(), out);
 }
 
 u08 net_compare_my_mac(const u08 *in)
 {
-  return net_compare_mac(mac_addr, in);
+  return net_compare_mac(net_get_mac(), in);
 }
 
 u08 net_compare_my_ip(const u08 *in)
 {
-  return net_compare_ip(ip_addr, in);
+  return net_compare_ip(net_get_ip(), in);
 }
 
 void net_copy_mac(const u08 *in, u08 *out)
@@ -219,8 +173,10 @@ u08  net_compare_ip(const u08 *a, const u08 *b)
 
 u08 net_is_my_subnet(const u08 *ip)
 {
+  const u08 *my_ip = net_get_ip();
+  const u08 *net_mask = net_get_netmask();
   for(int i=0;i<4;i++) {
-    u08 diff = ip[i] ^ ip_addr[i];
+    u08 diff = ip[i] ^ my_ip[i];
     diff &= net_mask[i];
     if(diff != 0) {
       return 0;
