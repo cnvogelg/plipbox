@@ -7,6 +7,11 @@ Patch:   magplip.patch
 Output:  magplip.device.000   # m68000 version
          magplip.device.020   # m68020 version
 
+0. Changes
+
+  2011-08-05  38.1a  plip2slip support
+  2012-06-03  38.1b  plipbox support
+
 1. Build magPLIP from Source
 
  - Only for advanced users! All others can use the supplied binaries!

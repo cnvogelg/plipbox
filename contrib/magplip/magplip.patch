@@ -20,19 +20,19 @@ diff -ruN magplip.org/source/magplip_rev.i magplip/source/magplip_rev.i
  REVISION	EQU	1
  DATE	MACRO
 -		dc.b	'1.4.98'
-+		dc.b	'14.8.2011'
++		dc.b	'3.6.2012'
  	ENDM
  VERS	MACRO
 -		dc.b	'magplip 38.1'
-+		dc.b	'magplip 38.1+'
++		dc.b	'magplip 38.1b'
  	ENDM
  VSTRING	MACRO
 -		dc.b	'magplip 38.1 (1.4.98)',13,10,0
-+		dc.b	'magplip 38.1+ (14.8.2011)',13,10,0
++		dc.b	'magplip 38.1b (3.6.2012)',13,10,0
  	ENDM
  VERSTAG	MACRO
 -		dc.b	0,'$VER: magplip 38.1 (1.4.98)',0
-+		dc.b	0,'$VER: magplip 38.1+ (14.8.2011)',0
++		dc.b	0,'$VER: magplip 38.1b (3.6.2012⁄)',0
  	ENDM
 diff -ruN magplip.org/source/magport.asm magplip/source/magport.asm
 --- magplip.org/source/magport.asm	1998-04-01 15:21:34.000000000 +0200
@@ -87,22 +87,42 @@ diff -ruN magplip.org/source/magport.asm magplip/source/magport.asm
  	 JSRLIB   SetICR                              ; CLEARINT
  	 move.w   #CIAICRF_FLG|CIAICRF_SETCLR,d0
  	 JSRLIB   AbleICR                             ; ENABLEINT
-+         CLRSELECT
++  CLRSELECT
  
  	 move.l   d5,d0                               ; return value
  	 movem.l  (sp)+,d2-d7/a2-a6
 diff -ruN magplip.org/source/server.c magplip/source/server.c
 --- magplip.org/source/server.c	1998-04-01 14:58:50.000000000 +0200
-+++ magplip/source/server.c	2011-08-07 16:30:01.000000000 +0200
-@@ -187,7 +187,7 @@
++++ magplip/source/server.c	2012-06-03 16:19:46.000000000 +0200
+@@ -175,6 +175,7 @@
+ #  define SETCIAOUTPUT
+ #  define SETCIAINPUT
+ #  define PARINIT(b)      ciaa.ciaddrb = 0xff; ciaa.ciaprb = 0x00
++#  define PAREXIT
+ 
+ /* Good line : SELECT=POUT=PUSY=0 */
+ #  define TESTLINE(b)     ((ciab.ciapra&(CIAF_PRTRSEL|CIAF_PRTRPOUT|CIAF_PRTRBUSY)) || pb->pb_Flags&PLIPF_RECEIVING)
+@@ -187,8 +188,10 @@
  #  define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
  #  define PARINIT(b)      SETCIAINPUT;                                       \
  			ciab.ciaddra &= ~((b)->pb_HandshakeMask[HS_LINE]); \
 -			ciab.ciaddra |= (b)->pb_HandshakeMask[HS_REQUEST]
+-
 +			ciab.ciaddra |= (b)->pb_HandshakeMask[HS_REQUEST] | CIAF_PRTRSEL
- 
++#  define PAREXIT \
++			ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
++			ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
  #  define TESTLINE(b)     (ciab.ciapra & (b)->pb_HandshakeMask[HS_LINE])
  #  define SETREQUEST(b)   ciab.ciapra |= (b)->pb_HandshakeMask[HS_REQUEST]
+ #  define CLEARREQUEST(b) ciab.ciapra &= ~((b)->pb_HandshakeMask[HS_REQUEST])
+@@ -274,6 +277,7 @@
+ {
+    if (pb->pb_AllocFlags & 4)
+    {
++      PAREXIT;
+       DISABLEINT;
+       CLEARINT;
+       RemICRVector(CIAABase, CIAICRB_FLG, &pb->pb_Interrupt);
 diff -ruN magplip.org/source/smakefile magplip/source/smakefile
 --- magplip.org/source/smakefile	1998-04-01 17:10:18.000000000 +0200
 +++ magplip/source/smakefile	2011-08-05 20:51:19.000000000 +0200
