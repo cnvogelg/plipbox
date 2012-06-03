@@ -52,6 +52,10 @@
 #define PLIP_NOCRC        0x02
 #define PLIP_CRC          0x01
 
+#define PLIP_LINE_OFF       0x0
+#define PLIP_LINE_DISABLED  0x7
+#define PLIP_LINE_OK        0x1
+
 typedef struct {
   u08 crc_type;
   u16 size;
@@ -74,6 +78,10 @@ extern void plip_recv_init(plip_packet_func rx_begin_func,
                            plip_packet_func rx_end_func);
 
 extern void plip_send_init(plip_data_func tx_fill_func);
+
+// ----- Line Status -----
+
+extern u08 plip_get_line_status(void);
 
 // ----- Rx/Tx -----
 

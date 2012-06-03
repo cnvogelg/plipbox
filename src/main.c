@@ -41,15 +41,11 @@
 #include "eth_rx.h"
 #include "eth_tx.h"
 #include "eth_state.h"
-
-const u08 mac[6] = { 0x74,0x69,0x69,0x2D,0x30,0x31 };
-const u08 ip[4] = { 192, 168, 2, 133 };
-const u08 gw[4] = { 192, 168, 2, 1 };
-const u08 nm[4] = { 255, 255, 255, 0 };
+#include "plip_state.h"
 
 static void init_hw(void)
 {
-  // board init. e.g. switch off watchdog, init led
+  // board init. e.g. switch off watchdog
   board_init();  
   // setup timer
   timer_init();
@@ -64,7 +60,7 @@ static void init_hw(void)
 static void init_eth(void)
 {  
   uart_send_pstring(PSTR("eth rev: "));
-  u08 rev = enc28j60_init(mac);
+  u08 rev = enc28j60_init(net_get_mac());
   uart_send_hex_byte_crlf(rev);
   // if no ethernet controller found then panic
   if(rev == 0) {
@@ -96,6 +92,7 @@ int main (void)
   // main loop
   while(1) {
     eth_state_worker();
+    plip_state_worker();
     
     eth_rx_worker();
     eth_tx_worker();

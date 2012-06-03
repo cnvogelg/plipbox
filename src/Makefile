@@ -93,6 +93,7 @@ SRC += pkt_buf.c param.c
 # eth
 SRC += spi.c enc28j60.c 
 SRC += net.c eth.c arp.c ip.c icmp.c eth_rx.c eth_tx.c eth_state.c
+SRC += plip_state.c
 SRC += main.c
 
 # output format

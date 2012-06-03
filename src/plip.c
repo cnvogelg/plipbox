@@ -52,6 +52,24 @@ void plip_recv_init(plip_packet_func begin_func,
   end_rx_func   = end_func;
 }
 
+u08 plip_get_line_status(void)
+{
+  u08 strobe = par_low_get_strobe();
+  u08 select = par_low_get_select();
+  u08 pout = par_low_get_pout();
+  u08 status = 0;
+  if(strobe) {
+    status |= 0x1;
+  }
+  if(select) {
+    status |= 0x2;
+  }
+  if(pout) {
+    status |= 0x4;
+  }
+  return status;
+}
+
 void plip_send_init(plip_data_func   fill_func)
 {
   fill_tx_func  = fill_func;
