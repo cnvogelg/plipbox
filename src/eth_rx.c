@@ -38,10 +38,7 @@
 #include "uart.h"
 #include "ip.h"
 #include "plip.h"
-
-// parameter
-u08 eth_rx_do_ping = 0;
-u08 eth_rx_do_plip_tx = 1;
+#include "ping.h"
 
 static u08 send_pos = ETH_HDR_SIZE;
 static u08 max_pos = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
@@ -70,57 +67,29 @@ void eth_rx_init(void)
   plip_send_init(get_plip_data);
 }
 
-static void handle_icmp(u08 *ip_buf, u16 ip_len)
-{
-  uart_send_string("icmp: ");
-  if(!icmp_validate_checksum(ip_buf)) {
-    uart_send_string("check?");
-    uart_send_crlf();  
-  } else {
-    // incoming request -> generate reply
-    if(icmp_is_ping_request(ip_buf)) {
-      uart_send_string("PING: ");
-      net_dump_ip(ip_get_src_ip(ip_buf));
-      uart_send_string(" id=");
-      uart_send_hex_word_spc(icmp_get_ping_id(ip_buf));
-      uart_send_string("seq=");
-      uart_send_hex_word_crlf(icmp_get_ping_seqnum(ip_buf));
-            
-      icmp_ping_request_to_reply(ip_buf);
-      eth_make_reply(pkt_buf);
-      enc28j60_packet_tx(pkt_buf, ip_len + ETH_HDR_SIZE);
-    }
-    // incoming reply -> show!
-    else if(icmp_is_ping_reply(ip_buf)) {
-      uart_send_string("PONG: ");
-      net_dump_ip(ip_get_src_ip(ip_buf));
-      uart_send_crlf();
-    }
-    // unknown icmp
-    else {
-      uart_send_string("?");
-      uart_send_crlf();
-    }
-  }
-}
-
 u08 retry = 0;
 
-void eth_rx_worker(void)
+static void send_prefix(void)
+{
+  uart_send_pstring(PSTR("eth(rx): "));
+}
+
+void eth_rx_worker(u08 eth_state, u08 plip_online)
 {
   // get next packet
   u16 len = enc28j60_packet_rx_begin();
   if(len == 0) {
     // shall we retry to send the last packet
-    if(retry > 0) {
+    if(plip_online && (retry > 0)) {
       u08 status = plip_send(&pkt);
       if(status == PLIP_STATUS_OK) {
-        uart_send_string("plip_tx:retry ok");
+        uart_send_pstring(PSTR("plip(tx): retry ok"));
         uart_send_crlf();
         retry = 0;
       } else {
-        uart_send_string("plip_tx:retry ");
+        uart_send_pstring(PSTR("plip(tx): retry #"));
         uart_send_hex_byte_crlf(status);
+        retry --;
       }
     }  
     return;
@@ -157,7 +126,7 @@ void eth_rx_worker(void)
   u16 missing = read_len - ETH_HDR_SIZE;
   u16 offset = ETH_HDR_SIZE;
 
-//#define DUMP_ETH_HDR
+  //#define DUMP_ETH_HDR
 #ifdef DUMP_ETH_HDR
   // show length and dump eth header
   uart_send_hex_word_spc(len);
@@ -189,36 +158,43 @@ void eth_rx_worker(void)
     // check IP packet size
     u16 total_len = ip_get_total_length(ip_buf);
     if(ip_size < total_len) {
-      uart_send_string("IP PKT SIZE? ");
+      send_prefix();
+      uart_send_pstring(PSTR("IP PKT SIZE? "));
       uart_send_hex_word_spc(ip_size);
       uart_send_hex_word_crlf(total_len);      
     }
     // check IP header checksum
     else if(!ip_hdr_validate_checksum(ip_buf)) {
-      uart_send_string("IP HDR CHECK?");
-      uart_send_crlf();
+      send_prefix();
+      uart_send_pstring(PSTR("IP HDR CHECK?\r\n"));
     }
     // check tgt IP
     else if(!net_compare_my_ip(ip_get_tgt_ip(ip_buf))) {
-      uart_send_string("TGT NOT ME? ");
+      send_prefix(),
+      uart_send_pstring(PSTR("TGT NOT ME? "));
       net_dump_ip(ip_get_tgt_ip(ip_buf));
       uart_send_crlf();
     }
     // IP packet seems to be ok!
     else {
-      // do own ping here
-      if(eth_rx_do_ping && ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
-        // read missing bytes and finish as icmp might send a return
-        enc28j60_packet_rx_blk(pkt_buf + offset, missing);
-        enc28j60_packet_rx_end();
-        finished = 1;
+      // if plip is not online then handle pings and drop other packets
+      if(!plip_online) {
+        if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
+          // read missing bytes and finish as icmp might send a return
+          enc28j60_packet_rx_blk(pkt_buf + offset, missing);
+          enc28j60_packet_rx_end();
+          finished = 1;
         
-        // my custom PING handler
-        handle_icmp(ip_buf, ip_size);
+          // my custom PING handler
+          ping_eth_handle_packet(ip_buf, ip_size);
+        } else {
+          // drop packet
+          send_prefix();
+          uart_send_pstring(PSTR("DROP\r\n"));
+        }
       } 
-      // do PLIP transfer of packet (otherwise ignore packet)
-      else if(eth_rx_do_plip_tx) {
-
+      // plip is online -> do PLIP transfer of packet
+      else {
         // do we need some extra bytes for UDP/TCP checksum correction?
         u08 extra = 0;
         u08 protocol = ip_get_protocol(ip_buf);
@@ -252,7 +228,8 @@ void eth_rx_worker(void)
         // make sure our checksum was corrected correctly
         u16 chk = ip_hdr_calc_checksum(ip_buf);
         if(chk != 0xfff) {
-          uart_send_string("eth_rx:CHECK?");
+          send_prefix();
+          uart_send_pstring(PSTR("CHECK?"));
           uart_send_hex_word_crlf(chk);          
         }
 #endif
@@ -264,18 +241,19 @@ void eth_rx_worker(void)
         u08 status = plip_send(&pkt);
 
         if(status != PLIP_STATUS_OK) {
-          uart_send_string("plip_tx:");
+          uart_send_pstring(PSTR("plip(tx): "));
           uart_send_hex_byte_crlf(status);
-          retry = 1;
+          retry = 5;
         } else {
           retry = 0;
         }
+        
 #ifdef DEBUG
-        uart_send_string("plip_tx:");
+        uart_send_pstring(PSTR("plip_tx:"));
         net_dump_ip(ip_get_src_ip(ip_buf));
-        uart_send_string(" -> ");
+        uart_send_pstring(PSTR(" -> "));
         net_dump_ip(ip_get_tgt_ip(ip_buf));
-        uart_send_string(" : ");
+        uart_send_pstring(PSTR(" : "));
         uart_send_hex_byte_crlf(status);
 #endif
       }
@@ -285,7 +263,7 @@ void eth_rx_worker(void)
       enc28j60_packet_rx_end();
     }
   } else {
-    uart_send_string("SHORT PKT?");
-    uart_send_crlf();
+    send_prefix();
+    uart_send_pstring(PSTR("SHORT PKT?\r\n"));
   }
 }

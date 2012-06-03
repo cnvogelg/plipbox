@@ -38,38 +38,6 @@
 
 #include "uart.h"
 #include "uartutil.h"
-   
-#define DEBUG_ETH_TX   
-
-u08 eth_tx_send_ping_request(const u08 *ip)
-{
-#ifdef DEBUG_ETH_TX
-  uart_send_string("send ping: ");
-  net_dump_ip(ip);
-#endif
-
-  const u08 *mac = arp_find_mac(pkt_buf, ip);
-  if(mac == 0) {
-#ifdef DEBUG_ETH_TX
-    uart_send_string("no mac!");
-    uart_send_crlf();
-#endif
-    return 0;
-  }
-  
-#ifdef DEBUG_ETH_TX
-  uart_send_string(" -> ");
-  net_dump_mac(mac);
-  uart_send_crlf();
-#endif
-  
-  eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
-  u08 *ip_pkt = pkt_buf + ETH_HDR_SIZE;
-  u16 size = icmp_make_ping_request(ip_pkt, ip, 0, 0);
-  enc28j60_packet_tx(pkt_buf, size + ETH_HDR_SIZE);
-  
-  return 1;
-}
 
 static void handle_my_packet(u08 *ip_buf, u16 size)
 {
@@ -111,12 +79,19 @@ static u08 end_rx(plip_packet_t *pkt)
   return PLIP_STATUS_OK;
 }
 
-void eth_tx_init(void)
+void plip_rx_init(void)
 {
   plip_recv_init(begin_rx, transfer_rx, end_rx);
 }
 
-void eth_tx_worker(void)
+static void send_prefix(void)
+{
+  uart_send_pstring(PSTR("plip(rx): "));
+}
+
+//#define DEBUG
+
+void plip_rx_worker(u08 plip_state, u08 eth_online)
 {
   // do we have a PLIP packet waiting?
   if(plip_can_recv() == PLIP_STATUS_OK) {
@@ -130,7 +105,7 @@ void eth_tx_worker(void)
     
     // if PLIP rx was ok then have a look at the packet
     if(status != PLIP_STATUS_OK) {
-      uart_send_string("plip_rx:");
+      send_prefix();
       uart_send_hex_byte_crlf(status);
     } else {
       // fetch tgt ip of incoming packet
@@ -142,37 +117,38 @@ void eth_tx_worker(void)
   
       // make sure all packets are coming from amiga
       if(!net_compare_ip(src_ip, net_get_p2p_amiga())) {
-        uart_send_string("plip_rx: not amiga!");
-        uart_send_crlf();
+        send_prefix();
+        uart_send_pstring(PSTR("not amiga!\r\n"));
         return;
       }
   
       // if its a packet for me (p2p or eth address) then handle it now
       if(net_compare_ip(ltgt_ip, net_get_p2p_me()) ||
          net_compare_ip(ltgt_ip, net_get_ip())) {
-        uart_send_string("plip_rx: ME!");
-        uart_send_crlf();
+        send_prefix();
+        uart_send_pstring(PSTR("ME!\r\n"));
         handle_my_packet(ip_buf, pkt.size);
       } 
       // pass this packet on to ethernet
       else {
 #ifdef DEBUG
-        uart_send_string("plip_rx:");
+        send_prefix();
         net_dump_ip(ltgt_ip);
-        uart_send_string(" size=");
+        uart_send_pstring(PSTR(" size="));
         uart_send_hex_word_spc(pkt.size);
 #endif
         
         // find a mac address for the target 
         const u08 *mac = arp_find_mac(pkt_buf, ltgt_ip);
         if(mac == 0) {
-          uart_send_string("??");
-          uart_send_crlf();
+#ifdef DEBUG
+          uart_send_pstring(PSTR("no mac\r\n"));
+#endif
         }
         // found mac -> we can send packet
         else {
 #ifdef DEBUG
-          uart_send_string(" -> mac ");
+          uart_send_pstring(PSTR(" -> mac "));
           net_dump_mac(mac);
           uart_send_crlf();
 #endif
@@ -203,7 +179,8 @@ void eth_tx_worker(void)
           // make sure our checksum was corrected correctly
           u16 chk = ip_hdr_calc_checksum(ip_buf);
           if(chk != 0xffff) {
-            uart_send_string("eth_tx:CHECK?");
+            send_prefix(),
+            uart_send_pstring(PSTR("CHECKSUM?"));
             uart_send_hex_word_crlf(chk);
           }
 #endif
@@ -218,7 +195,13 @@ void eth_tx_worker(void)
   
           // finally send packet
           u16 pkt_size = pkt.size + ETH_HDR_SIZE;
-          enc28j60_packet_tx_send(pkt_size);
+          if(eth_online) {
+            enc28j60_packet_tx_send(pkt_size);
+          } else {
+            // can't actually send packet because eth is not online :(
+            send_prefix();
+            uart_send_pstring(PSTR("DROP"));
+          }
         }
       }
     }

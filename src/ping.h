@@ -1,5 +1,5 @@
 /*
- * eth_tx.h: handle eth packet sends
+ * ping.h - ICMP ping
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,12 @@
  *
  */
 
-#ifndef ETH_TX_H
+#ifndef PING_H
+#define PING_H
 
 #include "global.h"
-   
-extern u08 eth_tx_send_ping_request(const u08 *ip);
 
-extern void eth_tx_init(void);
-extern void eth_tx_worker(void);
+extern u08 ping_eth_send_request(const u08 *ip);
+extern void ping_eth_handle_packet(u08 *ip_buf, u16 ip_len);
 
 #endif

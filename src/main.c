@@ -37,9 +37,10 @@
 #include "enc28j60.h"
 #include "net.h"
 #include "uartutil.h"
+#include "ping.h"
 	 
 #include "eth_rx.h"
-#include "eth_tx.h"
+#include "plip_rx.h"
 #include "eth_state.h"
 #include "plip_state.h"
 
@@ -78,24 +79,26 @@ int main (void)
   uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION "\r\n"));
   uart_send_pstring(PSTR("by lallafa (http://www.lallafa.de/blog)\r\n\r\n"));
   
-  // init ethernet controller
-  init_eth();
-
   // param init
   param_init();  
   param_dump();
   uart_send_crlf();
 
+  // init ethernet controller
+  init_eth();
+  
   eth_rx_init();
-  eth_tx_init();
+  plip_rx_init();
   
   // main loop
   while(1) {
-    eth_state_worker();
-    plip_state_worker();
+    u08 eth_state = eth_state_worker();
+    u08 plip_state = plip_state_worker();
+    u08 eth_online = (eth_state == ETH_STATE_ONLINE);
+    u08 plip_online = (plip_state == PLIP_STATE_ONLINE);
     
-    eth_rx_worker();
-    eth_tx_worker();
+    eth_rx_worker(eth_state, plip_online);
+    plip_rx_worker(plip_state, eth_online);
     
     // small hack to enter commands
     if(uart_read_data_available()) {
@@ -104,14 +107,14 @@ int main (void)
         case ' ':
         {
           const u08 ip[4] = { 173,194,35,159 }; // google.de
-          u08 result = eth_tx_send_ping_request(ip);
+          u08 result = ping_eth_send_request(ip);
           uart_send_hex_byte_crlf(result);
           break;
         }
         case 'p':
         {
           const u08 ip[4] = { 192,168,2,20 }; // my box
-          u08 result = eth_tx_send_ping_request(ip);
+          u08 result = ping_eth_send_request(ip);
           uart_send_hex_byte_crlf(result);
           break;
         }

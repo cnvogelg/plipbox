@@ -1,5 +1,5 @@
 /*
- * eth_rx.h: handle eth receiption and plip tx
+ * plip_rx.h: handle incoming plip packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,11 +24,11 @@
  *
  */
 
-#ifndef ETH_RX_H
+#ifndef ETH_TX_H
 
 #include "global.h"
-   
-extern void eth_rx_init(void);
-extern void eth_rx_worker(u08 eth_state, u08 plip_online);
+
+extern void plip_rx_init(void);
+extern void plip_rx_worker(u08 plip_state, u08 eth_online);
 
 #endif
