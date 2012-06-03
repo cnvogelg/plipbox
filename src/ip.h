@@ -63,7 +63,7 @@ extern void ip_set_src_ip(u08 *buf, const u08 *ip);
 extern void ip_set_tgt_ip(u08 *buf, const u08 *ip);
 
 /* create packet */
-extern u08 ip_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 protocol);
+extern u08 ip_begin_pkt(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u08 protocol);
 extern void ip_finish_pkt(u08 *buf, u16 size);
 
 #endif

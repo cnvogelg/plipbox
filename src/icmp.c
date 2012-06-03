@@ -49,9 +49,9 @@ u08 icmp_is_ping_reply(const u08 *buf)
   return buf[ip_get_hdr_length(buf) + ICMP_TYPE_OFF] == ICMP_TYPE_ECHO_REPLY;  
 }
 
-u08 icmp_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 type, u08 code)
+u08 icmp_begin_pkt(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u08 type, u08 code)
 {
-  u08 off = ip_begin_pkt(buf, tgt_ip, IP_PROTOCOL_ICMP);
+  u08 off = ip_begin_pkt(buf, src_ip, tgt_ip, IP_PROTOCOL_ICMP);
   buf[off + ICMP_TYPE_OFF] = type;
   buf[off + ICMP_CODE_OFF] = code;
   return off + ICMP_DATA_OFF;
@@ -63,9 +63,9 @@ void icmp_finish_pkt(u08 *buf, u16 size)
   icmp_set_checksum(buf);
 }
 
-u16 icmp_make_ping_request(u08 *buf, const u08 *tgt_ip, u16 id, u16 seq)
+u16 icmp_make_ping_request(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u16 id, u16 seq)
 {
-  u08 data_off = icmp_begin_pkt(buf, tgt_ip, ICMP_TYPE_ECHO_REQUEST, 0);
+  u08 data_off = icmp_begin_pkt(buf, src_ip, tgt_ip, ICMP_TYPE_ECHO_REQUEST, 0);
 
   // quench
   net_put_word(buf+data_off, id);

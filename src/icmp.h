@@ -42,8 +42,8 @@ extern u16 icmp_get_ping_id(const u08 *buf);
 extern u16 icmp_get_ping_seqnum(const u08 *buf);
 
 extern void icmp_ping_request_to_reply(u08 *buf);
-extern u08  icmp_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 type, u08 code);
+extern u08  icmp_begin_pkt(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u08 type, u08 code);
 extern void icmp_finish_pkt(u08 *buf, u16 size);
-extern u16  icmp_make_ping_request(u08 *buf, const u08 *tgt_ip, u16 id, u16 seq);
+extern u16  icmp_make_ping_request(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u16 id, u16 seq);
 
 #endif

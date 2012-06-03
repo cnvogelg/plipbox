@@ -33,6 +33,7 @@
 #include "arp.h"
 #include "pkt_buf.h"
 #include "enc28j60.h"
+#include "plip_tx.h"
 
 #define DEBUG_PING   
    
@@ -60,10 +61,17 @@ u08 ping_eth_send_request(const u08 *ip)
   
   eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
   u08 *ip_pkt = pkt_buf + ETH_HDR_SIZE;
-  u16 size = icmp_make_ping_request(ip_pkt, ip, 0, 0);
+  u16 size = icmp_make_ping_request(ip_pkt, net_get_ip(), ip, 0, 0);
   enc28j60_packet_tx(pkt_buf, size + ETH_HDR_SIZE);
   
   return 1;
+}
+
+u08 ping_plip_send_request(const u08 *ip)
+{
+  u16 size = icmp_make_ping_request(pkt_buf, net_get_p2p_me(), ip, 0, 0);
+  u08 status = plip_tx_send(0,size,size);
+  return (status == PLIP_STATUS_OK);
 }
 
 static u08 ping_handle_packet(u08 *ip_buf, u16 ip_len)
@@ -108,6 +116,13 @@ void ping_eth_handle_packet(u08 *ip_buf, u16 ip_len)
     // handler created a reply -> send it!
     eth_make_reply(pkt_buf);
     enc28j60_packet_tx(pkt_buf, ip_len + ETH_HDR_SIZE);
+  }
+}
+
+void ping_plip_handle_packet(u08 *ip_buf, u16 ip_len)
+{
+  if(ping_handle_packet(ip_buf, ip_len)) {
+    plip_tx_send(ETH_HDR_SIZE,ip_len,ip_len);
   }
 }
 

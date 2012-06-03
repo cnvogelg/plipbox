@@ -120,6 +120,9 @@ int main (void)
           uart_send_hex_byte_crlf(result);
           break;
         }
+        case 'a':
+          ping_plip_send_request(net_get_p2p_amiga());
+          break;
       }
     }
     

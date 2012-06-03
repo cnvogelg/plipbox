@@ -35,6 +35,7 @@
 #include "enc28j60.h"
 
 #include "plip.h"
+#include "ping.h"
 
 #include "uart.h"
 #include "uartutil.h"
@@ -114,6 +115,7 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
       u08 ltgt_ip[4];
       net_copy_ip(tgt_ip, ltgt_ip);
       const u08 *src_ip = ip_get_src_ip(ip_buf);
+      u16 ip_size = pkt.size;
   
       // make sure all packets are coming from amiga
       if(!net_compare_ip(src_ip, net_get_p2p_amiga())) {
@@ -122,12 +124,24 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
         return;
       }
   
-      // if its a packet for me (p2p or eth address) then handle it now
-      if(net_compare_ip(ltgt_ip, net_get_p2p_me()) ||
-         net_compare_ip(ltgt_ip, net_get_ip())) {
-        send_prefix();
-        uart_send_pstring(PSTR("ME!\r\n"));
-        handle_my_packet(ip_buf, pkt.size);
+      // if its a packet for me (plip address)
+      if(net_compare_ip(ltgt_ip, net_get_p2p_me())) {
+        if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
+          ping_plip_handle_packet(ip_buf, ip_size);
+        } else {
+          send_prefix();
+          uart_send_pstring(PSTR("ME (plip)!\r\n"));        
+          handle_my_packet(ip_buf, ip_size);
+        }
+      }
+      // its a packet for me (eth address)
+      else if(net_compare_ip(ltgt_ip, net_get_ip())) {
+        if(eth_online) {
+          // ping if eth link is up
+          if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
+            ping_plip_handle_packet(ip_buf, ip_size);
+          } 
+        }
       } 
       // pass this packet on to ethernet
       else {
@@ -135,7 +149,7 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
         send_prefix();
         net_dump_ip(ltgt_ip);
         uart_send_pstring(PSTR(" size="));
-        uart_send_hex_word_spc(pkt.size);
+        uart_send_hex_word_spc(ip_size);
 #endif
         
         // find a mac address for the target 
@@ -194,7 +208,7 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
           enc28j60_packet_tx_end_range();
   
           // finally send packet
-          u16 pkt_size = pkt.size + ETH_HDR_SIZE;
+          u16 pkt_size = ip_size + ETH_HDR_SIZE;
           if(eth_online) {
             enc28j60_packet_tx_send(pkt_size);
           } else {

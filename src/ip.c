@@ -148,14 +148,14 @@ void ip_set_tgt_ip(u08 *buf, const u08 *ip)
   net_copy_ip(ip, buf + 16);
 }
 
-u08 ip_begin_pkt(u08 *buf, const u08 *tgt_ip, u08 protocol)
+u08 ip_begin_pkt(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u08 protocol)
 {
   memset(buf,0,20);  
   buf[0] = 0x45; // ipv4 + normal size of 5*4=20 bytes
   buf[6] = 0x40; // don't fragment
   buf[8] = 60; // time to live
   buf[9] = protocol;
-  net_copy_my_ip(buf+12);
+  net_copy_ip(src_ip, buf+12);
   net_copy_ip(tgt_ip, buf+16);
   return 20; // offset
 }
