@@ -37,42 +37,21 @@
 #include "uartutil.h"
 #include "uart.h"
 #include "ip.h"
-#include "plip.h"
 #include "ping.h"
-
-static u08 send_pos = ETH_HDR_SIZE;
-static u08 max_pos = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
-
-// callback to retrieve next byte for plip packet send
-static u08 get_plip_data(u08 *data)
-{
-  // fetch data from buffer
-  if(send_pos < max_pos) {
-    *data = pkt_buf[send_pos++];
-    return PLIP_STATUS_OK;
-  } 
-  // fetch data directly from packet buffer on enc28j60
-  else {
-    *data = enc28j60_packet_rx_byte();
-    return PLIP_STATUS_OK;
-  }
-}
+#include "plip_tx.h"
 
 void eth_rx_init(void)
 {
   // prepare cache
   arp_cache_init();
-  
-  // setup plip
-  plip_send_init(get_plip_data);
 }
-
-u08 retry = 0;
 
 static void send_prefix(void)
 {
   uart_send_pstring(PSTR("eth(rx): "));
 }
+
+u08 retry = 0;
 
 void eth_rx_worker(u08 eth_state, u08 plip_online)
 {
@@ -196,50 +175,49 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
       // plip is online -> do PLIP transfer of packet
       else {
         // do we need some extra bytes for UDP/TCP checksum correction?
-        u08 extra = 0;
+        u08 extra_off = 0;
         u08 protocol = ip_get_protocol(ip_buf);
+        u08 hdr_len = ip_get_hdr_length(ip_buf);
         if(protocol == IP_PROTOCOL_TCP) {
-          extra = TCP_CHECKSUM_OFF + 2 + ip_get_hdr_length(ip_buf) - IP_MIN_HDR_SIZE;
+          extra_off = TCP_CHECKSUM_OFF + hdr_len;
 #ifdef DEBUG
           uart_send('T');
           uart_send_hex_byte_spc(extra);
 #endif
         } else if(protocol == IP_PROTOCOL_UDP) {
-          extra = UDP_CHECKSUM_OFF + 2 + ip_get_hdr_length(ip_buf) - IP_MIN_HDR_SIZE;
+          extra_off = UDP_CHECKSUM_OFF + hdr_len;
 #ifdef DEBUG
           uart_send('U');
           uart_send_hex_byte_spc(extra);
 #endif
         }
-        max_pos = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
-        if(extra != 0) {
+        // size of packet we send from pkt_buf
+        u08 mem_size = IP_MIN_HDR_SIZE;
+        if(extra_off != 0) {
+          u08 extra = extra_off + 2 - IP_MIN_HDR_SIZE;
           enc28j60_packet_rx_blk(pkt_buf + offset, extra);
-          max_pos += extra;
+          mem_size += extra;
         }
         
         // adjust ip: eth ip -> p2p amiga ip
         ip_adjust_checksum(ip_buf, IP_CHECKSUM_OFF, net_get_ip(), net_get_p2p_amiga());
-        if(extra != 0) {
-          ip_adjust_checksum(pkt_buf, max_pos - 2, net_get_ip(), net_get_p2p_amiga());
+        if(extra_off != 0) {
+          ip_adjust_checksum(ip_buf, extra_off, net_get_ip(), net_get_p2p_amiga());
         }
         ip_set_tgt_ip(ip_buf, net_get_p2p_amiga());
 
 #ifdef DEBUG
         // make sure our checksum was corrected correctly
         u16 chk = ip_hdr_calc_checksum(ip_buf);
-        if(chk != 0xfff) {
+        if(chk != 0xffff) {
           send_prefix();
           uart_send_pstring(PSTR("CHECK?"));
           uart_send_hex_word_crlf(chk);          
         }
 #endif
 
-        // reset send_pos (right after the ETH header)
-        send_pos = ETH_HDR_SIZE;
         // send packet via PLIP
-        pkt.size = ip_size;
-        u08 status = plip_send(&pkt);
-
+        u08 status = plip_tx_send(ETH_HDR_SIZE, mem_size, ip_size);
         if(status != PLIP_STATUS_OK) {
           uart_send_pstring(PSTR("plip(tx): "));
           uart_send_hex_byte_crlf(status);

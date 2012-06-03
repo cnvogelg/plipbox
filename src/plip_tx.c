@@ -1,5 +1,5 @@
 /*
- * plip_rx.h: handle incoming plip packets
+ * plip_tx.h: send plip packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,11 +24,39 @@
  *
  */
 
-#ifndef PLIP_RX_H
+#include "plip_tx.h"
+#include "plip.h"
+#include "pkt_buf.h"
+#include "enc28j60.h"
 
-#include "global.h"
+static u16 send_pos = 0;
+static u16 max_pos = 0;
 
-extern void plip_rx_init(void);
-extern void plip_rx_worker(u08 plip_state, u08 eth_online);
+// callback to retrieve next byte for plip packet send
+static u08 get_plip_data(u08 *data)
+{
+  // fetch data from buffer
+  if(send_pos < max_pos) {
+    *data = pkt_buf[send_pos++];
+    return PLIP_STATUS_OK;
+  }  
+  // fetch data directly from packet buffer on enc28j60
+  else {
+    *data = enc28j60_packet_rx_byte();
+    return PLIP_STATUS_OK;
+  }
+}
 
-#endif
+void plip_tx_init(void)
+{
+  // setup plip
+  plip_send_init(get_plip_data); 
+}
+
+u08 plip_tx_send(u08 offset, u16 mem_size, u16 total_size)
+{
+  send_pos = offset;
+  max_pos = offset + mem_size;
+  pkt.size = total_size;
+  return plip_send(&pkt);
+}

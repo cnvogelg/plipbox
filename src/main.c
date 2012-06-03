@@ -41,6 +41,7 @@
 	 
 #include "eth_rx.h"
 #include "plip_rx.h"
+#include "plip_tx.h"
 #include "eth_state.h"
 #include "plip_state.h"
 
@@ -89,6 +90,7 @@ int main (void)
   
   eth_rx_init();
   plip_rx_init();
+  plip_tx_init();
   
   // main loop
   while(1) {

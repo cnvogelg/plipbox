@@ -1,5 +1,5 @@
 /*
- * plip_rx.h: handle incoming plip packets
+ * plip_tx.h: send plip packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,11 +24,11 @@
  *
  */
 
-#ifndef PLIP_RX_H
+#ifndef PLIP_TX_H
 
 #include "global.h"
 
-extern void plip_rx_init(void);
-extern void plip_rx_worker(u08 plip_state, u08 eth_online);
+extern void plip_tx_init(void);
+extern u08  plip_tx_send(u08 offset, u16 mem_size, u16 total_size);
 
 #endif
