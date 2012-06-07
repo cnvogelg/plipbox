@@ -28,6 +28,7 @@
 #define IP_H
 
 #include "global.h"
+#include "net.h"
 
 /* list of IP protocol numbers */
 #define IP_PROTOCOL_ICMP    0x01
@@ -44,6 +45,12 @@
 /* generic checksum calculation for header checksum and others */
 extern u16 ip_calc_checksum(const u08 *buf, u08 offset, int num_words);
 extern void ip_adjust_checksum(u08 *buf, u08 offset, const u08 *old_ip, const u08 *net_ip); 
+
+/* incremental checksum calculation */
+inline void ip_add_checksum_word(u32 *checksum, u16 word) { *checksum += word; }
+inline void ip_add_checksum_ptr(u32 *checksum, const u08 *ptr) { *checksum += net_get_word(ptr); }
+inline void ip_add_checksum_ip(u32 *checksum, const u08 *ptr) { ip_add_checksum_ptr(checksum, ptr); ip_add_checksum_ptr(checksum, ptr+2); }
+inline u16  ip_finish_checksum(u32 checksum) { return (u16)(checksum & 0xffff) + (u16)(checksum >> 16); }
 
 /* header checksum */
 extern u16 ip_hdr_get_checksum(const u08 *buf);

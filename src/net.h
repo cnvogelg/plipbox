@@ -29,8 +29,6 @@
 
 #include "global.h"
 #include "param.h"
-
-extern void net_init(const u08 mac[6], const u08 ip[4], const u08 gw[4], const u08 nm[4]);
  
 inline const u08* net_get_mac(void) { return param.mac_addr; }
 inline const u08* net_get_ip(void) { return param.ip_eth_addr; }
