@@ -74,7 +74,7 @@ int main (void)
   init_hw();
   
   // send welcome
-  uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION "\r\n"));
+  uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION " " BUILD_DATE "\r\n"));
   uart_send_pstring(PSTR("by lallafa (http://www.lallafa.de/blog)\r\n\r\n"));
   
   // param init

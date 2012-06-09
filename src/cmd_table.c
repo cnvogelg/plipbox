@@ -37,7 +37,7 @@ COMMAND(cmd_quit)
 
 COMMAND(cmd_version)
 {
-  uart_send_pstring(PSTR("v" VERSION "\r\n"));
+  uart_send_pstring(PSTR(VERSION " " BUILD_DATE "\r\n"));
   return CMD_OK;
 }
 
