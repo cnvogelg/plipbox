@@ -29,6 +29,17 @@
 
 #include "global.h"
 
+#define ICMP_TYPE_OFF     0
+#define ICMP_CODE_OFF     1
+#define ICMP_CHECKSUM_OFF 2
+#define ICMP_DATA_OFF     4
+   
+#define ICMP_PING_ID_OFF      4
+#define ICMP_PING_SEQNUM_OFF  6
+
+#define ICMP_TYPE_ECHO_REPLY    0
+#define ICMP_TYPE_ECHO_REQUEST  8
+
 // ----- ICMP Ping -----
 extern u08 icmp_is_ping_request(const u08 *buf);
 extern u08 icmp_is_ping_reply(const u08 *buf); 

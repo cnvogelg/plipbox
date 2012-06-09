@@ -79,21 +79,11 @@ void ip_adjust_checksum(u08 *buf, u08 offset, const u08 *old_ip, const u08 *new_
 
 /* ----- IP header ----- */
 
-u16 ip_hdr_get_checksum(const u08 *buf)
-{
-  return net_get_word(buf + 10);
-}
-
 u16 ip_hdr_calc_checksum(const u08 *buf)
 {
   // header length in dword * 2 -> word
   u08 num_words = (buf[0] & 0xf) * 2;
   return ip_calc_checksum(buf, 0, num_words);  
-}
-
-u08 ip_hdr_validate_checksum(const u08 *buf)
-{ 
-  return ip_hdr_calc_checksum(buf) == 0xffff;
 }
 
 void ip_hdr_set_checksum(u08 *buf)
@@ -106,46 +96,11 @@ void ip_hdr_set_checksum(u08 *buf)
   net_put_word(buf+10, check);
 }
 
-u16 ip_get_total_length(const u08 *buf)
-{
-  return (u16)buf[2] << 8 | (u16)buf[3];
-}
-
-u08 ip_get_hdr_length(const u08 *buf)
-{
-  return (buf[0] & 0xf) * 4;
-}
-
 u08 ip_is_ipv4_protocol(const u08 *buf, u08 protocol)
 {
   return
       ((buf[0] & 0xf0)==0x40) && // IPv4
       (buf[9]==protocol);
-}
-
-u08 ip_get_protocol(const u08 *buf)
-{
-  return buf[9];
-}
-
-const u08 *ip_get_src_ip(const u08 *buf)
-{
-  return buf + 12;
-}
-
-const u08 *ip_get_tgt_ip(const u08 *buf)
-{
-  return buf + 16;
-}
-
-void ip_set_src_ip(u08 *buf, const u08 *ip)
-{
-  net_copy_ip(ip, buf + 12);
-}
-
-void ip_set_tgt_ip(u08 *buf, const u08 *ip)
-{
-  net_copy_ip(ip, buf + 16);
 }
 
 u08 ip_begin_pkt(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u08 protocol)

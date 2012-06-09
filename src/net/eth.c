@@ -28,37 +28,6 @@
 #include "net.h"
 #include "uartutil.h"
 
-#define ETH_OFF_TGT_MAC   0
-#define ETH_OFF_SRC_MAC   6
-#define ETH_OFF_TYPE      12
-   
-#define ETH_SIZE 14
-
-const u08 *eth_get_tgt_mac(const u08 *pkt)
-{
-  return pkt + ETH_OFF_TGT_MAC;
-}
-   
-const u08 *eth_get_src_mac(const u08 *pkt)
-{
-  return pkt + ETH_OFF_SRC_MAC;
-}
-  
-u16  eth_get_pkt_type(const u08 *pkt)
-{
-  return net_get_word(pkt + ETH_OFF_TYPE);
-}
- 
-u08  eth_is_arp_pkt(const u08 *pkt)
-{
-  return eth_get_pkt_type(pkt) == ETH_TYPE_ARP;
-}
-  
-u08  eth_is_ipv4_pkt(const u08 *pkt)
-{
-  return eth_get_pkt_type(pkt) == ETH_TYPE_IPV4;
-}  
-
 u08  eth_is_broadcast_tgt(const u08 *pkt)
 {
   const u08 *mac = eth_get_tgt_mac(pkt);

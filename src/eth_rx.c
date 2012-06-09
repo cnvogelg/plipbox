@@ -121,7 +121,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     enc28j60_packet_rx_end();
 
     // now do ARP stuff
-    arp_handle_packet(pkt_buf, len);
+    arp_handle_packet(pkt_buf, len, enc28j60_packet_tx);
   }
   // ----- handle IPv4 -----
   else if(missing >= IP_MIN_HDR_SIZE) {

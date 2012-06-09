@@ -132,7 +132,7 @@ int main (void)
           break;
         case 'u': // send test UDP packet
         {
-          const u08 *mac = arp_find_mac(pkt_buf, box_ip);
+          const u08 *mac = arp_find_mac(pkt_buf, box_ip, enc28j60_packet_tx);
           if(mac != 0) {
             u08 *buf = pkt_buf + ETH_HDR_SIZE;
             u08 off = udp_begin_pkt(buf, net_get_ip(), 42, box_ip, 6800);
@@ -144,6 +144,7 @@ int main (void)
             enc28j60_packet_tx(pkt_buf, size);
             uart_send_pstring(PSTR("UDP!\r\n"));
           }
+          break;
         }
       }
     }

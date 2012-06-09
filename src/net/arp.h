@@ -28,23 +28,42 @@
 #define ARP_H
 
 #include "global.h"
+#include "net.h"
+
+#define ARP_OFF_HW_TYPE   0
+#define ARP_OFF_PROT_TYPE 2
+#define ARP_OFF_HW_SIZE   4
+#define ARP_OFF_PROT_SIZE 5
+#define ARP_OFF_OP        6
+#define ARP_OFF_SRC_MAC   8
+#define ARP_OFF_SRC_IP    14
+#define ARP_OFF_TGT_MAC   18
+#define ARP_OFF_TGT_IP    24
+
+#define ARP_SIZE 28
+
+#define ARP_REQUEST   1
+#define ARP_REPLY     2
 
 extern u08 arp_is_ipv4(const u08 *buf, u16 len);
 extern u08 arp_is_req_for_me(const u08 *buf);
 
 extern void arp_make_reply(u08 *buf);
-extern void arp_send_request(u08 *buf, const u08 *ip);
+extern void arp_send_request(u08 *buf, const u08 *ip, net_tx_packet_func tx_func);
 
 extern void arp_dump(const u08 *buf);
+
+/* getter */
+inline u16 arp_get_op(const u08 *buf) { return net_get_word(buf + ARP_OFF_OP); }
 
 /* return 0 if not handled, >0 if was handled 
 note: pass the raw ethernet frame!
 */
-extern u08 arp_handle_packet(u08 *ethbuf, u16 ethlen);
+extern u08 arp_handle_packet(u08 *ethbuf, u16 ethlen, net_tx_packet_func tx_func);
 
 /* copy gw mac or return 0 if gw not known */
 extern const u08* arp_get_gw_mac(void);
-extern const u08 *arp_find_mac(u08 *buf, const u08 *ip);
+extern const u08 *arp_find_mac(u08 *buf, const u08 *ip, net_tx_packet_func tx_func);
 
 /* arp cache */
 #define ARP_CACHE_INVALID   0xff

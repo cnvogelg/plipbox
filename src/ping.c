@@ -46,7 +46,7 @@ u08 ping_eth_send_request(const u08 *ip)
   net_dump_ip(ip);
 #endif
 
-  const u08 *mac = arp_find_mac(pkt_buf, ip);
+  const u08 *mac = arp_find_mac(pkt_buf, ip, enc28j60_packet_tx);
   if(mac == 0) {
 #ifdef DEBUG_PING
     uart_send_pstring(PSTR("no mac!"));

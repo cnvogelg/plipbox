@@ -28,25 +28,9 @@
 #include "util.h"
 #include "uartutil.h"
 
-void net_copy_my_mac(u08 *out)
-{
-  net_copy_mac(net_get_mac(), out);
-}
-
-void net_copy_my_ip(u08 *out)
-{
-  net_copy_ip(net_get_ip(), out);
-}
-
-u08 net_compare_my_mac(const u08 *in)
-{
-  return net_compare_mac(net_get_mac(), in);
-}
-
-u08 net_compare_my_ip(const u08 *in)
-{
-  return net_compare_ip(net_get_ip(), in);
-}
+const u08 net_any_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+const u08 net_zero_mac[6] = { 0,0,0,0,0,0 };
+const u08 net_zero_ip[4] = { 0,0,0,0 };
 
 void net_copy_mac(const u08 *in, u08 *out)
 {
@@ -55,31 +39,10 @@ void net_copy_mac(const u08 *in, u08 *out)
   }
 }
 
-void net_copy_any_mac(u08 *out)
-{
-  for(int i=0;i<6;i++) {
-    out[i] = 0xff;
-  }
-}
-
-void net_copy_zero_mac(u08 *out)
-{
-  for(int i=0;i<6;i++) {
-    out[i] = 0;
-  }
-}
-
 void net_copy_ip(const u08 *in, u08 *out)
 {
   for(int i=0;i<4;i++) {
     out[i] = in[i];
-  }
-}
-
-void net_copy_zero_ip(u08 *out)
-{
-  for(int i=0;i<4;i++) {
-    out[i] = 0;
   }
 }
 
@@ -145,16 +108,6 @@ u08  net_compare_mac(const u08 *a, const u08 *b)
 {
   for(int i=0;i<6;i++) {
     if(a[i] != b[i]) {
-      return 0;
-    }
-  }
-  return 1;
-}
-
-u08 net_compare_any_mac(const u08 *in)
-{
-  for(int i=0;i<6;i++) {
-    if(in[i] != 0xff) {
       return 0;
     }
   }

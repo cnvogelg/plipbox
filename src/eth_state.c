@@ -50,7 +50,7 @@ static u08 time_passed(void)
 static u08 link_up(void)
 {
   // send an arp request for gw
-  arp_send_request(pkt_buf, net_get_gateway());
+  arp_send_request(pkt_buf, net_get_gateway(), enc28j60_packet_tx);
   return ETH_STATE_WAIT_ARP;
 }
 
