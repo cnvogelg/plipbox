@@ -26,13 +26,14 @@
 
 #include "eth_state.h"
 
+#include "net/net.h"
+#include "net/arp.h"
+
 #include "enc28j60.h"
 #include "timer.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "arp.h"
 #include "pkt_buf.h"
-#include "net.h"
 
 static u08 state = ETH_STATE_OFFLINE;
 static u16 my_timer;

@@ -27,7 +27,7 @@
 #include "param.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "net.h"
+#include "net/net.h"
 
 #include <avr/eeprom.h>
 #include <util/crc16.h>

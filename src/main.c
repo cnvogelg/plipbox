@@ -35,9 +35,13 @@
 #include "stats.h"
 #include "spi.h"
 #include "enc28j60.h"
-#include "net.h"
 #include "uartutil.h"
 #include "ping.h"
+
+#include "net/net.h"
+#include "net/udp.h"
+#include "net/arp.h"
+#include "net/eth.h"
 
 #include "eth_rx.h"
 #include "plip_rx.h"
@@ -45,10 +49,7 @@
 #include "eth_state.h"
 #include "plip_state.h"
 
-#include "udp.h"
-#include "arp.h"
 #include "pkt_buf.h"
-#include "eth.h"
 
 static void init_hw(void)
 {

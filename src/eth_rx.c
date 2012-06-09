@@ -28,15 +28,16 @@
 
 #include "eth_rx.h"
 
+#include "net/icmp.h"
+#include "net/arp.h"
+#include "net/eth.h"
+#include "net/net.h"
+#include "net/ip.h"
+
 #include "enc28j60.h"
-#include "icmp.h"
-#include "arp.h"
-#include "eth.h"
-#include "net.h"
 #include "pkt_buf.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "ip.h"
 #include "ping.h"
 #include "plip_tx.h"
 

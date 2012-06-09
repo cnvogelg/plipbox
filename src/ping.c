@@ -25,12 +25,14 @@
  */
 
 #include "ping.h"
+
+#include "net/net.h"
+#include "net/eth.h"
+#include "net/ip.h"
+#include "net/icmp.h"
+#include "net/arp.h"
+
 #include "uartutil.h"
-#include "eth.h"
-#include "net.h"
-#include "ip.h"
-#include "icmp.h"
-#include "arp.h"
 #include "pkt_buf.h"
 #include "enc28j60.h"
 #include "plip_tx.h"

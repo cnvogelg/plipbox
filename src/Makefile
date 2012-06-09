@@ -87,14 +87,9 @@ SRC := $(BOARD).c
 SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c plip.c
 SRC += pkt_buf.c param.c
-#SRC += ping_plip.c ping_slip.c stats.c
-#SRC += cmd.c param.c bench.c
-#SRC += log.c error.c 
-# eth
 SRC += spi.c enc28j60.c 
-SRC += net.c eth.c arp.c ip.c icmp.c ping.c
-SRC += udp.c
-SRC += eth_rx.c eth_state.c
+SRC += net/net.c net/eth.c net/arp.c net/ip.c net/icmp.c net/udp.c
+SRC += eth_rx.c eth_state.c ping.c
 SRC += plip_rx.c plip_tx.c plip_state.c
 SRC += main.c
 
@@ -166,6 +161,7 @@ help:
 dirs:
 	@if [ ! -d $(BUILD) ]; then mkdir -p $(BUILD); fi 
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi
+	@if [ ! -d $(OBJDIR)/net ]; then mkdir -p $(OBJDIR)/net; fi
 	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
 	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
 
