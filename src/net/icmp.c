@@ -28,17 +28,6 @@
 #include "icmp.h"
 #include "net.h"
 
-#define ICMP_TYPE_OFF     0
-#define ICMP_CODE_OFF     1
-#define ICMP_CHECKSUM_OFF 2
-#define ICMP_DATA_OFF     4
-   
-#define ICMP_PING_ID_OFF      4
-#define ICMP_PING_SEQNUM_OFF  6
-
-#define ICMP_TYPE_ECHO_REPLY    0
-#define ICMP_TYPE_ECHO_REQUEST  8
-
 u08 icmp_is_ping_request(const u08 *buf)
 {
   return buf[ip_get_hdr_length(buf) + ICMP_TYPE_OFF] == ICMP_TYPE_ECHO_REQUEST;
