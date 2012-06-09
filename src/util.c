@@ -74,7 +74,7 @@ u08 parse_nybble(u08 c,u08 *value)
     return 0;
 }
 
-u08 parse_byte(u08 *str,u08 *value)
+u08 parse_byte(const u08 *str,u08 *value)
 {
   u08 val;
   if(!parse_nybble(str[0],&val))
@@ -86,7 +86,7 @@ u08 parse_byte(u08 *str,u08 *value)
   return 1;
 }
 
-u08 parse_word(u08 *str,u16 *value)
+u08 parse_word(const u08 *str,u16 *value)
 {
   u08 val;
   if(!parse_byte(&str[0],&val))
@@ -98,7 +98,7 @@ u08 parse_word(u08 *str,u16 *value)
   return 1;
 }
 
-u08 parse_dword(u08 *str,u32 *value)
+u08 parse_dword(const u08 *str,u32 *value)
 {
   u08 val;
   if(!parse_byte(&str[0],&val))

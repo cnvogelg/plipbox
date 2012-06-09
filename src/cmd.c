@@ -32,7 +32,7 @@
 #include "uartutil.h"
 #include "uart.h"
 
-#define MAX_LINE  20
+#define MAX_LINE  32
 #define MAX_ARGS  4
 
 u08 cmd_line[MAX_LINE];
@@ -41,14 +41,27 @@ u08 *cmd_args[MAX_ARGS];
 static u08 enter_line(void)
 {
   u08 cmd_pos = 0;
-  while(cmd_pos < MAX_LINE) {
+  while(1) {
     u08 c = uart_read();
     if(c=='\n') {
       uart_send_crlf();
       break;
-    } else if((c>=32)&&(c<128)) {
-      cmd_line[cmd_pos++] = c;
+    } 
+    else if((c==127)||(c==8)) {
+      if(cmd_pos > 0) {
+        cmd_pos--;
+        uart_send(c);
+      }
+    }
+    else if((c>=32)&&(c<128)) {
+      cmd_line[cmd_pos] = c;
       uart_send(c);
+      cmd_pos ++;
+      // max line reached -> end command
+      if(cmd_pos == (MAX_LINE-1)) {
+        uart_send_crlf();
+        break;
+      }
     }
   }
   cmd_line[cmd_pos] = '\0';
@@ -59,7 +72,8 @@ static u08 parse_args(u08 len)
 {
   u08 pos = 0;
   u08 argc = 0;
-  while(1) {
+  u08 stay = 1;
+  while(stay) {
     // skip leading spaces
     while(cmd_line[pos] == ' ') {
       pos++;
@@ -73,10 +87,11 @@ static u08 parse_args(u08 len)
     argc++;
     // seek end
     while(cmd_line[pos] != ' ') {
-      pos++;
       if(cmd_line[pos] == '\0') {
+        stay = 0;
         break;
       }
+      pos++;
     }
     cmd_line[pos] = '\0';
     pos++;
@@ -134,6 +149,8 @@ static void cmd_loop(void)
           } else {
             uart_send_pstring(PSTR("???\r\n"));
           }
+        } else {
+          uart_send_pstring(PSTR("HUH?\r\n"));
         }
       }
     }

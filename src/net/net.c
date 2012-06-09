@@ -94,6 +94,53 @@ static void byte_to_dec(u08 value, u08 *out)
   out[2] = '0' + o;
 }
 
+static u08 parse_dec(const u08 *buf, u08 *out)
+{
+  u08 value = 0;
+  u08 digits = 0;
+  while(digits < 3) {
+    u08 c = buf[digits];
+    if((c<'0')||(c>'9')) {
+      break;
+    }
+    c -= '0';
+    value *= 10;
+    value += c;
+    digits++;
+  }
+  if(digits > 0) {
+    *out = value;
+  }
+  return digits;
+}
+
+u08 net_parse_ip(const u08 *buf, u08 *ip)
+{
+  for(int i=0;i<4;i++) {
+    u08 value;
+    u08 digits = parse_dec(buf,&value);
+    if(digits == 0) {
+      return 0;
+    }
+    buf += digits + 1;
+    ip[i] = value;
+  }
+  return 1;
+}
+
+u08 net_parse_mac(const u08 *buf, u08 *mac)
+{
+  for(int i=0;i<6;i++) {
+    u08 value;
+    if(!parse_byte(buf, &value)) {
+      return 0;
+    }
+    buf += 3;
+    mac[i] = value;
+  }
+  return 1;
+}
+
 void net_dump_ip(const u08 *in)
 {
   int pos = 0;

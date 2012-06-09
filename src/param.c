@@ -53,31 +53,31 @@ static param_t default_param = {
 // dump all params
 void param_dump(void)
 {
-  uart_send_pstring(PSTR("n)et mask:  "));
+  uart_send_pstring(PSTR("nn)et mask:  "));
   net_dump_ip(param.ip_net_mask);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("g)ateway:   "));
+  uart_send_pstring(PSTR("ng)ateway:   "));
   net_dump_ip(param.ip_gw_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("e)th port:  "));
+  uart_send_pstring(PSTR("ne)th port:  "));
   net_dump_ip(param.ip_eth_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("p)lip port: "));
+  uart_send_pstring(PSTR("np)lip port: "));
   net_dump_ip(param.ip_plip_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("a)miga p2p: "));
+  uart_send_pstring(PSTR("na)miga p2p: "));
   net_dump_ip(param.ip_amiga_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("m)ac addr:  "));
+  uart_send_pstring(PSTR("nm)ac addr:  "));
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("d)hcp mode: "));
+  uart_send_pstring(PSTR("nd)hcp mode: "));
   uart_send_hex_byte_crlf(param.dhcp);
 }
 

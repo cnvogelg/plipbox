@@ -43,11 +43,11 @@ extern void dword_to_hex(u32 in,u08 *out);
 // parse a nybble
 extern u08 parse_nybble(u08 in,u08 *value);
 // parse a byte
-extern u08 parse_byte(u08 *str,u08 *value);
+extern u08 parse_byte(const u08 *str,u08 *value);
 // parse a word
-extern u08 parse_word(u08 *str,u16 *value);
+extern u08 parse_word(const u08 *str,u16 *value);
 // parse a 6 byte dword
-extern u08 parse_dword(u08 *str,u32 *value);
+extern u08 parse_dword(const u08 *str,u32 *value);
 
 #endif
 

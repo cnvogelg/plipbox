@@ -57,6 +57,9 @@ extern void net_dump_ip(const u08 *in);
 
 extern u08  net_is_my_subnet(const u08 *ip);
 
+extern u08 net_parse_ip(const u08 *buf, u08 *ip);
+extern u08 net_parse_mac(const u08 *buf, u08 *mac);
+
 /* constants */
 extern const u08 net_any_mac[6];
 extern const u08 net_zero_mac[6];
