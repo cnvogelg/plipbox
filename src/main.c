@@ -24,32 +24,23 @@
  *
  */
 
-#include <avr/delay.h>
-
 #include "global.h"
 #include "board.h"
 #include "uart.h"
+#include "uartutil.h"
 #include "timer.h"
 #include "par_low.h"
 #include "param.h"
-#include "stats.h"
 #include "spi.h"
 #include "enc28j60.h"
-#include "uartutil.h"
-#include "ping.h"
+#include "cmd.h"
 
 #include "net/net.h"
-#include "net/udp.h"
-#include "net/arp.h"
-#include "net/eth.h"
-
 #include "eth_rx.h"
 #include "plip_rx.h"
 #include "plip_tx.h"
 #include "eth_state.h"
 #include "plip_state.h"
-
-#include "pkt_buf.h"
 
 static void init_hw(void)
 {
@@ -77,8 +68,6 @@ static void init_eth(void)
     while(1) {}
   }  
 }
-
-const u08 box_ip[4] = { 192,168,2,20 }; // my box
 
 int main (void)
 {
@@ -110,45 +99,7 @@ int main (void)
     eth_rx_worker(eth_state, plip_online);
     plip_rx_worker(plip_state, eth_online);
     
-    // small hack to enter commands
-    if(uart_read_data_available()) {
-      u08 cmd = uart_read();
-      switch(cmd) {
-        case ' ':
-        {
-          const u08 ip[4] = { 173,194,35,159 }; // google.de
-          u08 result = ping_eth_send_request(ip);
-          uart_send_hex_byte_crlf(result);
-          break;
-        }
-        case 'p':
-        {
-          u08 result = ping_eth_send_request(box_ip);
-          uart_send_hex_byte_crlf(result);
-          break;
-        }
-        case 'a':
-          ping_plip_send_request(net_get_p2p_amiga());
-          break;
-        case 'u': // send test UDP packet
-        {
-          const u08 *mac = arp_find_mac(pkt_buf, box_ip, enc28j60_packet_tx);
-          if(mac != 0) {
-            u08 *buf = pkt_buf + ETH_HDR_SIZE;
-            u08 off = udp_begin_pkt(buf, net_get_ip(), 42, box_ip, 6800);
-            buf[off] = 'C';
-            buf[off+1] = 'V';
-            udp_finish_pkt(buf, 2);
-            eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
-            u16 size = off + 2 + ETH_HDR_SIZE;
-            enc28j60_packet_tx(pkt_buf, size);
-            uart_send_pstring(PSTR("UDP!\r\n"));
-          }
-          break;
-        }
-      }
-    }
-    
+    cmd_worker();
   }
 
   return 0;

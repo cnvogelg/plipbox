@@ -1,5 +1,5 @@
 /*
- * cmd.h - command parsing
+ * cmd_table.c - command table
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,11 +24,22 @@
  *
  */
 
-#ifndef CMD_H
-#define CMD_H
+#include "cmd_table.h"
+#include "uartutil.h"
 
-#include "global.h"
+COMMAND(cmd_quit)
+{
+  return CMD_QUIT;
+}
 
-extern void cmd_worker(void);
+COMMAND(cmd_version)
+{
+  uart_send_pstring(PSTR("v" VERSION "\r\n"));
+  return CMD_OK;
+}
 
-#endif
+cmd_table_t cmd_table[] = {
+  { CMD_NAME("q"), cmd_quit },
+  { CMD_NAME("v"), cmd_version },
+  { 0,0 } // last entry
+};

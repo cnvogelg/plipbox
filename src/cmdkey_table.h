@@ -1,5 +1,5 @@
 /*
- * cmd.h - command parsing
+ * cmdkey_table.h - command key table
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,11 +24,19 @@
  *
  */
 
-#ifndef CMD_H
-#define CMD_H
+#ifndef CMDKEY_TABLE_H
+#define CMDKEY_TABLE_H
 
 #include "global.h"
 
-extern void cmd_worker(void);
+#define COMMAND_KEY(x) static void x (void)
+
+struct cmdkey_table_s {
+  u08     key;
+  void    (*func)(void);
+};
+typedef struct cmdkey_table_s cmdkey_table_t;
+
+extern cmdkey_table_t cmdkey_table[];
 
 #endif

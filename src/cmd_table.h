@@ -1,5 +1,5 @@
 /*
- * cmd.h - command parsing
+ * cmd_table.h - command table
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,11 +24,29 @@
  *
  */
 
-#ifndef CMD_H
-#define CMD_H
+#ifndef CMD_TABLE_H
+#define CMD_TABLE_H
 
+#include <avr/pgmspace.h>
 #include "global.h"
 
-extern void cmd_worker(void);
+#define CMD_OK            0x00
+#define CMD_QUIT          0x01
+
+#define CMD_MASK          0xf0
+#define CMD_MASK_OK       0x00
+#define CMD_MASK_SYNTAX   0x10
+#define CMD_MASK_ERROR    0x20
+
+#define COMMAND(x) static u08 x (u08 argc, const u08 **argv)
+#define CMD_NAME(x) (const PROGMEM char *)x
+
+struct cmd_table_s {
+  PGM_P   name;
+  u08     (*func)(u08 argc, const u08 **argv);
+};
+typedef struct cmd_table_s cmd_table_t;
+
+extern cmd_table_t cmd_table[];
 
 #endif

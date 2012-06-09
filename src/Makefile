@@ -91,6 +91,7 @@ SRC += spi.c enc28j60.c
 SRC += net/net.c net/eth.c net/arp.c net/ip.c net/icmp.c net/udp.c
 SRC += eth_rx.c eth_state.c ping.c
 SRC += plip_rx.c plip_tx.c plip_state.c
+SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c
 
 # output format

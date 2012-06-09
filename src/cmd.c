@@ -24,138 +24,146 @@
  *
  */
 
+#include <string.h>
+
 #include "cmd.h"
+#include "cmd_table.h"
+#include "cmdkey_table.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "util.h"
-#include "ser_parse.h"
-#include "param.h"
-#include "stats.h"
-#include "bench.h"
-#include "log.h"
-#include "error.h"
 
-u08 cmd_parse(u08 len, const char *cmd)
+#define MAX_LINE  20
+#define MAX_ARGS  4
+
+u08 cmd_line[MAX_LINE];
+u08 *cmd_args[MAX_ARGS];
+
+static u08 enter_line(void)
 {
-  u08 status;
-  
-  switch(cmd[0]) {
-    // ----- v) version -----
-    case 'v':
-      uart_send_string("plip2slip " VERSION);
+  u08 cmd_pos = 0;
+  while(cmd_pos < MAX_LINE) {
+    u08 c = uart_read();
+    if(c=='\n') {
       uart_send_crlf();
-      return SER_PARSE_CMD_OK;
-    
-    // ----- x) exit -----
-    case 'x':
-      return SER_PARSE_CMD_EXIT;
-    
-    // ----- s) stats -----
-    case 's':
-      if(len==1) {
-        // show stats
-        stats_dump();
-        return SER_PARSE_CMD_OK;
-      } else {
-        switch(cmd[1]) {
-          case 'r': // stats reset
-            stats_reset();
-            return SER_PARSE_CMD_OK;        
-          default:
-            return SER_PARSE_CMD_UNKNOWN;
-        }
-      }
-    
-    // ----- b) bench -----
-    case 'b':
-      bench_dump();
-      return SER_PARSE_CMD_OK;
-    
-    // ----- p) param -----
-    case 'p':
-      if(len==1) {
-        // show params
-        param_dump();
-        return SER_PARSE_CMD_OK;
-      } else {
-        switch(cmd[1]) {
-          case 's': // param save
-            status = param_save();
-            return (status == PARAM_OK) ? SER_PARSE_CMD_OK : SER_PARSE_CMD_FAIL;
-          case 'l': // param load
-            status = param_load();
-            return (status == PARAM_OK) ? SER_PARSE_CMD_OK : SER_PARSE_CMD_FAIL;
-          case 'r': // param reset
-            param_reset();
-            return SER_PARSE_CMD_OK;
-          default:
-            return SER_PARSE_CMD_UNKNOWN;
-        }
-      }
-      return SER_PARSE_CMD_UNKNOWN;
-    
-    // ----- m) mode -----
-    case 'm':
-      if(len==2) {
-        u08 value;
-        status = parse_nybble(cmd[1],&value);
-        if(!status || (value >= PARAM_MODE_TOTAL_NUMBER)) {
-          return SER_PARSE_CMD_FAIL;
-        }
-        param.mode = value;
-        return SER_PARSE_CMD_OK;
-      }
-      return SER_PARSE_CMD_UNKNOWN;
-    
-    // ----- f) fake_tx -----
-    case 'f':
-      if(len==2) {
-        u08 value;
-        status = parse_nybble(cmd[1],&value);
-        if(!status) {
-          return SER_PARSE_CMD_FAIL;
-        }
-        param.fake_tx = value ? 1 : 0;
-        return SER_PARSE_CMD_OK;
-      }
-      return SER_PARSE_CMD_UNKNOWN;
-    
-    // ----- l) log -----
-    case 'l':
-      if(len==1) {
-        // show log
-        log_dump();
-        return SER_PARSE_CMD_OK;
-      } else {
-        switch(cmd[1]) {
-          case 'r': // reset log
-            log_init();
-            return SER_PARSE_CMD_OK;
-          default:
-            return SER_PARSE_CMD_UNKNOWN;
-        }
-      }
-      return SER_PARSE_CMD_UNKNOWN;
-    
-    // ----- e) error sim -----
-    case 'e':
-      if(len==2) {
-        u08 value;
-        status = parse_nybble(cmd[1],&value);
-        if(!status) {
-          return SER_PARSE_CMD_FAIL;
-        }
-        for(u08 i=0;i<value;i++) {
-          error_add();
-        }
-        return SER_PARSE_CMD_OK;
-      } else {
-        error_add();
-      }
-      return SER_PARSE_CMD_OK;
-    
-    // unknown command
-    default:
-      return SER_PARSE_CMD_UNKNOWN;
+      break;
+    } else if((c>=32)&&(c<128)) {
+      cmd_line[cmd_pos++] = c;
+      uart_send(c);
+    }
   }
+  cmd_line[cmd_pos] = '\0';
+  return cmd_pos;
+}
+
+static u08 parse_args(u08 len)
+{
+  u08 pos = 0;
+  u08 argc = 0;
+  while(1) {
+    // skip leading spaces
+    while(cmd_line[pos] == ' ') {
+      pos++;
+    }
+    // end reached?
+    if(cmd_line[pos] == '\0') {
+      break;
+    }
+    // start new arg
+    cmd_args[argc] = cmd_line + pos;
+    argc++;
+    // seek end
+    while(cmd_line[pos] != ' ') {
+      pos++;
+      if(cmd_line[pos] == '\0') {
+        break;
+      }
+    }
+    cmd_line[pos] = '\0';
+    pos++;
+  }
+  return argc;
+}
+
+static void cmd_loop(void)
+{
+  uart_send_pstring(PSTR("cmd\r\n"));
+  u08 num_chars = 1;
+  u08 status = CMD_OK;
+  while(status != CMD_QUIT) {
+    // print prompt
+    uart_send_pstring(PSTR("> "));
+    // read line
+    num_chars = enter_line();
+    if(num_chars > 0) {
+#ifdef DEBUG
+      uart_send_hex_byte_crlf(num_chars);
+#endif
+      // parse line into args
+      u08 argc = parse_args(num_chars);
+      if(argc > 0) {
+#ifdef DEBUG
+        uart_send_hex_byte_crlf(argc);
+        for(u08 i=0;i<argc;i++) {
+          uart_send_string((const char *)cmd_args[i]);
+          uart_send_crlf();
+        }
+#endif
+        // find command
+        cmd_table_t *ptr = cmd_table;
+        cmd_table_t *found = 0;
+        while(ptr->name != 0) {
+          if(strcmp((const char *)cmd_args[0], ptr->name)==0) {
+            found = ptr;
+            break;
+          }
+          ptr ++;
+        }
+        // got a command
+        if(found != 0) {
+          // execute command
+          status = found->func(argc, (const u08 **)&cmd_args);
+          // show result
+          uart_send_hex_byte_spc(status);
+          u08 type = status & CMD_MASK;
+          if(type == CMD_MASK_OK) {
+            uart_send_pstring(PSTR("OK\r\n"));
+          } else if(type == CMD_MASK_SYNTAX) {
+            uart_send_pstring(PSTR("SYNTAX\r\n")); 
+          } else if(type == CMD_MASK_ERROR) {
+            uart_send_pstring(PSTR("ERROR\r\n"));
+          } else {
+            uart_send_pstring(PSTR("???\r\n"));
+          }
+        }
+      }
+    }
+  }
+  uart_send_pstring(PSTR("bye\r\n"));
+}
+
+void cmd_worker(void)
+{
+  // small hack to enter commands
+  if(uart_read_data_available()) {
+    u08 cmd = uart_read();
+    if(cmd == '\n') {
+      // enter command loop
+      cmd_loop();
+    } else {
+      // search command
+      cmdkey_table_t *ptr = cmdkey_table;
+      cmdkey_table_t *found = 0;
+      while(ptr->key != 0) {
+        if(ptr->key == cmd) {
+          found = ptr;
+          break;
+        }
+        ptr++;
+      }
+      // got a command?
+      if(found != 0) {
+        found->func();
+      }
+    }
+  }  
 }
