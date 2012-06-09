@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * dhcp.c - handle DHCP messages
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,50 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#include "dhcp.h"
+#include "bootp.h"
+#include "eth.h"
 
-#include "global.h"
-#include "plip.h"
+u16 dhcp_begin_pkt(u08 *buf, u08 op)
+{
+  u08 offset = bootp_begin_pkt(buf, op);
+  u08 *ptr = buf + offset + BOOTP_OFF_VEND;
+  
+  // DHCP magic
+  ptr[0] = 0x63;
+  ptr[1] = 0x82;
+  ptr[2] = 0x53;
+  ptr[3] = 0x63;
+  
+  return offset + BOOTP_OFF_VEND + 4;
+}
 
-#define PKT_BUF_SIZE    512
+u16 dhcp_finish_pkt(u08 *buf)
+{
+  return bootp_finish_pkt(buf);
+}
 
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
+u16 dhcp_begin_eth_pkt(u08 *buf, u08 op)
+{
+  eth_make_to_any(buf, ETH_TYPE_IPV4);
+  return dhcp_begin_pkt(buf + ETH_HDR_SIZE, op) + ETH_HDR_SIZE;
+}
 
-#endif
+u16 dhcp_finish_eth_pkt(u08 *buf)
+{
+  return dhcp_finish_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE;
+}
+
+u08 *dhcp_add_type(u08 *buf, u08 type)
+{
+  buf[0] = 53;
+  buf[1] = 1;
+  buf[2] = type;
+  return buf+3;
+}
+  
+u08 *dhcp_add_end(u08 *buf)
+{
+  buf[0] = 0xff;
+  return buf+1;
+}

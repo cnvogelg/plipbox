@@ -38,7 +38,7 @@
 #define UDP_DATA_OFF      8
 
 extern u08 udp_begin_pkt(u08 *buf, const u08 *src_ip, u16 src_port, const u08 *tgt_ip, u16 tgt_port);
-extern void udp_finish_pkt(u08 *buf, u16 data_size);
+extern u16 udp_finish_pkt(u08 *buf, u16 data_size);
 extern u16 udp_calc_checksum(const u08 *buf);
 
 inline const u08 *udp_get_data_ptr(const u08 *udp_buf) { return udp_buf + UDP_DATA_OFF; }

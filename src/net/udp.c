@@ -60,7 +60,7 @@ u16 udp_calc_checksum(const u08 *buf)
   return ip_finish_checksum(chkadd);
 }
 
-void udp_finish_pkt(u08 *buf, u16 data_size)
+u16 udp_finish_pkt(u08 *buf, u16 data_size)
 {
   u08 offset = ip_get_hdr_length(buf);
 
@@ -76,4 +76,5 @@ void udp_finish_pkt(u08 *buf, u16 data_size)
   
   // finish IP packet -> checksum
   ip_finish_pkt(buf, data_size + offset);
+  return data_size + offset;
 }

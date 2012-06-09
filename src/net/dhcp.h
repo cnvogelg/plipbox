@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * dhcp.h - handle DHCP messages
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,26 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#ifndef DHCP_H
+#define DHCP_H
 
-#include "global.h"
-#include "plip.h"
+#include "bootp.h"
+  
+#define DHCP_TYPE_DISCOVER    1
+#define DHCP_TYPE_OFFER       2
+#define DHCP_TYPE_REQUEST     3
+#define DHCP_TYPE_DECLINE     4
+#define DHCP_TYPE_ACK         5
+#define DHCP_TYPE_NAK         6
+#define DHCP_TYPE_RELEASE     7  
+   
+extern u16 dhcp_begin_pkt(u08 *buf, u08 cmd);
+extern u16 dhcp_finish_pkt(u08 *buf);
 
-#define PKT_BUF_SIZE    512
+extern u16 dhcp_begin_eth_pkt(u08 *buf, u08 cmd);
+extern u16 dhcp_finish_eth_pkt(u08 *buf);
 
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
+extern u08 *dhcp_add_type(u08 *buf, u08 type);
+extern u08 *dhcp_add_end(u08 *buf);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * bootp.h - handle BOOTP messages
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,36 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#ifndef BOOTP_H
+#define BOOTP_H
 
-#include "global.h"
-#include "plip.h"
-
-#define PKT_BUF_SIZE    512
-
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
-
+#include "net.h"
+   
+#define BOOTP_REQUEST     1
+#define BOOTP_REPLY       2
+   
+#define BOOTP_OFF_OP      0
+#define BOOTP_OFF_HTYPE   1
+#define BOOTP_OFF_HLEN    2
+#define BOOTP_OFF_HOPS    3
+#define BOOTP_OFF_XID     4
+#define BOOTP_OFF_SECS    8
+#define BOOTP_OFF_FLAGS   10
+#define BOOTP_OFF_CIADDR  12
+#define BOOTP_OFF_YIADDR  16
+#define BOOTP_OFF_SIADDR  20
+#define BOOTP_OFF_GIADDR  24
+#define BOOTP_OFF_CHADDR  28
+#define BOOTP_OFF_SNAME   44
+#define BOOTP_OFF_FILE    108
+#define BOOTP_OFF_VEND    236
+   
+#define BOOTP_MIN_SIZE    300
+   
+extern u08 bootp_begin_pkt(u08 *buf, u08 op);
+extern u16 bootp_finish_pkt(u08 *buf);
+   
+extern u08 bootp_begin_eth_pkt(u08 *buf, u08 op);
+extern u16 bootp_finish_eth_pkt(u08 *buf);
+   
 #endif

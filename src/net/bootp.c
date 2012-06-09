@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * bootp.c - handle BOOTP messages
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -23,16 +23,43 @@
  *  02111-1307  USA.
  *
  */
+   
+#include <string.h>
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#include "bootp.h"
+#include "udp.h"
+#include "eth.h"
 
-#include "global.h"
-#include "plip.h"
+static u32 xid = 0xdeadbeef;
 
-#define PKT_BUF_SIZE    512
+u08 bootp_begin_pkt(u08 *buf, u08 op)
+{
+  u08 off = udp_begin_pkt(buf, net_zero_ip, 68, net_ones_ip, 67);
+  u08 *ptr = buf + off;
+  
+  memset(ptr, 0, BOOTP_MIN_SIZE);
 
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
+  ptr[BOOTP_OFF_OP] = op;
+  ptr[BOOTP_OFF_HTYPE] = 0x01;
+  ptr[BOOTP_OFF_HLEN] = 0x06;
+  net_put_long(ptr + BOOTP_OFF_XID, xid);
+  net_copy_my_mac(ptr + BOOTP_OFF_CHADDR);
+  
+  return off;
+}
+   
+u16 bootp_finish_pkt(u08 *buf)
+{
+  return udp_finish_pkt(buf, BOOTP_MIN_SIZE);
+}
 
-#endif
+u08 bootp_begin_eth_pkt(u08 *buf, u08 op)
+{
+  eth_make_to_any(buf, ETH_TYPE_IPV4);
+  return bootp_begin_pkt(buf + ETH_HDR_SIZE, op) + ETH_HDR_SIZE;
+}
+
+u16 bootp_finish_eth_pkt(u08 *buf)
+{
+  return bootp_finish_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE;
+}

@@ -64,6 +64,7 @@ extern u08 net_parse_mac(const u08 *buf, u08 *mac);
 extern const u08 net_any_mac[6];
 extern const u08 net_zero_mac[6];
 extern const u08 net_zero_ip[4];
+extern const u08 net_ones_ip[4];
 
 /* convenience functions */
 inline void net_copy_my_mac(u08 *out) { net_copy_mac(net_get_mac(), out); }

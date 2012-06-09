@@ -31,6 +31,7 @@
 const u08 net_any_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const u08 net_zero_mac[6] = { 0,0,0,0,0,0 };
 const u08 net_zero_ip[4] = { 0,0,0,0 };
+const u08 net_ones_ip[4] = { 255,255,255,255 };
 
 void net_copy_mac(const u08 *in, u08 *out)
 {
