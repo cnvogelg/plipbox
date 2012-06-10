@@ -31,6 +31,7 @@
 #include "net/ip.h"
 #include "net/icmp.h"
 #include "net/arp.h"
+#include "net/arp_cache.h"
 
 #include "uartutil.h"
 #include "pkt_buf.h"
@@ -46,7 +47,7 @@ u08 ping_eth_send_request(const u08 *ip)
   net_dump_ip(ip);
 #endif
 
-  const u08 *mac = arp_find_mac(pkt_buf, ip, enc28j60_packet_tx);
+  const u08 *mac = arp_cache_find_mac(ip);
   if(mac == 0) {
 #ifdef DEBUG_PING
     uart_send_pstring(PSTR("no mac!"));

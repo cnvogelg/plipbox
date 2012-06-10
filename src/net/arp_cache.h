@@ -1,5 +1,5 @@
 /*
- * param.h - handle device parameters
+ * arp_cache.h - manage the ARP cache
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,42 +24,23 @@
  *
  */
 
-#ifndef _PARAM_H
-#define _PARAM_H
+#ifndef ARP_CACHE_H
+#define ARP_CACHE_H
 
-#include "global.h"
+#include "arp.h"
+#include "param.h"
+#include "net.h"
 
-#define PARAM_NUM_ARP_IP   3
+#define ARP_CACHE_SIZE (PARAM_NUM_ARP_IP + 1)
 
-typedef struct {
-  // net
-  u08 ip_net_mask[4];
-  u08 ip_gw_addr[4];
-  u08 ip_eth_addr[4];
-  u08 ip_plip_addr[4];
-  u08 ip_amiga_addr[4];
-  u08 mac_addr[6];
-  u08 dhcp;
-  // arp cache preload
-  u08 arp_ip[PARAM_NUM_ARP_IP][4];
-} param_t;
-  
-extern param_t param;  
+extern void arp_cache_init(void);
+extern u08  arp_cache_handle_packet(u08 *ethbuf, u16 ethlen, net_tx_packet_func tx_func);
+extern void arp_cache_worker(u08 *ethbuf, net_tx_packet_func tx_func);
+extern void arp_cache_dump(void);
+extern void arp_cache_clear(void);
 
-// param result
-#define PARAM_OK                  0
-#define PARAM_EEPROM_NOT_READY    1
-#define PARAM_EEPROM_CRC_MISMATCH 2
-
-// init parameters. try to load from eeprom or use default
-void param_init(void);
-// save param to eeprom (returns param result) 
-u08 param_save(void);
-// load param from eeprom (returns param result)
-u08 param_load(void);
-// reset param
-void param_reset(void);
-// show params
-void param_dump(void);
+/* return 0 if mac not known (yet) */
+extern const u08 *arp_cache_find_mac(const u08 *ip);
+inline const u08* arp_cache_get_gw_mac(void) { return arp_cache_find_mac(net_get_gateway()); }
 
 #endif

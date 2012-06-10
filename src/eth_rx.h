@@ -27,7 +27,9 @@
 #ifndef ETH_RX_H
 
 #include "global.h"
-   
+
+#define ARP_WORKER_TIMER_MASK  0xffc0
+
 extern void eth_rx_init(void);
 extern void eth_rx_worker(u08 eth_state, u08 plip_online);
 

@@ -31,6 +31,8 @@
 
 #include <avr/eeprom.h>
 #include <util/crc16.h>
+#include <avr/pgmspace.h>
+#include <string.h>
 
 // current memory RAM param
 param_t param;
@@ -40,7 +42,7 @@ param_t eeprom_param EEMEM;
 uint16_t eeprom_crc16 EEMEM;
 
 // default 
-static param_t default_param = {
+static const param_t PROGMEM default_param = {
   .ip_net_mask = { 255,255,255,0 },
   .ip_gw_addr = { 192,168,2,1 },
   .ip_eth_addr = { 192,168,2,133 },
@@ -79,6 +81,14 @@ void param_dump(void)
   
   uart_send_pstring(PSTR("nd)hcp mode: "));
   uart_send_hex_byte_crlf(param.dhcp);
+  
+  for(u08 i=0;i<PARAM_NUM_ARP_IP;i++) {
+    uart_send('a');
+    uart_send('1'+i);
+    uart_send_pstring(PSTR(") arp ip:  "));
+    net_dump_ip(param.arp_ip[i]);
+    uart_send_crlf();
+  }
 }
 
 // build check sum for parameter block
@@ -130,7 +140,11 @@ u08 param_load(void)
 void param_reset(void)
 {
   // restore default param
-  param = default_param;
+  u08 *out = (u08 *)&param;
+  const u08 *in = (const u08 *)&default_param;
+  for(u08 i=0;i<sizeof(param_t);i++) {
+    *(out++) = pgm_read_byte_near(in++);
+  }
 }
 
 void param_init(void)

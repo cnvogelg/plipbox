@@ -30,7 +30,7 @@
 #include "uartutil.h"
    
 #include "net/net.h"
-#include "net/arp.h"
+#include "net/arp_cache.h"
 #include "net/udp.h"
 #include "net/eth.h"
 #include "net/bootp.h"
@@ -64,7 +64,7 @@ COMMAND_KEY(cmd_ping_amiga)
 // send a udp packet
 COMMAND_KEY(cmd_udp_test)
 {
-  const u08 *mac = arp_find_mac(pkt_buf, box_ip, enc28j60_packet_tx);
+  const u08 *mac = arp_cache_find_mac(box_ip);
   if(mac != 0) {
     u08 *buf = pkt_buf + ETH_HDR_SIZE;
     u08 off = udp_begin_pkt(buf, net_get_ip(), 42, box_ip, 6800);
@@ -97,7 +97,20 @@ COMMAND_KEY(cmd_dhcp_test)
   uart_send_pstring(PSTR("DHCP!\r\n"));
 }
 
+COMMAND_KEY(cmd_dump_arp_cache)
+{
+  arp_cache_dump();
+}
+
+COMMAND_KEY(cmd_clear_arp_cache)
+{
+  arp_cache_clear();
+  uart_send_pstring(PSTR("ARP clear\r\n"));
+}
+
 cmdkey_table_t cmdkey_table[] = {
+  { 'a', cmd_dump_arp_cache },
+  { 'A', cmd_clear_arp_cache },
   { 'd', cmd_dhcp_test },
   { 'b', cmd_bootp_test },
   { 'p', cmd_ping_box },

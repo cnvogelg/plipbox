@@ -29,7 +29,7 @@
 #include "net/net.h"
 #include "net/eth.h"
 #include "net/ip.h"
-#include "net/arp.h"
+#include "net/arp_cache.h"
 #include "net/icmp.h"
 
 #include "pkt_buf.h"
@@ -152,7 +152,7 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
 #endif
         
         // find a mac address for the target 
-        const u08 *mac = arp_find_mac(pkt_buf, ltgt_ip, enc28j60_packet_tx);
+        const u08 *mac = arp_cache_find_mac(ltgt_ip);
         if(mac == 0) {
 #ifdef DEBUG
           uart_send_pstring(PSTR("no mac\r\n"));

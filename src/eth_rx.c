@@ -33,6 +33,7 @@
 #include "net/eth.h"
 #include "net/net.h"
 #include "net/ip.h"
+#include "net/arp_cache.h"
 
 #include "enc28j60.h"
 #include "pkt_buf.h"
@@ -40,6 +41,19 @@
 #include "uart.h"
 #include "ping.h"
 #include "plip_tx.h"
+#include "timer.h"
+#include "eth_state.h"
+
+static u16 my_timer;
+
+static u08 arp_time_passed(void)
+{
+  if((my_timer ^ timer_10ms) & ARP_WORKER_TIMER_MASK) {
+    my_timer = timer_10ms;
+    return 1;
+  }
+  return 0;
+}
 
 void eth_rx_init(void)
 {
@@ -56,6 +70,10 @@ u08 retry = 0;
 
 void eth_rx_worker(u08 eth_state, u08 plip_online)
 {
+  if(eth_state == ETH_STATE_OFFLINE) {
+    return;
+  }
+    
   // get next packet
   u16 len = enc28j60_packet_rx_begin();
   if(len == 0) {
@@ -72,6 +90,11 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         retry --;
       }
     }  
+    
+    // arp worker
+    if(arp_time_passed()) {
+      arp_cache_worker(pkt_buf, enc28j60_packet_tx);
+    }
     return;
   }
 
@@ -121,7 +144,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     enc28j60_packet_rx_end();
 
     // now do ARP stuff
-    arp_handle_packet(pkt_buf, len, enc28j60_packet_tx);
+    arp_cache_handle_packet(pkt_buf, len, enc28j60_packet_tx);
   }
   // ----- handle IPv4 -----
   else if(missing >= IP_MIN_HDR_SIZE) {

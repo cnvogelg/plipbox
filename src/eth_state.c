@@ -28,6 +28,7 @@
 
 #include "net/net.h"
 #include "net/arp.h"
+#include "net/arp_cache.h"
 
 #include "enc28j60.h"
 #include "timer.h"
@@ -49,14 +50,12 @@ static u08 time_passed(void)
 
 static u08 link_up(void)
 {
-  // send an arp request for gw
-  arp_send_request(pkt_buf, net_get_gateway(), enc28j60_packet_tx);
   return ETH_STATE_WAIT_ARP;
 }
 
 static u08 wait_arp(void)
 {
-  if(arp_get_gw_mac() == 0) {
+  if(arp_cache_get_gw_mac() == 0) {
     return ETH_STATE_WAIT_ARP;
   } else {
     return ETH_STATE_START_NET;
