@@ -122,3 +122,10 @@ void ip_finish_pkt(u08 *buf, u16 size)
   ip_hdr_set_checksum(buf);
 }
 
+void ip_swap_ip(u08 *buf)
+{
+  u08 ip[4];
+  net_copy_ip(buf + 12, ip);
+  net_copy_ip(buf + 16, buf + 12);
+  net_copy_ip(ip, buf + 16);
+}

@@ -1,5 +1,5 @@
 /*
- * eth_rx.h: handle eth receiption and plip tx
+ * dhcp_client.h - act as a DHCP client to get a lease
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,12 @@
  *
  */
 
-#ifndef ETH_RX_H
+#ifndef DHCP_CLIENT_H
+#define DHCP_CLIENT_H
 
-#include "global.h"
+#include "dhcp.h"
 
-#define HELPER_WORKER_TIMER_MASK  0xffc0
-
-extern void eth_rx_init(void);
-extern void eth_rx_worker(u08 eth_state, u08 plip_online);
+extern void dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func);
+extern u08  dhcp_client_handle_packet(u08 *eth_buf, u16 eth_size, net_tx_packet_func tx_func);
 
 #endif

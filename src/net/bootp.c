@@ -29,6 +29,9 @@
 #include "bootp.h"
 #include "udp.h"
 #include "eth.h"
+   
+#include "uart.h"
+#include "uartutil.h"
 
 static u32 xid = 0xdeadbeef;
 
@@ -53,6 +56,53 @@ u16 bootp_finish_pkt(u08 *buf)
   return udp_finish_pkt(buf, BOOTP_MIN_SIZE);
 }
 
+u08 bootp_begin_swap_pkt(u08 *buf)
+{
+  // setup IP
+  ip_set_src_ip(buf, net_zero_ip);
+  ip_set_tgt_ip(buf, net_ones_ip);
+  
+  // swap UDP ports
+  u08 off = ip_get_hdr_length(buf);
+  u08 *ptr = buf + off;
+  u16 src_port = udp_get_src_port(ptr);
+  u16 tgt_port = udp_get_tgt_port(ptr);
+  udp_set_src_port(ptr, tgt_port);
+  udp_set_tgt_port(ptr, src_port);
+
+#ifdef DEBUG  
+  net_dump_ip(ip_get_src_ip(buf));
+  uart_send(' ');
+  uart_send_hex_byte_crlf(udp_get_src_port(ptr));
+  net_dump_ip(ip_get_tgt_ip(buf));
+  uart_send(' ');
+  uart_send_hex_byte_crlf(udp_get_tgt_port(ptr));
+#endif
+  
+  // enter UDP data
+  off += UDP_DATA_OFF;
+  ptr = buf + off;
+  
+  // swap bootp type
+  if(ptr[BOOTP_OFF_OP] == BOOTP_REQUEST) {
+    ptr[BOOTP_OFF_OP] = BOOTP_REPLY;
+  } else {
+    ptr[BOOTP_OFF_OP] = BOOTP_REQUEST;
+  }
+
+#ifdef DEBUG
+  uart_send_hex_byte_crlf(ptr[BOOTP_OFF_OP]);
+#endif
+  
+  return off;
+}
+
+void bootp_finish_swap_pkt(u08 *buf)
+{
+  ip_hdr_set_checksum(buf);
+  udp_set_checksum(buf);
+}
+
 u08 bootp_begin_eth_pkt(u08 *buf, u08 op)
 {
   eth_make_to_any(buf, ETH_TYPE_IPV4);
@@ -63,3 +113,36 @@ u16 bootp_finish_eth_pkt(u08 *buf)
 {
   return bootp_finish_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE;
 }
+
+u08 bootp_begin_swap_eth_pkt(u08 *buf)
+{
+  eth_make_to_any(buf, ETH_TYPE_IPV4);
+
+#ifdef DEBUG
+  net_dump_mac(eth_get_src_mac(buf));
+  uart_send_crlf();
+  net_dump_mac(eth_get_tgt_mac(buf));
+  uart_send_crlf();
+#endif
+  
+  return bootp_begin_swap_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE; 
+}
+
+void bootp_finish_swap_eth_pkt(u08 *buf)
+{
+  bootp_finish_swap_pkt(buf + ETH_HDR_SIZE);
+}
+
+u08 bootp_is_bootp_pkt(u08 *buf)
+{
+  if(udp_is_udp_pkt(buf)) {
+    u08 *udp_buf = buf + ip_get_hdr_length(buf);
+    u16 src_port = udp_get_src_port(udp_buf);
+    u16 tgt_port = udp_get_tgt_port(udp_buf);
+    return ((src_port == 67) && (tgt_port == 68)) ||
+      ((src_port == 68) && (tgt_port == 67));
+  } else {
+    return 0;
+  }
+}
+

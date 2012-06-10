@@ -27,6 +27,10 @@
 #include "dhcp.h"
 #include "bootp.h"
 #include "eth.h"
+#include "ip.h"
+#include "udp.h"
+#include "uart.h"
+#include "uartutil.h"
 
 u16 dhcp_begin_pkt(u08 *buf, u08 op)
 {
@@ -47,6 +51,48 @@ u16 dhcp_finish_pkt(u08 *buf)
   return bootp_finish_pkt(buf);
 }
 
+static void make_req_from_off(u08 *buf, u08 offset)
+{
+  u16 opt_off = offset + BOOTP_OFF_VEND + 4;
+
+  // clear CIADDR
+  u08 *ptr = buf + offset;
+  u08 my_ip[4];
+  net_copy_ip(&ptr[BOOTP_OFF_YIADDR], my_ip);
+  net_copy_ip(net_zero_ip, &ptr[BOOTP_OFF_CIADDR]);
+  net_copy_ip(net_zero_ip, &ptr[BOOTP_OFF_YIADDR]);
+  
+  u08 *options = buf + opt_off;
+
+  // get server id
+  const u08 *result;
+  u08 srv_id[4];
+  dhcp_get_option_type(options, 54, &result); // server ID
+  net_copy_ip(result, srv_id);
+
+#ifdef DEBUG
+  net_dump_ip(srv_id);
+  uart_send_crlf();
+  net_dump_ip(my_ip);
+  uart_send_crlf();
+#endif
+  
+  // setup DHCP options
+  options = dhcp_add_type(options, DHCP_TYPE_REQUEST);
+  options = dhcp_add_ip(options, 54, srv_id); // server ID
+  options = dhcp_add_ip(options, 50, my_ip); // requested IP addr
+  dhcp_add_end(options);
+  
+  dhcp_set_message_type(options, DHCP_TYPE_REQUEST);  
+}
+
+void dhcp_make_request_from_offer_pkt(u08 *ip_buf)
+{
+  u08 offset = bootp_begin_swap_pkt(ip_buf);
+  make_req_from_off(ip_buf, offset);
+  bootp_finish_swap_pkt(ip_buf);
+}
+
 u16 dhcp_begin_eth_pkt(u08 *buf, u08 op)
 {
   eth_make_to_any(buf, ETH_TYPE_IPV4);
@@ -58,6 +104,13 @@ u16 dhcp_finish_eth_pkt(u08 *buf)
   return dhcp_finish_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE;
 }
 
+void dhcp_make_request_from_offer_eth_pkt(u08 *eth_buf)
+{
+  u08 offset = bootp_begin_swap_eth_pkt(eth_buf);
+  make_req_from_off(eth_buf, offset);
+  bootp_finish_swap_eth_pkt(eth_buf);
+}
+
 u08 *dhcp_add_type(u08 *buf, u08 type)
 {
   buf[0] = 53;
@@ -65,9 +118,102 @@ u08 *dhcp_add_type(u08 *buf, u08 type)
   buf[2] = type;
   return buf+3;
 }
-  
+
+u08 *dhcp_add_ip(u08 *buf, u08 type, const u08 *ip)
+{
+  buf[0] = type;
+  buf[1] = 4;
+  net_copy_ip(ip, buf+2);
+  return buf + 6;
+}
+
 u08 *dhcp_add_end(u08 *buf)
 {
   buf[0] = 0xff;
   return buf+1;
 }
+
+u08 dhcp_is_dhcp_pkt(u08 *buf)
+{
+  if(bootp_is_bootp_pkt(buf)) {
+    u08 *magic_buf = buf + ip_get_hdr_length(buf) + UDP_DATA_OFF + BOOTP_OFF_VEND;
+    return (magic_buf[0] == 0x63) && (magic_buf[1] == 0x82) &&
+      (magic_buf[2] == 0x53) && (magic_buf[3] == 0x63);
+  } else {
+    return 0;
+  }
+}
+
+void dhcp_parse_options(const u08 *opt_buf, dhcp_handle_option_func func)
+{
+  while(*opt_buf != 0xff) {
+    u08 c = *opt_buf;
+    if(c == 0) {
+      // skip
+      opt_buf++;
+    } else {
+      u08 type = opt_buf[0];
+      u08 size = opt_buf[1];
+      func(type, size, opt_buf + 2);
+      opt_buf += 2 + size;
+    }
+  }
+}
+
+u08 dhcp_set_message_type(u08 *opt_buf, u08 msg_type)
+{
+  u08 old_type = 0;
+  while(*opt_buf != 0xff) {
+    u08 c = *opt_buf;
+    if(c==0) {
+      opt_buf++;
+    } else {
+      u08 type = opt_buf[0];
+      u08 size = opt_buf[1];
+      // DHCP message type
+      if(type == 53) {
+        old_type = opt_buf[2];
+        opt_buf[2] = msg_type;
+      }
+      opt_buf += 2 + size;      
+    }
+  }
+  return old_type;
+}
+
+u08 dhcp_get_message_type(const u08 *opt_buf)
+{
+  const u08 *ptr;
+  u08 size = dhcp_get_option_type(opt_buf, 53, &ptr);
+  if(size == 1) {
+    return *ptr;
+  } else {
+      return 0;
+  }
+}
+
+u08 dhcp_get_option_type(const u08 *opt_buf, u08 msg_type, const u08 **ptr)
+{
+  while(*opt_buf != 0xff) {
+    u08 c = *opt_buf;
+    if(c==0) {
+      opt_buf++;
+    } else {
+      u08 type = opt_buf[0];
+      u08 size = opt_buf[1];
+      if(type == msg_type) {
+        *ptr = opt_buf + 2;
+        return size;
+      }
+      opt_buf += 2 + size;      
+    }
+  }
+  return 0;
+}
+
+void dhcp_dump_options(u08 option, u08 size, const u08 *data)
+{
+  uart_send_hex_byte_spc(option);
+  uart_send_hex_byte_crlf(size);
+}
+

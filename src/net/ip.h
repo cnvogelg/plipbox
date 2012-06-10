@@ -69,6 +69,8 @@ inline u08 ip_get_protocol(const u08 *buf) { return buf[9]; }
 inline void ip_set_src_ip(u08 *buf, const u08 *ip) { net_copy_ip(ip, buf + 12); }
 inline void ip_set_tgt_ip(u08 *buf, const u08 *ip) { net_copy_ip(ip, buf + 16); }
 
+extern void ip_swap_ip(u08 *buf);
+
 /* create packet */
 extern u08 ip_begin_pkt(u08 *buf, const u08 *src_ip, const u08 *tgt_ip, u08 protocol);
 extern void ip_finish_pkt(u08 *buf, u16 size);

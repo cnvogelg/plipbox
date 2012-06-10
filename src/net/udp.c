@@ -60,6 +60,16 @@ u16 udp_calc_checksum(const u08 *buf)
   return ip_finish_checksum(chkadd);
 }
 
+void udp_set_checksum(u08 *buf)
+{
+  u08 offset = ip_get_hdr_length(buf);
+  u08 *udp_buf = buf + offset;
+  udp_buf[UDP_CHECKSUM_OFF] = 0;
+  udp_buf[UDP_CHECKSUM_OFF+1] = 0;
+  u16 checksum = udp_calc_checksum(buf);
+  net_put_word(udp_buf + UDP_CHECKSUM_OFF, ~checksum);
+}
+
 u16 udp_finish_pkt(u08 *buf, u16 data_size)
 {
   u08 offset = ip_get_hdr_length(buf);

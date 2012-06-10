@@ -34,6 +34,8 @@
 #include "net/net.h"
 #include "net/ip.h"
 #include "net/arp_cache.h"
+#include "net/dhcp_client.h"
+#include "net/udp.h"
 
 #include "enc28j60.h"
 #include "pkt_buf.h"
@@ -46,9 +48,9 @@
 
 static u16 my_timer;
 
-static u08 arp_time_passed(void)
+static u08 helper_time_passed(void)
 {
-  if((my_timer ^ timer_10ms) & ARP_WORKER_TIMER_MASK) {
+  if((my_timer ^ timer_10ms) & HELPER_WORKER_TIMER_MASK) {
     my_timer = timer_10ms;
     return 1;
   }
@@ -91,9 +93,10 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
       }
     }  
     
-    // arp worker
-    if(arp_time_passed()) {
+    // trigger helper worker for ARP and DHCP
+    if(helper_time_passed()) {
       arp_cache_worker(pkt_buf, enc28j60_packet_tx);
+      dhcp_client_worker(pkt_buf, PKT_BUF_SIZE, enc28j60_packet_tx);
     }
     return;
   }
@@ -173,10 +176,25 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     }
     // check tgt IP
     else if(!net_compare_my_ip(ip_get_tgt_ip(ip_buf))) {
-      send_prefix(),
-      uart_send_pstring(PSTR("TGT NOT ME? "));
-      net_dump_ip(ip_get_tgt_ip(ip_buf));
-      uart_send_crlf();
+      // UDP? -> could be BOOTP/DHCP
+      u08 handled = 0;
+      if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_UDP)) {
+        // read missing bytes and finish packet rx
+        enc28j60_packet_rx_blk(pkt_buf + offset, missing);
+        enc28j60_packet_rx_end();
+        
+        // handle DHCP packet
+        if(dhcp_is_dhcp_pkt(ip_buf)) {
+          handled = dhcp_client_handle_packet(pkt_buf, len, enc28j60_packet_tx);
+        }
+      }
+      // warn on unhandled packets
+      if(!handled) {
+        send_prefix(),
+        uart_send_pstring(PSTR("TGT NOT ME? "));
+        net_dump_ip(ip_get_tgt_ip(ip_buf));
+        uart_send_crlf();
+      }
     }
     // IP packet seems to be ok!
     else {

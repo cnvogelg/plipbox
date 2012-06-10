@@ -52,8 +52,16 @@
    
 extern u08 bootp_begin_pkt(u08 *buf, u08 op);
 extern u16 bootp_finish_pkt(u08 *buf);
+extern u08 bootp_begin_swap_pkt(u08 *buf);
+extern void bootp_finish_swap_pkt(u08 *buf);
    
 extern u08 bootp_begin_eth_pkt(u08 *buf, u08 op);
 extern u16 bootp_finish_eth_pkt(u08 *buf);
-   
+extern u08 bootp_begin_swap_eth_pkt(u08 *buf);
+extern void bootp_finish_swap_eth_pkt(u08 *buf);
+
+extern u08 bootp_is_bootp_pkt(u08 *buf);
+
+inline u32 bootp_get_xid(const u08 *udp_buf) { return net_get_long(udp_buf + BOOTP_OFF_XID); }
+
 #endif

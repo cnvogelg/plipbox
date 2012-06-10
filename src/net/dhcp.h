@@ -37,13 +37,29 @@
 #define DHCP_TYPE_NAK         6
 #define DHCP_TYPE_RELEASE     7  
    
-extern u16 dhcp_begin_pkt(u08 *buf, u08 cmd);
-extern u16 dhcp_finish_pkt(u08 *buf);
+typedef void (*dhcp_handle_option_func)(u08 option, u08 size, const u08 *data);
 
-extern u16 dhcp_begin_eth_pkt(u08 *buf, u08 cmd);
-extern u16 dhcp_finish_eth_pkt(u08 *buf);
+extern u16 dhcp_begin_pkt(u08 *ip_buf, u08 cmd);
+extern u16 dhcp_finish_pkt(u08 *ip_buf);
+extern void dhcp_make_request_from_offer_pkt(u08 *ip_buf);
 
-extern u08 *dhcp_add_type(u08 *buf, u08 type);
-extern u08 *dhcp_add_end(u08 *buf);
+extern u16 dhcp_begin_eth_pkt(u08 *eth_buf, u08 cmd);
+extern u16 dhcp_finish_eth_pkt(u08 *eth_buf);
+extern void dhcp_make_request_from_offer_eth_pkt(u08 *ip_buf);
+
+extern u08 *dhcp_add_type(u08 *opt_buf, u08 type);
+extern u08 *dhcp_add_ip(u08 *opt_buf, u08 type, const u08 *ip);
+extern u08 *dhcp_add_end(u08 *opt_buf);
+
+extern u08 dhcp_is_dhcp_pkt(u08 *ip_buf);
+
+inline const u08 *dhcp_get_options(const u08 *udp_buf) { return udp_buf + BOOTP_OFF_VEND + 4; }
+inline u32 dhcp_get_server_id(const u08 *udp_buf) { return bootp_get_xid(udp_buf); }
+
+extern void dhcp_parse_options(const u08 *opt_buf, dhcp_handle_option_func func);
+extern void dhcp_dump_options(u08 option, u08 size, const u08 *data);
+extern u08 dhcp_get_message_type(const u08 *opt_buf);
+extern u08 dhcp_get_option_type(const u08 *opt_buf, u08 msg_type, const u08 **ptr);
+extern u08 dhcp_set_message_type(u08 *opt_buf, u08 msg_type);
 
 #endif
