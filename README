@@ -1,61 +1,47 @@
-plip2slip
-=========
+plipbox
+=======
 
-"Build a PLIP-to-SLIP HW Bridge device using an Arduino board for speeding up
-Internet on a stock Amiga 500."
+plipbox is an Arduino-based device that allows to connect low-end classic
+Amigas via Ethernet to your local network. It bridges IP traffic received
+via PLIP on the parallel port of the Amiga to the Ethernet port attached
+to the Arduino.
 
-Copyright (C) 2011 Christian Vogelgsang <chris@vogelgsang.org>
+Copyright (C) 2012 Christian Vogelgsang <chris@vogelgsang.org>
 
 Released under the GNU Public License V2 (see COPYING for details)
 
 Introduction
 ------------
 
-An Amiga 500 has no special ethernet or other network ports for connecting to
-the Internet. Typically a SLIP (serial line internet protocol) device is used
-to transfer all IP packets via the serial RS 232 interface to another computer
-with fast ethernet connection. With the on-board serial port a maximum speed
-of 9600 Baud (~ 1 KiB/s) could be achieved running Amiga OS.
+With the plip2slip[1] project I already presented a device that uses a cheap
+AVR 8 bit microcontroller (as found on the popular Arduino boards) to bridge
+network traffic from the Amiga's parallel port (with the MagPLIP[2] protocoll)
+to another machine via a fast serial link.
 
-Faster speeds could be achieved by using a PLIP (parallel port IP) device that
-uses the parallel port to transfer IP packets to another host. Since the Amiga
-parallel port is fully bi-directional you can use a half-duplex protocol and
-then transfer an IP packet byte-by-byte over the port. This is done in the
-magPLIP driver available on Aminet[1]. Unfortunately, this approach requires
-an Amiga or another Computer with a fully bi-directional port on the peer side.
-With this parallel approach you can achieve up to 15-20 KiB/s transfer speeds.
+plipbox extends the plip2slip project and replaces the serial link for IP traffic
+with an on-board Ethernet port. This allows you to connect your Amiga directly
+to your local network without any other machine assisting.
 
-The idea in this project is to use the custom I/O ports of an AVR microcontroller
-board (here an Arduino 2009) and implement the parallel port there. The mcu
-implements the magPLIP protocol and can then receive and send packets to/from
-the Amiga.
+With the on-board Ethernet port the plipbox HW is more complex than the plip2slip
+HW, but I tried to use common and easy available HW modules to simplify the
+recreation of this device. This allows even novice users to build their own
+plipbox. (See the hardware document for details).
 
-On the other hand, the Arduino uses an FTDI 232 USB-to-Serial bridge to allow
-fast serial data transfers. On a 16 MHz AVR you can use serial rates up to 500
-KiBit/s (~ 55 KiB/s). With proper RTS/CTS flow control the AVR can handle
-these data rates easily.
+The firmware for plipbox is open-source and hosted on GitHub [3].
+Clone this repository if you want to build the firmware yourself or if you
+want to play around with it. 
 
-The "plip2slip" firmware developed in this project now bridges these two
-ports. A PC is connected with a fast serial link to the AVR and the Amiga is
-connected with its parallel port. As a result the amiga can achieve full PLIP
-speed while the PC runs a fast SLIP link.
+Currently, no official firmware release is available but I will post
+development snapshots to the GitHub download section so you can already
+play with the device.
 
-On the PC I use Linux with a patched slattach tool to support the fast serial
-rates. The Amiga magPLIP device is slightly patched to better support the AVR.
-All patches are available in this project.
+[1] http://lallafa.de/blog/amiga-projects/plip2slip/
+[2] http://aminet.net/package/comm/net/magPLIP38.1
+[3] https://github.com/cnvogelg/plipbox
 
-The data flow is as follows:
-
-Internet <->   PC   <--SLIP-->  Arduino  <--PLIP-->  Amiga 500
-              Linux            plip2slip            magPLIP + AmiTCP
-
-[1] http://aminet.net/package/comm/net/magPLIP38.1
-
-
-plip2slip Documentation
------------------------
+plipbox Documentation
+---------------------
 
  doc/hardware.txt               How to build the device hardware
  doc/terminal.txt               How to setup a serial terminal for command mode
  contrib/magplip/README         How to install the AMIGA network module
- contrib/slattach/README        How to patch and setup SLIP on Linux
