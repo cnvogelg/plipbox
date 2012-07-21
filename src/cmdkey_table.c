@@ -81,18 +81,18 @@ COMMAND_KEY(cmd_udp_test)
 COMMAND_KEY(cmd_bootp_test)
 {
   bootp_begin_eth_pkt(pkt_buf, BOOTP_REQUEST);
-  u16 size = bootp_finish_eth_pkt(pkt_buf);
+  u16 size = bootp_finish_eth_pkt(pkt_buf, BOOTP_MIN_SIZE);
   enc28j60_packet_tx(pkt_buf, size);
   uart_send_pstring(PSTR("BOOTP!\r\n"));
 }
 
 COMMAND_KEY(cmd_dhcp_test)
 {
-  u16 off = dhcp_begin_eth_pkt(pkt_buf, BOOTP_REQUEST);
+  u16 off = dhcp_begin_eth_pkt_multicast(pkt_buf, BOOTP_REQUEST);
   u08 *opt = pkt_buf + off;
   opt = dhcp_add_type(opt, DHCP_TYPE_DISCOVER);
   dhcp_add_end(opt);
-  u16 size = dhcp_finish_eth_pkt(pkt_buf);
+  u16 size = dhcp_finish_eth_pkt(pkt_buf, BOOTP_MIN_SIZE);
   enc28j60_packet_tx(pkt_buf, size);
   uart_send_pstring(PSTR("DHCP!\r\n"));
 }

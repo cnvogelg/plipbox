@@ -51,12 +51,12 @@
 #define BOOTP_MIN_SIZE    300
    
 extern u08 bootp_begin_pkt(u08 *buf, u08 op);
-extern u16 bootp_finish_pkt(u08 *buf);
+extern u16 bootp_finish_pkt(u08 *buf, u16 size);
 extern u08 bootp_begin_swap_pkt(u08 *buf);
 extern void bootp_finish_swap_pkt(u08 *buf);
    
 extern u08 bootp_begin_eth_pkt(u08 *buf, u08 op);
-extern u16 bootp_finish_eth_pkt(u08 *buf);
+extern u16 bootp_finish_eth_pkt(u08 *buf, u16 size);
 extern u08 bootp_begin_swap_eth_pkt(u08 *buf);
 extern void bootp_finish_swap_eth_pkt(u08 *buf);
 

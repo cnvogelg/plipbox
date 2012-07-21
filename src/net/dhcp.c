@@ -46,12 +46,21 @@ u16 dhcp_begin_pkt(u08 *buf, u08 op)
   return offset + BOOTP_OFF_VEND + 4;
 }
 
-u16 dhcp_finish_pkt(u08 *buf)
+u16 dhcp_finish_pkt(u08 *buf, u16 size)
 {
-  return bootp_finish_pkt(buf);
+  return bootp_finish_pkt(buf, size);
 }
 
-static void make_req_from_off(u08 *buf, u08 offset)
+u16 dhcp_make_discover_eth_pkt(u08 *buf)
+{
+  u16 off = dhcp_begin_eth_pkt_multicast(buf, BOOTP_REQUEST);
+  u08 *opt = buf + off;
+  opt = dhcp_add_type(opt, DHCP_TYPE_DISCOVER);
+  opt = dhcp_add_end(opt);
+  return dhcp_finish_eth_pkt(buf, BOOTP_MIN_SIZE);
+}
+
+static void make_req_from_off(u08 *buf, u16 offset)
 {
   u16 opt_off = offset + BOOTP_OFF_VEND + 4;
 
@@ -82,8 +91,28 @@ static void make_req_from_off(u08 *buf, u08 offset)
   options = dhcp_add_ip(options, 54, srv_id); // server ID
   options = dhcp_add_ip(options, 50, my_ip); // requested IP addr
   dhcp_add_end(options);
+}
+
+static u16 make_renew_from_off(u08 *buf, u16 offset, const u08 *srv_ip, const u08 *srv_id)
+{
+  // bootp pointer
+  u08 *ptr = buf + (offset - BOOTP_OFF_VEND - 4);
+  net_copy_ip(srv_id, ptr + BOOTP_OFF_XID);
+  net_copy_ip(srv_ip, ptr + BOOTP_OFF_SIADDR);
+  net_copy_ip(net_get_ip(), ptr + BOOTP_OFF_CIADDR);
   
-  dhcp_set_message_type(options, DHCP_TYPE_REQUEST);  
+  u08 *options = buf + offset;
+  options = dhcp_add_type(options, DHCP_TYPE_REQUEST);
+  dhcp_add_end(options);
+  
+  return BOOTP_MIN_SIZE;
+}
+
+u16 dhcp_make_renew_pkt(u08 *ip_buf, const u08 *srv_ip, const u08 *srv_id)
+{
+  u08 offset = dhcp_begin_pkt(ip_buf, BOOTP_REQUEST);
+  u16 size = make_renew_from_off(ip_buf, offset, srv_ip, srv_id);
+  return dhcp_finish_pkt(ip_buf, size);
 }
 
 void dhcp_make_request_from_offer_pkt(u08 *ip_buf)
@@ -93,15 +122,21 @@ void dhcp_make_request_from_offer_pkt(u08 *ip_buf)
   bootp_finish_swap_pkt(ip_buf);
 }
 
-u16 dhcp_begin_eth_pkt(u08 *buf, u08 op)
+u16 dhcp_begin_eth_pkt_multicast(u08 *buf, u08 op)
 {
   eth_make_to_any(buf, ETH_TYPE_IPV4);
   return dhcp_begin_pkt(buf + ETH_HDR_SIZE, op) + ETH_HDR_SIZE;
 }
 
-u16 dhcp_finish_eth_pkt(u08 *buf)
+u16 dhcp_begin_eth_pkt_unicast(u08 *buf, u08 op, const u08 *mac)
 {
-  return dhcp_finish_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE;
+  eth_make_to_tgt(buf, ETH_TYPE_IPV4, mac);
+  return dhcp_begin_pkt(buf + ETH_HDR_SIZE, op) + ETH_HDR_SIZE;
+}
+
+u16 dhcp_finish_eth_pkt(u08 *buf, u16 size)
+{
+  return dhcp_finish_pkt(buf + ETH_HDR_SIZE, size) + ETH_HDR_SIZE;
 }
 
 void dhcp_make_request_from_offer_eth_pkt(u08 *eth_buf)
@@ -109,6 +144,13 @@ void dhcp_make_request_from_offer_eth_pkt(u08 *eth_buf)
   u08 offset = bootp_begin_swap_eth_pkt(eth_buf);
   make_req_from_off(eth_buf, offset);
   bootp_finish_swap_eth_pkt(eth_buf);
+}
+
+u16 dhcp_make_renew_eth_pkt(u08 *eth_buf, const u08 *srv_mac, const u08 *srv_ip, const u08 *srv_id)
+{
+  u16 offset = dhcp_begin_eth_pkt_unicast(eth_buf, BOOTP_REQUEST, srv_mac);
+  u16 size = make_renew_from_off(eth_buf, offset, srv_ip, srv_id);
+  return dhcp_finish_eth_pkt(eth_buf, size);
 }
 
 u08 *dhcp_add_type(u08 *buf, u08 type)

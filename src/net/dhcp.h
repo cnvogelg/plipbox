@@ -40,12 +40,16 @@
 typedef void (*dhcp_handle_option_func)(u08 option, u08 size, const u08 *data);
 
 extern u16 dhcp_begin_pkt(u08 *ip_buf, u08 cmd);
-extern u16 dhcp_finish_pkt(u08 *ip_buf);
+extern u16 dhcp_finish_pkt(u08 *ip_buf, u16 size);
 extern void dhcp_make_request_from_offer_pkt(u08 *ip_buf);
+extern u16 dhcp_make_renew_pkt(u08 *ip_buf, const u08 *srv_ip, const u08 *srv_id);
 
-extern u16 dhcp_begin_eth_pkt(u08 *eth_buf, u08 cmd);
-extern u16 dhcp_finish_eth_pkt(u08 *eth_buf);
+extern u16 dhcp_begin_eth_pkt_multicast(u08 *eth_buf, u08 cmd);
+extern u16 dhcp_begin_eth_pkt_unicast(u08 *eth_buf, u08 cmd, const u08 *mac);
+extern u16 dhcp_finish_eth_pkt(u08 *eth_buf, u16 size);
 extern void dhcp_make_request_from_offer_eth_pkt(u08 *ip_buf);
+extern u16 dhcp_make_renew_eth_pkt(u08 *eth_buf, const u08 *srv_mac, const u08 *srv_ip, const u08 *srv_id);
+extern u16 dhcp_make_discover_eth_pkt(u08 *buf);
 
 extern u08 *dhcp_add_type(u08 *opt_buf, u08 type);
 extern u08 *dhcp_add_ip(u08 *opt_buf, u08 type, const u08 *ip);

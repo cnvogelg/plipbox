@@ -39,9 +39,11 @@ typedef struct {
   u08 ip_plip_addr[4];
   u08 ip_amiga_addr[4];
   u08 mac_addr[6];
-  u08 dhcp;
   // arp cache preload
   u08 arp_ip[PARAM_NUM_ARP_IP][4];
+  // dhcp
+  u08 dhcp_enabled;
+  u32 dhcp_lease_time;
 } param_t;
   
 extern param_t param;  

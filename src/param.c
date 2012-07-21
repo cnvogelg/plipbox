@@ -49,7 +49,8 @@ static const param_t PROGMEM default_param = {
   .ip_plip_addr = { 192,168,0,2 },
   .ip_amiga_addr = { 192,168,0,1 },
   .mac_addr = { 0x74,0x69,0x69,0x2D,0x30,0x31 },
-  .dhcp = 0
+  .dhcp_enabled = 0,
+  .dhcp_lease_time = 10
 };
 
 // dump all params
@@ -79,8 +80,11 @@ void param_dump(void)
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("nd)hcp mode: "));
-  uart_send_hex_byte_crlf(param.dhcp);
+  uart_send_pstring(PSTR("nd)hcp enabled: "));
+  uart_send_hex_byte_crlf(param.dhcp_enabled);
+  
+  uart_send_pstring(PSTR("nl)ease time:   "));
+  uart_send_hex_dword_crlf(param.dhcp_lease_time);
   
   for(u08 i=0;i<PARAM_NUM_ARP_IP;i++) {
     uart_send('a');

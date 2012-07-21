@@ -41,6 +41,9 @@ extern volatile u16 timer2_10ms;
 // 16bit: 0,100us...6.5s
 extern volatile u16 timer_100us;
 
+// the master clock in seconds
+extern volatile u32 clock_1s;
+
 // busy wait with 10ms timer
 extern void timer_delay_10ms(u16 timeout);
 

@@ -198,8 +198,51 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     }
     // IP packet seems to be ok!
     else {
+      u08 protocol = ip_get_protocol(ip_buf);
+      u08 hdr_len = ip_get_hdr_length(ip_buf);
+
+      // do we need some extra bytes for UDP/TCP checksum correction?
+      u08 extra_off = 0;
+      if(protocol == IP_PROTOCOL_TCP) {
+        extra_off = TCP_CHECKSUM_OFF + hdr_len;
+#ifdef DEBUG
+        uart_send('T');
+        uart_send_hex_byte_spc(extra);
+#endif
+      }
+      else if(protocol == IP_PROTOCOL_UDP) {
+        extra_off = UDP_CHECKSUM_OFF + hdr_len;
+#ifdef DEBUG
+        uart_send('U');
+        uart_send_hex_byte_spc(extra);
+#endif  
+      }
+      
+      // size of packet we send from pkt_buf
+      if(extra_off != 0) {
+        u08 extra = extra_off + 2 - IP_MIN_HDR_SIZE;
+        enc28j60_packet_rx_blk(pkt_buf + offset, extra);
+        missing -= extra;
+        offset += extra;
+      }
+
+      // is DHCP for me?
+      if(bootp_is_bootp_pkt(ip_buf)) {
+        // read missing bytes and finish as icmp might send a return
+        enc28j60_packet_rx_blk(pkt_buf + offset, missing);
+        enc28j60_packet_rx_end();
+        finished = 1;
+        
+        // handle DHCP packet
+        if(dhcp_is_dhcp_pkt(ip_buf)) {
+          dhcp_client_handle_packet(pkt_buf, len, enc28j60_packet_tx);
+        } else {
+          send_prefix();
+          uart_send_pstring(PSTR("BOOTP for ME?\r\n"));
+        }
+      }
       // if plip is not online then handle pings and drop other packets
-      if(!plip_online) {
+      else if(!plip_online) {
         if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
           // read missing bytes and finish as icmp might send a return
           enc28j60_packet_rx_blk(pkt_buf + offset, missing);
@@ -216,31 +259,6 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
       } 
       // plip is online -> do PLIP transfer of packet
       else {
-        // do we need some extra bytes for UDP/TCP checksum correction?
-        u08 extra_off = 0;
-        u08 protocol = ip_get_protocol(ip_buf);
-        u08 hdr_len = ip_get_hdr_length(ip_buf);
-        if(protocol == IP_PROTOCOL_TCP) {
-          extra_off = TCP_CHECKSUM_OFF + hdr_len;
-#ifdef DEBUG
-          uart_send('T');
-          uart_send_hex_byte_spc(extra);
-#endif
-        } else if(protocol == IP_PROTOCOL_UDP) {
-          extra_off = UDP_CHECKSUM_OFF + hdr_len;
-#ifdef DEBUG
-          uart_send('U');
-          uart_send_hex_byte_spc(extra);
-#endif
-        }
-        // size of packet we send from pkt_buf
-        u08 mem_size = IP_MIN_HDR_SIZE;
-        if(extra_off != 0) {
-          u08 extra = extra_off + 2 - IP_MIN_HDR_SIZE;
-          enc28j60_packet_rx_blk(pkt_buf + offset, extra);
-          mem_size += extra;
-        }
-        
         // adjust ip: eth ip -> p2p amiga ip
         ip_adjust_checksum(ip_buf, IP_CHECKSUM_OFF, net_get_ip(), net_get_p2p_amiga());
         if(extra_off != 0) {
@@ -259,7 +277,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
 #endif
 
         // send packet via PLIP
-        u08 status = plip_tx_send(ETH_HDR_SIZE, mem_size, ip_size);
+        u08 status = plip_tx_send(ETH_HDR_SIZE, offset, ip_size);
         if(status != PLIP_STATUS_OK) {
           uart_send_pstring(PSTR("plip(tx): "));
           uart_send_hex_byte_crlf(status);

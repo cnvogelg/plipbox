@@ -51,9 +51,9 @@ u08 bootp_begin_pkt(u08 *buf, u08 op)
   return off;
 }
    
-u16 bootp_finish_pkt(u08 *buf)
+u16 bootp_finish_pkt(u08 *buf, u16 size)
 {
-  return udp_finish_pkt(buf, BOOTP_MIN_SIZE);
+  return udp_finish_pkt(buf, size);
 }
 
 u08 bootp_begin_swap_pkt(u08 *buf)
@@ -109,9 +109,9 @@ u08 bootp_begin_eth_pkt(u08 *buf, u08 op)
   return bootp_begin_pkt(buf + ETH_HDR_SIZE, op) + ETH_HDR_SIZE;
 }
 
-u16 bootp_finish_eth_pkt(u08 *buf)
+u16 bootp_finish_eth_pkt(u08 *buf, u16 size)
 {
-  return bootp_finish_pkt(buf + ETH_HDR_SIZE) + ETH_HDR_SIZE;
+  return bootp_finish_pkt(buf + ETH_HDR_SIZE, size) + ETH_HDR_SIZE;
 }
 
 u08 bootp_begin_swap_eth_pkt(u08 *buf)
