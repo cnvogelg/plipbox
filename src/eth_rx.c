@@ -95,8 +95,13 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     
     // trigger helper worker for ARP and DHCP
     if(helper_time_passed()) {
+      // ARP
       arp_cache_worker(pkt_buf, enc28j60_packet_tx);
-      dhcp_client_worker(pkt_buf, PKT_BUF_SIZE, enc28j60_packet_tx);
+      
+      // DHCP
+      if(net_dhcp_enabled()) {
+        dhcp_client_worker(pkt_buf, PKT_BUF_SIZE, enc28j60_packet_tx);
+      }
     }
     return;
   }

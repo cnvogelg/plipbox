@@ -49,8 +49,7 @@ static const param_t PROGMEM default_param = {
   .ip_plip_addr = { 192,168,0,2 },
   .ip_amiga_addr = { 192,168,0,1 },
   .mac_addr = { 0x74,0x69,0x69,0x2D,0x30,0x31 },
-  .dhcp_enabled = 0,
-  .dhcp_lease_time = 10
+  .dhcp_enabled = 0
 };
 
 // dump all params
@@ -80,11 +79,8 @@ void param_dump(void)
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("nd)hcp enabled: "));
+  uart_send_pstring(PSTR("nd)hcp on:   "));
   uart_send_hex_byte_crlf(param.dhcp_enabled);
-  
-  uart_send_pstring(PSTR("nl)ease time:   "));
-  uart_send_hex_dword_crlf(param.dhcp_lease_time);
   
   for(u08 i=0;i<PARAM_NUM_ARP_IP;i++) {
     uart_send('a');
@@ -135,8 +131,10 @@ u08 param_load(void)
   // read crc16
   uint16_t crc16 = eeprom_read_word(&eeprom_crc16);
   uint16_t my_crc16 = calc_crc16(&param);
-  if(crc16 != my_crc16)
+  if(crc16 != my_crc16) {
+    param_reset();
     return PARAM_EEPROM_CRC_MISMATCH;
+  }
   
   return PARAM_OK;
 }

@@ -25,7 +25,6 @@
  */
 
 #include "dhcp_client.h"
-#include "param.h"
 #include "uart.h"
 #include "uartutil.h"
 #include "eth.h"
@@ -41,6 +40,7 @@
 
 static u08 state = DHCP_STATE_INIT;
 static u32 alarm_time = 0;
+static u32 lease_time = 10;
 static u08 renew_retries = 0;
 
 static u08 server_ip[4];
@@ -50,16 +50,15 @@ static u08 server_id[4];
 #define RETRY_DELTA_SEC   5
 #define MAX_RENEW_RETRIES 3
 
-
 void dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func)
 {
   u16 size;
   switch(state) {
     case DHCP_STATE_INIT:
       // clear my ip
-      net_copy_ip(net_zero_ip, param.ip_eth_addr);
-      net_copy_ip(net_zero_ip, param.ip_net_mask);
-      net_copy_ip(net_zero_ip, param.ip_gw_addr);
+      net_copy_ip(net_zero_ip, net_get_ip());
+      net_copy_ip(net_zero_ip, net_get_netmask());
+      net_copy_ip(net_zero_ip, net_get_gateway());
       // send a discover message
       size = dhcp_make_discover_eth_pkt(eth_buf);
       tx_func(eth_buf, size);
@@ -100,7 +99,9 @@ void dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func)
 static void get_ip_settings(const u08 *bootp_buf)
 {
   // get my ip
-  net_copy_ip(bootp_buf + BOOTP_OFF_YIADDR, param.ip_eth_addr);
+  net_copy_ip(bootp_buf + BOOTP_OFF_YIADDR, net_get_ip());
+  uart_send_pstring(PSTR("DHCP: my ip="));
+  net_dump_ip(net_get_ip());
   
   // DHCP options
   const u08 *ptr;
@@ -109,22 +110,26 @@ static void get_ip_settings(const u08 *bootp_buf)
   // subnet mask
   u08 size = dhcp_get_option_type(options, 1, &ptr); // subnet mask
   if(size == 4) {
-    net_copy_ip(ptr, param.ip_net_mask);
+    net_copy_ip(ptr, net_get_netmask());
+    uart_send_pstring(PSTR(" mask="));
+    net_dump_ip(net_get_netmask());
   }
   
   // router addr
   size = dhcp_get_option_type(options, 3, &ptr); // router
   if(size == 4) {
-    net_copy_ip(ptr, param.ip_gw_addr);
+    net_copy_ip(ptr, net_get_gateway());
+    uart_send_pstring(PSTR(" gw="));
+    net_dump_ip(net_get_gateway());
   }
   
   // lease time
   size = dhcp_get_option_type(options, 51, &ptr); // lease time
   if(size == 4) {
-    param.dhcp_lease_time = net_get_long(ptr);
+    lease_time = net_get_long(ptr);
     
     // calc the lease renew time
-    alarm_time = clock_1s + (param.dhcp_lease_time >> 1);
+    alarm_time = clock_1s + (lease_time >> 1);
   }
   
   // copy server id (as "ip" type because its also 4 bytes :)
@@ -133,7 +138,7 @@ static void get_ip_settings(const u08 *bootp_buf)
     net_copy_ip(ptr, server_id);
   }
   
-  param_dump();
+  uart_send_crlf();
 }
 
 u08 dhcp_client_handle_packet(u08 *eth_buf, u16 eth_size, net_tx_packet_func tx_func)

@@ -26,6 +26,7 @@
 
 #include "cmd_table.h"
 #include "uartutil.h"
+#include "util.h"
 
 #include "net/net.h"
 #include "param.h"
@@ -109,6 +110,29 @@ COMMAND(cmd_param_set_mac)
   }
 }
 
+COMMAND(cmd_param_toggle)
+{
+  u08 type = argv[0][1];
+  u08 *val = 0;
+  switch(type) {
+    case 'd': val = &param.dhcp_enabled; break;
+    default: return CMD_PARSE_ERROR;
+  }
+  
+  if(argc == 1) {
+    // toggle value if no argument is given
+    *val = *val ? 0 : 1;
+  } else {
+    u08 new_val;
+    if(parse_byte(argv[1],&new_val)) {
+      *val = new_val;
+    } else {
+      return CMD_PARSE_ERROR;
+    }
+  }
+  return CMD_OK;
+}
+
 cmd_table_t cmd_table[] = {
   { CMD_NAME("q"), cmd_quit },
   { CMD_NAME("v"), cmd_version },
@@ -122,5 +146,6 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("ne"), cmd_param_set_ip },
   { CMD_NAME("np"), cmd_param_set_ip },
   { CMD_NAME("na"), cmd_param_set_ip },
+  { CMD_NAME("nd"), cmd_param_toggle },
   { 0,0 } // last entry
 };
