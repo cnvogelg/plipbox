@@ -29,10 +29,10 @@
 
 #include "global.h"
 
-extern u08 ping_eth_send_request(const u08 *ip);
+extern u08 ping_eth_send_request(const u08 *ip, u16 id, u16 seq);
 extern void ping_eth_handle_packet(u08 *ip_buf, u16 ip_len);
 
-extern u08 ping_plip_send_request(const u08 *ip);
+extern u08 ping_plip_send_request(const u08 *ip, u16 id, u16 seq);
 extern void ping_plip_handle_packet(u08 *ip_buf, u16 ip_len);
 
 #endif

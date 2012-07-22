@@ -88,6 +88,7 @@ COMMAND(cmd_param_set_ip)
     case 'e': ip = param.ip_eth_addr; break;
     case 'p': ip = param.ip_plip_addr; break;
     case 'a': ip = param.ip_amiga_addr; break;
+    case 's': ip = param.ip_srv_addr; break;
     default: return CMD_PARSE_ERROR;
   }
   
@@ -146,6 +147,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("ne"), cmd_param_set_ip },
   { CMD_NAME("np"), cmd_param_set_ip },
   { CMD_NAME("na"), cmd_param_set_ip },
+  { CMD_NAME("ns"), cmd_param_set_ip },
   { CMD_NAME("nd"), cmd_param_toggle },
   { 0,0 } // last entry
 };

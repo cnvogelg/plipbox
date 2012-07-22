@@ -28,6 +28,7 @@
 
 #include "ping.h"
 #include "uartutil.h"
+#include "timer.h"
    
 #include "net/net.h"
 #include "net/arp_cache.h"
@@ -39,35 +40,47 @@
 #include "pkt_buf.h"
 #include "enc28j60.h"
 
-static u08 box_ip[4] = { 192,168,2,20 }; // my box
-
-// ping box
-COMMAND_KEY(cmd_ping_box)
+// ping server
+COMMAND_KEY(cmd_ping_server)
 {
-  u08 result = ping_eth_send_request(box_ip);
-  uart_send_hex_byte_crlf(result);  
+  u16 id = timer_10ms;
+  ping_eth_send_request(net_get_srv_ip(), id, 0);
 }
 
 // ping gateway
 COMMAND_KEY(cmd_ping_gw)
 {
-  u08 result = ping_eth_send_request(net_get_gateway());
-  uart_send_hex_byte_crlf(result);    
+  u16 id = timer_10ms;
+  ping_eth_send_request(net_get_gateway(), id, 0);
 }
 
 // ping amiga
 COMMAND_KEY(cmd_ping_amiga)
 {
-  ping_plip_send_request(net_get_p2p_amiga());
+  u16 id = timer_10ms;
+  ping_plip_send_request(net_get_p2p_amiga(), id, 0);
 }
 
+// arp cache
+COMMAND_KEY(cmd_dump_arp_cache)
+{
+  arp_cache_dump();
+}
+
+COMMAND_KEY(cmd_clear_arp_cache)
+{
+  arp_cache_clear();
+  uart_send_pstring(PSTR("ARP clear\r\n"));
+}
+
+// ----- tests -----
 // send a udp packet
 COMMAND_KEY(cmd_udp_test)
 {
-  const u08 *mac = arp_cache_find_mac(box_ip);
+  const u08 *mac = arp_cache_find_mac(net_get_srv_ip());
   if(mac != 0) {
     u08 *buf = pkt_buf + ETH_HDR_SIZE;
-    u08 off = udp_begin_pkt(buf, net_get_ip(), 42, box_ip, 6800);
+    u08 off = udp_begin_pkt(buf, net_get_ip(), 42, net_get_srv_ip(), 6800);
     buf[off] = 'C';
     buf[off+1] = 'V';
     udp_finish_pkt(buf, 2);
@@ -97,25 +110,17 @@ COMMAND_KEY(cmd_dhcp_test)
   uart_send_pstring(PSTR("DHCP!\r\n"));
 }
 
-COMMAND_KEY(cmd_dump_arp_cache)
-{
-  arp_cache_dump();
-}
-
-COMMAND_KEY(cmd_clear_arp_cache)
-{
-  arp_cache_clear();
-  uart_send_pstring(PSTR("ARP clear\r\n"));
-}
-
 cmdkey_table_t cmdkey_table[] = {
-  { 'a', cmd_dump_arp_cache },
-  { 'A', cmd_clear_arp_cache },
-  { 'd', cmd_dhcp_test },
-  { 'b', cmd_bootp_test },
-  { 'p', cmd_ping_box },
+    /* arp handling */
+  { 'c', cmd_dump_arp_cache },
+  { 'C', cmd_clear_arp_cache },
+    /* ping machines */
+  { 's', cmd_ping_server },
   { 'g', cmd_ping_gw },
   { 'a', cmd_ping_amiga },
+    /* internal tests */
+  { 'd', cmd_dhcp_test },
+  { 'b', cmd_bootp_test },
   { 'u', cmd_udp_test },
   { 0,0 }
 };

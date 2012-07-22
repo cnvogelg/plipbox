@@ -39,6 +39,7 @@ inline u08* net_get_gateway(void) { return param.ip_gw_addr; }
 inline u08* net_get_netmask(void) { return param.ip_net_mask; }
 inline u08* net_get_p2p_me(void) { return param.ip_plip_addr; }
 inline u08* net_get_p2p_amiga(void) { return param.ip_amiga_addr; }
+inline u08* net_get_srv_ip(void) { return param.ip_srv_addr; }
 inline u08  net_dhcp_enabled(void) { return param.dhcp_enabled; }
 
 extern void net_copy_mac(const u08 *in, u08 *out);

@@ -40,17 +40,21 @@
 
 #define DEBUG_PING   
    
-u08 ping_eth_send_request(const u08 *ip)
+u08 ping_eth_send_request(const u08 *ip, u16 id, u16 seq)
 {
 #ifdef DEBUG_PING
-  uart_send_pstring(PSTR("send eth ping: "));
+  uart_send_pstring(PSTR("ping: send eth:  "));
   net_dump_ip(ip);
+  uart_send_pstring(PSTR(" id="));
+  uart_send_hex_word_spc(id);
+  uart_send_pstring(PSTR("seq="));
+  uart_send_hex_word_spc(seq);
 #endif
 
   const u08 *mac = arp_cache_find_mac(ip);
   if(mac == 0) {
 #ifdef DEBUG_PING
-    uart_send_pstring(PSTR("no mac!"));
+    uart_send_pstring(PSTR(" -> no mac!"));
     uart_send_crlf();
 #endif
     return 0;
@@ -64,15 +68,25 @@ u08 ping_eth_send_request(const u08 *ip)
   
   eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
   u08 *ip_pkt = pkt_buf + ETH_HDR_SIZE;
-  u16 size = icmp_make_ping_request(ip_pkt, net_get_ip(), ip, 0, 0);
+  u16 size = icmp_make_ping_request(ip_pkt, net_get_ip(), ip, id, seq);
   enc28j60_packet_tx(pkt_buf, size + ETH_HDR_SIZE);
   
   return 1;
 }
 
-u08 ping_plip_send_request(const u08 *ip)
+u08 ping_plip_send_request(const u08 *ip, u16 id, u16 seq)
 {
-  u16 size = icmp_make_ping_request(pkt_buf, net_get_p2p_me(), ip, 0, 0);
+#ifdef DEBUG_PING
+  uart_send_pstring(PSTR("ping: send plip: "));
+  net_dump_ip(ip);
+  uart_send_pstring(PSTR(" id="));
+  uart_send_hex_word_spc(id);
+  uart_send_pstring(PSTR("seq="));
+  uart_send_hex_word_spc(seq);
+  uart_send_crlf();
+#endif
+
+  u16 size = icmp_make_ping_request(pkt_buf, net_get_p2p_me(), ip, id, seq);
   u08 status = plip_tx_send(0,size,size);
   return (status == PLIP_STATUS_OK);
 }

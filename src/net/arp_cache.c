@@ -236,7 +236,7 @@ u08 arp_cache_handle_packet(u08 *ethbuf, u16 ethlen, net_tx_packet_func tx_func)
   }
   else {
 #ifdef DUMP_ARP
-    uart_send_pstring(PSTR("arp: ??\r\n"));
+    //uart_send_pstring(PSTR("arp: ??\r\n"));
 #endif
     return 0;
   }
