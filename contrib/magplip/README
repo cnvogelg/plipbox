@@ -12,7 +12,50 @@ Output:  magplip.device.000   # m68000 version
   2011-08-05  38.1a  plip2slip support
   2012-06-03  38.1b  plipbox support
 
-1. Build magPLIP from Source
+1. Setup network stack
+
+ - I am using AmiTCP (V3.x,4.x) here, but other Network Stacks work similar.
+ 
+ - For a very simple setup you can use the "Network Boot Disk for Amiga"
+   and start with this: http://jpv.wmhost.com/NetworkBootDisk/ 
+   Insert this disk into your emulator and perform the following steps
+   to prepare the disk.
+        
+ - Copy magplip.device from this directory to your AmiTCP installation.
+   Select the m680x0 version and copy the magplip.device without the .000 or
+   .020 extension to your AmiTCP installation:
+
+        > copy magplip.device.000 df0:devs/networks/magplip.device
+
+ - Edit the file "AmiTCP/db/interfaces" and add:
+ 
+        magplip dev=devs:networks/magplip.device
+
+ - Adjust your AmiTCP:bin/startnet to setup the interface to "magplip0".
+   In the network boot disk: Edit "df0:s/Prefs/Env-Archive/nbddriver" (EnvARC:)
+   and set "magplip0"
+
+ - In EnvARC:sana2 (Network Boot Disk: "df0:s/Prefs/Env-Archive") you can
+   place an optional configuration file called "magplip.config".
+   For options see the magPLIP documentation.
+
+ - Correctly set your IPs and use the same ones as defined in the plipbox
+   firmware (see doc/firmware.txt):
+   
+     amiga IP      = address of your Amiga
+     plip port IP  = address of the plipbox (on the PLIP port)
+     
+   In the network boot disk use EnvARC:nbdgw to set the plip port IP and
+   EnvARC:nbdip to set the amiga IP.
+
+ - Do not forget to configure the correct DNS server otherwise you won't be
+   able to resolve non-numeric IP addresses. Have a look at the file
+   AmiTCP:db/netdb-myhost and adapt the NAMESERVER entry accordingly.
+   Use the DNS server of your local network here. (in my setup 192.168.2.1).
+   The network boot disk uses the IP address stored in the EnvARC:nbdns file.
+
+
+2. Build magPLIP from Source
 
  - Only for advanced users! All others can use the supplied binaries!
  - AMIGA: First setup latest SAS C++ V6.58
@@ -34,39 +77,5 @@ Output:  magplip.device.000   # m68000 version
         > list /devs/networks
 
  - The resulting binaries reside in /devs/networks/magplip.device.*
-
-
-2. Setup network stack
-
- - I am using AmiTCP (V3.x,4.x) here, but other Network Stacks work similar
- 
- - For a very simply setup you can use the "Network Boot Disk for Amiga"
-   and start with this: http://jpv.wmhost.com/NetworkBootDisk/ 
-   Insert this disk into your emulator and perform the following steps
-   to prepare the disk.
-        
- - Copy magplip.device to your AmiTCP. Select the m680x0 version and copy
-   the magplip.device without the .000 or .020 extension to your AmiTCP
-   installation:
-
-        > copy magplip.device.000 df0:devs/networks/magplip.device
-
- - Edit the file "AmiTCP/db/interfaces" and add:
- 
-        magplip dev=devs:networks/magplip.device
-
- - Adjust your AmiTCP:bin/startnet to setup the interface to "magplip0".
- - In the network boot disk: Edit "df0:s/Prefs/Env-Archive/nbddriver" and
-   set "magplip0"
-
- - In EnvARC:sana2 (Network Boot Disk: "df0:s/Prefs/Env-Archive") you can
-   place an optional configuration file called "magplip.config".
-   For options see the magPLIP documentation.
-
- - Do not forget to configure the correct DNS server otherwise you won't be
-   able to resolve non numeric IP addresses. Have a look at the file
-   AmiTCP:db/netdb-myhost and adapt the NAMESERVER entry accordingly. With
-   enabled IP forwarding on your Linux box (see slattch/README) you typically
-   use the IP of your DSL router as your nameserver (in my setup 192.168.2.1)
 
 EOF
