@@ -50,7 +50,7 @@ static u08 server_id[4];
 #define RETRY_DELTA_SEC   5
 #define MAX_RENEW_RETRIES 3
 
-void dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func)
+u08 dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func)
 {
   u16 size;
   switch(state) {
@@ -94,6 +94,7 @@ void dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func)
     default:
       break;
   }
+  return (state == DHCP_STATE_HAVE_LEASE);
 }
 
 static void get_ip_settings(const u08 *bootp_buf)

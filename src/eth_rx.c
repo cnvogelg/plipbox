@@ -95,12 +95,16 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     
     // trigger helper worker for ARP and DHCP
     if(helper_time_passed()) {
-      // ARP
-      arp_cache_worker(pkt_buf, enc28j60_packet_tx);
-      
       // DHCP
       if(net_dhcp_enabled()) {
-        dhcp_client_worker(pkt_buf, PKT_BUF_SIZE, enc28j60_packet_tx);
+        u08 have_lease = dhcp_client_worker(pkt_buf, PKT_BUF_SIZE, enc28j60_packet_tx);
+        if(have_lease) {
+          arp_cache_worker(pkt_buf, enc28j60_packet_tx);          
+        }
+      }
+      // without DHCP do ARP immediately
+      else {
+        arp_cache_worker(pkt_buf, enc28j60_packet_tx);
       }
     }
     return;
@@ -187,6 +191,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         // read missing bytes and finish packet rx
         enc28j60_packet_rx_blk(pkt_buf + offset, missing);
         enc28j60_packet_rx_end();
+        finished = 1;
         
         // handle DHCP packet
         if(dhcp_is_dhcp_pkt(ip_buf)) {

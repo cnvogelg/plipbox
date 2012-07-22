@@ -29,7 +29,8 @@
 
 #include "dhcp.h"
 
-extern void dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func);
-extern u08  dhcp_client_handle_packet(u08 *eth_buf, u16 eth_size, net_tx_packet_func tx_func);
+/* return 0 if no lease or 1 if lease is available */
+extern u08 dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func);
+extern u08 dhcp_client_handle_packet(u08 *eth_buf, u16 eth_size, net_tx_packet_func tx_func);
 
 #endif
