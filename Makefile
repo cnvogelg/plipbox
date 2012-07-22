@@ -1,10 +1,10 @@
 #
-# Makefile - main plip2slip Makefile
+# Makefile - main plipbox Makefile
 #
 # Written by
 #  Christian Vogelgsang <chris@vogelgsang.org>
 #
-# This file is part of plip2slip.
+# This file is part of plipbox.
 # See README for copyright notice.
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 VERSION := 0.1
 SUBDIRS := src
 DISTFILES := Makefile README COPYING INSTALL contrib doc src firmware
-PROJECT := plip2slip
+PROJECT := plipbox
 
 REVSION := $(shell git log -1 --pretty=format:%h)
 DATE := $(shell date '+%Y%m%d')

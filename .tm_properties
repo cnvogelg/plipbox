@@ -1,0 +1,13 @@
+# tm_properties for plipbox
+
+exclude = "*.{o,pyc}"
+
+tabSize = 2
+softTabs = true
+
+[ Makefile ]
+tabSize = 4
+softTabs = false
+
+[ "{README,INSTALL,COPYING,TODO}" ]
+fileType = "text.plain"
