@@ -9,7 +9,7 @@ Output:  magplip.device.000   # m68000 version
 
 0. Changes
 
-  2011-08-05  38.1a  plipbox support
+  2011-08-05  38.1a  plip2slip support
   2012-06-03  38.1b  plipbox support
 
 1. Build magPLIP from Source
