@@ -4,7 +4,7 @@
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
  *
- * This file is part of plip2slip.
+ * This file is part of plipbox.
  * See README for copyright notice.
  *
  *  This program is free software; you can redistribute it and/or modify

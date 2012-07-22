@@ -2,7 +2,7 @@
 # p2sterm
 #
 # a simple wrapper for miniterm.py
-# to use it as a terminal program for plip2slip
+# to use it as a terminal program for plipbox
 
 OS=`uname -s`
 shopt -u failglob

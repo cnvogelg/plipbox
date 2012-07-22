@@ -1,7 +1,7 @@
 magPLIP Setup on Amiga
 ----------------------
 
-Purpose: patch Aminet magPLIP driver to support features required by plip2slip.
+Purpose: patch Aminet magPLIP driver to support features required by plipbox.
 Input:   magPLIP 38.1 from http://aminet.net/package/comm/net/magPLIP38.1
 Patch:   magplip.patch
 Output:  magplip.device.000   # m68000 version
@@ -9,7 +9,7 @@ Output:  magplip.device.000   # m68000 version
 
 0. Changes
 
-  2011-08-05  38.1a  plip2slip support
+  2011-08-05  38.1a  plipbox support
   2012-06-03  38.1b  plipbox support
 
 1. Build magPLIP from Source
