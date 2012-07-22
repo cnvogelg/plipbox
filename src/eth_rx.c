@@ -287,7 +287,8 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
 #endif
 
         // send packet via PLIP
-        u08 status = plip_tx_send(ETH_HDR_SIZE, offset, ip_size);
+        u16 mem_size = offset - ETH_HDR_SIZE;
+        u08 status = plip_tx_send(ETH_HDR_SIZE, mem_size, ip_size);
         if(status != PLIP_STATUS_OK) {
           uart_send_pstring(PSTR("plip(tx): "));
           uart_send_hex_byte_crlf(status);
