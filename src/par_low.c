@@ -70,6 +70,7 @@ void par_low_init(void)
 
 // data bus
 
+#ifdef HAVE_arduino
 void par_low_data_set_output(void)
 {
   PAR_DATA_LO_DDR |= PAR_DATA_LO_MASK;
@@ -81,6 +82,19 @@ void par_low_data_set_input(void)
   PAR_DATA_LO_DDR &= ~PAR_DATA_LO_MASK;
   PAR_DATA_HI_DDR &= ~PAR_DATA_HI_MASK;
 }
+#else
+#ifdef HAVE_avrnetio
+void par_low_data_set_output(void)
+{
+  PAR_DATA_DDR = 0xff;
+}
+
+void par_low_data_set_input(void)
+{
+  PAR_DATA_DDR = 0;
+}
+#endif
+#endif
 
 void par_low_pulse_ack(u08 delay)
 {

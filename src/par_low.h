@@ -31,6 +31,8 @@
 
 #include <avr/io.h>
 
+#ifdef HAVE_arduino
+
 /*
     Parallel Port Connection
                       AVR
@@ -91,6 +93,66 @@
 #define PAR_ACK_PIN             PINB
 #define PAR_ACK_DDR             DDRB
 
+#else
+#ifdef HAVE_avrnetio
+    
+/*
+    Parallel Port Connection (AVR Net IO board)
+                      AVR
+    DATA 0 ... 7     PC 0 ... 7     IN/OUT
+    
+    /STROBE          PD 2           IN (INT0)
+    SELECT           PA 3           IN
+    POUT             PA 2           IN
+    BUSY             PA 1           OUT
+    /ACK             PA 0           OUT
+*/
+
+// lower bits of data
+#define PAR_DATA_PORT           PORTC
+#define PAR_DATA_PIN            PINC
+#define PAR_DATA_DDR            DDRC    
+
+// /STROBE (IN) (INT0)
+#define PAR_STROBE_BIT          2
+#define PAR_STROBE_MASK         _BV(PAR_STROBE_BIT)
+#define PAR_STROBE_PORT         PORTD
+#define PAR_STROBE_PIN          PIND
+#define PAR_STROBE_DDR          DDRD
+
+// SELECT (IN) (INT1)
+#define PAR_SELECT_BIT          3
+#define PAR_SELECT_MASK         _BV(PAR_SELECT_BIT)
+#define PAR_SELECT_PORT         PORTA
+#define PAR_SELECT_PIN          PINA
+#define PAR_SELECT_DDR          DDRA 
+
+// POUT (IN)
+#define PAR_POUT_BIT            2
+#define PAR_POUT_MASK           _BV(PAR_POUT_BIT)
+#define PAR_POUT_PORT           PORTA
+#define PAR_POUT_PIN            PINA
+#define PAR_POUT_DDR            DDRA 
+
+// BUSY (OUT)
+#define PAR_BUSY_BIT            1
+#define PAR_BUSY_MASK           _BV(PAR_BUSY_BIT)
+#define PAR_BUSY_PORT           PORTA
+#define PAR_BUSY_PIN            PINA
+#define PAR_BUSY_DDR            DDRA 
+
+// /ACK (OUT)
+#define PAR_ACK_BIT             0
+#define PAR_ACK_MASK            _BV(PAR_ACK_BIT)
+#define PAR_ACK_PORT            PORTA
+#define PAR_ACK_PIN             PINA
+#define PAR_ACK_DDR             DDRA
+                        
+#else
+#error "Unknwon Board"        
+#endif
+#endif
+
 // ----- Input Buffer Handling -----
 
 #define PAR_IN_BUF_BITS     4
@@ -108,6 +170,7 @@ extern void par_low_init(void);
 extern void par_low_data_set_output(void);
 extern void par_low_data_set_input(void);
 
+#ifdef HAVE_arduino
 inline void par_low_data_out(u08 d)
 {
   PAR_DATA_LO_PORT &= ~PAR_DATA_LO_MASK;
@@ -122,6 +185,19 @@ inline u08 par_low_data_in(void)
   u08 d2 = PAR_DATA_HI_PIN & PAR_DATA_HI_MASK;
   return d1 | d2;
 }
+#else
+#ifdef HAVE_avrnetio
+inline void par_low_data_out(u08 d)
+{
+  PAR_DATA_PORT = d;
+}
+
+inline u08 par_low_data_in(void)
+{
+  return PAR_DATA_PIN;
+}
+#endif
+#endif
 
 // ----- Signals -----
 
