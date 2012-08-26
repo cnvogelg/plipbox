@@ -27,7 +27,7 @@
 #include <avr/interrupt.h>
 
 #include "global.h"
-#include "arduino.h"
+#include "board.h"
 
 void board_init(void)
 {

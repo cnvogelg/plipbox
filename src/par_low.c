@@ -54,9 +54,15 @@ void par_low_init(void)
   
   // setup STROBE/SELECT IRQ
   cli();
+#ifdef EICRA
   EICRA = _BV(ISC01); // falling edge of INT0 (STROBE)
   EIFR = 0;
   EIMSK = _BV(INT0);
+#else
+  MCUCR = _BV(ISC01);
+  GIFR = 0;
+  GICR = _BV(INT0);
+#endif
   sei();
 
   par_low_data_set_input();

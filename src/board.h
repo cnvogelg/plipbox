@@ -29,8 +29,6 @@
 
 #include "global.h"
 
-#ifdef HAVE_arduino
-#include "arduino.h"
-#endif
+extern void board_init(void);
 
 #endif

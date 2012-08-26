@@ -1,5 +1,5 @@
 /*
- * arduino2009.h - arduino2009 hardware access
+ * arduino2009.c - arduino2009 hardware access
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,6 @@
  *
  */
 
-#ifndef ARDU_NANO_BOARD_H
-#define ARDU_NANO_BOARD_H
-
-#include "global.h"
-
-// ----- BOARD -----
-extern void board_init(void);
-
-#endif
-
+void board_init(void)
+{
+}

@@ -57,11 +57,25 @@ UART_BAUD = 57600
 LDR_PROG = arduino
 #LDR_SPEED = 19200
 LDR_SPEED = 57600
+LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
+
+else
+ifeq "$(BOARD)" "avrnetio"
+
+MCU = atmega32
+FLASH_MCU = m32
+F_CPU = 16000000
+MAX_SIZE = 32768
+MAX_SRAM = 1024
+UART_BAUD = 57600
+LDR_PROG = usbasp
+LDR_SPEC = -c $(LDR_PROG)
 
 else
 
 $(error "Unsupported board '$(BOARD)'. Only $(ALL_BOARDS) allowed!")
 
+endif
 endif
 
 # ----- End of Config -----
@@ -273,7 +287,7 @@ AVRDUDE_WRITE_FLASH  = -U flash:w:$(OUTPUT).hex
 AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(OUTPUT).eep
 AVRDUDE_WRITE_FUSE   = -U lfuse:w:$(LFUSE_$(MCU)):m -U hfuse:w:$(HFUSE_$(MCU)):m
 
-AVRDUDE_LDR_FLAGS = -p $(FLASH_MCU) -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
+AVRDUDE_LDR_FLAGS = -p $(FLASH_MCU) $(LDR_SPEC)
 
 ifdef AVRDUDE_DEBUG
 AVRDUDE_LDR_FLAGS += -v -v -v -v

@@ -30,7 +30,9 @@
 #include <avr/io.h>
 #include "global.h"
 
-/* SPI config 
+#ifdef HAVE_arduino
+   
+/* SPI config ATmega328
 
 SPI_SS   = Digital 10 = PB2
 SPI_MOSI = Digital 11 = PB3
@@ -43,6 +45,27 @@ SPI_SCK  = Digital 13 = PB5
 #define SPI_MOSI_MASK	0x08
 #define SPI_MISO_MASK	0x10
 #define SPI_SCK_MASK	0x20
+
+#else
+
+#ifdef HAVE_avrnetio
+   
+/* SPI config ATmega32
+
+SPI_SS   = PB4
+SPI_MOSI = PB5
+SPI_MISO = PB6
+SPI_SCK  = PB7
+
+*/
+   
+#define SPI_SS_MASK   0x10
+#define SPI_MOSI_MASK 0x20
+#define SPI_MISO_MASK 0x40
+#define SPI_SCK_MASK  0x80    
+   
+#endif
+#endif
 
 extern void spi_init(void);
 
