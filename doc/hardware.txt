@@ -83,5 +83,51 @@ converter and then to your Amiga. The level converter is essential, as the Amiga
 uses +/-12V signals and the Arduino 0/5V. _NEVER_ connect your Amiga directly!
 
 
+2. Pollin.de AVR Net IO Board
+-----------------------------
+
+The german online shop Pollin[1] offers with the AVR Net IO[2] a low cost ATmega32 
+board (either as a kit for 20 EUR or already assembled for around 30 EUR) that
+is suitable for the plipbox project. It already contains the ENC 28j60 ethernet
+controller chip and a DB 25 connector that is already suitable to connect the
+Amiga. The only thing missing in this setup for plibox is a small wire!
+
+[1] http://www.pollin.de
+[2] http://www.pollin.de/shop/dt/MTQ5OTgxOTk-/Bausaetze_Module/Bausaetze/Bausatz_AVR_NET_IO.html
+    http://www.pollin.de/shop/dt/NjI5OTgxOTk-/Bausaetze_Module/Bausaetze/AVR_NET_IO_Fertigmodul.html
+    
+2.1 Add Strobe Wire
+
+You need to add a wirr from Pin 1 of the DB 25 Connector (J5) to Pin 16 on the 
+ATmega (IC5):
+
+  DB25 / J5 Pin 1 <-------------> ATmega32 / Pin 16 (PD2) 
+
+If its difficult for you to find the ATmega pin then you can also use Pin 1 of 
+the EXT connector:
+
+  DB25 / J5 Pin 1 <-------------> EXT Conenctor / Pin 1
+
+
+2.2 Modify Power-Supply (optional!)
+
+If you build the board yourself you might want to replace the 9V power supply
+required with a 5V regulated power supply (e.g. USB charger). In this
+mikrokontroller.net Forum Thread[1] you find a picture with the required
+adjusments for this mod:
+
+  - Remove D1, D4
+  - Replace D2, D5 with a wire
+  - Remove IC1 and connect pin 1 and 3 of IC1 with a wire
+
+Then you can use a +5V regulated power supply on J1. 
+Please watch the polarity now:
+
+(-) Minus is next to the ethernet connector
+
+[1] http://www.mikrocontroller.net/articles/AVR_Net-IO_Bausatz_von_Pollin
+
+
+----
 That's it! All you need to construct your own plipbox HW is ready!
 

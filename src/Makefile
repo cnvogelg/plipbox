@@ -34,8 +34,8 @@ else
 AVRLIBC_DIR = /usr/lib/avr
 endif
 
-ALL_BOARDS= arduino
-DIST_BOARDS= arduino
+ALL_BOARDS= arduino avrnetio
+DIST_BOARDS= arduino avrnetio
 
 # select board
 BOARD ?= arduino
