@@ -23,7 +23,7 @@
 #  02111-1307  USA.
 #
 
-VERSION := 0.1
+VERSION := 0.2
 SUBDIRS := src
 DISTFILES := Makefile README COPYING INSTALL contrib doc src firmware
 PROJECT := plipbox
