@@ -83,7 +83,7 @@ converter and then to your Amiga. The level converter is essential, as the Amiga
 uses +/-12V signals and the Arduino 0/5V. _NEVER_ connect your Amiga directly!
 
 
-2. Pollin.de AVR Net IO Board
+2. Pollin.de AVR-NET-IO Board
 -----------------------------
 
 The german online shop Pollin[1] offers with the AVR Net IO[2] a low cost ATmega32 

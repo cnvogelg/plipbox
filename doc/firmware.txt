@@ -19,7 +19,7 @@ The device is called differently depending on your OS:
   
 You can find out the port associated with your Arduino by looking at the registered devices before and after attaching the device.
 
-1.2 Flash with "avrdude"
+1.2 Flash on Arduino Hardware with "avrdude"
 
 For flashing the firmware you need a flash tool on your Mac/PC that talks via
 this serial port. I use "avrdude" here. It is available on all platforms and
@@ -73,6 +73,26 @@ with plipbox.
 
 [1] http://www.nongnu.org/avrdude/
 
+1.3 Flash on AVR-NET-IO Board
+
+The AVR-NET-IO-Board from Pollin.de (see hardware.txt) has a different AVR
+chip, the ATmega32 and thus needs another firmware version:
+
+plipbox-0.1-57600-avrnetio-atmega32.hex
+
+Again I use avrdude to flash the firmware. Although the board provides a 
+bootloader via serial port I was not able to use this with avrdude. So
+I switched over to direct ISP programming but that needs an AVR ISP
+programming adapter. I use the USBasp [1] thats a cheap AVR ISP that
+is supported by avrdude and has a USB connector. You can build one
+yourself or buy a kit [2].
+
+The command avrdude is as follows:
+
+> avrdude -p m32 -c usbasp -U flash:w:plipbox-0.1-57600-avrnetio-atmega32.hex
+
+[1] http://www.fischl.de/usbasp/
+[2] http://www.fundf.net/usbasp/
 
 2. plipbox Configuration
 
