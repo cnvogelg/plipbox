@@ -1,0 +1,14 @@
+VERSION		EQU	38
+REVISION	EQU	1
+DATE	MACRO
+		dc.b	'1.4.98'
+	ENDM
+VERS	MACRO
+		dc.b	'magplip 38.1'
+	ENDM
+VSTRING	MACRO
+		dc.b	'magplip 38.1 (1.4.98)',13,10,0
+	ENDM
+VERSTAG	MACRO
+		dc.b	0,'$VER: magplip 38.1 (1.4.98)',0
+	ENDM

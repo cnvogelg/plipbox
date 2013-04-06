@@ -1,0 +1,201 @@
+#!sc:c/smake
+#
+#####################################################################
+#
+#  $VER: smakefile 6.5 (01.04.98)
+#  (C) Copyright 1995-1996 Marius Gröger
+#      All Rights Reserved
+#
+#       (linplip.device added by Stéphane Zermatten)
+#
+#####################################################################
+
+#####################################################################
+#
+# following stuff is your configuration
+#
+LIBS        = LIB LIB:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
+CINCLUDES   = INCDIR="include:" INCDIR="netinclude:"
+ASMINCLUDES = INCDIR="INCLUDEASM:" $(CINCLUDES)
+CPUSUFFIX   = 020 # 000 010 020 030 040 060 ANY
+CPUCCOPT    = CPU=68$(CPUSUFFIX)
+CP          = C:Copy
+MV          = C:Rename
+RM          = C:Delete >NIL:
+LD          = sc:c/slink
+CC          = sc:c/sc
+AS          = sc:c/sc
+MAKE        = sc:c/smake
+BUMPREV     = bumprev
+SETREV      = SetRev
+PROTECT     = protect
+BUILD_AMINET= /s/build-aminet
+ECHO        = Echo
+PROTOCOL    = LIN               # LIN or MAG
+PROTOCOL_LC = lin               # lin or mag (lowercase. stupid, I know... SZ)
+SUFFIX      = $(PRSUFFIX)$(CPUSUFFIX)
+#
+#####################################################################
+
+#####################################################################
+#
+# installation drawer and names of device
+#
+INSTALL_DIR = AmiTCP:/Special/DEVS/Networks
+DEVICE_DIR  = /DEVS/Networks
+BASENAME    = magplip
+RELNAME     = magPLIP
+NAME        = $(PROTOCOL_LC)plip.device
+VERSION     = 38
+IDS         = aminet.ids
+
+#
+#####################################################################
+
+
+#####################################################################
+#
+# assembler/compiler flags
+#
+# this applies to normal and optimized compilation:
+#
+STDFLAGS    = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST NOSTKCHK NOCHKABORT\
+	      SMALLCODE SMALLDATA VERBOSE NOICONS STRICT ANSI DEFINE $(PROTOCOL)PLIP=1
+#
+# this applies only to normal compilation:
+#
+NORMCFLAGS  = $(STDFLAGS)
+#
+# this applies only to optimized compilation:
+#
+OPTCFLAGS   = $(STDFLAGS) $(CPUCCOPT) PARAMETERS=REGISTERS OPT OPTTIME OPTINLINE\
+	      OPTSCHEDULE STRINGMERGE STRUCTUREEQUIVALENCE
+#
+# this applies to assembler compilation
+#
+AFLAGS      = $(ASMINCLUDES) VERBOSE DEFINE $(PROTOCOL)PLIP=1
+#
+#####################################################################
+
+#####################################################################
+#
+# linkage flags
+#
+LDFLAGS     = NOICONS SC  $(LIBS) TO
+OPTLDFLAGS  = NOICONS SC SD ND $(LIBS) TO
+#
+#####################################################################
+
+#####################################################################
+#
+# the object files
+#
+NORMOBJ=$(PROTOCOL)rt.o device.no server.no track.no $(PROTOCOL)port.o crc16.o
+OPTOBJ=$(PROTOCOL)rt.o $(PROTOCOL)device.opt$(CPUSUFFIX) $(PROTOCOL)server.opt$(CPUSUFFIX)\
+       $(PROTOCOL)track.opt$(CPUSUFFIX) $(PROTOCOL)port.o crc16.o
+#
+#####################################################################
+
+#####################################################################
+#
+# rules
+#
+# compile a file normally
+#
+.c.no:
+   $(CC) $(NORMCFLAGS) OBJECTNAME t:$@ $*.c
+   @$(CP) t:$@ $@
+   @$(RM) t:$@
+#
+# compile a file optimizing
+#
+.c.opt$(SUFFIX):
+   $(CC) $(OPTCFLAGS) OBJECTNAME t:$@ $*.c
+   @$(CP) t:$@ $@
+   @$(RM) t:$@
+#
+# assemble a file
+#
+.asm.o:
+   $(AS) $(AFLAGS) OBJECTNAME $@ $*.asm
+#
+#####################################################################
+
+#####################################################################
+#
+# targets
+#
+help:
+   -@Echo "Usage:"
+   -@Echo "To make an unoptimized version"
+   -@Echo "   $(MAKE) all"
+   -@Echo "To make an optimized version"
+   -@Echo "   $(MAKE) all_opt"
+   -@Echo "To install an unoptimized version"
+   -@Echo "   $(MAKE) install"
+   -@Echo "To install an optimized version"
+   -@Echo "   $(MAKE) install"
+   -@Echo "To increment the revision"
+   -@Echo "   $(MAKE) newrev"
+   -@Echo "To remove all intermediate files for unoptimized the version"
+   -@Echo "   $(MAKE) clean_norm"
+   -@Echo "To remove all intermediate files for optimized the version"
+   -@Echo "   $(MAKE) clean_opt"
+   -@Echo "To %remove all intermediate files"
+   -@Echo "   %$(MAKE) clean"
+   -@Echo "To create a distribution"
+   -@Echo "   $(MAKE) release"
+
+all: $(DEVICE_DIR)/$(NAME)
+all_opt: $(DEVICE_DIR)/$(NAME).$(CPUSUFFIX)
+
+install: all
+   $(CP) $(DEVICE_DIR)/$(NAME) $(INSTALL_DIR)/$(NAME)
+
+install_opt: all_opt
+   $(CP) $(DEVICE_DIR)/$(NAME).$(CPUSUFFIX) $(INSTALL_DIR)/$(NAME)
+
+newrev:
+   $(BUMPREV) $(VERSION) magplip
+   $(BUMPREV) $(VERSION) linplip
+
+clean_norm:
+   -@$(RM) *.o
+   -@$(RM) *.no
+
+clean_opt:
+   -@$(RM) *.o
+   -@$(RM) *.opt*
+
+clean: clean_norm clean_opt
+
+release:
+   $(MAKE) CPUSUFFIX=000 PROTOCOL=MAG PROTOCOL_LC=mag all_opt
+   $(MAKE) CPUSUFFIX=020 PROTOCOL=MAG PROTOCOL_LC=mag all_opt
+   $(MAKE) CPUSUFFIX=040 PROTOCOL=MAG PROTOCOL_LC=mag all_opt
+   $(MAKE) CPUSUFFIX=000 PROTOCOL=LIN PROTOCOL_LC=lin all_opt
+   $(MAKE) CPUSUFFIX=020 PROTOCOL=LIN PROTOCOL_LC=lin all_opt
+   $(MAKE) CPUSUFFIX=040 PROTOCOL=LIN PROTOCOL_LC=lin all_opt
+   $(BUILD_AMINET) "$(RELNAME)" "$(BASENAME)" "$(DEVICE_DIR)/$(NAME).$(CPUSUFFIX)" "/ReadMe" "//$(BASENAME)" "$(IDS)" CLEAN
+
+$(DEVICE_DIR)/$(NAME).$(CPUSUFFIX): $(OPTOBJ)
+   $(LD) $(OPTOBJ) $(OPTLDFLAGS) $@
+
+$(DEVICE_DIR)/$(NAME): $(NORMOBJ)
+   $(LD) $(NORMOBJ) $(LDFLAGS) $@
+#
+#####################################################################
+
+#####################################################################
+#
+# various dependencies
+#
+$(PROTOCOL)rt.o: rt.asm magplip.i $(PROTOCOL)plip_rev.i
+crc16.o: crc16.asm
+$(PROTOCOL)port.o: $(PROTOCOL)port.asm magplip.i
+$(PROTOCOL)device.opt$(SUFFIX) device.no: device.c magplip.h
+$(PROTOCOL)server.opt$(SUFFIX) server.no: server.c magplip.h
+$(PROTOCOL)track.opt$(SUFFIX) track.no: track.c magplip.h
+#
+#####################################################################
+
