@@ -33,6 +33,7 @@ plipbox.device SANA-II Setup on Amiga
  - In EnvARC:sana2 (Network Boot Disk: "df0:s/Prefs/Env-Archive") you can
    place an optional configuration file called "plipbox.config".
    For options see the plipbox documentation.
+   A sample file is available in 'amiga/src'
 
  - Correctly set your IPs and use the same ones as defined in the plipbox
    firmware (see doc/firmware.txt):

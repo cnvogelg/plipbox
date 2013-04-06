@@ -75,7 +75,7 @@ romtag:
     dc.l  inittable
 
 devname:
-    dc.b "magplip.device",0
+    dc.b "plipbox.device",0
     dc.b  0,'$VER: '
 devid:
     VSTRING

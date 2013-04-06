@@ -2,6 +2,7 @@
 
 BIN_DIR=../bin
 OBJ_DIR=../obj
+INSTALL_DIR=$(HOME)/amiga/shared
 
 # where does the amiga files reside?
 # expects the following dirs:
@@ -25,6 +26,10 @@ dist: dirs release clean_obj
 
 release:
 	$(VAMOS) $(VAMOS_OPTS) smake release
+
+install: release
+	cp $(BIN_DIR)/plipbox.device.??? $(INSTALL_DIR)/
+	cp plipbox.config $(INSTALL_DIR)/
 
 clean: clean_obj
 	rm -rf $(BIN_DIR)
