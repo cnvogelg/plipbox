@@ -1,11 +1,11 @@
-VERSION		EQU	38
-REVISION	EQU	1
+VERSION		EQU	0
+REVISION	EQU	3
 DATE	MACRO
-		dc.b	'3.6.2012'
+		dc.b	'6.4.2013'
 	ENDM
 VERS	MACRO
-		dc.b	'magplip 38.1b'
+		dc.b	'plipbox 0.3'
 	ENDM
 VSTRING	MACRO
-		dc.b	'magplip 38.1b (3.6.2012)',13,10,0
+		dc.b	'plipbox 0.3 (6.4.2013)',13,10,0
 	ENDM
