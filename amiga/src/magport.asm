@@ -74,14 +74,19 @@ ciaa     equ     $bfe001
 ciab     equ     $bfd000
 BaseAX   equ     ciab+ciapra
 
+SETSELECT MACRO
+      bset     #CIAB_PRTRSEL,ciab+ciapra-BaseAX(a5)   ; raise PRTSEL line
+      ENDM
+
+CLRSELECT MACRO
+      bclr     #CIAB_PRTRSEL,ciab+ciapra-BaseAX(a5)   ; lower PRTSEL line
+      ENDM
 
 SETCIAOUTPUT MACRO
-      bset     #CIAB_PRTRSEL,ciab+ciapra-BaseAX(a5)   ; raise PRTSEL line
       st       ciaa+ciaddrb-BaseAX(\1)                ; data dir. => output
       ENDM
 
 SETCIAINPUT MACRO
-      bclr     #CIAB_PRTRSEL,ciab+ciapra-BaseAX(a5)   ; lower PRTSEL line
       sf       ciaa+ciaddrb-BaseAX(\1)                ; data dir. => input
       ENDM
 
@@ -164,6 +169,7 @@ hww_CRC  move.l   pb_CIAABase(a2),a6
 	 moveq    #CIAICRF_FLG,d0
 	 JSRLIB   AbleICR                             ; DISABLEINT
 	 lea      BaseAX,a5
+	 SETSELECT
 	 SETCIAOUTPUT a5
 	 move.b   (a5),d7                             ; SAMPLEINPUT, d7 = State
 	 move.l   a4,a3
@@ -203,6 +209,7 @@ hww_TimedOut:
 	 JSRLIB   SetICR                              ; CLEARINT
 	 move.w   #CIAICRF_FLG|CIAICRF_SETCLR,d0
 	 JSRLIB   AbleICR                             ; ENABLEINT
+	 CLRSELECT
 
 	 move.l   d2,d0                               ; return rc
 	 movem.l  (sp)+,d2-d7/a2-a6
@@ -238,6 +245,7 @@ _hwrecv:
 
 	 moveq    #CIAICRF_FLG,d0
 	 JSRLIB   AbleICR                             ; DISABLEINT
+	 SETSELECT
 
 	 move.b   (a5),d7                             ; SAMPLEINPUT
 	 cmp.b    #SYNCBYTE_HEAD,ciaa+ciaprb-BaseAX(a5) ; READCIABYTE
@@ -337,6 +345,7 @@ hwr_TimedOut:
 	 JSRLIB   SetICR                              ; CLEARINT
 	 move.w   #CIAICRF_FLG|CIAICRF_SETCLR,d0
 	 JSRLIB   AbleICR                             ; ENABLEINT
+  CLRSELECT
 
 	 move.l   d5,d0                               ; return value
 	 movem.l  (sp)+,d2-d7/a2-a6

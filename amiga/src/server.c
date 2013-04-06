@@ -175,6 +175,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 #  define SETCIAOUTPUT
 #  define SETCIAINPUT
 #  define PARINIT(b)      ciaa.ciaddrb = 0xff; ciaa.ciaprb = 0x00
+#  define PAREXIT
 
 /* Good line : SELECT=POUT=PUSY=0 */
 #  define TESTLINE(b)     ((ciab.ciapra&(CIAF_PRTRSEL|CIAF_PRTRPOUT|CIAF_PRTRBUSY)) || pb->pb_Flags&PLIPF_RECEIVING)
@@ -187,8 +188,10 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 #  define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
 #  define PARINIT(b)      SETCIAINPUT;                                       \
 			ciab.ciaddra &= ~((b)->pb_HandshakeMask[HS_LINE]); \
-			ciab.ciaddra |= (b)->pb_HandshakeMask[HS_REQUEST]
-
+			ciab.ciaddra |= (b)->pb_HandshakeMask[HS_REQUEST] | CIAF_PRTRSEL
+#  define PAREXIT \
+			ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
+			ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
 #  define TESTLINE(b)     (ciab.ciapra & (b)->pb_HandshakeMask[HS_LINE])
 #  define SETREQUEST(b)   ciab.ciapra |= (b)->pb_HandshakeMask[HS_REQUEST]
 #  define CLEARREQUEST(b) ciab.ciapra &= ~((b)->pb_HandshakeMask[HS_REQUEST])
@@ -274,6 +277,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 {
    if (pb->pb_AllocFlags & 4)
    {
+      PAREXIT;
       DISABLEINT;
       CLEARINT;
       RemICRVector(CIAABase, CIAICRB_FLG, &pb->pb_Interrupt);
