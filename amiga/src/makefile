@@ -19,14 +19,20 @@ all: dirs
 	$(VAMOS) $(VAMOS_OPTS) smake all
 
 all_opt: dirs
-	$(VAMOS) $(VAMOS_OPTS) all_opt
+	$(VAMOS) $(VAMOS_OPTS) smake all_opt
 
-dist: dirs
-	$(VAMOS) $(VAMOS_OPTS) smake dist
+dist: dirs release clean_obj
 
-clean:
+release:
+	$(VAMOS) $(VAMOS_OPTS) smake release
+
+clean: clean_obj
 	rm -rf $(BIN_DIR)
+
+clean_obj:
 	rm -f *.no *.o *.opt???
+
+clean_dist: clean
 
 dirs: $(BIN_DIR)
 

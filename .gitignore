@@ -1,1 +1,5 @@
 firmware
+bin
+*.o
+*.no
+*.opt???

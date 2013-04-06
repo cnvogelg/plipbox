@@ -24,8 +24,8 @@
 #
 
 VERSION := 0.2
-SUBDIRS := avr/src
-DISTFILES := Makefile README COPYING INSTALL contrib doc avr
+SUBDIRS := avr/src amiga/src
+DISTFILES := Makefile README COPYING INSTALL contrib doc avr amiga
 PROJECT := plipbox
 
 REVSION := $(shell git log -1 --pretty=format:%h)

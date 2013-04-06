@@ -1,0 +1,14 @@
+the plipbox source is heavily based on the magPLIP driver found on aminet.net:
+
+http://aminet.net/package/comm/net/magPLIP38.1
+
+magPLIP - SANA II compliant PLIP device driver for AmiTCP/IP, Envoy,
+	    AS225 and other networking packages
+
+  (C) Copyright 1993-1994 Oliver Wagner, Michael Balzer
+  (C) Copyright 1995 Jan Kratochvil & Martin Mares
+  (C) Copyright 1995-1996 Marius Groeger
+      All Rights Reserved.
+
+  Changes have been made by Stéphane Zermatten to the driver to connect
+  a LinuxBox to an Amiga via a LapLing cable, based on the release 37.8.

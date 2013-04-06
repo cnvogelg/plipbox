@@ -106,9 +106,10 @@ OPTOBJ=rt.o device.opt$(CPUSUFFIX) server.opt$(CPUSUFFIX) \
 # targets
 #
 all: $(DEVICE_DIR)/$(NAME)
+
 all_opt: $(DEVICE_DIR)/$(NAME).$(CPUSUFFIX)
 
-dist:
+release:
    $(MAKE) CPUSUFFIX=000 all_opt
    $(MAKE) CPUSUFFIX=020 all_opt
    $(MAKE) CPUSUFFIX=040 all_opt

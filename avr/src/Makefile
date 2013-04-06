@@ -95,7 +95,7 @@ BASENAME = $(PROJECT)-$(VERSION)-$(UART_BAUD)-$(BOARD)-$(MCU)
 # project
 OUTPUT = $(OUTDIR)/$(BASENAME)
 # dist dir
-DISTDIR = ../firmware
+DISTDIR = ../bin
 
 # source files
 SRC := $(BOARD).c
