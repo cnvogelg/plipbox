@@ -2,6 +2,6 @@ Short:    SANA-II parallel port driver
 Author:   mag@sysgo.de
 Uploader: ruppert@amigaworld.com
 Type:     comm/net
-Kurz:     SANA-II Treiber für die parallele Schnittstelle
+Kurz:     SANA-II Treiber fÃ¼r die parallele Schnittstelle
 Replaces: magplip37.8.lha
 Requires: SANA-II compliant protocol stack

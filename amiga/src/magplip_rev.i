@@ -10,5 +10,5 @@ VSTRING	MACRO
 		dc.b	'magplip 38.1b (3.6.2012)',13,10,0
 	ENDM
 VERSTAG	MACRO
-		dc.b	0,'$VER: magplip 38.1b (3.6.2012⁄)',0
+		dc.b	0,'$VER: magplip 38.1b (3.6.2012â)',0
 	ENDM

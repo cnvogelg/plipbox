@@ -4,11 +4,11 @@
 ;
 ;  Assembler routines for efficient port handling.
 ;
-;  Written by Stéphane Zermatten, based on the code written
+;  Written by StÃ©phane Zermatten, based on the code written
 ;  by Oliver Wagner and Michael Balzer, and modified by 
-;  Marius Gröger. 
+;  Marius GrÃ¶ger. 
 ;  
-;  (C) Copyright 1997 Stéphane Zermatten
+;  (C) Copyright 1997 StÃ©phane Zermatten
 ;      All Rights Reserved
 ;
 ;  HISTORY:

@@ -5,7 +5,7 @@
 **
 ** Compiler abstraction
 **
-** (C) Copyright 1995 Marius Gröger
+** (C) Copyright 1995 Marius GrÃ¶ger
 **     All Rights Reserved.
 */
 

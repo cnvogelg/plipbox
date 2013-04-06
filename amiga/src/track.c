@@ -5,13 +5,13 @@
 **
 ** Original code written by Oliver Wagner and Michael Balzer.
 **
-** This version has been completely reworked by Marius Gröger,
+** This version has been completely reworked by Marius GrÃ¶ger,
 ** introducing slight protocol changes. The new source is
 ** a lot better organized and maintainable.
 **
 ** (C) Copyright 1993-1994 Oliver Wagner & Michael Balzer
 ** (C) Copyright 1995 Jan Kratochvil & Martin Mares
-** (C) Copyright 1995-1996 Marius Gröger
+** (C) Copyright 1995-1996 Marius GrÃ¶ger
 **     All Rights Reserved
 **
 ** $HISTORY:
