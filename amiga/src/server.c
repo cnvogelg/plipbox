@@ -169,21 +169,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 #define DISABLEINT      AbleICR(CIAABase, CIAICRF_FLG)
 #define ENABLEINT       AbleICR(CIAABase, CIAICRF_FLG | CIAICRF_SETCLR)
 
-#ifdef LINPLIP
-
-/* Most of these defines have no meaning at all, but it's safe ... */
-#  define SETCIAOUTPUT
-#  define SETCIAINPUT
-#  define PARINIT(b)      ciaa.ciaddrb = 0xff; ciaa.ciaprb = 0x00
-#  define PAREXIT
-
-/* Good line : SELECT=POUT=PUSY=0 */
-#  define TESTLINE(b)     ((ciab.ciapra&(CIAF_PRTRSEL|CIAF_PRTRPOUT|CIAF_PRTRBUSY)) || pb->pb_Flags&PLIPF_RECEIVING)
-#  define SETREQUEST(b)
-#  define CLEARREQUEST(b)
-
-#else
-
 #  define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
 #  define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
 #  define PARINIT(b)      SETCIAINPUT;                                       \
@@ -195,8 +180,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 #  define TESTLINE(b)     (ciab.ciapra & (b)->pb_HandshakeMask[HS_LINE])
 #  define SETREQUEST(b)   ciab.ciapra |= (b)->pb_HandshakeMask[HS_REQUEST]
 #  define CLEARREQUEST(b) ciab.ciapra &= ~((b)->pb_HandshakeMask[HS_REQUEST])
-
-#endif
 
 /*E*/
 
@@ -433,15 +416,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    **    AW_ABORT          if we couldn't get the line
    */
 
-#ifdef LINPLIP
-   having_line = !TESTLINE(pb);
-   if(!having_line)
-   {
-	 if (!(pb->pb_Flags & PLIPF_RECEIVING))
-	    CLEARREQUEST(pb);                         /* reset line state */
-	 d2(("couldn't get the line\n"));
-   }
-#else
    having_line = FALSE;
 
    if (!TESTLINE(pb))                               /* is the line free ? */
@@ -482,7 +456,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
       }
    }
    else d2(("couldn't get the line-2\n"));
-#endif /* LINPLIP */
 
    if (having_line)
    {
@@ -667,10 +640,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	    }
 
 	    got->ios2_Req.io_Flags = 0;
-#ifndef LINPLIP
 	    memcpy(got->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
 	    memcpy(got->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
-#endif
 	    got->ios2_DataLength = datasize;
 
 	    d(("packet received, satisfying S2Request\n"));
@@ -719,10 +690,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	 }
 	 
 	 got->ios2_Req.io_Flags = 0;
-#ifndef LINPLIP
 	 memcpy(got->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
 	 memcpy(got->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
-#endif
 	 got->ios2_DataLength = datasize;
 
 	 d(("orphan read\n"));
@@ -781,10 +750,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	 case S2_CONFIGINTERFACE:
 	    if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
 	    {
-#ifndef LINPLIP
 	       memcpy(ios2->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
 	       memcpy(ios2->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
-#endif
 	       if (!goonline(pb))
 	       {
 		  ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;

@@ -87,25 +87,6 @@ PLIP_ADDRFIELDSIZE  equ 1
    ; line. See below for definitions.
    ;
 
- IFD LINPLIP
- ; linux version
-ETH_ALEN        equ     6
-
-   STRUCTURE PLIPFrame,0
-     SHORT    pf_Size
-     STRUCT   pf_DstAddr,ETH_ALEN
-     STRUCT   pf_SrcAddr,ETH_ALEN
-     UWORD    pf_Type
-;*** UBYTE    pf_Data[MTU];
-     LABEL PLIPFrame_SIZE
-
-PKTFRAMESIZE_1   equ     2
-PKTFRAMESIZE_2   equ     (2+2*ETH_ALEN)
-
- ENDC
-
- IFND LINPLIP
-   ; original version
    STRUCTURE PLIPFrame,0
      USHORT   pf_Sync
      SHORT    pf_Size
@@ -116,8 +97,6 @@ PKTFRAMESIZE_2   equ     (2+2*ETH_ALEN)
 
 PKTFRAMESIZE_1   equ     4
 PKTFRAMESIZE_2   equ     6
-
- ENDC
 
 SYNCBYTE_HEAD    equ     $42
 SYNCBYTE_CRC     equ     $01
@@ -193,12 +172,10 @@ S2SS_PLIP_COLLISIONS equ ((((S2WireType_PLIP) & $ffff) << 16) ! S2SS_COLLISIONS)
      APTR   pb_OldExceptCode
      APTR   pb_OldExceptData
      ULONG  pb_OldExcept
- IFND LINPLIP
      STRUCT pb_HandshakeMask,2              ; must be changed when
      STRUCT pb_HandshakeBit,2               ; changing the datatype in .h
      STRUCT pb_SrcAddr,PLIP_ADDRFIELDSIZE
      STRUCT pb_DstAddr,PLIP_ADDRFIELDSIZE
- ENDC
      APTR   pb_Frame
    LABEL PLIPBase_SIZE
 

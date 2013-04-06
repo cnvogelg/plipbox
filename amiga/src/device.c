@@ -275,11 +275,6 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 	 if (pb->pb_DevNode.lib_OpenCnt == 1)
 	    pb->pb_Unit = unit;
 
-#ifndef LINPLIP
-	 /*
-	 ** The unit is ignored by linPLIP!
-	 */
-
 	 /*
 	 ** The origninal "client/server" scheme was unfortune. I guess this
 	 ** resulted out of the (also very unfortune) wiring: POUT->POUT,
@@ -307,7 +302,6 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 	    pb->pb_SrcAddr[0] = 0x00;
 	    pb->pb_DstAddr[0] = 0x80;
 	 }
-#endif
 
 	 /*
 	 ** Each opnener get's it's own BufferManagement. This is neccessary
@@ -633,14 +627,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
       break;
 
       case S2_GETSTATIONADDRESS:
-#ifndef LINPLIP
-	 /*
-	 ** linPLIP doesn't care for adresses (yet).
-	 */
-
 	 memcpy(ios2->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
 	 memcpy(ios2->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
-#endif
       break;
 	 
       case S2_DEVICEQUERY:

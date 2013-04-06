@@ -103,35 +103,10 @@
 #define PLIP_MAXTIMEOUT          999999
 #define PLIP_MAXBPS              0x7fffffff
 
-#ifdef LINPLIP
-#define PLIP_ADDRFIELDSIZE       0
-#else
    /* magPLIPs hardware address: log2(two systems) = 1 */
 #define PLIP_ADDRFIELDSIZE       1
-#endif
 
 /****************************************************************************/
-
-#ifdef LINPLIP
-
-/* Pseudo-ethernet frame used by the linux implementation of plip.
- * The address are ignored by both end and never set from this side
- */
-#define ETH_ALEN                6
-
-
-#define PKTFRAMESIZE_1           sizeof(SHORT)        /* packet-size */
-#define PKTFRAMESIZE_2           (sizeof(UWORD)+2*ETH_ALEN)       /* addresses and packet type */
-
-struct PLIPFrame {
-   SHORT    pf_Size;
-   UBYTE    pf_DstAddr[ETH_ALEN], pf_SrcAddr[ETH_ALEN];
-   UWORD    pf_Type;
-   /*UBYTE    pf_Data[MTU];*/
-   /*UBYTE crc */
-};
-
-#else /* original MAGPLIP */
 
    /* this _is_ awful, I know */
 #define PKTFRAMESIZE_1           4        /* the sync-field and packet-size */
@@ -151,8 +126,6 @@ struct PLIPFrame {
 #define SYNCBYTE_NOCRC  0x02
 #define SYNCWORD_CRC    ((SYNCBYTE_HEAD << 8) | SYNCBYTE_CRC)
 #define SYNCWORD_NOCRC  ((SYNCBYTE_HEAD << 8) | SYNCBYTE_NOCRC)
-
-#endif /* LINPLIP */
 
 /****************************************************************************/
 
@@ -267,12 +240,10 @@ struct PLIPBase
    APTR                        pb_OldExceptCode;
    APTR                        pb_OldExceptData;
    ULONG                       pb_OldExcept;
-#ifndef LINPLIP
    UBYTE                       pb_HandshakeMask[2],   /* crossed for side-a */
 			       pb_HandshakeBit[2];            /* and side-b */
    UBYTE                       pb_SrcAddr[PLIP_ADDRFIELDSIZE];
    UBYTE                       pb_DstAddr[PLIP_ADDRFIELDSIZE];
-#endif
    struct PLIPFrame        *   pb_Frame;
 };
 
@@ -335,10 +306,7 @@ struct PLIPBase
    ** Values for PLIPBase->pb_ExtFlags
    */
 #define PLIPEB_NOSPECIALSTATS 0   /* don't report special stats */
-#define PLIPEB_NIBBLEACK      1   /* Used only in linplip.asm */
-
 #define PLIPEF_NOSPECIALSTATS (1<<PLIPEB_NOSPECIALSTATS)
-#define PLIPEF_NIBBLEACK      (1<<PLIPEB_NIBBLEACK)
 
 
 /****************************************************************************/

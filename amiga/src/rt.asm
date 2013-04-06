@@ -44,11 +44,7 @@
     INCLUDE "magplip.i"
 
 ; Revision informations
-    IFND LINPLIP
     INCLUDE "magplip_rev.i"
-    ELSE
-    INCLUDE "linplip_rev.i"
-    ENDC
 ;*
 ;* imports
 ;*
@@ -79,12 +75,7 @@ romtag:
     dc.l  inittable
 
 devname:
-   IFND LINPLIP
     dc.b "magplip.device",0
-   ELSE
-    dc.b "linplip.device",0
-   ENDC
-
     dc.b  0,'$VER: '
 devid:
     VSTRING

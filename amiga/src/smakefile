@@ -31,8 +31,6 @@ MAKE        = sc:c/smake
 # installation drawer and names of device
 #
 DEVICE_DIR  = base:bin
-BASENAME    = magplip
-RELNAME     = magPLIP
 NAME        = plipbox.device
 
 #
