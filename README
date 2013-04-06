@@ -44,4 +44,4 @@ plipbox Documentation
 
  doc/hardware.txt               How to build the device hardware
  doc/terminal.txt               How to setup a serial terminal for command mode
- contrib/magplip/README         How to install the AMIGA network module
+ doc/amiga.txt                  How to install the AMIGA network module
