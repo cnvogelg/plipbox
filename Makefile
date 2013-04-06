@@ -24,8 +24,8 @@
 #
 
 VERSION := 0.2
-SUBDIRS := src
-DISTFILES := Makefile README COPYING INSTALL contrib doc src firmware
+SUBDIRS := avr/src
+DISTFILES := Makefile README COPYING INSTALL contrib doc avr
 PROJECT := plipbox
 
 REVSION := $(shell git log -1 --pretty=format:%h)
