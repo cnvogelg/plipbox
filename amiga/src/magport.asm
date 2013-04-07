@@ -74,6 +74,9 @@ ciaa     equ     $bfe001
 ciab     equ     $bfd000
 BaseAX   equ     ciab+ciapra
 
+HS_LINE_BIT     equ     CIAB_PRTRBUSY;
+HS_REQUEST_BIT  equ     CIAB_PRTRPOUT;
+
 SETSELECT MACRO
       bset     #CIAB_PRTRSEL,ciab+ciapra-BaseAX(a5)   ; raise PRTSEL line
       ENDM
@@ -112,7 +115,7 @@ SETCIAINPUT MACRO
 _interrupt:
 	btst    #PLIPB_RECEIVING,pb_Flags(a1)
 	bne.s   skipint
-	move.b  pb_HandshakeBit+HS_LINE(a1),d0
+	moveq   #HS_LINE_BIT,d0
 	btst    d0,ciab+ciapra
 	beq.s   skipint
 	bset    #PLIPB_RECEIVING,pb_Flags(a1)
@@ -144,8 +147,8 @@ _hwsend:
 	 moveq    #FALSE,d2                           ; d2 = return value
 	 moveq    #0,d3
 	 move.l   d3,d4
-	 move.b   pb_HandshakeBit+HS_REQUEST(a2),d3   ; d3 = HS_REQUEST
-	 move.b   pb_HandshakeBit+HS_LINE(a2),d4      ; d4 = HS_LINE
+	 moveq    #HS_REQUEST_BIT,d3                  ; d3 = HS_REQUEST
+	 moveq    #HS_LINE_BIT,d4                     ; d4 = HS_LINE
 	 move.l   pb_Frame(a2),a4                     ; a4 = Frame
 
 	 ;
@@ -238,8 +241,8 @@ _hwrecv:
 	 move.l   pb_CIAABase(a2),a6                  ; a6 = CIABase
 	 moveq    #0,d3
 	 move.l   d3,d2
-	 move.b   pb_HandshakeBit+HS_REQUEST(a2),d3   ; d3 = HS_REQUEST
-	 move.b   pb_HandshakeBit+HS_LINE(a2),d2      ; d2 = HS_LINE
+	 moveq    #HS_REQUEST_BIT,d3                  ; d3 = HS_REQUEST
+	 moveq    #HS_LINE_BIT,d2                     ; d2 = HS_LINE
 	 lea      BaseAX,a5                           ; a5 = ciab+ciapra
 	 move.l   pb_Frame(a2),a4                     ; a4 = Frame
 

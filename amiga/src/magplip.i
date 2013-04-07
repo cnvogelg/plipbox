@@ -172,8 +172,6 @@ S2SS_PLIP_COLLISIONS equ ((((S2WireType_PLIP) & $ffff) << 16) ! S2SS_COLLISIONS)
      APTR   pb_OldExceptCode
      APTR   pb_OldExceptData
      ULONG  pb_OldExcept
-     STRUCT pb_HandshakeMask,2              ; must be changed when
-     STRUCT pb_HandshakeBit,2               ; changing the datatype in .h
      STRUCT pb_SrcAddr,PLIP_ADDRFIELDSIZE
      STRUCT pb_DstAddr,PLIP_ADDRFIELDSIZE
      APTR   pb_Frame
@@ -196,15 +194,6 @@ S2SS_PLIP_COLLISIONS equ ((((S2WireType_PLIP) & $ffff) << 16) ! S2SS_COLLISIONS)
 ;
    BITDEF PLIPE,NOSPECIALSTATS,0
    BITDEF PLIPE,NIBBLEACK,1                 ; only used by linport.asm
-
-   ;
-   ; Index for PLIPBase->pb_HandshakeBit[]
-   ; Note: in contrast to the C-Version, this is actually not the index
-   ; but the offset in the array _in_bytes_. Therefore, if you change the
-   ; array's datatype, you need to adjust this.
-   ;
-HS_LINE    equ 0
-HS_REQUEST equ 1  ; better: 1*sizeof(UBYTE)
 
 
 ;****************************************************************************

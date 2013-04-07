@@ -248,7 +248,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    pb->pb_DevNode.lib_OpenCnt++;
 
    /* not promiscouos mode and unit valid ? */
-   if (!(flags & SANA2OPF_PROM) && ((unit == 0) || (unit == 1)))
+   if (!(flags & SANA2OPF_PROM) && (unit == 0))
    {
       /* Allow access only if NOT:
       **
@@ -275,33 +275,9 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 	 if (pb->pb_DevNode.lib_OpenCnt == 1)
 	    pb->pb_Unit = unit;
 
-	 /*
-	 ** The origninal "client/server" scheme was unfortune. I guess this
-	 ** resulted out of the (also very unfortune) wiring: POUT->POUT,
-	 ** BUSY->BUSY. Had the creators chosen this connection to be crossed
-	 ** over, a completely symmetrical driver would have been possible.
-	 ** My new approach does the (in either case) neccessary crossing
-	 ** by software. The PLIPBase->HandshakeXXX[] arrays are initialised
-	 ** here so that the actual communication code are no longer bothered.
-	 */
-	 if (unit)
-	 {
-	    pb->pb_HandshakeMask[HS_LINE]    = CIAF_PRTRPOUT;
-	    pb->pb_HandshakeMask[HS_REQUEST] = CIAF_PRTRBUSY;
-	    pb->pb_HandshakeBit[HS_LINE]     = CIAB_PRTRPOUT;
-	    pb->pb_HandshakeBit[HS_REQUEST]  = CIAB_PRTRBUSY;
-	    pb->pb_SrcAddr[0] = 0x80;
-	    pb->pb_DstAddr[0] = 0x00;
-	 }
-	 else
-	 {
-	    pb->pb_HandshakeMask[HS_LINE]    = CIAF_PRTRBUSY;
-	    pb->pb_HandshakeMask[HS_REQUEST] = CIAF_PRTRPOUT;
-	    pb->pb_HandshakeBit[HS_LINE]     = CIAB_PRTRBUSY;
-	    pb->pb_HandshakeBit[HS_REQUEST]  = CIAB_PRTRPOUT;
-	    pb->pb_SrcAddr[0] = 0x00;
-	    pb->pb_DstAddr[0] = 0x80;
-	 }
+	 /* magplip uses a 1 bit adressing here */
+	 pb->pb_SrcAddr[0] = 0x00;
+	 pb->pb_DstAddr[0] = 0x80;
 
 	 /*
 	 ** Each opnener get's it's own BufferManagement. This is neccessary

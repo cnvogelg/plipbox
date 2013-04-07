@@ -2,7 +2,7 @@
 
 BIN_DIR=../bin
 OBJ_DIR=../obj
-INSTALL_DIR=$(HOME)/amiga/shared
+INSTALL_DIR=$(HOME)/amiga/shared/test
 
 # where does the amiga files reside?
 # expects the following dirs:
@@ -24,7 +24,7 @@ all_opt: dirs
 
 dist: dirs release clean_obj
 
-release:
+release: dirs
 	$(VAMOS) $(VAMOS_OPTS) smake release
 
 install: release

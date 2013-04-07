@@ -169,17 +169,20 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 #define DISABLEINT      AbleICR(CIAABase, CIAICRF_FLG)
 #define ENABLEINT       AbleICR(CIAABase, CIAICRF_FLG | CIAICRF_SETCLR)
 
+#define HS_LINE_MASK    CIAF_PRTRBUSY
+#define HS_REQUEST_MASK CIAF_PRTRPOUT
+
 #  define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
 #  define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
 #  define PARINIT(b)      SETCIAINPUT;                                       \
-			ciab.ciaddra &= ~((b)->pb_HandshakeMask[HS_LINE]); \
-			ciab.ciaddra |= (b)->pb_HandshakeMask[HS_REQUEST] | CIAF_PRTRSEL
+			ciab.ciaddra &= ~HS_LINE_MASK; \
+			ciab.ciaddra |= HS_REQUEST_MASK | CIAF_PRTRSEL
 #  define PAREXIT \
 			ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
 			ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
-#  define TESTLINE(b)     (ciab.ciapra & (b)->pb_HandshakeMask[HS_LINE])
-#  define SETREQUEST(b)   ciab.ciapra |= (b)->pb_HandshakeMask[HS_REQUEST]
-#  define CLEARREQUEST(b) ciab.ciapra &= ~((b)->pb_HandshakeMask[HS_REQUEST])
+#  define TESTLINE(b)     (ciab.ciapra & HS_LINE_MASK)
+#  define SETREQUEST(b)   ciab.ciapra |= HS_REQUEST_MASK
+#  define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQUEST_MASK
 
 /*E*/
 

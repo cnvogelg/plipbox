@@ -240,18 +240,10 @@ struct PLIPBase
    APTR                        pb_OldExceptCode;
    APTR                        pb_OldExceptData;
    ULONG                       pb_OldExcept;
-   UBYTE                       pb_HandshakeMask[2],   /* crossed for side-a */
-			       pb_HandshakeBit[2];            /* and side-b */
    UBYTE                       pb_SrcAddr[PLIP_ADDRFIELDSIZE];
    UBYTE                       pb_DstAddr[PLIP_ADDRFIELDSIZE];
    struct PLIPFrame        *   pb_Frame;
 };
-
-   /*
-   ** used as index for PLIPBase->pb_HandshakeMask[]/pb_HandshakeBit[]
-   */
-#define HS_LINE        0   /* as we use compatible plip wireing, our magic */
-#define HS_REQUEST     1   /* is to cross the lines transparently by software */
 
 #ifdef __SASC
      /*
