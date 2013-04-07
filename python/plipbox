@@ -1,0 +1,124 @@
+#!/usr/bin/env python2.7
+
+import sys
+import vpar
+import magplip
+import time
+import argparse
+
+import impacket
+from impacket import ImpactDecoder, ImpactPacket
+
+par_name = "/tmp/hpar"
+size = 1024
+loops = 10
+
+# parse args
+parser = argparse.ArgumentParser()
+parser.add_argument('-t', '--tx', action='store_true', default=False, help="start sending a packet")
+parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+parser.add_argument('-d', '--debug', action='store_true', default=False, help="debug code")
+parser.add_argument('-b', '--bytes', type=int, default=1024, help="buffer size in bytes")
+parser.add_argument('-l', '--loops', type=int, default=10, help="number of test loops")
+args = parser.parse_args()
+args.verbose = True
+
+def log(*v):
+  global args
+  if args.verbose:
+    print v
+
+def dump(data):
+  num = 0
+  for a in data:
+    print "%02x " % ord(a),
+    num += 1
+    if num == 16:
+      num = 0
+      print
+  print
+
+vpar = vpar.VPar(par_name,verbose=args.debug)
+mp = magplip.MagPlip(vpar)
+
+# handle IP packet
+def handle_ip(mp, data):
+  ipDecoder = ImpactDecoder.IPDecoder()
+  ip = ipDecoder.decode(data)
+  print ip
+  dump(data)
+  child = ip.child()
+  if isinstance(child, ImpactPacket.ICMP):
+    # is a ping ECHO
+    if child.get_icmp_type() == ImpactPacket.ICMP.ICMP_ECHO:
+      icmp = child
+      print "ECHO -> ECHOREPLY"
+      # send reply
+      src = ip.get_ip_src()
+      dst = ip.get_ip_dst()
+      ip.set_ip_src(dst)
+      ip.set_ip_dst(src)
+      icmp.set_icmp_type(ImpactPacket.ICMP.ICMP_ECHOREPLY)
+      ip.auto_checksum = 1
+      icmp.set_icmp_cksum(0)
+      icmp.auto_checksum = 1
+      pkt = ip.get_packet()
+      log("tx",len(pkt))
+      print ip
+      dump(pkt)
+      mp.send(magplip.Packet(pkt,0x800))
+
+# handle ARP packet
+def handle_arp(mp, data):
+  arpDecoder = ImpactDecoder.ARPDecoder()
+  arp = arpDecoder.decode(data)
+  print arp
+  dump(data)
+  # get protocoll addresses
+  spa = arp.get_ar_spa()
+  tpa = arp.get_ar_tpa()
+  sha = arp.get_ar_sha()
+  tha = arp.get_ar_tha()
+  print spa,tpa
+  print sha,tha
+  if spa != tpa:
+    # generate reply
+    arp.set_ar_sha((0x14,2,0xc,0xa,0xf,0xe))
+    arp.set_ar_tha(sha)
+    arp.set_ar_spa(tpa)
+    arp.set_ar_tpa(spa)
+    arp.set_ar_op(2)
+    pkt = arp.get_packet()
+    log("tx",len(pkt))
+    print arp
+    dump(pkt)
+    mp.send(magplip.Packet(pkt,0x806))
+  
+# main loop
+print "Welcome to plipbox!"
+try:
+  while True:
+    has_data = mp.can_recv(timeout=1)
+    log("can_recv: ",has_data)
+    if has_data:
+      # rx: get block
+      s = time.time()
+      pkt = mp.recv()
+      e = time.time()
+      delta = e - s
+      if pkt == None:
+        break
+      log("rx",len(pkt.data),"delta",delta,"type %08x" % pkt.ptype)
+      if pkt.ptype == 0x806: # ARP
+        handle_arp(mp, pkt.data)
+      elif pkt.ptype == 0x800: # IP
+        handle_ip(mp, pkt.data)
+      else:
+        print("UNKNOWN: %04x" % pkt.ptype)
+        dump(pkt.data)
+        
+except KeyboardInterrupt:
+  pass
+
+vpar.close()
+

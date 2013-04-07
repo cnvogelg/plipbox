@@ -1,0 +1,4 @@
+#!/bin/sh
+OPTS=raw,echo=0,onlcr=0,echoctl=0,echoke=0,echoe=0,iexten=0
+exec socat "$@" pty,$OPTS,link=/tmp/vpar pty,$OPTS,link=/tmp/hpar
+
