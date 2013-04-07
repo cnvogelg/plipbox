@@ -3,3 +3,4 @@ bin
 *.o
 *.no
 *.opt???
+*.pyc
