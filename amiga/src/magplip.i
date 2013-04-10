@@ -77,7 +77,7 @@ MAGPLIP_I     SET     1
 
 
 PLIP_MAXMTU         equ 8192
-PLIP_ADDRFIELDSIZE  equ 1
+PLIP_ADDRFIELDSIZE  equ 6
 
 
 ;****************************************************************************
@@ -91,12 +91,14 @@ PLIP_ADDRFIELDSIZE  equ 1
      USHORT   pf_Sync
      SHORT    pf_Size
      USHORT   pf_CRC
-     ULONG    pf_Type
+     USHORT   pf_Type
+     STRUCT   pf_SrcAddr,PLIP_ADDRFIELDSIZE
+     STRUCT   pf_DstAddr,PLIP_ADDRFIELDSIZE
 ;*** UBYTE    pf_Data[MTU];
      LABEL PLIPFrame_SIZE
 
 PKTFRAMESIZE_1   equ     4
-PKTFRAMESIZE_2   equ     6
+PKTFRAMESIZE_2   equ     16
 
 SYNCBYTE_HEAD    equ     $42
 SYNCBYTE_CRC     equ     $01
@@ -113,8 +115,8 @@ S2SS_COLLISIONS   equ 1
 S2SS_COUNT        equ 2
 
 
-S2SS_PLIP_TXERRORS equ ((((S2WireType_PLIP) & $ffff) << 16) ! S2SS_TXERRORS)
-S2SS_PLIP_COLLISIONS equ ((((S2WireType_PLIP) & $ffff) << 16) ! S2SS_COLLISIONS)
+S2SS_PLIP_TXERRORS equ ((((S2WireType_Ethernet) & $ffff) << 16) ! S2SS_TXERRORS)
+S2SS_PLIP_COLLISIONS equ ((((S2WireType_Ethernet) & $ffff) << 16) ! S2SS_COLLISIONS)
 
 
 ;****************************************************************************
@@ -172,8 +174,7 @@ S2SS_PLIP_COLLISIONS equ ((((S2WireType_PLIP) & $ffff) << 16) ! S2SS_COLLISIONS)
      APTR   pb_OldExceptCode
      APTR   pb_OldExceptData
      ULONG  pb_OldExcept
-     STRUCT pb_SrcAddr,PLIP_ADDRFIELDSIZE
-     STRUCT pb_DstAddr,PLIP_ADDRFIELDSIZE
+     STRUCT pb_CfgAddr,PLIP_ADDRFIELDSIZE
      APTR   pb_Frame
    LABEL PLIPBase_SIZE
 

@@ -8,9 +8,11 @@ CRC=0x01
 NO_CRC=0x02
 
 class Packet:
-    def __init__(self, data=None, ptype=0x400):
+    def __init__(self, data=None, ptype=0x400, src=None, tgt=None):
         self.data = data
         self.ptype = ptype
+        self.src = src
+        self.tgt = tgt
 
 class MagPlip:
     def __init__(self, v):
@@ -92,6 +94,14 @@ class MagPlip:
         ok = self.set_next_word(toggle_expect, v2, timeout)
         return ok
 
+    def set_next_bytes(self, toggle_expect, buf, timeout=1):
+        for v in buf:
+            ok = self.set_next_byte(toggle_expect, v, timeout)
+            if not ok:
+                return False
+            toggle_expect = not toggle_expect
+        return True
+
     def get_next_byte(self, toggle_expect, timeout=1):
         ok = self.wait_line_toggle(toggle_expect, timeout)
         if not ok:
@@ -119,6 +129,16 @@ class MagPlip:
             return None
         return v1 * 0x10000 + v2
     
+    def get_next_bytes(self, toggle_expect, num, timeout=1):
+        buf = []
+        for i in xrange(num):
+            v = self.get_next_byte(toggle_expect, timeout)
+            if v == None:
+                return None
+            buf.append(v)
+            toggle_expect = not toggle_expect
+        return buf
+    
     # ----- public API ----
 
     def send(self, pkt, timeout=1, crc=False):
@@ -140,7 +160,7 @@ class MagPlip:
             print "tx ERROR: CRC flag"
             return False
         # send size
-        size = len(pkt.data) + 2 + 4 # crc + packet type
+        size = len(pkt.data) + 2 + 2 + 2 * 6 # crc + packet type + 2 * addr
         ok = self.set_next_word(False, size, timeout)
         if not ok:
             print "tx ERROR: size value"
@@ -152,10 +172,20 @@ class MagPlip:
             print "tx ERROR: CRC value"
             return False    
         # send packet type
-        ok = self.set_next_long(False, pkt.ptype, timeout)
+        ok = self.set_next_word(False, pkt.ptype, timeout)
         if not ok:
             print "tx ERROR: ptype value"
-            return False    
+            return False
+        # send src addr
+        ok = self.set_next_bytes(False, pkt.src, timeout)
+        if not ok:
+            print "tx ERROR: src addr"
+            return False
+        # send tgt addr
+        ok = self.set_next_bytes(False, pkt.tgt, timeout)
+        if not ok:
+            print "tx ERROR: tgt addr"
+            return False
         # send data
         toggle = False
         pos = 0
@@ -209,11 +239,21 @@ class MagPlip:
             print "rx ERROR: no crc value"
             return None
         # get type
-        ptype = self.get_next_long(True, timeout)
+        ptype = self.get_next_word(True, timeout)
         if ptype == None:
             print "rx ERROR: no crc value"
             return None
-        size -= 4 + 2 # skip type & crc 
+        # get src hw addr
+        src = self.get_next_bytes(True, 6, timeout)
+        if src == None:
+            print "rx ERROR: no src addr"
+            return None
+        # get tgt hw addr
+        tgt = self.get_next_bytes(True, 6, timeout)
+        if tgt == None:
+            print "rx ERROR: no tgt addr"
+            return None
+        size -= 2 + 2 + 2 * 6 # skip type + crc + 2 * addr 
         # get data
         toggle = True
         pos = 0
@@ -233,5 +273,5 @@ class MagPlip:
             return None
         # clear BUSY
         self.vpar.clr_status_mask(vpar.BUSY_MASK)
-        return Packet(data, ptype)
+        return Packet(data, ptype, src, tgt)
 

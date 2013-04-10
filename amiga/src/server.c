@@ -469,8 +469,10 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	 d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
 						      ios2->ios2_DataLength));
 
-	 frame->pf_Type = ios2->ios2_PacketType;
+	 frame->pf_Type = (USHORT)ios2->ios2_PacketType;
 	 frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2;
+	 memcpy(frame->pf_SrcAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
+	 memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
 
 	 bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
 
@@ -643,8 +645,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	    }
 
 	    got->ios2_Req.io_Flags = 0;
-	    memcpy(got->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
-	    memcpy(got->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
+	    memcpy(got->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
+	    memcpy(got->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
 	    got->ios2_DataLength = datasize;
 
 	    d(("packet received, satisfying S2Request\n"));
@@ -693,8 +695,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	 }
 	 
 	 got->ios2_Req.io_Flags = 0;
-	 memcpy(got->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
-	 memcpy(got->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
+	 memcpy(got->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
+	 memcpy(got->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
 	 got->ios2_DataLength = datasize;
 
 	 d(("orphan read\n"));
@@ -753,8 +755,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	 case S2_CONFIGINTERFACE:
 	    if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
 	    {
-	       memcpy(ios2->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
-	       memcpy(ios2->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
+	       memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
 	       if (!goonline(pb))
 	       {
 		  ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;

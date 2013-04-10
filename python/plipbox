@@ -42,11 +42,12 @@ vpar = vpar.VPar(par_name,verbose=args.debug)
 mp = magplip.MagPlip(vpar)
 
 # handle IP packet
-def handle_ip(mp, data):
+def handle_ip(mp, pkt):
   ipDecoder = ImpactDecoder.IPDecoder()
-  ip = ipDecoder.decode(data)
+  ip = ipDecoder.decode(pkt.data)
   print ip
-  dump(data)
+  print pkt.src,pkt.tgt
+  dump(pkt.data)
   child = ip.child()
   if isinstance(child, ImpactPacket.ICMP):
     # is a ping ECHO
@@ -62,37 +63,46 @@ def handle_ip(mp, data):
       ip.auto_checksum = 1
       icmp.set_icmp_cksum(0)
       icmp.auto_checksum = 1
-      pkt = ip.get_packet()
-      log("tx",len(pkt))
+      new_data = ip.get_packet()
+      log("tx",len(new_data))
       print ip
-      dump(pkt)
-      mp.send(magplip.Packet(pkt,0x800))
+      dump(new_data)
+      mp.send(magplip.Packet(new_data,0x800,pkt.tgt,pkt.src))
 
 # handle ARP packet
-def handle_arp(mp, data):
+def handle_arp(mp, pkt):
   arpDecoder = ImpactDecoder.ARPDecoder()
-  arp = arpDecoder.decode(data)
+  arp = arpDecoder.decode(pkt.data)
   print arp
-  dump(data)
-  # get protocoll addresses
+  dump(pkt.data)
+  # get protocol addresses
   spa = arp.get_ar_spa()
   tpa = arp.get_ar_tpa()
+  # get hardware addresses
   sha = arp.get_ar_sha()
   tha = arp.get_ar_tha()
+  # get hw addresses from pkt
+  src = pkt.src
+  tgt = pkt.tgt
   print spa,tpa
   print sha,tha
+  print src,tgt
+  fake_mac = (0x14,2,0xc,0xa,0xf,0xe)
   if spa != tpa:
-    # generate reply
-    arp.set_ar_sha((0x14,2,0xc,0xa,0xf,0xe))
-    arp.set_ar_tha(sha)
-    arp.set_ar_spa(tpa)
-    arp.set_ar_tpa(spa)
-    arp.set_ar_op(2)
-    pkt = arp.get_packet()
-    log("tx",len(pkt))
-    print arp
-    dump(pkt)
-    mp.send(magplip.Packet(pkt,0x806))
+    mac = fake_mac
+  else:
+    mac = sha
+  # generate reply
+  arp.set_ar_sha(mac)
+  arp.set_ar_tha(sha)
+  arp.set_ar_spa(tpa)
+  arp.set_ar_tpa(spa)
+  arp.set_ar_op(2)
+  new_data = arp.get_packet()
+  log("tx",len(new_data))
+  print arp
+  dump(new_data)
+  mp.send(magplip.Packet(new_data,0x806,pkt.tgt,pkt.src))
   
 # main loop
 print "Welcome to plipbox!"
@@ -108,11 +118,11 @@ try:
       delta = e - s
       if pkt == None:
         break
-      log("rx",len(pkt.data),"delta",delta,"type %08x" % pkt.ptype)
+      log("rx size %d delta %0.2f type %04x" % (len(pkt.data),delta,pkt.ptype))
       if pkt.ptype == 0x806: # ARP
-        handle_arp(mp, pkt.data)
+        handle_arp(mp, pkt)
       elif pkt.ptype == 0x800: # IP
-        handle_ip(mp, pkt.data)
+        handle_ip(mp, pkt)
       else:
         print("UNKNOWN: %04x" % pkt.ptype)
         dump(pkt.data)

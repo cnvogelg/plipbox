@@ -160,7 +160,7 @@ _hwsend:
 	 move.w   #SYNCWORD_CRC,pf_Sync(a4)
 	 lea      PLIPFrame_SIZE(a4),a0
 	 move.w   pf_Size(a4),d0
-	 subq.w   #PKTFRAMESIZE_2,d0
+	 sub.w    #PKTFRAMESIZE_2,d0
 	 jsr      _CRC16(pc)
 	 move.w   d0,pf_CRC(a4)
 	 bra.s    hww_CRC
@@ -269,9 +269,9 @@ hwr_cont1:
 	 bchg     d3,(a5)                             ; OUTPUTTOGGLE
 	 move.b   d4,d0
 	 subq.b   #SYNCBYTE_CRC,d0
-	 bcs.s    hwr_TimedOut
+	 bcs      hwr_TimedOut
 	 subq.b   #SYNCBYTE_NOCRC,d0
-	 bcc.s    hwr_TimedOut
+	 bcc      hwr_TimedOut
 	 lea      pf_Size(a4),a3
 
 	 ; Read 1st length byte
@@ -305,11 +305,11 @@ hwr_cont3:
 	 bchg     d3,(a5)                             ; OUTPUTTOGGLE ciab+ciapra
 
 	 move.w   -2(a3),d6                           ; = length
-	 subq.w   #PKTFRAMESIZE_2,d6
+	 sub.w    #PKTFRAMESIZE_2,d6
 	 bcs.s    hwr_TimedOut
 	 cmp.w    pb_MTU+2(a2),d6
 	 bhi.s    hwr_TimedOut
-	 addq.w   #PKTFRAMESIZE_2-1,d6
+	 add.w    #PKTFRAMESIZE_2-1,d6
 
 	 ; Read main packet body
 	 ;
@@ -333,7 +333,7 @@ hwr_DoneRead:
 	 bne.s    hwr_ReadOkay
 	 lea      PLIPFrame_SIZE(a4),a0
 	 move.w   pf_Size(a4),d0
-	 subq.w   #PKTFRAMESIZE_2,d0
+	 sub.w    #PKTFRAMESIZE_2,d0
 	 jsr      _CRC16(pc)
 	 cmp.w    pf_CRC(a4),d0
 	 bne.s    hwr_TimedOut

@@ -103,20 +103,22 @@
 #define PLIP_MAXTIMEOUT          999999
 #define PLIP_MAXBPS              0x7fffffff
 
-   /* magPLIPs hardware address: log2(two systems) = 1 */
-#define PLIP_ADDRFIELDSIZE       1
+   /* transport ethernet addresses */
+#define PLIP_ADDRFIELDSIZE       6
 
 /****************************************************************************/
 
    /* this _is_ awful, I know */
 #define PKTFRAMESIZE_1           4        /* the sync-field and packet-size */
-#define PKTFRAMESIZE_2           6                   /* crc and packet type */
+#define PKTFRAMESIZE_2           16       /* crc and packet type + addrs = 2 + 2 + 2 * 6 = 16 */
 
 struct PLIPFrame {
    USHORT   pf_Sync;
    SHORT    pf_Size;
    USHORT   pf_CRC;
-   ULONG    pf_Type;
+   USHORT   pf_Type;
+   UBYTE    pf_SrcAddr[PLIP_ADDRFIELDSIZE];
+   UBYTE    pf_DstAddr[PLIP_ADDRFIELDSIZE];
    /*UBYTE    pf_Data[MTU];*/
 };
 
@@ -177,12 +179,12 @@ enum { S2SS_TXERRORS, S2SS_COLLISIONS, S2SS_COUNT };
    ** This count will record the number of packets that failed
    ** to be transmitted.
    */
-#define S2SS_PLIP_TXERRORS ((((S2WireType_PLIP) & 0xffff) << 16) | (S2SS_TXERRORS))
+#define S2SS_PLIP_TXERRORS ((((S2WireType_Ethernet) & 0xffff) << 16) | (S2SS_TXERRORS))
 
    /*
    ** This count will record the number of line arbitration collisions
    */
-#define S2SS_PLIP_COLLISIONS ((((S2WireType_PLIP) & 0xffff) << 16) | (S2SS_COLLISIONS))
+#define S2SS_PLIP_COLLISIONS ((((S2WireType_Ethernet) & 0xffff) << 16) | (S2SS_COLLISIONS))
 
 
 /****************************************************************************/
@@ -240,8 +242,7 @@ struct PLIPBase
    APTR                        pb_OldExceptCode;
    APTR                        pb_OldExceptData;
    ULONG                       pb_OldExcept;
-   UBYTE                       pb_SrcAddr[PLIP_ADDRFIELDSIZE];
-   UBYTE                       pb_DstAddr[PLIP_ADDRFIELDSIZE];
+   UBYTE                       pb_CfgAddr[PLIP_ADDRFIELDSIZE];
    struct PLIPFrame        *   pb_Frame;
 };
 

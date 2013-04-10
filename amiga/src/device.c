@@ -275,9 +275,13 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 	 if (pb->pb_DevNode.lib_OpenCnt == 1)
 	    pb->pb_Unit = unit;
 
-	 /* magplip uses a 1 bit adressing here */
-	 pb->pb_SrcAddr[0] = 0x00;
-	 pb->pb_DstAddr[0] = 0x80;
+	 /* fake ethernet addresses */
+	 pb->pb_CfgAddr[0] = 0x1a;
+	 pb->pb_CfgAddr[1] = 0x11;
+	 pb->pb_CfgAddr[2] = 0xaf;
+	 pb->pb_CfgAddr[3] = 0xa0;
+	 pb->pb_CfgAddr[4] = 0x47;
+	 pb->pb_CfgAddr[5] = 0x11;
 
 	 /*
 	 ** Each opnener get's it's own BufferManagement. This is neccessary
@@ -603,8 +607,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
       break;
 
       case S2_GETSTATIONADDRESS:
-	 memcpy(ios2->ios2_SrcAddr, pb->pb_SrcAddr, PLIP_ADDRFIELDSIZE);
-	 memcpy(ios2->ios2_DstAddr, pb->pb_DstAddr, PLIP_ADDRFIELDSIZE);
+	 memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* current */
+	 memcpy(ios2->ios2_DstAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* default */
       break;
 	 
       case S2_DEVICEQUERY:
@@ -615,10 +619,10 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 	 devquery->DevQueryFormat = 0;        /* "this is format 0" */
 	 devquery->DeviceLevel = 0;           /* "this spec defines level 0" */
 	 
-	 if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = PLIP_ADDRFIELDSIZE;
+	 if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = PLIP_ADDRFIELDSIZE * 8; /* Bits! */
 	 if (devquery->SizeAvailable >= 22) devquery->MTU           = pb->pb_MTU;
 	 if (devquery->SizeAvailable >= 26) devquery->BPS           = pb->pb_ReportBPS;
-	 if (devquery->SizeAvailable >= 30) devquery->HardwareType  = S2WireType_PLIP;
+	 if (devquery->SizeAvailable >= 30) devquery->HardwareType  = S2WireType_Ethernet;
 	 
 	 devquery->SizeSupplied = min((int)devquery->SizeAvailable, 30);
       }
