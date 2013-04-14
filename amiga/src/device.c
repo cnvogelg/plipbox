@@ -566,8 +566,11 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 	 }
       break;
 
-      case CMD_WRITE:
       case S2_BROADCAST:
+	      /* set broadcast addr: ff:ff:ff:ff:ff:ff */
+	 memset(ios2->ios2_DstAddr, 0xff, PLIP_ADDRFIELDSIZE);
+	      /* fall through */
+      case CMD_WRITE:
 	 if (ios2->ios2_Req.io_Flags & SANA2IOF_RAW)
 	 {
 	    ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
