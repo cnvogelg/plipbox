@@ -47,6 +47,8 @@
 #define PLIP_STATE_LAST_DATA        0x70
 #define PLIP_STATE_END              0x80
 #define PLIP_STATE_START            0x90
+#define PLIP_STATE_SRC_ADDR         0xa0
+#define PLIP_STATE_DST_ADDR         0xb0
 
 #define PLIP_MAGIC        0x42
 #define PLIP_NOCRC        0x02
@@ -56,12 +58,16 @@
 #define PLIP_LINE_DISABLED  0x7
 #define PLIP_LINE_OK        0x1
 
+#define PLIP_ADDR_SIZE      6
+
 typedef struct {
   u08 crc_type;
   u16 size;
   u16 crc;
-  u32 type;
+  u16 type;
   u16 real_size; // will be set after tx/rx
+  u08 src_addr[PLIP_ADDR_SIZE];
+  u08 dst_addr[PLIP_ADDR_SIZE];
 } plip_packet_t;
 
 typedef u08 (*plip_packet_func)(plip_packet_t *pkt);
