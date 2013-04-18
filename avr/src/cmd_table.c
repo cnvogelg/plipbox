@@ -83,11 +83,7 @@ COMMAND(cmd_param_set_ip)
   u08 ip_type = argv[0][1];
   u08 *ip = 0;
   switch(ip_type) {
-    case 'n': ip = param.ip_net_mask; break;
-    case 'g': ip = param.ip_gw_addr; break;
-    case 'e': ip = param.ip_eth_addr; break;
-    case 'p': ip = param.ip_plip_addr; break;
-    case 'a': ip = param.ip_amiga_addr; break;
+    case 'i': ip = param.ip_addr; break;
     case 's': ip = param.ip_srv_addr; break;
     default: return CMD_PARSE_ERROR;
   }
@@ -113,10 +109,10 @@ COMMAND(cmd_param_set_mac)
 
 COMMAND(cmd_param_toggle)
 {
-  u08 type = argv[0][1];
+  u08 type = argv[0][0];
   u08 *val = 0;
   switch(type) {
-    case 'd': val = &param.dhcp_enabled; break;
+    case 'z': val = &param.zero_conf; break;
     default: return CMD_PARSE_ERROR;
   }
   
@@ -142,12 +138,8 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("pl"), cmd_param_load },
   { CMD_NAME("pr"), cmd_param_reset },
   { CMD_NAME("nm"), cmd_param_set_mac },
-  { CMD_NAME("nn"), cmd_param_set_ip },
-  { CMD_NAME("ng"), cmd_param_set_ip },
-  { CMD_NAME("ne"), cmd_param_set_ip },
-  { CMD_NAME("np"), cmd_param_set_ip },
-  { CMD_NAME("na"), cmd_param_set_ip },
+  { CMD_NAME("ni"), cmd_param_set_ip },
   { CMD_NAME("ns"), cmd_param_set_ip },
-  { CMD_NAME("nd"), cmd_param_toggle },
+  { CMD_NAME("z"), cmd_param_toggle },
   { 0,0 } // last entry
 };

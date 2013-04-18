@@ -1,5 +1,5 @@
 /*
- * eth_tx.c: handle eth packet sends
+ * plip_rx.c: handle incoming plip packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -30,19 +30,18 @@
 #include "net/eth.h"
 #include "net/ip.h"
 #include "net/arp_cache.h"
+#include "net/arp.h"
 #include "net/icmp.h"
 
 #include "pkt_buf.h"
 #include "enc28j60.h"
+#include "eth_tx.h"
 #include "plip.h"
+#include "plip_tx.h"
 #include "ping.h"
 #include "uart.h"
 #include "uartutil.h"
-
-static void handle_my_packet(u08 *ip_buf, u16 size)
-{
-  // TODO
-}
+#include "param.h"
 
 static u08 offset;
 
@@ -91,134 +90,112 @@ static void send_prefix(void)
 
 //#define DEBUG
 
-void plip_rx_worker(u08 plip_state, u08 eth_online)
+static void handle_ip_pkt(plip_packet_t *pkt, u08 eth_online)
 {
-  // do we have a PLIP packet waiting?
-  if(plip_can_recv() == PLIP_STATUS_OK) {
-    
-    // prepare eth chip to get its tx buffer filled
-    enc28j60_packet_tx_prepare();
-    
-    // receive PLIP packet and store it in eth chip tx buffer
-    // also keep a copy in our local pkt_buf (up to max size)
-    u08 status = plip_recv(&pkt);
-    
-    // if PLIP rx was ok then have a look at the packet
+  if(eth_online) {
+    // simply send packet to ethernet
+    eth_tx_send(ETH_TYPE_IPV4, pkt->size, ETH_HDR_SIZE, pkt->dst_addr);
+  } else {
+    // no ethernet online -> we have to drop packet
+    send_prefix();
+    uart_send_pstring(PSTR("DROP ip pkt"));
+  }
+}
+
+static void handle_arp_pkt(plip_packet_t *pkt, u08 eth_online)
+{
+  u08 *arp_buf = pkt_buf + ETH_HDR_SIZE;
+  u16 arp_size = pkt->size;
+  
+  // make sure its an IPv4 ARP packet
+  if(!arp_is_ipv4(arp_buf, arp_size)) {
+    send_prefix();
+    uart_send_pstring(PSTR("wrong ARP type"));
+    return;
+  }
+  
+  // make sure its an ARP request
+  if(arp_get_op(arp_buf) != ARP_REQUEST) {
+    send_prefix();
+    uart_send_pstring(PSTR("no ARP request"));
+    return;
+  }
+  
+  // ARP request should now be something like this:
+  // src_mac = Amiga MAC
+  // src_ip = Amiga IP
+  const u08 *pkt_src_mac = pkt->src_addr;
+  const u08 *arp_src_mac = arp_get_src_mac(arp_buf);
+  // pkt src and arp src must be the same
+  if(!net_compare_mac(pkt_src_mac, arp_src_mac)) {
+    send_prefix();
+    uart_send_pstring(PSTR("ARP pkt!=src mac"));
+    return;
+  }
+  
+  // update values in zero conf mode
+  const u08 *arp_src_ip = arp_get_src_ip(arp_buf);
+  if(net_zero_conf()) {
+    net_copy_mac(arp_src_mac, net_get_mac());
+    net_copy_ip(arp_src_ip, net_get_ip());    
+  }
+  
+  // is for myself?
+  const u08 *arp_tgt_ip = arp_get_tgt_ip(arp_buf);
+  if(net_compare_ip(arp_src_ip, arp_tgt_ip)) {
+    // generate reply from request
+    arp_make_reply(arp_buf);
+     
+    // send reply via plip
+    u08 status = plip_tx_send(0,arp_size,arp_size);
     if(status != PLIP_STATUS_OK) {
       send_prefix();
-      uart_send_hex_byte_crlf(status);
+      uart_send_pstring(PSTR("arp tx fail!\r\n"));
+    }
+  }
+  // other ARP target
+  else {
+    if(eth_online) {
+      const u08 *arp_tgt_mac = arp_get_tgt_mac(arp_buf);
+      eth_tx_send(ETH_TYPE_ARP, arp_size, arp_size, arp_tgt_mac);
     } else {
-      // fetch tgt ip of incoming packet
-      u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
-      const u08 *tgt_ip = ip_get_tgt_ip(ip_buf);
-      u08 ltgt_ip[4];
-      net_copy_ip(tgt_ip, ltgt_ip);
-      const u08 *src_ip = ip_get_src_ip(ip_buf);
-      u16 ip_size = pkt.size;
-  
-      // make sure all packets are coming from amiga
-      if(!net_compare_ip(src_ip, net_get_p2p_amiga())) {
-        send_prefix();
-        uart_send_pstring(PSTR("not amiga!\r\n"));
-        return;
-      }
-  
-      // if its a packet for me (plip address)
-      if(net_compare_ip(ltgt_ip, net_get_p2p_me())) {
-        if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
-          ping_plip_handle_packet(ip_buf, ip_size);
-        } else {
-          send_prefix();
-          uart_send_pstring(PSTR("ME (plip)!\r\n"));        
-          handle_my_packet(ip_buf, ip_size);
-        }
-      }
-      // its a packet for me (eth address)
-      else if(net_compare_ip(ltgt_ip, net_get_ip())) {
-        if(eth_online) {
-          // ping if eth link is up
-          if(ip_is_ipv4_protocol(ip_buf, IP_PROTOCOL_ICMP)) {
-            ping_plip_handle_packet(ip_buf, ip_size);
-          } 
-        }
-      } 
-      // pass this packet on to ethernet
-      else {
-#ifdef DEBUG
-        send_prefix();
-        net_dump_ip(ltgt_ip);
-        uart_send_pstring(PSTR(" size="));
-        uart_send_hex_word_spc(ip_size);
-#endif
-        
-        // find a mac address for the target 
-        const u08 *mac = arp_cache_find_mac(ltgt_ip);
-        if(mac == 0) {
-#ifdef DEBUG
-          uart_send_pstring(PSTR("no mac\r\n"));
-#endif
-        }
-        // found mac -> we can send packet
-        else {
-#ifdef DEBUG
-          uart_send_pstring(PSTR(" -> mac "));
-          net_dump_mac(mac);
-          uart_send_crlf();
-#endif
-        
-          // ----- NAT -----
-          // adjust source ip to our eth IP
-          ip_adjust_checksum(ip_buf, IP_CHECKSUM_OFF, net_get_p2p_amiga(), net_get_ip());
-          
-          // get protocol
-          u08 protocol = ip_get_protocol(ip_buf);
-          u16 copy_size = ETH_HDR_SIZE + IP_MIN_HDR_SIZE;
-          if(protocol == IP_PROTOCOL_TCP) {
-            // adjust TCP checksum
-            u16 off = ip_get_hdr_length(ip_buf) + TCP_CHECKSUM_OFF;
-            ip_adjust_checksum(ip_buf, off, net_get_p2p_amiga(), net_get_ip());
-            copy_size += TCP_CHECKSUM_OFF + 2;
-          } else if(protocol == IP_PROTOCOL_UDP) {
-            // adjust UDP checksum
-            u16 off = ip_get_hdr_length(ip_buf) + UDP_CHECKSUM_OFF;
-            ip_adjust_checksum(ip_buf, off, net_get_p2p_amiga(), net_get_ip());
-            copy_size += UDP_CHECKSUM_OFF + 2;
-          }
-
-          // change src ip to my eth ip
-          ip_set_src_ip(ip_buf, net_get_ip());
-          
-#ifdef DEBUG
-          // make sure our checksum was corrected correctly
-          u16 chk = ip_hdr_calc_checksum(ip_buf);
-          if(chk != 0xffff) {
-            send_prefix(),
-            uart_send_pstring(PSTR("CHECKSUM?"));
-            uart_send_hex_word_crlf(chk);
-          }
-#endif
-        
-          // now build ethernet header
-          eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
-        
-          // copy (created) eth header and (modified) ip header back to packet buffer
-          enc28j60_packet_tx_begin_range(0);
-          enc28j60_packet_tx_blk(pkt_buf, copy_size);
-          enc28j60_packet_tx_end_range();
-  
-          // finally send packet
-          u16 pkt_size = ip_size + ETH_HDR_SIZE;
-          if(eth_online) {
-            enc28j60_packet_tx_send(pkt_size);
-          } else {
-            // can't actually send packet because eth is not online :(
-            send_prefix();
-            uart_send_pstring(PSTR("DROP"));
-          }
-        }
-      }
+      // no ethernet online -> we have to drop packet
+      send_prefix();
+      uart_send_pstring(PSTR("DROP arp pkt"));      
     }
   }
 }
 
-
+void plip_rx_worker(u08 plip_state, u08 eth_online)
+{
+  // do we have a PLIP packet waiting?
+  if(plip_can_recv() == PLIP_STATUS_OK) {
+    // receive PLIP packet and store it in eth chip tx buffer
+    // also keep a copy in our local pkt_buf (up to max size)
+    u08 status = plip_recv(&pkt);
+    
+    // report receiption error
+    if(status != PLIP_STATUS_OK) {
+      send_prefix();
+      uart_send_pstring(PSTR("recv err="));
+      uart_send_hex_byte_crlf(status);
+    } else {
+      // got a valid packet from plip -> check type
+      u16 type = pkt.type;
+      // handle IP packet
+      if(type == ETH_TYPE_IPV4) {
+        handle_ip_pkt(&pkt, eth_online);
+      }
+      // handle ARP packet
+      else if(type == ETH_TYPE_ARP) {
+        handle_arp_pkt(&pkt, eth_online);
+      }
+      // unknown packet type
+      else {
+        send_prefix();
+        uart_send_pstring(PSTR("type? "));
+        uart_send_hex_word_crlf(type);
+      }
+    }
+  }
+}

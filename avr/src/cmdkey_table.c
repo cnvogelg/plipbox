@@ -43,22 +43,28 @@
 // ping server
 COMMAND_KEY(cmd_ping_server)
 {
+#ifdef HAVE_NAT
   u16 id = timer_10ms;
   ping_eth_send_request(net_get_srv_ip(), id, 0);
+#endif
 }
 
 // ping gateway
 COMMAND_KEY(cmd_ping_gw)
 {
+#ifdef HAVE_NAT
   u16 id = timer_10ms;
   ping_eth_send_request(net_get_gateway(), id, 0);
+#endif
 }
 
 // ping amiga
 COMMAND_KEY(cmd_ping_amiga)
 {
+#ifdef HAVE_NAT
   u16 id = timer_10ms;
   ping_plip_send_request(net_get_p2p_amiga(), id, 0);
+#endif
 }
 
 // arp cache
@@ -77,6 +83,7 @@ COMMAND_KEY(cmd_clear_arp_cache)
 // send a udp packet
 COMMAND_KEY(cmd_udp_test)
 {
+#ifdef HAVE_NAT
   const u08 *mac = arp_cache_find_mac(net_get_srv_ip());
   if(mac != 0) {
     u08 *buf = pkt_buf + ETH_HDR_SIZE;
@@ -89,6 +96,7 @@ COMMAND_KEY(cmd_udp_test)
     enc28j60_packet_tx(pkt_buf, size);
     uart_send_pstring(PSTR("UDP!\r\n"));
   }
+#endif
 }
 
 COMMAND_KEY(cmd_bootp_test)

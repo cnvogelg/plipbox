@@ -28,7 +28,10 @@
 
 #include "net/net.h"
 #include "net/arp.h"
+
+#ifdef HAVE_NAT
 #include "net/arp_cache.h"
+#endif
 
 #include "enc28j60.h"
 #include "timer.h"
@@ -55,11 +58,15 @@ static u08 link_up(void)
 
 static u08 wait_arp(void)
 {
+#ifdef HAVE_NAT
   if(arp_cache_get_gw_mac() == 0) {
     return ETH_STATE_WAIT_ARP;
   } else {
     return ETH_STATE_START_NET;
   }
+#else
+  return ETH_STATE_START_NET;
+#endif  
 }
 
 u08 eth_state_worker(void)

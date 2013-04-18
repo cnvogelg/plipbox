@@ -33,8 +33,12 @@
 #include "net/eth.h"
 #include "net/net.h"
 #include "net/ip.h"
+
+#ifdef HAVE_NAT
 #include "net/arp_cache.h"
 #include "net/dhcp_client.h"
+#endif
+
 #include "net/udp.h"
 
 #include "enc28j60.h"
@@ -46,6 +50,7 @@
 #include "timer.h"
 #include "eth_state.h"
 
+#ifdef HAVE_NAT
 static u16 my_timer;
 
 static u08 helper_time_passed(void)
@@ -56,19 +61,48 @@ static u08 helper_time_passed(void)
   }
   return 0;
 }
+#endif
 
 void eth_rx_init(void)
 {
+#ifdef HAVE_NAT
   // prepare cache
   arp_cache_init();
+#endif
 }
 
+#if 0
 static void send_prefix(void)
 {
   uart_send_pstring(PSTR("eth(rx): "));
 }
+#endif
 
-u08 retry = 0;
+static u08 retry = 0;
+
+static void eth_tx_plip(u16 len)
+{
+  // first read only the ethernet header into our buffer
+  enc28j60_packet_rx_blk(pkt_buf, ETH_HDR_SIZE);
+  
+  // copy src/tgt mac and type from eth frame
+  net_copy_mac(eth_get_tgt_mac(pkt_buf), pkt.dst_addr);
+  net_copy_mac(eth_get_src_mac(pkt_buf), pkt.src_addr);
+  pkt.type = eth_get_pkt_type(pkt_buf);
+  
+  // send pkt via plip
+  u08 status = plip_tx_send(ETH_HDR_SIZE, len, len);
+  if(status != PLIP_STATUS_OK) {
+    uart_send_pstring(PSTR("plip(tx): "));
+    uart_send_hex_byte_crlf(status);
+    retry = 5;
+  } else {
+    retry = 0;
+  }
+  
+  // finish packet read
+  enc28j60_packet_rx_end();
+}
 
 void eth_rx_worker(u08 eth_state, u08 plip_online)
 {
@@ -92,7 +126,8 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         retry --;
       }
     }  
-    
+
+#ifdef HAVE_NAT
     // trigger helper worker for ARP and DHCP
     if(helper_time_passed()) {
       // DHCP
@@ -107,8 +142,17 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         arp_cache_worker(pkt_buf, enc28j60_packet_tx);
       }
     }
-    return;
+#endif
   }
+  // received packet
+  else {
+    // if plip is online then transmit packet
+    eth_tx_plip(len - ETH_HDR_SIZE);
+  }
+}
+
+#if 0
+static void   
 
   // first read only the ethernet header into our buffer
   enc28j60_packet_rx_blk(pkt_buf, ETH_HDR_SIZE);
@@ -193,10 +237,12 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         enc28j60_packet_rx_end();
         finished = 1;
         
+#ifdef HAVE_NAT
         // handle DHCP packet
         if(dhcp_is_dhcp_pkt(ip_buf)) {
           handled = dhcp_client_handle_packet(pkt_buf, len, enc28j60_packet_tx);
         }
+#endif
       }
       // warn on unhandled packets
       if(!handled) {
@@ -316,3 +362,4 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     uart_send_pstring(PSTR("SHORT PKT?\r\n"));
   }
 }
+#endif

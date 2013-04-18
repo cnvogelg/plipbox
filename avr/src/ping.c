@@ -86,7 +86,13 @@ u08 ping_plip_send_request(const u08 *ip, u16 id, u16 seq)
   uart_send_crlf();
 #endif
 
-  u16 size = icmp_make_ping_request(pkt_buf, net_get_p2p_me(), ip, id, seq);
+  const u08 *my_ip;
+#ifdef HAVE_NAT
+  my_ip = net_get_p2p_me();
+#else
+  my_ip = net_get_ip();
+#endif  
+  u16 size = icmp_make_ping_request(pkt_buf, my_ip, ip, id, seq);
   u08 status = plip_tx_send(0,size,size);
   return (status == PLIP_STATUS_OK);
 }

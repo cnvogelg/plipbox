@@ -56,5 +56,9 @@ extern void arp_dump(const u08 *buf);
 
 /* getter */
 inline u16 arp_get_op(const u08 *buf) { return net_get_word(buf + ARP_OFF_OP); }
+inline const u08* arp_get_src_mac(const u08 *buf) { return buf + ARP_OFF_SRC_MAC; }
+inline const u08* arp_get_src_ip(const u08 *buf) { return buf + ARP_OFF_SRC_IP; }
+inline const u08* arp_get_tgt_mac(const u08 *buf) { return buf + ARP_OFF_TGT_MAC; }
+inline const u08* arp_get_tgt_ip(const u08 *buf) { return buf + ARP_OFF_TGT_IP; }
 
 #endif

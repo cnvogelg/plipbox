@@ -34,13 +34,9 @@
 typedef void (*net_tx_packet_func)(const u08 *buf, u16);
  
 inline u08* net_get_mac(void) { return param.mac_addr; }
-inline u08* net_get_ip(void) { return param.ip_eth_addr; }
-inline u08* net_get_gateway(void) { return param.ip_gw_addr; }
-inline u08* net_get_netmask(void) { return param.ip_net_mask; }
-inline u08* net_get_p2p_me(void) { return param.ip_plip_addr; }
-inline u08* net_get_p2p_amiga(void) { return param.ip_amiga_addr; }
+inline u08* net_get_ip(void) { return param.ip_addr; }
 inline u08* net_get_srv_ip(void) { return param.ip_srv_addr; }
-inline u08  net_dhcp_enabled(void) { return param.dhcp_enabled; }
+inline u08  net_zero_conf(void) { return param.zero_conf; }
 
 extern void net_copy_mac(const u08 *in, u08 *out);
 extern void net_copy_ip(const u08 *in, u08 *out);

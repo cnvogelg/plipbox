@@ -1,5 +1,5 @@
 /*
- * arp_cache.h - manage the ARP cache
+ * eth_tx.c: handle eth sends
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,22 +24,27 @@
  *
  */
 
-#ifndef ARP_CACHE_H
-#define ARP_CACHE_H
+#include "eth_tx.h"
 
-#include "arp.h"
-#include "param.h"
-#include "net.h"
+#include "net/eth.h"
+#include "pkt_buf.h"
+#include "enc28j60.h"
 
-#define ARP_CACHE_SIZE (PARAM_NUM_ARP_IP + 1)
+void eth_tx_send(u16 eth_type, u16 ip_size, u16 copy_size, const u08 *tgt_mac)
+{
+  // now build ethernet header
+  eth_make_to_tgt(pkt_buf, eth_type, tgt_mac);
 
-extern void arp_cache_init(void);
-extern u08  arp_cache_handle_packet(u08 *ethbuf, u16 ethlen, net_tx_packet_func tx_func);
-extern void arp_cache_worker(u08 *ethbuf, net_tx_packet_func tx_func);
-extern void arp_cache_dump(void);
-extern void arp_cache_clear(void);
+  // wait for tx is possible
+  enc28j60_packet_tx_prepare();
 
-/* return 0 if mac not known (yet) */
-extern const u08 *arp_cache_find_mac(const u08 *ip);
+  // copy (newly created) eth header
+  // [and with nat: (modified) ip header] back to packet buffer
+  enc28j60_packet_tx_begin_range(0);
+  enc28j60_packet_tx_blk(pkt_buf, copy_size);
+  enc28j60_packet_tx_end_range();
 
-#endif
+  // finally send ethernet packet
+  u16 pkt_size = ip_size + ETH_HDR_SIZE;
+  enc28j60_packet_tx_send(pkt_size);
+}

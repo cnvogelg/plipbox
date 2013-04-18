@@ -32,18 +32,12 @@
 #define PARAM_NUM_ARP_IP   3
 
 typedef struct {
-  // net
-  u08 ip_net_mask[4];
-  u08 ip_gw_addr[4];
-  u08 ip_eth_addr[4];
-  u08 ip_plip_addr[4];
-  u08 ip_amiga_addr[4];
-  u08 ip_srv_addr[4];
+  u08 ip_addr[4];
   u08 mac_addr[6];
-  // arp cache preload
+  u08 zero_conf;
+
+  u08 ip_srv_addr[4];
   u08 arp_ip[PARAM_NUM_ARP_IP][4];
-  // dhcp
-  u08 dhcp_enabled;
 } param_t;
   
 extern param_t param;  

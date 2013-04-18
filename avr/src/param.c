@@ -43,50 +43,30 @@ uint16_t eeprom_crc16 EEMEM;
 
 // default 
 static const param_t PROGMEM default_param = {
-  .ip_net_mask = { 255,255,255,0 },
-  .ip_gw_addr = { 192,168,2,1 },
-  .ip_eth_addr = { 192,168,2,133 },
+  .ip_addr = { 192,168,2,133 },
   .ip_srv_addr = { 192,168,2,99 }, // a typical server in your net
-  .ip_plip_addr = { 192,168,0,2 },
-  .ip_amiga_addr = { 192,168,0,1 },
   .mac_addr = { 0x74,0x69,0x69,0x2D,0x30,0x31 },
-  .dhcp_enabled = 0
+  .zero_conf = 1,
 };
 
 // dump all params
 void param_dump(void)
 {
-  uart_send_pstring(PSTR("nn)et mask:  "));
-  net_dump_ip(param.ip_net_mask);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("ng)ateway:   "));
-  net_dump_ip(param.ip_gw_addr);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("ns)erver     "));
-  net_dump_ip(param.ip_srv_addr);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("ne)th port:  "));
-  net_dump_ip(param.ip_eth_addr);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("np)lip port: "));
-  net_dump_ip(param.ip_plip_addr);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("na)miga p2p: "));
-  net_dump_ip(param.ip_amiga_addr);
+  uart_send_pstring(PSTR("ni)p addr:   "));
+  net_dump_ip(param.ip_addr);
   uart_send_crlf();
   
   uart_send_pstring(PSTR("nm)ac addr:  "));
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
+
+  uart_send_pstring(PSTR("ns)erver     "));
+  net_dump_ip(param.ip_srv_addr);
+  uart_send_crlf();
   
-  uart_send_pstring(PSTR("nd)hcp on:   "));
-  uart_send_hex_byte_crlf(param.dhcp_enabled);
-  
+  uart_send_pstring(PSTR("z)ero conf:  "));
+  uart_send_hex_byte_crlf(param.zero_conf);
+
   for(u08 i=0;i<PARAM_NUM_ARP_IP;i++) {
     uart_send('a');
     uart_send('1'+i);
