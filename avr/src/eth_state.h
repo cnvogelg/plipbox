@@ -29,18 +29,18 @@
 
 #include "global.h"
 
-#define ETH_STATE_OFFLINE   0
-#define ETH_STATE_ONLINE    1
-#define ETH_STATE_START_NET 2
-#define ETH_STATE_STOP_NET  3
-#define ETH_STATE_LINK_UP   4
-#define ETH_STATE_LINK_DOWN 5
-#define ETH_STATE_WAIT_ARP  6
-#define ETH_STATE_NONE      99
+#define ETH_STATE_DISABLED    0
+#define ETH_STATE_INIT        1
+#define ETH_STATE_RETRY_INIT  2
+#define ETH_STATE_OFFLINE     3
+#define ETH_STATE_ONLINE      4
+#define ETH_STATE_LINK_UP     5
+#define ETH_STATE_LINK_DOWN   6
+#define ETH_STATE_EXIT        7
    
 // 64*10 ms
 #define ETH_STATE_TIMER_MASK    0xffc0   
 
-extern u08 eth_state_worker(void);
+extern u08 eth_state_worker(u08 plip_online);
    
 #endif

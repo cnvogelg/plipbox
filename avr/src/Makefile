@@ -38,8 +38,9 @@ ALL_BOARDS= arduino avrnetio
 DIST_BOARDS= arduino avrnetio
 
 # select board
-BOARD ?= arduino
+BOARD ?= avrnetio
 DEFINES ?= USE_BLA
+DEBUG ?= 1
 
 ifeq "$(BOARD)" "arduino"
 
@@ -83,7 +84,7 @@ endif
 # mainfile/project name
 PROJECT = plipbox
 VERSION_MAJ = 0
-VERSION_MIN = 2
+VERSION_MIN = 3
 VERSION_EXTRA =
 BUILD_DATE = $(shell date '+%Y%m%d')
 
@@ -103,9 +104,9 @@ SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c plip.c
 SRC += pkt_buf.c param.c
 SRC += spi.c enc28j60.c 
-SRC += net/net.c net/eth.c net/arp.c net/ip.c net/icmp.c net/udp.c net/bootp.c net/dhcp.c 
-SRC += net/arp_cache.c net/dhcp_client.c
-SRC += eth_rx.c eth_tx.c eth_state.c ping.c
+SRC += net/net.c net/eth.c net/arp.c net/ip.c net/icmp.c net/udp.c net/bootp.c
+SRC += net/arp_cache.c
+SRC += eth_rx.c eth_tx.c eth_state.c ping.c debug.c
 SRC += plip_rx.c plip_tx.c plip_state.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c
@@ -138,6 +139,9 @@ CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
 CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
 CFLAGS_LOCAL += -DF_CPU=$(F_CPU)
 CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))
+ifeq "$(DEBUG)" "1"
+CFLAGS_LOCAL += -DDEBUG
+endif
 
 # linker switches
 LDFLAGS = -Wl,-Map=$(OUTPUT).map,--cref

@@ -31,7 +31,7 @@
 u08  eth_is_broadcast_tgt(const u08 *pkt)
 {
   const u08 *mac = eth_get_tgt_mac(pkt);
-  return net_compare_any_mac(mac);
+  return net_compare_bcast_mac(mac);
 }
 
 u08  eth_is_tgt_me(const u08 *pkt)
@@ -57,7 +57,7 @@ void eth_make_to_tgt(u08 *pkt, u16 type, const u08 mac[6])
 
 void eth_make_to_any(u08 *pkt, u16 type)
 {
-  net_copy_any_mac(pkt + ETH_OFF_TGT_MAC);
+  net_copy_bcast_mac(pkt + ETH_OFF_TGT_MAC);
   net_copy_my_mac(pkt + ETH_OFF_SRC_MAC);
   net_put_word(pkt + ETH_OFF_TYPE, type);
 }

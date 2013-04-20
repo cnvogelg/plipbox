@@ -1,5 +1,5 @@
 /*
- * dhcp_client.h - act as a DHCP client to get a lease
+ * debug.h - helper functions for debugging
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,20 @@
  *
  */
 
-#ifndef DHCP_CLIENT_H
-#define DHCP_CLIENT_H
+#ifndef DEBUG_H
+#define DEBUG_H
 
-#include "dhcp.h"
+#include "global.h"
+#include "plip.h"
 
-/* return 0 if no lease or 1 if lease is available */
-extern u08 dhcp_client_worker(u08 *eth_buf, u16 max_size, net_tx_packet_func tx_func);
-extern u08 dhcp_client_handle_packet(u08 *eth_buf, u16 eth_size, net_tx_packet_func tx_func);
+#ifdef DEBUG
+
+typedef void (*write_prefix_func_t)(void);
+
+extern void debug_dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f);
+extern void debug_dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f);
+extern void debug_dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f);
+
+#endif
 
 #endif

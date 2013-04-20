@@ -28,6 +28,9 @@
 #include "plip.h"
 #include "pkt_buf.h"
 #include "enc28j60.h"
+#include "uartutil.h"
+#include "net/eth.h"
+#include "debug.h"
 
 static u16 send_pos = 0;
 static u16 max_pos = 0;
@@ -47,16 +50,59 @@ static u08 get_plip_data(u08 *data)
   }
 }
 
+static void uart_send_prefix(void)
+{
+  uart_send_pstring(PSTR("plip(TX): "));
+}
+
 void plip_tx_init(void)
 {
   // setup plip
   plip_send_init(get_plip_data); 
 }
 
-u08 plip_tx_send(u08 offset, u16 mem_size, u16 total_size)
+static u08 retry;
+
+void plip_tx_worker(u08 plip_online)
 {
-  send_pos = offset;
-  max_pos = offset + mem_size;
+  // shall we retry to send the last packet
+  if(plip_online && (retry > 0)) {
+#ifdef DEBUG
+    debug_dump_plip_pkt(&pkt,uart_send_prefix);
+#endif
+    u08 status = plip_send(&pkt);
+    if(status == PLIP_STATUS_OK) {
+      uart_send_prefix();
+      uart_send_pstring(PSTR("retry: OK"));
+      uart_send_crlf();
+      retry = 0;
+    } else {
+      uart_send_pstring(PSTR("retry: failed: "));
+      uart_send_hex_byte_crlf(status);
+      retry --;
+    }
+  }  
+}
+
+u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
+{
+  send_pos = mem_offset;
+  max_pos = mem_offset + mem_size;
   pkt.size = total_size;
-  return plip_send(&pkt);
+  pkt.crc_type = PLIP_NOCRC;
+
+#ifdef DEBUG
+  debug_dump_plip_pkt(&pkt,uart_send_prefix);
+#endif
+  u08 status = plip_send(&pkt);
+  
+  if(status != PLIP_STATUS_OK) {
+    uart_send_prefix();
+    uart_send_pstring(PSTR("first: failed: "));
+    uart_send_hex_byte_crlf(status);
+    retry = 5;
+  } else {
+    retry = 0;
+  }
+  return status;
 }

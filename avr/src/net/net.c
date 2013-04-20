@@ -28,7 +28,7 @@
 #include "util.h"
 #include "uartutil.h"
 
-const u08 net_any_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+const u08 net_bcast_mac[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 const u08 net_zero_mac[6] = { 0,0,0,0,0,0 };
 const u08 net_zero_ip[4] = { 0,0,0,0 };
 const u08 net_ones_ip[4] = { 255,255,255,255 };
@@ -172,6 +172,7 @@ u08  net_compare_ip(const u08 *a, const u08 *b)
   return 1;
 }
 
+#if 0
 u08 net_is_my_subnet(const u08 *ip)
 {
   const u08 *my_ip = net_get_ip();
@@ -185,5 +186,6 @@ u08 net_is_my_subnet(const u08 *ip)
   }
   return 1;
 }
+#endif
 
 

@@ -212,7 +212,7 @@ u08 plip_recv(plip_packet_t *pkt)
     pkt->crc = crc;
     status = get_next_word(&type, 1, PLIP_STATE_TYPE);
   }
-  size -= 4;
+  size -= 2;
   
   // read src addr
   if(status == PLIP_STATUS_OK) {

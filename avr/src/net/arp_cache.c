@@ -52,12 +52,7 @@ static struct arp_cache_s arp_cache[ARP_CACHE_SIZE];
 
 static u08 *get_ip(u08 idx)
 {
-  // index 0 is gateway
-  if(idx == 0) {
-    return param.ip_gw_addr;
-  } else {
-    return param.arp_ip[idx-1];
-  }
+  return param.arp_ip[idx];
 }
 
 static u08 find_ip(const u08 *ip)
@@ -155,7 +150,7 @@ void arp_cache_clear(void)
   arp_cache[0].usage = 0;
   net_copy_mac(net_zero_mac, arp_cache[0].mac);
   
-  for(u08 i=1;i<ARP_CACHE_SIZE;i++) {
+  for(u08 i=0;i<ARP_CACHE_SIZE;i++) {
     arp_cache[i].state = ARP_STATE_IDLE;
     arp_cache[i].usage = 0;
     net_copy_mac(net_zero_mac, arp_cache[i].mac);
@@ -261,11 +256,6 @@ void arp_cache_worker(u08 *buf, net_tx_packet_func tx_func)
 
 const u08 *arp_cache_find_mac(const u08 *ip)
 {
-  // if IP addr is not on my subnet then resolve IP addr of gateway
-  if(!net_is_my_subnet(ip)) {
-    ip = net_get_gateway();
-  }
-  
   // look through cache 
   for(u08 i=0;i<ARP_CACHE_SIZE;i++) {
     struct arp_cache_s *ac = &arp_cache[i];

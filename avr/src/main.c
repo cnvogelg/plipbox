@@ -56,19 +56,6 @@ static void init_hw(void)
   spi_init();
 }
 
-static void init_eth(void)
-{  
-  uart_send_pstring(PSTR("eth rev: "));
-  u08 rev = enc28j60_init(net_get_mac());
-  uart_send_hex_byte_crlf(rev);
-  // if no ethernet controller found then panic
-  if(rev == 0) {
-    uart_send_pstring(PSTR("NOT FOUND! PANIC!!\r\n"));
-    // can't proceed :(
-    while(1) {}
-  }  
-}
-
 int main (void)
 {
   init_hw();
@@ -82,22 +69,20 @@ int main (void)
   param_dump();
   uart_send_crlf();
 
-  // init ethernet controller
-  init_eth();
-  
   eth_rx_init();
   plip_rx_init();
   plip_tx_init();
   
   // main loop
   while(1) {
-    u08 eth_state = eth_state_worker();
     u08 plip_state = plip_state_worker();
-    u08 eth_online = (eth_state == ETH_STATE_ONLINE);
     u08 plip_online = (plip_state == PLIP_STATE_ONLINE);
+    u08 eth_state = eth_state_worker(plip_online);
+    u08 eth_online = (eth_state == ETH_STATE_ONLINE);
     
     eth_rx_worker(eth_state, plip_online);
     plip_rx_worker(plip_state, eth_online);
+    plip_tx_worker(plip_online);
     
     cmd_worker();
   }

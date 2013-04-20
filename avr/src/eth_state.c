@@ -39,7 +39,7 @@
 #include "uart.h"
 #include "pkt_buf.h"
 
-static u08 state = ETH_STATE_OFFLINE;
+static u08 state = ETH_STATE_DISABLED;
 static u16 my_timer;
 
 static u08 time_passed(void)
@@ -51,27 +51,31 @@ static u08 time_passed(void)
   return 0;
 }
 
-static u08 link_up(void)
+u08 eth_state_worker(u08 plip_online)
 {
-  return ETH_STATE_WAIT_ARP;
-}
-
-static u08 wait_arp(void)
-{
-#ifdef HAVE_NAT
-  if(arp_cache_get_gw_mac() == 0) {
-    return ETH_STATE_WAIT_ARP;
-  } else {
-    return ETH_STATE_START_NET;
-  }
-#else
-  return ETH_STATE_START_NET;
-#endif  
-}
-
-u08 eth_state_worker(void)
-{
+  u08 rev;
+  
   switch(state) {
+    case ETH_STATE_DISABLED:
+      // if plip is online then setup ethernet
+      if(plip_online) {
+        state = ETH_STATE_INIT;
+      }
+      break;
+    case ETH_STATE_INIT:
+      uart_send_pstring(PSTR(" eth: init\r\n"));
+      rev = enc28j60_init(net_get_mac());
+      if(rev != 0) {
+        state = ETH_STATE_OFFLINE;
+      } else {
+        state = ETH_STATE_RETRY_INIT;
+      }
+      break;
+    case ETH_STATE_RETRY_INIT:
+      if(time_passed()) {
+        state = ETH_STATE_INIT;
+      }  
+      break;
     case ETH_STATE_OFFLINE:
       if(time_passed()) {
         // check if eth adapter is online
@@ -79,40 +83,33 @@ u08 eth_state_worker(void)
           state = ETH_STATE_LINK_UP;
         }
       }
-      break;
-      
-    case ETH_STATE_LINK_UP:
-      uart_send_pstring(PSTR("eth: link up\r\n"));
-      state = link_up();
-      break;
-    case ETH_STATE_WAIT_ARP:
-      if(!enc28j60_is_link_up()) {
-        state = ETH_STATE_LINK_DOWN;
-      } else {
-        state = wait_arp();
+      if(!plip_online) {
+        state = ETH_STATE_EXIT;
       }
       break;
-    case ETH_STATE_START_NET:
-      uart_send_pstring(PSTR("eth: start net\r\n"));
+    case ETH_STATE_LINK_UP:
+      uart_send_pstring(PSTR(" eth: link up\r\n"));
       state = ETH_STATE_ONLINE;
       break;
-      
     case ETH_STATE_ONLINE:
       if(time_passed()) {
         // check if eth adapter went offline
         if(!enc28j60_is_link_up()) {
-          state = ETH_STATE_STOP_NET;
+          state = ETH_STATE_LINK_DOWN;
         }
       }  
-      break;
-    
-    case ETH_STATE_STOP_NET:
-      uart_send_pstring(PSTR("eth: stop net\r\n"));
-      state = ETH_STATE_LINK_DOWN;
+      if(!plip_online) {
+        state = ETH_STATE_EXIT;
+      }
       break;
     case ETH_STATE_LINK_DOWN:
-      uart_send_pstring(PSTR("eth: link down\r\n"));
+      uart_send_pstring(PSTR(" eth: link down\r\n"));
       state = ETH_STATE_OFFLINE;
+      break;
+    case ETH_STATE_EXIT:
+      uart_send_pstring(PSTR(" eth: exit\r\n"));
+      state = ETH_STATE_DISABLED;
+      enc28j60_power_down();
       break;
   }
   return state;

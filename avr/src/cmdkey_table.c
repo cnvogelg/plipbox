@@ -35,7 +35,6 @@
 #include "net/udp.h"
 #include "net/eth.h"
 #include "net/bootp.h"
-#include "net/dhcp.h"
 
 #include "pkt_buf.h"
 #include "enc28j60.h"
@@ -109,6 +108,7 @@ COMMAND_KEY(cmd_bootp_test)
 
 COMMAND_KEY(cmd_dhcp_test)
 {
+#if 0
   u16 off = dhcp_begin_eth_pkt_multicast(pkt_buf, BOOTP_REQUEST);
   u08 *opt = pkt_buf + off;
   opt = dhcp_add_type(opt, DHCP_TYPE_DISCOVER);
@@ -116,6 +116,7 @@ COMMAND_KEY(cmd_dhcp_test)
   u16 size = dhcp_finish_eth_pkt(pkt_buf, BOOTP_MIN_SIZE);
   enc28j60_packet_tx(pkt_buf, size);
   uart_send_pstring(PSTR("DHCP!\r\n"));
+#endif
 }
 
 cmdkey_table_t cmdkey_table[] = {

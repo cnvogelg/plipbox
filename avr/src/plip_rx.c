@@ -33,6 +33,7 @@
 #include "net/arp.h"
 #include "net/icmp.h"
 
+#include "plip_state.h"
 #include "pkt_buf.h"
 #include "enc28j60.h"
 #include "eth_tx.h"
@@ -42,6 +43,7 @@
 #include "uart.h"
 #include "uartutil.h"
 #include "param.h"
+#include "debug.h"
 
 static u08 offset;
 
@@ -83,7 +85,7 @@ void plip_rx_init(void)
   plip_recv_init(begin_rx, transfer_rx, end_rx);
 }
 
-static void send_prefix(void)
+static void uart_send_prefix(void)
 {
   uart_send_pstring(PSTR("plip(rx): "));
 }
@@ -97,8 +99,9 @@ static void handle_ip_pkt(plip_packet_t *pkt, u08 eth_online)
     eth_tx_send(ETH_TYPE_IPV4, pkt->size, ETH_HDR_SIZE, pkt->dst_addr);
   } else {
     // no ethernet online -> we have to drop packet
-    send_prefix();
-    uart_send_pstring(PSTR("DROP ip pkt"));
+    uart_send_prefix();
+    uart_send_pstring(PSTR("IP: DROP!"));
+    uart_send_crlf();
   }
 }
 
@@ -109,77 +112,92 @@ static void handle_arp_pkt(plip_packet_t *pkt, u08 eth_online)
   
   // make sure its an IPv4 ARP packet
   if(!arp_is_ipv4(arp_buf, arp_size)) {
-    send_prefix();
-    uart_send_pstring(PSTR("wrong ARP type"));
+    uart_send_prefix();
+    uart_send_pstring(PSTR("ARP: type?"));
     return;
   }
-  
-  // make sure its an ARP request
-  if(arp_get_op(arp_buf) != ARP_REQUEST) {
-    send_prefix();
-    uart_send_pstring(PSTR("no ARP request"));
-    return;
-  }
-  
+
+#ifdef DEBUG
+  debug_dump_arp_pkt(arp_buf, uart_send_prefix);
+#endif
+
   // ARP request should now be something like this:
   // src_mac = Amiga MAC
   // src_ip = Amiga IP
   const u08 *pkt_src_mac = pkt->src_addr;
   const u08 *arp_src_mac = arp_get_src_mac(arp_buf);
+  
   // pkt src and arp src must be the same
   if(!net_compare_mac(pkt_src_mac, arp_src_mac)) {
-    send_prefix();
-    uart_send_pstring(PSTR("ARP pkt!=src mac"));
+    uart_send_prefix();
+    uart_send_pstring(PSTR("ARP: pkt!=src mac!"));
+    uart_send_crlf();
     return;
   }
+    
+  // send ARP packet to ethernet
+  if(eth_online) {
+    eth_tx_send(ETH_TYPE_ARP, arp_size, ETH_HDR_SIZE, pkt->dst_addr);
+  } else {
+    // no ethernet online -> we have to drop packet
+    uart_send_prefix();
+    uart_send_pstring(PSTR("ARP: DROP!"));
+    uart_send_crlf();
+  }
+}
+
+static u08 update_my_mac(plip_packet_t *pkt)
+{
+  // update mac if its not a broadcast or zero mac
+  if(!net_compare_bcast_mac(pkt->src_addr) && !net_compare_zero_mac(pkt->src_addr)) {
+    net_copy_mac(pkt->src_addr, net_get_mac());
+   
+    uart_send_prefix();
+    uart_send_pstring(PSTR("UPDATE: mac="));
+    net_dump_mac(net_get_mac());
+    uart_send_crlf();
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+static u08 has_mac;
+
+void plip_rx_reset_config(void)
+{
+  has_mac = 0;
+}
   
-  // update values in zero conf mode
-  const u08 *arp_src_ip = arp_get_src_ip(arp_buf);
-  if(net_zero_conf()) {
-    net_copy_mac(arp_src_mac, net_get_mac());
-    net_copy_ip(arp_src_ip, net_get_ip());    
-  }
-  
-  // is for myself?
-  const u08 *arp_tgt_ip = arp_get_tgt_ip(arp_buf);
-  if(net_compare_ip(arp_src_ip, arp_tgt_ip)) {
-    // generate reply from request
-    arp_make_reply(arp_buf);
-     
-    // send reply via plip
-    u08 status = plip_tx_send(0,arp_size,arp_size);
-    if(status != PLIP_STATUS_OK) {
-      send_prefix();
-      uart_send_pstring(PSTR("arp tx fail!\r\n"));
-    }
-  }
-  // other ARP target
-  else {
-    if(eth_online) {
-      const u08 *arp_tgt_mac = arp_get_tgt_mac(arp_buf);
-      eth_tx_send(ETH_TYPE_ARP, arp_size, arp_size, arp_tgt_mac);
-    } else {
-      // no ethernet online -> we have to drop packet
-      send_prefix();
-      uart_send_pstring(PSTR("DROP arp pkt"));      
-    }
-  }
+u08 plip_rx_is_configured(void)
+{
+  return has_mac;
 }
 
 void plip_rx_worker(u08 plip_state, u08 eth_online)
 {
+  // operate only in WAIT_CONFIG or ONLINE 
+  if((plip_state != PLIP_STATE_WAIT_CONFIG) && (plip_state != PLIP_STATE_ONLINE)) {
+    return;
+  }
+  
   // do we have a PLIP packet waiting?
   if(plip_can_recv() == PLIP_STATUS_OK) {
     // receive PLIP packet and store it in eth chip tx buffer
     // also keep a copy in our local pkt_buf (up to max size)
     u08 status = plip_recv(&pkt);
-    
-    // report receiption error
-    if(status != PLIP_STATUS_OK) {
-      send_prefix();
-      uart_send_pstring(PSTR("recv err="));
-      uart_send_hex_byte_crlf(status);
-    } else {
+    if(status == PLIP_STATUS_OK) {
+#ifdef DEBUG
+      debug_dump_plip_pkt(&pkt, uart_send_prefix);
+#endif
+
+      // update mac?
+      if(!has_mac) {
+        if(update_my_mac(&pkt)) {
+          has_mac = 1;
+        }
+      }
+
       // got a valid packet from plip -> check type
       u16 type = pkt.type;
       // handle IP packet
@@ -192,10 +210,15 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
       }
       // unknown packet type
       else {
-        send_prefix();
+        uart_send_prefix();
         uart_send_pstring(PSTR("type? "));
         uart_send_hex_word_crlf(type);
       }
+    } else {
+      // report receiption error
+      uart_send_prefix();
+      uart_send_pstring(PSTR("recv? "));
+      uart_send_hex_byte_crlf(status);
     }
   }
 }
