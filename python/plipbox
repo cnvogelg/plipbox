@@ -38,6 +38,12 @@ def dump(data):
       print
   print
 
+def decode_mac(mac):
+  res = []
+  for a in mac:
+    res.append("%02x" % a)
+  return ":".join(res)
+
 vpar = vpar.VPar(par_name,verbose=args.debug)
 mp = magplip.MagPlip(vpar)
 
@@ -119,6 +125,7 @@ try:
       if pkt == None:
         break
       log("rx size %d delta %0.2f type %04x" % (len(pkt.data),delta,pkt.ptype))
+      log("src=%s tgt=%s" % (decode_mac(pkt.src), decode_mac(pkt.tgt)))
       if pkt.ptype == 0x806: # ARP
         handle_arp(mp, pkt)
       elif pkt.ptype == 0x800: # IP

@@ -587,6 +587,26 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 }
 /*E*/
 
+PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame)
+{
+   int i;
+   BOOL broadcast; 
+   
+   memcpy(req->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
+   memcpy(req->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
+   
+   broadcast = TRUE;
+   for(i=0;i<PLIP_ADDRFIELDSIZE;i++) {
+      if(frame->pf_DstAddr[i] != 0xff) {
+         broadcast = FALSE;
+         break;
+      }
+   }
+   if(broadcast) {
+      req->ios2_Req.io_Flags = SANA2IOB_BCAST;
+   }
+}
+
    /*
    ** reading packets
    */
@@ -645,9 +665,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	    }
 
 	    got->ios2_Req.io_Flags = 0;
-	    memcpy(got->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
-	    memcpy(got->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
 	    got->ios2_DataLength = datasize;
+            fillreadreq(got, frame);
 
 	    d(("packet received, satisfying S2Request\n"));
 	    DevTermIO(pb, got);
@@ -695,9 +714,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 	 }
 	 
 	 got->ios2_Req.io_Flags = 0;
-	 memcpy(got->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
-	 memcpy(got->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
 	 got->ios2_DataLength = datasize;
+         fillreadreq(got, frame);
 
 	 d(("orphan read\n"));
 
