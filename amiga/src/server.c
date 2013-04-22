@@ -130,7 +130,7 @@ typedef enum { AW_OK, AW_ABORTED, AW_BUFFER_ERROR, AW_ERROR } AW_RESULT;
 
    /* return val, cut to min or max if exceeding range */
 #define BOUNDS(val, min, max) ((val) <= (max) ? ((val) >= (min) ? (val) :\
-							 (min)) : (max))
+                                                         (min)) : (max))
 
 /*E*/
 /*F*/ /* imports */
@@ -175,11 +175,11 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 #  define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
 #  define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
 #  define PARINIT(b)      SETCIAINPUT;                                       \
-			ciab.ciaddra &= ~HS_LINE_MASK; \
-			ciab.ciaddra |= HS_REQUEST_MASK | CIAF_PRTRSEL
+                        ciab.ciaddra &= ~HS_LINE_MASK; \
+                        ciab.ciaddra |= HS_REQUEST_MASK | CIAF_PRTRSEL
 #  define PAREXIT \
-			ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
-			ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
+                        ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
+                        ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
 #  define TESTLINE(b)     (ciab.ciapra & HS_LINE_MASK)
 #  define SETREQUEST(b)   ciab.ciapra |= HS_REQUEST_MASK
 #  define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQUEST_MASK
@@ -200,58 +200,58 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    {
       if (CIAABase = OpenResource("ciaa.resource"))
       {
-	 CiaBase = CIAABase;
+         CiaBase = CIAABase;
 
-	 d(("ciabase is %lx\n",CiaBase));
+         d(("ciabase is %lx\n",CiaBase));
 
-	 /* obtain exclusive access to the parallel hardware */
-	 if (!AllocMiscResource(MR_PARALLELPORT, pb->pb_DevNode.lib_Node.ln_Name))
-	 {
-	    pb->pb_AllocFlags |= 1;
-	    if (!AllocMiscResource(MR_PARALLELBITS, pb->pb_DevNode.lib_Node.ln_Name))
-	    {
-	       pb->pb_AllocFlags |= 2;
+         /* obtain exclusive access to the parallel hardware */
+         if (!AllocMiscResource(MR_PARALLELPORT, pb->pb_DevNode.lib_Node.ln_Name))
+         {
+            pb->pb_AllocFlags |= 1;
+            if (!AllocMiscResource(MR_PARALLELBITS, pb->pb_DevNode.lib_Node.ln_Name))
+            {
+               pb->pb_AllocFlags |= 2;
 
-	       /* Add our interrupt to handle CIAICRB_FLG.
-	       ** This is also cia.resource means of granting exclusive
-	       ** access to the related registers in the CIAs.
-	       */
-	       pb->pb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
-	       pb->pb_Interrupt.is_Node.ln_Pri  = 127;
-	       pb->pb_Interrupt.is_Node.ln_Name = SERVERTASKNAME;
-	       pb->pb_Interrupt.is_Data         = (APTR)pb;
-	       pb->pb_Interrupt.is_Code         = (VOID (*)())&interrupt;
+               /* Add our interrupt to handle CIAICRB_FLG.
+               ** This is also cia.resource means of granting exclusive
+               ** access to the related registers in the CIAs.
+               */
+               pb->pb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
+               pb->pb_Interrupt.is_Node.ln_Pri  = 127;
+               pb->pb_Interrupt.is_Node.ln_Name = SERVERTASKNAME;
+               pb->pb_Interrupt.is_Data         = (APTR)pb;
+               pb->pb_Interrupt.is_Code         = (VOID (*)())&interrupt;
 
-	       /* We must Disable() bcos there could be an interrupt already
-	       ** waiting for us. We may, however, not Able/SetICR() before
-	       ** we have access!
-	       */
-	       Disable();
-	       if (!AddICRVector(CIAABase, CIAICRB_FLG, &pb->pb_Interrupt))
-	       {
-		  DISABLEINT;                       /* this is what I meant */
-		  rc = TRUE;
-	       }
-	       Enable();
+               /* We must Disable() bcos there could be an interrupt already
+               ** waiting for us. We may, however, not Able/SetICR() before
+               ** we have access!
+               */
+               Disable();
+               if (!AddICRVector(CIAABase, CIAICRB_FLG, &pb->pb_Interrupt))
+               {
+                  DISABLEINT;                       /* this is what I meant */
+                  rc = TRUE;
+               }
+               Enable();
 
-	       if (rc)
-	       {
-		  pb->pb_AllocFlags |= 4;
-		  PARINIT(pb);    /* cia to input, handshake in/out setting */
-		  CLEARREQUEST(pb);                /* setup handshake lines */
-		  CLEARINT;                         /* clear this interrupt */
-		  ENABLEINT;                            /* allow interrupts */
-	       }
+               if (rc)
+               {
+                  pb->pb_AllocFlags |= 4;
+                  PARINIT(pb);    /* cia to input, handshake in/out setting */
+                  CLEARREQUEST(pb);                /* setup handshake lines */
+                  CLEARINT;                         /* clear this interrupt */
+                  ENABLEINT;                            /* allow interrupts */
+               }
 
-	    }
-	    else
-	       d(("no parallelbits\n"));
-	 }
-	 else
-	    d(("no parallelport\n"));
+            }
+            else
+               d(("no parallelbits\n"));
+         }
+         else
+            d(("no parallelport\n"));
       }
       else
-	 d(("no misc resource\n"));
+         d(("no misc resource\n"));
    }
    else
       d(("no misc resource\n"));
@@ -336,15 +336,15 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    {
       if (!hwattach(pb))
       {
-	 d(("error going online\n"));
-	 rc = FALSE;
+         d(("error going online\n"));
+         rc = FALSE;
       }
       else
       {
-	 GetSysTime(&pb->pb_DevStats.LastStart);
-	 pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
-	 DoEvent(pb, S2EVENT_ONLINE);
-	 d(("i'm now online!\n"));
+         GetSysTime(&pb->pb_DevStats.LastStart);
+         pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
+         DoEvent(pb, S2EVENT_ONLINE);
+         d(("i'm now online!\n"));
       }
    }
 
@@ -382,8 +382,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    {
       if (ior->ios2_WireError & event)
       {
-	 Remove((struct Node*)ior);
-	 DevTermIO(pb, ior);
+         Remove((struct Node*)ior);
+         DevTermIO(pb, ior);
       }
    }
    
@@ -442,20 +442,20 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 
       if (pb->pb_ArbitrationDelay > 0)
       {
-	 pb->pb_CollReq.tr_time.tv_secs    = 0;
-	 pb->pb_CollReq.tr_time.tv_micro   = pb->pb_ArbitrationDelay;
-	 pb->pb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
-	 DoIO((struct IORequest*)&pb->pb_CollReq);
+         pb->pb_CollReq.tr_time.tv_secs    = 0;
+         pb->pb_CollReq.tr_time.tv_micro   = pb->pb_ArbitrationDelay;
+         pb->pb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
+         DoIO((struct IORequest*)&pb->pb_CollReq);
       }
 #endif
 
       if (!TESTLINE(pb))                      /* is the line still free ? */
-	 having_line = TRUE;
+         having_line = TRUE;
       else
       {
-	 if (!(pb->pb_Flags & PLIPF_RECEIVING))
-	    CLEARREQUEST(pb);                         /* reset line state */
-	 d2(("couldn't get the line-1\n"));
+         if (!(pb->pb_Flags & PLIPF_RECEIVING))
+            CLEARREQUEST(pb);                         /* reset line state */
+         d2(("couldn't get the line-1\n"));
       }
    }
    else d2(("couldn't get the line-2\n"));
@@ -466,41 +466,41 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 
       if (!(pb->pb_Flags & PLIPF_RECEIVING))
       {
-	 d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
-						      ios2->ios2_DataLength));
+         d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
+                                                      ios2->ios2_DataLength));
 
-	 frame->pf_Type = (USHORT)ios2->ios2_PacketType;
-	 frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2;
-	 memcpy(frame->pf_SrcAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
-	 memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
+         frame->pf_Type = (USHORT)ios2->ios2_PacketType;
+         frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2;
+         memcpy(frame->pf_SrcAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
+         memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
 
-	 bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
+         bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
 
-	 if (!(*bm->bm_CopyFromBuffer)((UBYTE*)(frame+1),
-				     ios2->ios2_Data, ios2->ios2_DataLength))
-	 {
-	    rc = AW_BUFFER_ERROR;
-	    CLEARREQUEST(pb);                         /* reset line state */
-	 }
-	 else
-	 {
-	    /* wait until I/O block is safe to be reused */
-	    while(!pb->pb_TimeoutSet) Delay(1L);
-	    pb->pb_TimeoutReq.tr_time.tv_secs = 0;
-	    pb->pb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
-	    pb->pb_TimeoutSet = 0;
-	    SendIO((struct IORequest*)&pb->pb_TimeoutReq);
-	    rc = hwsend(pb) ? AW_OK : AW_ERROR;
-	    AbortIO((struct IORequest*)&pb->pb_TimeoutReq);
+         if (!(*bm->bm_CopyFromBuffer)((UBYTE*)(frame+1),
+                                     ios2->ios2_Data, ios2->ios2_DataLength))
+         {
+            rc = AW_BUFFER_ERROR;
+            CLEARREQUEST(pb);                         /* reset line state */
+         }
+         else
+         {
+            /* wait until I/O block is safe to be reused */
+            while(!pb->pb_TimeoutSet) Delay(1L);
+            pb->pb_TimeoutReq.tr_time.tv_secs = 0;
+            pb->pb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
+            pb->pb_TimeoutSet = 0;
+            SendIO((struct IORequest*)&pb->pb_TimeoutReq);
+            rc = hwsend(pb) ? AW_OK : AW_ERROR;
+            AbortIO((struct IORequest*)&pb->pb_TimeoutReq);
 #if DEBUG&8
-	    if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->pf_Size));
+            if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->pf_Size));
 #endif
-	 }
+         }
       }
       else
       {
-	 d4(("arbitration error!\n"));
-	 rc = AW_ABORTED;
+         d4(("arbitration error!\n"));
+         rc = AW_ABORTED;
       }
    }
    else
@@ -522,64 +522,64 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    {
       if (pb->pb_Flags & PLIPF_RECEIVING)
       {
-	 d(("incoming data!"));
-	 break;
+         d(("incoming data!"));
+         break;
       }
 
       code = arbitratedwrite(pb, currentwrite);
 
       if (code == AW_ABORTED)                         /* arbitration failed */
       {
-	 pb->pb_Flags |= PLIPF_COLLISION;
-	 d(("couldn't get the line, trying again later\n"));
-	 pb->pb_SpecialStats[S2SS_COLLISIONS].Count++;
-	 d(("pb->pb_SpecialStats[S2SS_COLLISIONS].Count = %ld\n",pb->pb_SpecialStats[S2SS_COLLISIONS].Count));
-	 if ((currentwrite->ios2_Req.io_Error++) > pb->pb_Retries)
-	 {
-	    pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
-	    d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
-	    currentwrite->ios2_Req.io_Error = S2ERR_TX_FAILURE;
-	    currentwrite->ios2_WireError = S2WERR_TOO_MANY_RETIRES;
-	    Remove((struct Node*)currentwrite);
-	    DevTermIO(pb, currentwrite);
-	 }
-	 break;
+         pb->pb_Flags |= PLIPF_COLLISION;
+         d(("couldn't get the line, trying again later\n"));
+         pb->pb_SpecialStats[S2SS_COLLISIONS].Count++;
+         d(("pb->pb_SpecialStats[S2SS_COLLISIONS].Count = %ld\n",pb->pb_SpecialStats[S2SS_COLLISIONS].Count));
+         if ((currentwrite->ios2_Req.io_Error++) > pb->pb_Retries)
+         {
+            pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
+            d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
+            currentwrite->ios2_Req.io_Error = S2ERR_TX_FAILURE;
+            currentwrite->ios2_WireError = S2WERR_TOO_MANY_RETIRES;
+            Remove((struct Node*)currentwrite);
+            DevTermIO(pb, currentwrite);
+         }
+         break;
       }
       else if (code == AW_BUFFER_ERROR)  /* BufferManagement callback error */
       {
-	 d(("buffer error\n"));
-	 DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
-	 pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
-	 d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
-	 currentwrite->ios2_Req.io_Error = S2ERR_SOFTWARE;
-	 currentwrite->ios2_WireError = S2WERR_BUFF_ERROR;
-	 Remove((struct Node*)currentwrite);
-	 DevTermIO(pb, currentwrite);
+         d(("buffer error\n"));
+         DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
+         pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
+         d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
+         currentwrite->ios2_Req.io_Error = S2ERR_SOFTWARE;
+         currentwrite->ios2_WireError = S2WERR_BUFF_ERROR;
+         Remove((struct Node*)currentwrite);
+         DevTermIO(pb, currentwrite);
       }
       else if (code == AW_ERROR)
       {
-	 /*
-	 ** this is a real line error, upper levels (e.g. Internet TCP) have
-	 ** to care for reliability!
-	 */
-	 d(("error while transmitting packet\n"));
-	 DoEvent(pb, S2EVENT_ERROR | S2EVENT_TX | S2EVENT_HARDWARE);
-	 pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
-	 d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
-	 currentwrite->ios2_Req.io_Error = S2ERR_TX_FAILURE;
-	 currentwrite->ios2_WireError = S2WERR_GENERIC_ERROR;
-	 Remove((struct Node*)currentwrite);
-	 DevTermIO(pb, currentwrite);
+         /*
+         ** this is a real line error, upper levels (e.g. Internet TCP) have
+         ** to care for reliability!
+         */
+         d(("error while transmitting packet\n"));
+         DoEvent(pb, S2EVENT_ERROR | S2EVENT_TX | S2EVENT_HARDWARE);
+         pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
+         d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
+         currentwrite->ios2_Req.io_Error = S2ERR_TX_FAILURE;
+         currentwrite->ios2_WireError = S2WERR_GENERIC_ERROR;
+         Remove((struct Node*)currentwrite);
+         DevTermIO(pb, currentwrite);
       }
       else /*if (code == AW_OK)*/                             /* well done! */
       {
-	 d(("packet transmitted successfully\n"));
-	 pb->pb_DevStats.PacketsSent++;
-	 dotracktype(pb, (ULONG) pb->pb_Frame->pf_Type, 1, 0, currentwrite->ios2_DataLength, 0, 0);
-	 currentwrite->ios2_Req.io_Error = S2ERR_NO_ERROR;
-	 currentwrite->ios2_WireError = S2WERR_GENERIC_ERROR;
-	 Remove((struct Node*)currentwrite);
-	 DevTermIO(pb, currentwrite);
+         d(("packet transmitted successfully\n"));
+         pb->pb_DevStats.PacketsSent++;
+         dotracktype(pb, (ULONG) pb->pb_Frame->pf_Type, 1, 0, currentwrite->ios2_DataLength, 0, 0);
+         currentwrite->ios2_Req.io_Error = S2ERR_NO_ERROR;
+         currentwrite->ios2_WireError = S2WERR_GENERIC_ERROR;
+         Remove((struct Node*)currentwrite);
+         DevTermIO(pb, currentwrite);
       }
    }
 
@@ -640,39 +640,39 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
 
       ObtainSemaphore(&pb->pb_ReadListSem);
 
-	 /* traverse the list of read-requests */
+         /* traverse the list of read-requests */
       for(got = (struct IOSana2Req *)pb->pb_ReadList.lh_Head;
-	  got->ios2_Req.io_Message.mn_Node.ln_Succ;
-	  got = (struct IOSana2Req *)got->ios2_Req.io_Message.mn_Node.ln_Succ )
+          got->ios2_Req.io_Message.mn_Node.ln_Succ;
+          got = (struct IOSana2Req *)got->ios2_Req.io_Message.mn_Node.ln_Succ )
       {
-	    /* check if this one requests for the new packet we got */
-	 if (got->ios2_PacketType == pkttyp )
-	 {
-	    Remove((struct Node*)got);
+            /* check if this one requests for the new packet we got */
+         if (got->ios2_PacketType == pkttyp )
+         {
+            Remove((struct Node*)got);
 
-	    bm = (struct BufferManagement *)got->ios2_BufferManagement;
+            bm = (struct BufferManagement *)got->ios2_BufferManagement;
 
-	    if (!(*bm->bm_CopyToBuffer)(got->ios2_Data, (UBYTE*)(frame+1), datasize))
-	    {
-	       d(("CopyToBuffer: error\n"));
-	       got->ios2_Req.io_Error = S2ERR_SOFTWARE;
-	       got->ios2_WireError = S2WERR_BUFF_ERROR;
-	       DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
-	    }
-	    else
-	    {
-	       got->ios2_Req.io_Error = got->ios2_WireError = 0;
-	    }
+            if (!(*bm->bm_CopyToBuffer)(got->ios2_Data, (UBYTE*)(frame+1), datasize))
+            {
+               d(("CopyToBuffer: error\n"));
+               got->ios2_Req.io_Error = S2ERR_SOFTWARE;
+               got->ios2_WireError = S2WERR_BUFF_ERROR;
+               DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
+            }
+            else
+            {
+               got->ios2_Req.io_Error = got->ios2_WireError = 0;
+            }
 
-	    got->ios2_Req.io_Flags = 0;
-	    got->ios2_DataLength = datasize;
+            got->ios2_Req.io_Flags = 0;
+            got->ios2_DataLength = datasize;
             fillreadreq(got, frame);
 
-	    d(("packet received, satisfying S2Request\n"));
-	    DevTermIO(pb, got);
-	    got = NULL;
-	    break;
-	 }
+            d(("packet received, satisfying S2Request\n"));
+            DevTermIO(pb, got);
+            got = NULL;
+            break;
+         }
       }
 
       ReleaseSemaphore(&pb->pb_ReadListSem);
@@ -702,29 +702,29 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
 
       if (got)
       {
-	 bm = (struct BufferManagement *)got->ios2_BufferManagement;
-	 if (!(*bm->bm_CopyToBuffer)(got->ios2_Data, (UBYTE*)(frame+1), datasize))
-	 {
-	    got->ios2_Req.io_Error = S2ERR_SOFTWARE;
-	    got->ios2_WireError = S2WERR_BUFF_ERROR;
-	 }
-	 else
-	 {
-	    got->ios2_Req.io_Error = got->ios2_WireError = 0;
-	 }
-	 
-	 got->ios2_Req.io_Flags = 0;
-	 got->ios2_DataLength = datasize;
+         bm = (struct BufferManagement *)got->ios2_BufferManagement;
+         if (!(*bm->bm_CopyToBuffer)(got->ios2_Data, (UBYTE*)(frame+1), datasize))
+         {
+            got->ios2_Req.io_Error = S2ERR_SOFTWARE;
+            got->ios2_WireError = S2WERR_BUFF_ERROR;
+         }
+         else
+         {
+            got->ios2_Req.io_Error = got->ios2_WireError = 0;
+         }
+         
+         got->ios2_Req.io_Flags = 0;
+         got->ios2_DataLength = datasize;
          fillreadreq(got, frame);
 
-	 d(("orphan read\n"));
+         d(("orphan read\n"));
 
-	 DevTermIO(pb, got);
+         DevTermIO(pb, got);
       }
       else
       {
-	 dotracktype(pb, pkttyp, 0, 0, 0, 0, 1);
-	 d(("packet thrown away...\n"));
+         dotracktype(pb, pkttyp, 0, 0, 0, 0, 1);
+         d(("packet thrown away...\n"));
       }
    }
 }
@@ -749,43 +749,43 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
    {
       if (pb->pb_Flags & PLIPF_RECEIVING)
       {
-	 d(("incoming data!"));
-	 break;
+         d(("incoming data!"));
+         break;
       }
 
       d(("sana2req %ld from serverport\n", ios2->ios2_Req.io_Command));
 
       switch (ios2->ios2_Req.io_Command)
       {
-	 case S2_ONLINE:
-	    if (!goonline(pb))
-	    {
-	       ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
-	       ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-	    }
-	 break;
+         case S2_ONLINE:
+            if (!goonline(pb))
+            {
+               ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+               ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+            }
+         break;
 
-	 case S2_OFFLINE:
-	    gooffline(pb);
-	    rejectpackets(pb); /* reject all pending requests */
-	 break;
+         case S2_OFFLINE:
+            gooffline(pb);
+            rejectpackets(pb); /* reject all pending requests */
+         break;
 
-	 case S2_CONFIGINTERFACE:
-	    if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
-	    {
-	       memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
-	       if (!goonline(pb))
-	       {
-		  ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
-		  ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-	       }
-	    }
-	    else
-	    {
-	       ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
-	       ios2->ios2_WireError = S2WERR_IS_CONFIGURED;
-	    }
-	 break;
+         case S2_CONFIGINTERFACE:
+            if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
+            {
+               memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
+               if (!goonline(pb))
+               {
+                  ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+                  ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+               }
+            }
+            else
+            {
+               ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
+               ios2->ios2_WireError = S2WERR_IS_CONFIGURED;
+            }
+         break;
       }
 
       if (ios2) DevTermIO(pb,ios2);
@@ -835,48 +835,48 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
       
       if(rda)
       {
-	 if (args.timeout)
-	    pb->pb_Timeout =
-		  BOUNDS(*args.timeout, PLIP_MINTIMEOUT, PLIP_MAXTIMEOUT);
+         if (args.timeout)
+            pb->pb_Timeout =
+                  BOUNDS(*args.timeout, PLIP_MINTIMEOUT, PLIP_MAXTIMEOUT);
 
-	 if (args.priority)
-	    SetTaskPri((struct Task*)pb->pb_Server,
-		  BOUNDS(*args.priority, PLIP_MINPRIORITY, PLIP_MAXPRIORITY));
+         if (args.priority)
+            SetTaskPri((struct Task*)pb->pb_Server,
+                  BOUNDS(*args.priority, PLIP_MINPRIORITY, PLIP_MAXPRIORITY));
 
-	 if (args.mtu)
-	    pb->pb_MTU = BOUNDS(*args.mtu, PLIP_MINMTU, PLIP_MAXMTU);
+         if (args.mtu)
+            pb->pb_MTU = BOUNDS(*args.mtu, PLIP_MINMTU, PLIP_MAXMTU);
 
-	 if (args.bps)
-	    pb->pb_ReportBPS = BOUNDS(*args.bps, PLIP_MINBPS, PLIP_MAXBPS);
+         if (args.bps)
+            pb->pb_ReportBPS = BOUNDS(*args.bps, PLIP_MINBPS, PLIP_MAXBPS);
 
-	 if (args.retries)
-	    pb->pb_Retries =
-		     BOUNDS(*args.retries, PLIP_MINRETRIES, PLIP_MAXRETRIES);
+         if (args.retries)
+            pb->pb_Retries =
+                     BOUNDS(*args.retries, PLIP_MINRETRIES, PLIP_MAXRETRIES);
 
-	 if (args.sendcrc)
-	    pb->pb_Flags |= PLIPF_SENDCRC;
-	  else
-	    pb->pb_Flags &= ~PLIPF_SENDCRC;
+         if (args.sendcrc)
+            pb->pb_Flags |= PLIPF_SENDCRC;
+          else
+            pb->pb_Flags &= ~PLIPF_SENDCRC;
 
-	 if (args.collisiondelay)
-	    pb->pb_CollisionDelay =
-	       BOUNDS(*args.collisiondelay, PLIP_MINCOLLISIONDELAY,
-					    PLIP_MAXCOLLISIONDELAY);
-	 else
-	    pb->pb_CollisionDelay = PLIP_DEFDELAY + (pb->pb_Unit ?
-						  PLIP_DELAYDIFF : 0);
+         if (args.collisiondelay)
+            pb->pb_CollisionDelay =
+               BOUNDS(*args.collisiondelay, PLIP_MINCOLLISIONDELAY,
+                                            PLIP_MAXCOLLISIONDELAY);
+         else
+            pb->pb_CollisionDelay = PLIP_DEFDELAY + (pb->pb_Unit ?
+                                                  PLIP_DELAYDIFF : 0);
 
-	 if (args.arbitrationdelay)
-	    pb->pb_ArbitrationDelay =
-	       BOUNDS(*args.collisiondelay, PLIP_MINARBITRATIONDELAY,
-					    PLIP_MAXARBITRATIONDELAY);
-	 else
-	    pb->pb_ArbitrationDelay = PLIP_DEFARBITRATIONDELAY;
+         if (args.arbitrationdelay)
+            pb->pb_ArbitrationDelay =
+               BOUNDS(*args.collisiondelay, PLIP_MINARBITRATIONDELAY,
+                                            PLIP_MAXARBITRATIONDELAY);
+         else
+            pb->pb_ArbitrationDelay = PLIP_DEFARBITRATIONDELAY;
 
-	 if (args.nospecialstats)
-	    pb->pb_ExtFlags |= PLIPEF_NOSPECIALSTATS;
+         if (args.nospecialstats)
+            pb->pb_ExtFlags |= PLIPEF_NOSPECIALSTATS;
 
-	 FreeArgs(rda);
+         FreeArgs(rda);
       }
 
       Close(SelectInput(oldinput));
@@ -901,70 +901,70 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
    
       if ((pb->pb_ServerPort = CreateMsgPort()))
       {
-	 if ((pb->pb_CollPort = CreateMsgPort()))
-	 {
-	    if ((pb->pb_TimeoutPort = CreateMsgPort()))
-	    {
-	       /* save old exception setup */
-	       pb->pb_OldExcept = SetExcept(0, 0xffffffff); /* turn'em off */
-	       pb->pb_OldExceptCode = pb->pb_Server->pr_Task.tc_ExceptCode;
-	       pb->pb_OldExceptData = pb->pb_Server->pr_Task.tc_ExceptData;
+         if ((pb->pb_CollPort = CreateMsgPort()))
+         {
+            if ((pb->pb_TimeoutPort = CreateMsgPort()))
+            {
+               /* save old exception setup */
+               pb->pb_OldExcept = SetExcept(0, 0xffffffff); /* turn'em off */
+               pb->pb_OldExceptCode = pb->pb_Server->pr_Task.tc_ExceptCode;
+               pb->pb_OldExceptData = pb->pb_Server->pr_Task.tc_ExceptData;
 
-	       /* create new exception setup */
-	       pb->pb_Server->pr_Task.tc_ExceptCode = (APTR)&exceptcode;
-	       pb->pb_Server->pr_Task.tc_ExceptData = (APTR)pb;
-	       SetSignal(0, sigmask = (1 << pb->pb_TimeoutPort->mp_SigBit));
-	       SetExcept(sigmask, sigmask);
+               /* create new exception setup */
+               pb->pb_Server->pr_Task.tc_ExceptCode = (APTR)&exceptcode;
+               pb->pb_Server->pr_Task.tc_ExceptData = (APTR)pb;
+               SetSignal(0, sigmask = (1 << pb->pb_TimeoutPort->mp_SigBit));
+               SetExcept(sigmask, sigmask);
 
-	       /* enter port address */
-	       pb->pb_CollReq.tr_node.io_Message.mn_ReplyPort = pb->pb_CollPort;
-	       if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&pb->pb_CollReq, 0))
-	       {
-		  TimerBase = (struct Library *)pb->pb_CollReq.tr_node.io_Device;
+               /* enter port address */
+               pb->pb_CollReq.tr_node.io_Message.mn_ReplyPort = pb->pb_CollPort;
+               if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&pb->pb_CollReq, 0))
+               {
+                  TimerBase = (struct Library *)pb->pb_CollReq.tr_node.io_Device;
 
-		  /* preset the io command, this will never change */
-		  pb->pb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
+                  /* preset the io command, this will never change */
+                  pb->pb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
 
-		  /* setup the timeout stuff */
-		  pb->pb_TimeoutReq.tr_node.io_Flags = IOF_QUICK;
-		  pb->pb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = pb->pb_TimeoutPort;
-		  pb->pb_TimeoutReq.tr_node.io_Device = pb->pb_CollReq.tr_node.io_Device;
-		  pb->pb_TimeoutReq.tr_node.io_Unit = pb->pb_CollReq.tr_node.io_Unit;
-		  pb->pb_TimeoutReq.tr_node.io_Command = TR_ADDREQUEST;
-		  pb->pb_TimeoutSet = 0xff;
+                  /* setup the timeout stuff */
+                  pb->pb_TimeoutReq.tr_node.io_Flags = IOF_QUICK;
+                  pb->pb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = pb->pb_TimeoutPort;
+                  pb->pb_TimeoutReq.tr_node.io_Device = pb->pb_CollReq.tr_node.io_Device;
+                  pb->pb_TimeoutReq.tr_node.io_Unit = pb->pb_CollReq.tr_node.io_Unit;
+                  pb->pb_TimeoutReq.tr_node.io_Command = TR_ADDREQUEST;
+                  pb->pb_TimeoutSet = 0xff;
 
-		  readargs(pb);
-		  d(("allocating 0x%lx/%ld bytes frame buffer\n",
-				       sizeof(struct PLIPFrame)+pb->pb_MTU,
-				       sizeof(struct PLIPFrame)+pb->pb_MTU));
-		  if ((pb->pb_Frame = AllocVec((ULONG)sizeof(struct PLIPFrame) +
-						  pb->pb_MTU, MEMF_CLEAR|MEMF_ANY)))
-		  {
-		     rc = TRUE;
-		  }
-		  else
-		  {
-		     d(("couldn't allocate frame buffer\n"));
-		  }
-	       }
-	       else
-	       {
-		  d(("couldn't open timer.device"));
-	       }
-	    }
-	    else
-	    {
-	       d(("no port for timeout handling\n"));
-	    }
-	 }
-	 else
-	 {
-	    d(("no port for collision handling\n"));
-	 }
+                  readargs(pb);
+                  d(("allocating 0x%lx/%ld bytes frame buffer\n",
+                                       sizeof(struct PLIPFrame)+pb->pb_MTU,
+                                       sizeof(struct PLIPFrame)+pb->pb_MTU));
+                  if ((pb->pb_Frame = AllocVec((ULONG)sizeof(struct PLIPFrame) +
+                                                  pb->pb_MTU, MEMF_CLEAR|MEMF_ANY)))
+                  {
+                     rc = TRUE;
+                  }
+                  else
+                  {
+                     d(("couldn't allocate frame buffer\n"));
+                  }
+               }
+               else
+               {
+                  d(("couldn't open timer.device"));
+               }
+            }
+            else
+            {
+               d(("no port for timeout handling\n"));
+            }
+         }
+         else
+         {
+            d(("no port for collision handling\n"));
+         }
       }
       else
       {
-	 d(("no server port\n"));
+         d(("no server port\n"));
       }
    }
    else
@@ -998,8 +998,8 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
 
       if (TimerBase)
       {
-	 WaitIO((struct IORequest*)&pb->pb_TimeoutReq);
-	 CloseDevice((struct IORequest*)&pb->pb_CollReq);
+         WaitIO((struct IORequest*)&pb->pb_TimeoutReq);
+         CloseDevice((struct IORequest*)&pb->pb_CollReq);
       }
       DeleteMsgPort(pb->pb_TimeoutPort);
    }
@@ -1027,120 +1027,120 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
 
    if (pb = startup())
    {
-	 /* if we fail to allocate all resources, this flag reminds cleanup()
-	 ** to ReplyMsg() the startup message
-	 */
+         /* if we fail to allocate all resources, this flag reminds cleanup()
+         ** to ReplyMsg() the startup message
+         */
       pb->pb_Flags |= PLIPF_REPLYSS;
 
       if (init(pb))
       {
-	 ULONG recv=0, portsigmask, timersigmask, wmask;
-	 BOOL running, timerqueued = FALSE;
+         ULONG recv=0, portsigmask, timersigmask, wmask;
+         BOOL running, timerqueued = FALSE;
 
-	 /* Ok, we are fine and will tell this mother personally :-) */
-	 pb->pb_Startup->ss_Error = 0;
-	 /* don't forget this, or we will have to keep a warm place */
-	 /* in our coffin for the system */
-	 pb->pb_Flags &= ~PLIPF_REPLYSS;
-	 ReplyMsg((struct Message*)pb->pb_Startup);
+         /* Ok, we are fine and will tell this mother personally :-) */
+         pb->pb_Startup->ss_Error = 0;
+         /* don't forget this, or we will have to keep a warm place */
+         /* in our coffin for the system */
+         pb->pb_Flags &= ~PLIPF_REPLYSS;
+         ReplyMsg((struct Message*)pb->pb_Startup);
 
-	 portsigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
-	 timersigmask = 1 << pb->pb_CollPort->mp_SigBit;
+         portsigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
+         timersigmask = 1 << pb->pb_CollPort->mp_SigBit;
       
-	 wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | pb->pb_IntSigMask | portsigmask | timersigmask;
+         wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | pb->pb_IntSigMask | portsigmask | timersigmask;
 
-	 for(running=TRUE;running;)
-	 {
-	    d(("wmask is 0x%08lx\n", wmask));
+         for(running=TRUE;running;)
+         {
+            d(("wmask is 0x%08lx\n", wmask));
 
-	    if (!(pb->pb_Flags & PLIPF_RECEIVING))
-	       recv = Wait(wmask);
-	    else
-	       SetSignal(0, pb->pb_IntSigMask);
+            if (!(pb->pb_Flags & PLIPF_RECEIVING))
+               recv = Wait(wmask);
+            else
+               SetSignal(0, pb->pb_IntSigMask);
 
-	    /*if (recv & pb->pb_IntSigMask)*/
-	    if (pb->pb_Flags & PLIPF_RECEIVING)
-	    {
-	       d(("received an interrupt\n"));
-	       doreadreqs(pb);
-	    }
+            /*if (recv & pb->pb_IntSigMask)*/
+            if (pb->pb_Flags & PLIPF_RECEIVING)
+            {
+               d(("received an interrupt\n"));
+               doreadreqs(pb);
+            }
 
-	    if (recv & portsigmask)
-	    {
-	       d(("SANA-II request(s)\n"));
-	       dos2reqs(pb);
-	    }
+            if (recv & portsigmask)
+            {
+               d(("SANA-II request(s)\n"));
+               dos2reqs(pb);
+            }
 
-	    if (recv & timersigmask)
-	    {
-	       /* pop message */
-	       AbortIO((struct IORequest*)&pb->pb_CollReq);
-	       WaitIO((struct IORequest*)&pb->pb_CollReq);
-	       timerqueued = FALSE;
-	       d(("timer wakeup\n"));
-	    }
+            if (recv & timersigmask)
+            {
+               /* pop message */
+               AbortIO((struct IORequest*)&pb->pb_CollReq);
+               WaitIO((struct IORequest*)&pb->pb_CollReq);
+               timerqueued = FALSE;
+               d(("timer wakeup\n"));
+            }
 
-	       /* try now to do write requests (if any pending) */
-	    if (!timerqueued)
-	    {
-	       dowritereqs(pb);
+               /* try now to do write requests (if any pending) */
+            if (!timerqueued)
+            {
+               dowritereqs(pb);
 
-		  /* don't let the other side wait too long! */
-	       if (pb->pb_Flags & PLIPF_RECEIVING)
-	       {
-		  d(("received an interrupt\n"));
-		  SetSignal(0, pb->pb_IntSigMask);
-		  doreadreqs(pb);
-	       }
+                  /* don't let the other side wait too long! */
+               if (pb->pb_Flags & PLIPF_RECEIVING)
+               {
+                  d(("received an interrupt\n"));
+                  SetSignal(0, pb->pb_IntSigMask);
+                  doreadreqs(pb);
+               }
 
-	       /*
-	       ** Possible a collision has occurred, which is indicated by a
-	       ** special flag in PLIPBase.
-	       **
-	       ** Using timer.device we periodically will be waked up. This
-	       ** allows us to delay write packets in cases when we cannot get
-	       ** the line immediately.
-	       **
-	       ** If client and server are very close together, regarding the point
-	       ** of performance, the same delay time could even force multiple
-	       ** collisions (at least theoretical, I made no practical tests).
-	       ** Probably a CSMA/CD-like random-timed delay would be ideal.
-	       */
-	       if (pb->pb_Flags & PLIPF_COLLISION)
-	       {
-		  pb->pb_Flags &= ~PLIPF_COLLISION;
-		  pb->pb_CollReq.tr_time.tv_secs    = 0;
-		  pb->pb_CollReq.tr_time.tv_micro   = pb->pb_CollisionDelay;
-		  SendIO((struct IORequest*)&pb->pb_CollReq);
-		  timerqueued = TRUE;
-	       }
-	    }
+               /*
+               ** Possible a collision has occurred, which is indicated by a
+               ** special flag in PLIPBase.
+               **
+               ** Using timer.device we periodically will be waked up. This
+               ** allows us to delay write packets in cases when we cannot get
+               ** the line immediately.
+               **
+               ** If client and server are very close together, regarding the point
+               ** of performance, the same delay time could even force multiple
+               ** collisions (at least theoretical, I made no practical tests).
+               ** Probably a CSMA/CD-like random-timed delay would be ideal.
+               */
+               if (pb->pb_Flags & PLIPF_COLLISION)
+               {
+                  pb->pb_Flags &= ~PLIPF_COLLISION;
+                  pb->pb_CollReq.tr_time.tv_secs    = 0;
+                  pb->pb_CollReq.tr_time.tv_micro   = pb->pb_CollisionDelay;
+                  SendIO((struct IORequest*)&pb->pb_CollReq);
+                  timerqueued = TRUE;
+               }
+            }
 
-	    if (recv & SIGBREAKF_CTRL_C)
-	    {
-	       d(("received break signal\n"));
-	       running = FALSE;
-	    }
-	 }
+            if (recv & SIGBREAKF_CTRL_C)
+            {
+               d(("received break signal\n"));
+               running = FALSE;
+            }
+         }
 
-	 if (timerqueued)
-	 {
-	       /* finnish pending timer requests */
-	    AbortIO((struct IORequest*)&pb->pb_CollReq);
-	    WaitIO((struct IORequest*)&pb->pb_CollReq);
-	 }
+         if (timerqueued)
+         {
+               /* finnish pending timer requests */
+            AbortIO((struct IORequest*)&pb->pb_CollReq);
+            WaitIO((struct IORequest*)&pb->pb_CollReq);
+         }
       }
       else
-	 d(("init() failed\n"));
+         d(("init() failed\n"));
 
       d(("cleaning up\n"));
       cleanup(pb);
 
-	    /* Exec will enable it's scheduler after we're dead. */
+            /* Exec will enable it's scheduler after we're dead. */
       Forbid();
-	    /* signal mother we're done */
+            /* signal mother we're done */
       if (pb->pb_ServerStoppedSigMask)
-	 Signal(pb->pb_Task, pb->pb_ServerStoppedSigMask);
+         Signal(pb->pb_Task, pb->pb_ServerStoppedSigMask);
       pb->pb_Flags |= PLIPF_SERVERSTOPPED;
    }
    else

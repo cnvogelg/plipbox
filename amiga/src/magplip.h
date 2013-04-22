@@ -197,11 +197,11 @@ struct PLIPBase
    UBYTE                       pb_pad1; /* make the following long alligned */
    BPTR                        pb_SegList;               /* pointer to code */
    struct Library          *   pb_MiscBase,          /* various libs & res. */
-			   *   pb_CIAABase,
-			   *   pb_UtilityBase,
-			   *   pb_TimerBase,
-			   *   pb_DOSBase,
-			   *   pb_SysBase;
+                           *   pb_CIAABase,
+                           *   pb_UtilityBase,
+                           *   pb_TimerBase,
+                           *   pb_DOSBase,
+                           *   pb_SysBase;
    struct ServerStartup    *   pb_Startup;            /* main server proces */
    struct Process          *   pb_Server;             /* main server proces */
    struct Task             *   pb_Task;         /* used for server shutdown */
@@ -210,25 +210,25 @@ struct PLIPBase
    ULONG                       pb_IntSigMask;                  /* for speed */
    ULONG                       pb_ServerStoppedSigMask;     /* for shutdown */
    struct MsgPort          *   pb_ServerPort,       /* for IOReq forwarding */
-			   *   pb_TimeoutPort,      /* for timeout handling */
-			   *   pb_CollPort;       /* for collision handling */
+                           *   pb_TimeoutPort,      /* for timeout handling */
+                           *   pb_CollPort;       /* for collision handling */
    struct timerequest          pb_TimeoutReq,       /* for timeout handling */
-			       pb_CollReq;        /* for collision handling */
+                               pb_CollReq;        /* for collision handling */
    struct Sana2DeviceStats     pb_DevStats;            /* SANA-2 wants this */
    struct Sana2SpecialStatRecord
-			       pb_SpecialStats[S2SS_COUNT];
+                               pb_SpecialStats[S2SS_COUNT];
    volatile struct List        pb_ReadList,                  /* the readers */
-			       pb_WriteList,                 /* the writers */
-			       pb_EventList,              /* event tracking */
-			       pb_ReadOrphanList,   /* for spurious packets */
-			       pb_TrackList,                  /* track type */
-			       pb_BufferManagement;          /* Copy-In/Out */
+                               pb_WriteList,                 /* the writers */
+                               pb_EventList,              /* event tracking */
+                               pb_ReadOrphanList,   /* for spurious packets */
+                               pb_TrackList,                  /* track type */
+                               pb_BufferManagement;          /* Copy-In/Out */
    struct SignalSemaphore      pb_EventListSem,     /* protection for lists */
-			       pb_ReadListSem,
-			       pb_WriteListSem,
-			       pb_TrackListSem,
-			       pb_ReadOrphanListSem,
-			       pb_Lock;
+                               pb_ReadListSem,
+                               pb_WriteListSem,
+                               pb_TrackListSem,
+                               pb_ReadOrphanListSem,
+                               pb_Lock;
    ULONG                       pb_Retries;                 /* config values */
    ULONG                       pb_ReportBPS;
    ULONG                       pb_MTU;

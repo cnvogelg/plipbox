@@ -211,11 +211,11 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    {
       if (DOSBase = OpenLibrary("dos.library", 37))
       {
-	 ok = TRUE;
+         ok = TRUE;
       }
       else
       {
-	 d(("no dos\n"));
+         d(("no dos\n"));
       }
 
       if (!ok) CloseLibrary(UtilityBase);
@@ -259,122 +259,122 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
       */
 
       if (!((pb->pb_DevNode.lib_OpenCnt > 1) &&
-	    ((flags & SANA2OPF_MINE)
-	  || (pb->pb_Flags & PLIPF_EXCLUSIVE)
-	  || (unit != pb->pb_Unit))))
+            ((flags & SANA2OPF_MINE)
+          || (pb->pb_Flags & PLIPF_EXCLUSIVE)
+          || (unit != pb->pb_Unit))))
       {
-	 if (flags & SANA2OPF_MINE)
-	    pb->pb_Flags |= PLIPF_EXCLUSIVE;
-	 else
-	    pb->pb_Flags &= ~PLIPF_EXCLUSIVE;
-	 
-	 /*
-	 ** 13.05.96: Detlef Wuerkner <TetiSoft@apg.lahn.de>
-	 ** Rememer unit of 1st OpenDevice()
-	 */
-	 if (pb->pb_DevNode.lib_OpenCnt == 1)
-	    pb->pb_Unit = unit;
+         if (flags & SANA2OPF_MINE)
+            pb->pb_Flags |= PLIPF_EXCLUSIVE;
+         else
+            pb->pb_Flags &= ~PLIPF_EXCLUSIVE;
+         
+         /*
+         ** 13.05.96: Detlef Wuerkner <TetiSoft@apg.lahn.de>
+         ** Rememer unit of 1st OpenDevice()
+         */
+         if (pb->pb_DevNode.lib_OpenCnt == 1)
+            pb->pb_Unit = unit;
 
-	 /* fake ethernet addresses */
-	 pb->pb_CfgAddr[0] = 0x1a;
-	 pb->pb_CfgAddr[1] = 0x11;
-	 pb->pb_CfgAddr[2] = 0xaf;
-	 pb->pb_CfgAddr[3] = 0xa0;
-	 pb->pb_CfgAddr[4] = 0x47;
-	 pb->pb_CfgAddr[5] = 0x11;
+         /* fake ethernet addresses */
+         pb->pb_CfgAddr[0] = 0x1a;
+         pb->pb_CfgAddr[1] = 0x11;
+         pb->pb_CfgAddr[2] = 0xaf;
+         pb->pb_CfgAddr[3] = 0xa0;
+         pb->pb_CfgAddr[4] = 0x47;
+         pb->pb_CfgAddr[5] = 0x11;
 
-	 /*
-	 ** Each opnener get's it's own BufferManagement. This is neccessary
-	 ** since we want to allow several protocol stacks to use PLIP
-	 ** simultaneously.
-	 */
-	 if (bm = AllocVec(sizeof(struct BufferManagement),MEMF_CLEAR|MEMF_PUBLIC))
-	 {
-	    /*
-	    ** We don't care if there actually are buffer management functions,
-	    ** because there might be openers who just want some statistics
-	    ** from us.
-	    */
+         /*
+         ** Each opnener get's it's own BufferManagement. This is neccessary
+         ** since we want to allow several protocol stacks to use PLIP
+         ** simultaneously.
+         */
+         if (bm = AllocVec(sizeof(struct BufferManagement),MEMF_CLEAR|MEMF_PUBLIC))
+         {
+            /*
+            ** We don't care if there actually are buffer management functions,
+            ** because there might be openers who just want some statistics
+            ** from us.
+            */
 #if defined(__SASC) && (__VERSION__ == 6) && (__REVISION__ >= 56)
-	    /* Jippieee! */
-	    bm->bm_CopyToBuffer = (BMFunc)GetTagData(S2_CopyToBuff, NULL,
-			      (struct TagItem *)ios2->ios2_BufferManagement);
-	    bm->bm_CopyFromBuffer = (BMFunc)GetTagData(S2_CopyFromBuff, NULL,
-			      (struct TagItem *)ios2->ios2_BufferManagement);
+            /* Jippieee! */
+            bm->bm_CopyToBuffer = (BMFunc)GetTagData(S2_CopyToBuff, NULL,
+                              (struct TagItem *)ios2->ios2_BufferManagement);
+            bm->bm_CopyFromBuffer = (BMFunc)GetTagData(S2_CopyFromBuff, NULL,
+                              (struct TagItem *)ios2->ios2_BufferManagement);
 #else
-	    /*
-	    ** The type casting below is very beautiful. This is a SAS/C bug:
-	    ** I have to cast the ULONG that I got from GetTagData() to a
-	    ** (void (*)(void)) function pointer. Now I may cast it to (BMFunc),
-	    ** which defines the __asm and register stuff.
-	    **
-	    ** I would call this a cast with ``soft force'', as it seems that
-	    ** I slowly have to make the ULONG being used to the fact of
-	    ** becoming a pointer (``Look, old mathematical chap: didn't you
-	    ** always want to be a pointer? Did you know how less it takes, how
-	    ** mighty the dark side of the force really is?'').
-	    */
-	    bm->bm_CopyToBuffer = (BMFunc)((void (*)())(GetTagData(S2_CopyToBuff, NULL,
-			      (struct TagItem *)ios2->ios2_BufferManagement)));
-	    bm->bm_CopyFromBuffer = (BMFunc)((void (*)())(GetTagData(S2_CopyFromBuff, NULL,
-			      (struct TagItem *)ios2->ios2_BufferManagement)));
+            /*
+            ** The type casting below is very beautiful. This is a SAS/C bug:
+            ** I have to cast the ULONG that I got from GetTagData() to a
+            ** (void (*)(void)) function pointer. Now I may cast it to (BMFunc),
+            ** which defines the __asm and register stuff.
+            **
+            ** I would call this a cast with ``soft force'', as it seems that
+            ** I slowly have to make the ULONG being used to the fact of
+            ** becoming a pointer (``Look, old mathematical chap: didn't you
+            ** always want to be a pointer? Did you know how less it takes, how
+            ** mighty the dark side of the force really is?'').
+            */
+            bm->bm_CopyToBuffer = (BMFunc)((void (*)())(GetTagData(S2_CopyToBuff, NULL,
+                              (struct TagItem *)ios2->ios2_BufferManagement)));
+            bm->bm_CopyFromBuffer = (BMFunc)((void (*)())(GetTagData(S2_CopyFromBuff, NULL,
+                              (struct TagItem *)ios2->ios2_BufferManagement)));
 #endif
-	    d(("starting servertask\n"));
-	    if (!pb->pb_Server)
-	    {
-	       volatile struct ServerStartup ss;
-	       struct MsgPort *port;
+            d(("starting servertask\n"));
+            if (!pb->pb_Server)
+            {
+               volatile struct ServerStartup ss;
+               struct MsgPort *port;
 
-	       if (port = CreateMsgPort())
-	       {
-		  d(("starting server"));
-		  if (pb->pb_Server = CreateNewProcTags(NP_Entry, ServerTask, NP_Name,
-								  SERVERTASKNAME, TAG_DONE))
-		  {
-		     ss.ss_Error = 1;
-		     ss.ss_PLIPBase = pb;
-		     ss.ss_Msg.mn_Length = sizeof(ss);
-		     ss.ss_Msg.mn_ReplyPort = port;
-		     d(("passing startup msg, pb is %lx\n", pb));
-		     PutMsg(&pb->pb_Server->pr_MsgPort, (struct Message*)&ss);
-		     WaitPort(port);
+               if (port = CreateMsgPort())
+               {
+                  d(("starting server"));
+                  if (pb->pb_Server = CreateNewProcTags(NP_Entry, ServerTask, NP_Name,
+                                                                  SERVERTASKNAME, TAG_DONE))
+                  {
+                     ss.ss_Error = 1;
+                     ss.ss_PLIPBase = pb;
+                     ss.ss_Msg.mn_Length = sizeof(ss);
+                     ss.ss_Msg.mn_ReplyPort = port;
+                     d(("passing startup msg, pb is %lx\n", pb));
+                     PutMsg(&pb->pb_Server->pr_MsgPort, (struct Message*)&ss);
+                     WaitPort(port);
 
-		     if (!ss.ss_Error)
-			ok = TRUE;
-		     else
-		     {
-			d(("server task failed\n"));
-		     }
-		  }
-		  else
-		  {
-		     d(("couldn't launch server task\n"));
-		  }
-		  DeleteMsgPort(port);
-	       }
-	       else
-	       {
-		  d(("no temp-message port for server startup\n"));
-	       }
-	    }
-	    else ok = TRUE;
+                     if (!ss.ss_Error)
+                        ok = TRUE;
+                     else
+                     {
+                        d(("server task failed\n"));
+                     }
+                  }
+                  else
+                  {
+                     d(("couldn't launch server task\n"));
+                  }
+                  DeleteMsgPort(port);
+               }
+               else
+               {
+                  d(("no temp-message port for server startup\n"));
+               }
+            }
+            else ok = TRUE;
 
-	    if (!ok)
-	       FreeVec(bm);
-	    else
-	    {
-	       /* enqueue buffer management into list
-	       */
-	       AddTail((struct List *)&pb->pb_BufferManagement,(struct Node *)bm);
-	       pb->pb_DevNode.lib_OpenCnt++;
-	       pb->pb_DevNode.lib_Flags &= ~LIBF_DELEXP;
-	       ios2->ios2_BufferManagement = (VOID *)bm;
-	       ios2->ios2_Req.io_Error = 0;
-	       ios2->ios2_Req.io_Unit = (struct Unit *)unit;
-	       ios2->ios2_Req.io_Device = (struct Device *)pb;
-	       rv = 0;
-	    }
-	 }
+            if (!ok)
+               FreeVec(bm);
+            else
+            {
+               /* enqueue buffer management into list
+               */
+               AddTail((struct List *)&pb->pb_BufferManagement,(struct Node *)bm);
+               pb->pb_DevNode.lib_OpenCnt++;
+               pb->pb_DevNode.lib_Flags &= ~LIBF_DELEXP;
+               ios2->ios2_BufferManagement = (VOID *)bm;
+               ios2->ios2_Req.io_Error = 0;
+               ios2->ios2_Req.io_Unit = (struct Unit *)unit;
+               ios2->ios2_Req.io_Device = (struct Device *)pb;
+               rv = 0;
+            }
+         }
       }
    }
 
@@ -416,9 +416,9 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
        bm->bm_Node.mln_Succ; bm = (struct BufferManagement *)bm->bm_Node.mln_Succ)
       if (bm == ior->ios2_BufferManagement)
       {
-	 Remove((struct Node*)bm);
-	 FreeVec(bm);
-	 break;
+         Remove((struct Node*)bm);
+         FreeVec(bm);
+         break;
       }
 
    pb->pb_DevNode.lib_OpenCnt--;
@@ -449,46 +449,46 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    }
    else
    {
-	 /* detach device from system list */
+         /* detach device from system list */
       Remove((struct Node*)pb);
 
-	 /* stop the servr task */
+         /* stop the servr task */
       d2(("killing server task\n"));
       pb->pb_Task = FindTask(0L);
-	 /* We must allocate a new signal, as we don't know in whose
-	 ** context we're running. If we get no signal, we poll
-	 ** for the server-exits flag.
-	 */
+         /* We must allocate a new signal, as we don't know in whose
+         ** context we're running. If we get no signal, we poll
+         ** for the server-exits flag.
+         */
       sigb = AllocSignal(-1);
       pb->pb_ServerStoppedSigMask = (sigb == -1) ? 0 : (1<<sigb);
       Signal((struct Task*)pb->pb_Server, SIGBREAKF_CTRL_C);
       if (pb->pb_ServerStoppedSigMask)
       {
-	 Wait(pb->pb_ServerStoppedSigMask);
-	 FreeSignal(sigb);
+         Wait(pb->pb_ServerStoppedSigMask);
+         FreeSignal(sigb);
       }
       else
       {
-	 while(!(pb->pb_Flags & PLIPF_SERVERSTOPPED))
-	    Delay(10);
+         while(!(pb->pb_Flags & PLIPF_SERVERSTOPPED))
+            Delay(10);
       }
       d2(("server task has gone\n"));
 
-	 /* clean up track */
+         /* clean up track */
       freetracktypes(pb);
 
       CloseLibrary(UtilityBase);
       CloseLibrary(DOSBase);
 
-	 /* save seglist for return value */
+         /* save seglist for return value */
       seglist = (long)pb->pb_SegList;
 
-	 /* return memory
-	 **
-	 ** NO FURTHER ACCESS TO PLIPBase ALLOWED!
-	 */
+         /* return memory
+         **
+         ** NO FURTHER ACCESS TO PLIPBase ALLOWED!
+         */
       FreeMem( ((char *) pb) - pb->pb_DevNode.lib_NegSize,
-	 (ULONG)(pb->pb_DevNode.lib_PosSize + pb->pb_DevNode.lib_NegSize));
+         (ULONG)(pb->pb_DevNode.lib_PosSize + pb->pb_DevNode.lib_NegSize));
    }
 
    return seglist;
@@ -511,9 +511,9 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 {
    d(("cmd = %ld, error = %ld, wireerror = %ld\n", ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error,ios2->ios2_WireError));
 
-		  /* if this command was done asynchonously, we must
-		  ** reply the request
-		  */
+                  /* if this command was done asynchonously, we must
+                  ** reply the request
+                  */
    if(!(ios2->ios2_Req.io_Flags & SANA2IOF_QUICK))
       ReplyMsg((struct Message *)ios2);
    else           /* otherwise just mark it as done */
@@ -546,210 +546,210 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    switch(ios2->ios2_Req.io_Command)
    {
       case CMD_READ:
-	 if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
-	    ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
-	 }
-	 else if (ios2->ios2_BufferManagement == NULL)
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
-	    ios2->ios2_WireError = S2WERR_BUFF_ERROR;
-	 }
-	 else
-	 {
-	    ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
-	    ObtainSemaphore(&pb->pb_ReadListSem);
-	    AddTail((struct List*)&pb->pb_ReadList, (struct Node*)ios2);
-	    ReleaseSemaphore(&pb->pb_ReadListSem);
-	    ios2 = NULL;
-	 }
+         if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+         {
+            ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+            ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
+         }
+         else if (ios2->ios2_BufferManagement == NULL)
+         {
+            ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+            ios2->ios2_WireError = S2WERR_BUFF_ERROR;
+         }
+         else
+         {
+            ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
+            ObtainSemaphore(&pb->pb_ReadListSem);
+            AddTail((struct List*)&pb->pb_ReadList, (struct Node*)ios2);
+            ReleaseSemaphore(&pb->pb_ReadListSem);
+            ios2 = NULL;
+         }
       break;
 
       case S2_BROADCAST:
-	      /* set broadcast addr: ff:ff:ff:ff:ff:ff */
-	 memset(ios2->ios2_DstAddr, 0xff, PLIP_ADDRFIELDSIZE);
-	      /* fall through */
+              /* set broadcast addr: ff:ff:ff:ff:ff:ff */
+         memset(ios2->ios2_DstAddr, 0xff, PLIP_ADDRFIELDSIZE);
+              /* fall through */
       case CMD_WRITE:
-	 if (ios2->ios2_Req.io_Flags & SANA2IOF_RAW)
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
-	    ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-	 }
-	 else if(ios2->ios2_DataLength > pb->pb_MTU)
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
-	 }
-	 else if (ios2->ios2_BufferManagement == NULL)
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
-	    ios2->ios2_WireError = S2WERR_BUFF_ERROR;
-	 }
-	 else if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
-	    ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
-	 }
-	 else
-	 {
-	    ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
-	    ios2->ios2_Req.io_Error = 0;
-	    ObtainSemaphore(&pb->pb_WriteListSem);
-	    AddTail((struct List*)&pb->pb_WriteList, (struct Node*)ios2);
-	    ReleaseSemaphore(&pb->pb_WriteListSem);
-	    Signal((struct Task*)pb->pb_Server, SIGBREAKF_CTRL_F);
-	    ios2 = NULL;
-	 }
+         if (ios2->ios2_Req.io_Flags & SANA2IOF_RAW)
+         {
+            ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
+            ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+         }
+         else if(ios2->ios2_DataLength > pb->pb_MTU)
+         {
+            ios2->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
+         }
+         else if (ios2->ios2_BufferManagement == NULL)
+         {
+            ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+            ios2->ios2_WireError = S2WERR_BUFF_ERROR;
+         }
+         else if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+         {
+            ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+            ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
+         }
+         else
+         {
+            ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
+            ios2->ios2_Req.io_Error = 0;
+            ObtainSemaphore(&pb->pb_WriteListSem);
+            AddTail((struct List*)&pb->pb_WriteList, (struct Node*)ios2);
+            ReleaseSemaphore(&pb->pb_WriteListSem);
+            Signal((struct Task*)pb->pb_Server, SIGBREAKF_CTRL_F);
+            ios2 = NULL;
+         }
       break;
 
       case S2_ONLINE:
       case S2_OFFLINE:
       case S2_CONFIGINTERFACE:   /* forward request */
-	 DevForwardIO(pb, ios2);
-	 ios2 = NULL;
+         DevForwardIO(pb, ios2);
+         ios2 = NULL;
       break;
 
       case S2_GETSTATIONADDRESS:
-	 memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* current */
-	 memcpy(ios2->ios2_DstAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* default */
+         memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* current */
+         memcpy(ios2->ios2_DstAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* default */
       break;
-	 
+         
       case S2_DEVICEQUERY:
       {
-	 struct Sana2DeviceQuery *devquery;
+         struct Sana2DeviceQuery *devquery;
 
-	 devquery = ios2->ios2_StatData;
-	 devquery->DevQueryFormat = 0;        /* "this is format 0" */
-	 devquery->DeviceLevel = 0;           /* "this spec defines level 0" */
-	 
-	 if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = PLIP_ADDRFIELDSIZE * 8; /* Bits! */
-	 if (devquery->SizeAvailable >= 22) devquery->MTU           = pb->pb_MTU;
-	 if (devquery->SizeAvailable >= 26) devquery->BPS           = pb->pb_ReportBPS;
-	 if (devquery->SizeAvailable >= 30) devquery->HardwareType  = S2WireType_Ethernet;
-	 
-	 devquery->SizeSupplied = min((int)devquery->SizeAvailable, 30);
+         devquery = ios2->ios2_StatData;
+         devquery->DevQueryFormat = 0;        /* "this is format 0" */
+         devquery->DeviceLevel = 0;           /* "this spec defines level 0" */
+         
+         if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = PLIP_ADDRFIELDSIZE * 8; /* Bits! */
+         if (devquery->SizeAvailable >= 22) devquery->MTU           = pb->pb_MTU;
+         if (devquery->SizeAvailable >= 26) devquery->BPS           = pb->pb_ReportBPS;
+         if (devquery->SizeAvailable >= 30) devquery->HardwareType  = S2WireType_Ethernet;
+         
+         devquery->SizeSupplied = min((int)devquery->SizeAvailable, 30);
       }
       break;
-	 
+         
       case S2_ONEVENT:
-	 /* Two special cases. S2EVENT_ONLINE and S2EVENT_OFFLINE are supposed to
-	    retun immediately if we are already in the state that they are waiting
-	    for. */
-	 if (((ios2->ios2_WireError & S2EVENT_ONLINE) && !(pb->pb_Flags & PLIPF_OFFLINE)) ||
-	     ((ios2->ios2_WireError & S2EVENT_OFFLINE) && (pb->pb_Flags & PLIPF_OFFLINE)))
-	 {
-	    ios2->ios2_Req.io_Error = 0;
-	    ios2->ios2_WireError &= (S2EVENT_ONLINE|S2EVENT_OFFLINE);
-	    DevTermIO(pb,ios2);
-	    ios2 = NULL;
-	 }
-	 else if ((ios2->ios2_WireError & (S2EVENT_ERROR|S2EVENT_TX|S2EVENT_RX|S2EVENT_ONLINE|
-			       S2EVENT_OFFLINE|S2EVENT_BUFF|S2EVENT_HARDWARE|S2EVENT_SOFTWARE))
-		  != ios2->ios2_WireError)
-	 {
-	    /* we cannot handle such events */
-	    ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
-	    ios2->ios2_WireError = S2WERR_BAD_EVENT;
-	 }
-	 else
-	 {
-	    /* Queue anything else */
-	    ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
-	    ObtainSemaphore(&pb->pb_EventListSem);
-	    AddTail((struct List*)&pb->pb_EventList, (struct Node*)ios2);
-	    ReleaseSemaphore(&pb->pb_EventListSem);
-	    ios2 = NULL;
-	 }
+         /* Two special cases. S2EVENT_ONLINE and S2EVENT_OFFLINE are supposed to
+            retun immediately if we are already in the state that they are waiting
+            for. */
+         if (((ios2->ios2_WireError & S2EVENT_ONLINE) && !(pb->pb_Flags & PLIPF_OFFLINE)) ||
+             ((ios2->ios2_WireError & S2EVENT_OFFLINE) && (pb->pb_Flags & PLIPF_OFFLINE)))
+         {
+            ios2->ios2_Req.io_Error = 0;
+            ios2->ios2_WireError &= (S2EVENT_ONLINE|S2EVENT_OFFLINE);
+            DevTermIO(pb,ios2);
+            ios2 = NULL;
+         }
+         else if ((ios2->ios2_WireError & (S2EVENT_ERROR|S2EVENT_TX|S2EVENT_RX|S2EVENT_ONLINE|
+                               S2EVENT_OFFLINE|S2EVENT_BUFF|S2EVENT_HARDWARE|S2EVENT_SOFTWARE))
+                  != ios2->ios2_WireError)
+         {
+            /* we cannot handle such events */
+            ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
+            ios2->ios2_WireError = S2WERR_BAD_EVENT;
+         }
+         else
+         {
+            /* Queue anything else */
+            ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
+            ObtainSemaphore(&pb->pb_EventListSem);
+            AddTail((struct List*)&pb->pb_EventList, (struct Node*)ios2);
+            ReleaseSemaphore(&pb->pb_EventListSem);
+            ios2 = NULL;
+         }
       break;
 
       /* --------------- stats support ----------------------- */
 
       case S2_TRACKTYPE:
-	 if (!addtracktype(pb, ios2->ios2_PacketType))
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
-	 }
+         if (!addtracktype(pb, ios2->ios2_PacketType))
+         {
+            ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+         }
       break;
 
       case S2_UNTRACKTYPE:
-	 if (!remtracktype(pb, ios2->ios2_PacketType))
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
-	    ios2->ios2_WireError = S2WERR_NOT_TRACKED;
-	 }
+         if (!remtracktype(pb, ios2->ios2_PacketType))
+         {
+            ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
+            ios2->ios2_WireError = S2WERR_NOT_TRACKED;
+         }
       break;
 
       case S2_GETTYPESTATS:
-	 if (!gettrackrec(pb, ios2->ios2_PacketType, (struct Sana2PacketTypeStats *)ios2->ios2_StatData))
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
-	    ios2->ios2_WireError = S2WERR_NOT_TRACKED;
-	 }
+         if (!gettrackrec(pb, ios2->ios2_PacketType, (struct Sana2PacketTypeStats *)ios2->ios2_StatData))
+         {
+            ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
+            ios2->ios2_WireError = S2WERR_NOT_TRACKED;
+         }
       break;
 
       case S2_READORPHAN:
-	 if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
-	    ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
-	 }
-	 else if (ios2->ios2_BufferManagement == NULL)
-	 {
-	    ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
-	    ios2->ios2_WireError = S2WERR_BUFF_ERROR;
-	 }
-	 else
-	 {                       /* Enqueue it to the orphan-reader-list */
-	    ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
-	    ObtainSemaphore(&pb->pb_ReadOrphanListSem);
-	    AddTail((struct List*)&pb->pb_ReadOrphanList, (struct Node*)ios2);
-	    ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
-	    ios2 = NULL;
-	 }
+         if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+         {
+            ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+            ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
+         }
+         else if (ios2->ios2_BufferManagement == NULL)
+         {
+            ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+            ios2->ios2_WireError = S2WERR_BUFF_ERROR;
+         }
+         else
+         {                       /* Enqueue it to the orphan-reader-list */
+            ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
+            ObtainSemaphore(&pb->pb_ReadOrphanListSem);
+            AddTail((struct List*)&pb->pb_ReadOrphanList, (struct Node*)ios2);
+            ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
+            ios2 = NULL;
+         }
       break;
 
       case S2_GETGLOBALSTATS:
-	 memcpy(ios2->ios2_StatData, &pb->pb_DevStats, sizeof(struct Sana2DeviceStats));
+         memcpy(ios2->ios2_StatData, &pb->pb_DevStats, sizeof(struct Sana2DeviceStats));
       break;
 
       case S2_GETSPECIALSTATS:
       {
-	 struct Sana2SpecialStatHeader *s2ssh = (struct Sana2SpecialStatHeader *)ios2->ios2_StatData;
+         struct Sana2SpecialStatHeader *s2ssh = (struct Sana2SpecialStatHeader *)ios2->ios2_StatData;
 
-	 if (pb->pb_ExtFlags & PLIPEF_NOSPECIALSTATS)
-	 {
-	    s2ssh->RecordCountSupplied = 0;
-	 }
-	 else
-	 {
-	    s2ssh->RecordCountSupplied = s2ssh->RecordCountMax > S2SS_COUNT ?
-					  S2SS_COUNT : s2ssh->RecordCountMax;
-	    CopyMem(pb->pb_SpecialStats, (void*)(s2ssh+1),
-			s2ssh->RecordCountSupplied*sizeof(struct Sana2SpecialStatRecord));
-	 }
+         if (pb->pb_ExtFlags & PLIPEF_NOSPECIALSTATS)
+         {
+            s2ssh->RecordCountSupplied = 0;
+         }
+         else
+         {
+            s2ssh->RecordCountSupplied = s2ssh->RecordCountMax > S2SS_COUNT ?
+                                          S2SS_COUNT : s2ssh->RecordCountMax;
+            CopyMem(pb->pb_SpecialStats, (void*)(s2ssh+1),
+                        s2ssh->RecordCountSupplied*sizeof(struct Sana2SpecialStatRecord));
+         }
       }
       break;
 
       /* --------------- unsupported requests -------------------- */
 
-	 /* all standard commands we don't support */
+         /* all standard commands we don't support */
       case CMD_RESET:
       case CMD_UPDATE:
       case CMD_CLEAR:
       case CMD_STOP:
       case CMD_START:
       case CMD_FLUSH:
-	 ios2->ios2_Req.io_Error = IOERR_NOCMD;
-	 ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+         ios2->ios2_Req.io_Error = IOERR_NOCMD;
+         ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
       break;
 
-	 /* other commands (SANA-2) we don't support */
+         /* other commands (SANA-2) we don't support */
       /*case S2_ADDMULTICASTADDRESS:*/
       /*case S2_DELMULTICASTADDRESS:*/
       /*case S2_MULTICAST:*/
       default:
-	 ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
-	 ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+         ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
+         ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
       break;
    }
 
