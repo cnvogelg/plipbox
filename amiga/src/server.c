@@ -326,6 +326,36 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
 }
 /*E*/
+
+PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
+{
+   BOOL rc = FALSE;
+   
+   /* setup welcome packet */
+   struct PLIPFrame *frame = pb->pb_Frame;
+   frame->pf_Type = 0x0042; 
+   frame->pf_Size = PKTFRAMESIZE_2; /* no extra payload */
+   memcpy(frame->pf_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
+   memcpy(frame->pf_DstAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);   
+   
+   if (!TESTLINE(pb)) /* is the line free ? */
+   {
+      SETREQUEST(pb);
+      
+      /* wait until I/O block is safe to be reused */
+      while(!pb->pb_TimeoutSet) Delay(1L);
+      pb->pb_TimeoutReq.tr_time.tv_secs = 0;
+      pb->pb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
+      pb->pb_TimeoutSet = 0;
+      SendIO((struct IORequest*)&pb->pb_TimeoutReq);
+      rc = hwsend(pb);
+      AbortIO((struct IORequest*)&pb->pb_TimeoutReq);
+      
+      CLEARREQUEST(pb);
+   }
+   return rc;
+}
+
 /*F*/ PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
    BOOL rc = TRUE;
@@ -341,10 +371,18 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
       }
       else
       {
-         GetSysTime(&pb->pb_DevStats.LastStart);
-         pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
-         DoEvent(pb, S2EVENT_ONLINE);
-         d(("i'm now online!\n"));
+         if(!sendwelcome(pb)) 
+         {
+            d(("error sending welcome packet\n"));
+            rc = FALSE;
+         }
+         else
+         {
+            GetSysTime(&pb->pb_DevStats.LastStart);
+            pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
+            DoEvent(pb, S2EVENT_ONLINE);
+            d(("i'm now online!\n"));
+         }
       }
    }
 
