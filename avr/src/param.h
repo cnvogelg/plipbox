@@ -29,15 +29,13 @@
 
 #include "global.h"
 
-#define PARAM_NUM_ARP_IP   3
-
 typedef struct {
-  u08 ip_addr[4];
-  u08 mac_addr[6];
-  u08 zero_conf;
-
-  u08 ip_srv_addr[4];
-  u08 arp_ip[PARAM_NUM_ARP_IP][4];
+  u08 show_drop;
+  u08 show_pkt;
+  u08 show_arp;
+  u08 show_ip;
+  
+  u08 mac[6];
 } param_t;
   
 extern param_t param;  

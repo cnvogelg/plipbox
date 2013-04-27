@@ -74,6 +74,7 @@ COMMAND(cmd_param_reset)
   return CMD_OK;
 }
 
+#if 0
 COMMAND(cmd_param_set_ip)
 {
   if(argc != 2) {
@@ -106,13 +107,17 @@ COMMAND(cmd_param_set_mac)
     return CMD_PARSE_ERROR;
   }
 }
+#endif
 
 COMMAND(cmd_param_toggle)
 {
-  u08 type = argv[0][0];
+  u08 type = argv[0][1];
   u08 *val = 0;
   switch(type) {
-    case 'z': val = &param.zero_conf; break;
+    case 'd': val = &param.show_drop; break;
+    case 'p': val = &param.show_pkt; break;
+    case 'i': val = &param.show_ip; break;
+    case 'a': val = &param.show_arp; break;
     default: return CMD_PARSE_ERROR;
   }
   
@@ -137,9 +142,12 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("ps"), cmd_param_save },
   { CMD_NAME("pl"), cmd_param_load },
   { CMD_NAME("pr"), cmd_param_reset },
-  { CMD_NAME("nm"), cmd_param_set_mac },
-  { CMD_NAME("ni"), cmd_param_set_ip },
-  { CMD_NAME("ns"), cmd_param_set_ip },
-  { CMD_NAME("z"), cmd_param_toggle },
+//  { CMD_NAME("nm"), cmd_param_set_mac },
+//  { CMD_NAME("ni"), cmd_param_set_ip },
+//  { CMD_NAME("ns"), cmd_param_set_ip },
+  { CMD_NAME("sd"), cmd_param_toggle },
+  { CMD_NAME("sp"), cmd_param_toggle },
+  { CMD_NAME("si"), cmd_param_toggle },
+  { CMD_NAME("sa"), cmd_param_toggle },
   { 0,0 } // last entry
 };

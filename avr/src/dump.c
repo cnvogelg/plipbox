@@ -1,5 +1,5 @@
 /*
- * debug.c - helper functions for debugging
+ * dump.c - helper functions for debugging
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,15 +24,14 @@
  *
  */
 
-#include "debug.h"
+#include "dump.h"
 #include "uartutil.h"
 #include "net/net.h"
 #include "net/arp.h"
 #include "net/eth.h"
+#include "net/ip.h"
 
-#ifdef DEBUG
-
-void debug_dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f)
+void dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f)
 {
   f();
   uart_send_pstring(PSTR("pkt: src="));
@@ -45,7 +44,7 @@ void debug_dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f)
   uart_send_hex_word_crlf(pkt->size);
 }
 
-void debug_dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f)
+void dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f)
 {
   f();
   uart_send_pstring(PSTR("pkt: src="));
@@ -58,24 +57,41 @@ void debug_dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f)
   uart_send_hex_word_crlf(size);  
 }
 
-void debug_dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f)
+void dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f)
 {
   f();
-  uart_send_pstring(PSTR("ARP: op="));
+  uart_send_pstring(PSTR("-> ARP: op="));
   u16 op = arp_get_op(arp_buf);
   uart_send_hex_word_spc(op);
-  uart_send_pstring(PSTR("src mac="));
+  uart_send_crlf();
+  
+  f();
+  uart_send_pstring(PSTR("    src mac="));
   net_dump_mac(arp_get_src_mac(arp_buf));
   uart_send_pstring(PSTR(" ip="));
   net_dump_ip(arp_get_src_ip(arp_buf));
   uart_send_crlf();
   
   f();
-  uart_send_pstring(PSTR("             tgt mac="));
+  uart_send_pstring(PSTR("    tgt mac="));
   net_dump_mac(arp_get_tgt_mac(arp_buf));
   uart_send_pstring(PSTR(" ip="));
   net_dump_ip(arp_get_tgt_ip(arp_buf));
   uart_send_crlf();
 }
 
-#endif /* DEBUG */
+void dump_ip_pkt(const u08 *ip_buf, u16 len, write_prefix_func_t f)
+{
+  f();
+  uart_send_pstring(PSTR("-> IP: proto="));
+  uart_send_hex_byte_spc(ip_get_protocol(ip_buf));
+  uart_send_pstring(PSTR("  len="));
+  uart_send_hex_word_spc(ip_get_total_length(ip_buf));
+  uart_send_pstring(PSTR("  got="));
+  uart_send_hex_word_spc(len);
+  uart_send_pstring(PSTR("  src ip="));
+  net_dump_ip(ip_get_src_ip(ip_buf));
+  uart_send_pstring(PSTR("  tgt ip="));
+  net_dump_ip(ip_get_tgt_ip(ip_buf)),
+  uart_send_crlf();
+}

@@ -38,8 +38,9 @@
 #include "enc28j60.h"
 #include "plip_tx.h"
 
+#if 0
 #define DEBUG_PING   
-   
+  
 u08 ping_eth_send_request(const u08 *ip, u16 id, u16 seq)
 {
 #ifdef DEBUG_PING
@@ -148,4 +149,5 @@ void ping_plip_handle_packet(u08 *ip_buf, u16 ip_len)
     plip_tx_send(ETH_HDR_SIZE,ip_len,ip_len);
   }
 }
+#endif
 

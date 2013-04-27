@@ -30,7 +30,8 @@
 #include "enc28j60.h"
 #include "uartutil.h"
 #include "net/eth.h"
-#include "debug.h"
+#include "dump.h"
+#include "param.h"
 
 static u16 send_pos = 0;
 static u16 max_pos = 0;
@@ -67,9 +68,11 @@ void plip_tx_worker(u08 plip_online)
 {
   // shall we retry to send the last packet
   if(plip_online && (retry > 0)) {
-#ifdef DEBUG
-    debug_dump_plip_pkt(&pkt,uart_send_prefix);
-#endif
+
+    if(param.show_pkt) {
+      dump_plip_pkt(&pkt,uart_send_prefix);
+    }
+    
     u08 status = plip_send(&pkt);
     if(status == PLIP_STATUS_OK) {
       uart_send_prefix();
@@ -91,9 +94,10 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   pkt.size = total_size;
   pkt.crc_type = PLIP_NOCRC;
 
-#ifdef DEBUG
-  debug_dump_plip_pkt(&pkt,uart_send_prefix);
-#endif
+  if(param.show_pkt) {
+    dump_plip_pkt(&pkt,uart_send_prefix);
+  }
+  
   u08 status = plip_send(&pkt);
   
   if(status != PLIP_STATUS_OK) {

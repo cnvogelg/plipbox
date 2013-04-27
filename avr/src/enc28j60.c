@@ -242,7 +242,7 @@
 
 // max frame length which the conroller will accept:
 // (note: maximum ethernet frame length would be 1518)
-#define MAX_FRAMELEN      1500        
+#define MAX_FRAMELEN      1518        
 
 static uint8_t Enc28j60Bank;
 static int gNextPacketPtr;

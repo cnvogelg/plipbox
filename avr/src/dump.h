@@ -1,5 +1,5 @@
 /*
- * debug.h - helper functions for debugging
+ * dump.h - helper functions for debugging
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,20 +24,17 @@
  *
  */
 
-#ifndef DEBUG_H
-#define DEBUG_H
+#ifndef DUMP_H
+#define DUMP_H
 
 #include "global.h"
 #include "plip.h"
 
-#ifdef DEBUG
-
 typedef void (*write_prefix_func_t)(void);
 
-extern void debug_dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f);
-extern void debug_dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f);
-extern void debug_dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f);
-
-#endif
+extern void dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f);
+extern void dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f);
+extern void dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f);
+extern void dump_ip_pkt(const u08 *arp_buf, u16 len, write_prefix_func_t f);
 
 #endif
