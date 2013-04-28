@@ -42,7 +42,9 @@ static void uart_send_prefix(void)
 void eth_tx_send(u16 eth_type, u16 ip_size, u16 copy_size, const u08 *tgt_mac)
 {
   // now build ethernet header
-  eth_make_to_tgt(pkt_buf, eth_type, tgt_mac);
+  eth_set_pkt_type(pkt_buf, eth_type);
+  eth_set_src_mac(pkt_buf, param.mac);
+  eth_set_tgt_mac(pkt_buf, tgt_mac);
 
   // dump eth packet
   if(param.show_pkt) {

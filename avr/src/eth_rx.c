@@ -42,7 +42,6 @@
 #include "pkt_buf.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "ping.h"
 #include "plip_tx.h"
 #include "timer.h"
 #include "eth_state.h"

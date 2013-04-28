@@ -38,7 +38,6 @@
 #include "eth_tx.h"
 #include "plip.h"
 #include "plip_tx.h"
-#include "ping.h"
 #include "uart.h"
 #include "uartutil.h"
 #include "param.h"

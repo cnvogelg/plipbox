@@ -38,7 +38,7 @@ ALL_BOARDS= arduino avrnetio
 DIST_BOARDS= arduino avrnetio
 
 # select board
-BOARD ?= avrnetio
+BOARD ?= arduino
 DEFINES ?= USE_BLA
 DEBUG ?= 1
 
@@ -104,9 +104,8 @@ SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c plip.c
 SRC += pkt_buf.c param.c
 SRC += spi.c enc28j60.c 
-SRC += net/net.c net/eth.c net/arp.c net/ip.c net/icmp.c net/udp.c net/bootp.c
-SRC += net/arp_cache.c
-SRC += eth_rx.c eth_tx.c eth_state.c ping.c dump.c
+SRC += net/net.c net/eth.c net/arp.c net/ip.c net/icmp.c net/udp.c
+SRC += eth_rx.c eth_tx.c eth_state.c dump.c
 SRC += plip_rx.c plip_tx.c plip_state.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c
