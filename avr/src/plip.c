@@ -201,7 +201,7 @@ u08 plip_recv(plip_packet_t *pkt)
   // read crc
   u16 crc;
   if(status == PLIP_STATUS_OK) {
-    pkt->size = size - 6;
+    pkt->size = size - (2 + 2 + (2* PLIP_ADDR_SIZE));
     status = get_next_word(&crc, 1, PLIP_STATE_CRC);
   }
   size -= 2;

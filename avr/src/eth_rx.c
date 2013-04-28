@@ -101,14 +101,15 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     net_copy_mac(eth_get_src_mac(pkt_buf), pkt.src_addr);
     pkt.type = eth_get_pkt_type(pkt_buf);
 
+    // total size of packet
+    u16 ip_len = len - ETH_HDR_SIZE;
+    pkt.size = ip_len;
+    
     // dump incoming packet
     if(param.show_pkt) {
       dump_plip_pkt(&pkt, uart_send_prefix);
     }
 
-    // total size of packet
-    u16 ip_len = len - ETH_HDR_SIZE;
-    
     // depending on type fetch more from buffer
     u16 mem_len = 0;
     u08 *buf = pkt_buf + ETH_HDR_SIZE;

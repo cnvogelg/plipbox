@@ -40,7 +40,7 @@ DIST_BOARDS= arduino avrnetio
 # select board
 BOARD ?= arduino
 DEFINES ?= USE_BLA
-DEBUG ?= 1
+DEBUG ?= 0
 
 ifeq "$(BOARD)" "arduino"
 
