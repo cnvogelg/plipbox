@@ -31,26 +31,25 @@
 #include "pkt_buf.h"
 #include "enc28j60.h"
 #include "uartutil.h"
-#include "debug.h"
+#include "dump.h"
+#include "param.h"
 
-#ifdef DEBUG
 static void uart_send_prefix(void)
 {
   uart_send_pstring(PSTR(" eth(TX): "));
 }
-#endif
 
 void eth_tx_send(u16 eth_type, u16 ip_size, u16 copy_size, const u08 *tgt_mac)
 {
   // now build ethernet header
-  eth_make_to_tgt(pkt_buf, eth_type, tgt_mac);
+  eth_set_pkt_type(pkt_buf, eth_type);
+  eth_set_src_mac(pkt_buf, param.mac);
+  eth_set_tgt_mac(pkt_buf, tgt_mac);
 
-#ifdef DEBUG
-  debug_dump_eth_pkt(pkt_buf, ip_size, uart_send_prefix);
-  if(eth_type == ETH_TYPE_ARP) {
-    debug_dump_arp_pkt(pkt_buf + ETH_HDR_SIZE, uart_send_prefix);
+  // dump eth packet
+  if(param.show_pkt) {
+    dump_eth_pkt(pkt_buf, ip_size, uart_send_prefix);
   }
-#endif
 
   // wait for tx is possible
   enc28j60_packet_tx_prepare();

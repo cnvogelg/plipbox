@@ -43,37 +43,26 @@ uint16_t eeprom_crc16 EEMEM;
 
 // default 
 static const param_t PROGMEM default_param = {
-  .ip_addr = { 192,168,2,133 },
-  .ip_srv_addr = { 192,168,2,99 }, // a typical server in your net
-  .mac_addr = { 0x74,0x69,0x69,0x2D,0x30,0x31 },
-  .zero_conf = 1,
+  .show_drop = 0,
+  .show_pkt = 0,
+  .show_ip = 0,
+  .show_arp = 0
 };
 
 // dump all params
 void param_dump(void)
 {
-  uart_send_pstring(PSTR("ni)p addr:   "));
-  net_dump_ip(param.ip_addr);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("nm)ac addr:  "));
-  net_dump_mac(param.mac_addr);
-  uart_send_crlf();
+  uart_send_pstring(PSTR("sd) show drop: "));
+  uart_send_hex_byte_crlf(param.show_drop);
 
-  uart_send_pstring(PSTR("ns)erver     "));
-  net_dump_ip(param.ip_srv_addr);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("z)ero conf:  "));
-  uart_send_hex_byte_crlf(param.zero_conf);
+  uart_send_pstring(PSTR("sp) show pkt:  "));
+  uart_send_hex_byte_crlf(param.show_pkt);
 
-  for(u08 i=0;i<PARAM_NUM_ARP_IP;i++) {
-    uart_send('a');
-    uart_send('1'+i);
-    uart_send_pstring(PSTR(") arp ip:  "));
-    net_dump_ip(param.arp_ip[i]);
-    uart_send_crlf();
-  }
+  uart_send_pstring(PSTR("si) show ip:   "));
+  uart_send_hex_byte_crlf(param.show_ip);
+
+  uart_send_pstring(PSTR("sa) show arp:  "));
+  uart_send_hex_byte_crlf(param.show_arp);
 }
 
 // build check sum for parameter block

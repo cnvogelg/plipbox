@@ -29,15 +29,12 @@
 #include "net/net.h"
 #include "net/arp.h"
 
-#ifdef HAVE_NAT
-#include "net/arp_cache.h"
-#endif
-
 #include "enc28j60.h"
 #include "timer.h"
 #include "uartutil.h"
 #include "uart.h"
 #include "pkt_buf.h"
+#include "param.h"
 
 static u08 state = ETH_STATE_DISABLED;
 static u16 my_timer;
@@ -64,7 +61,7 @@ u08 eth_state_worker(u08 plip_online)
       break;
     case ETH_STATE_INIT:
       uart_send_pstring(PSTR(" eth: init\r\n"));
-      rev = enc28j60_init(net_get_mac());
+      rev = enc28j60_init(param.mac);
       if(rev != 0) {
         state = ETH_STATE_OFFLINE;
       } else {

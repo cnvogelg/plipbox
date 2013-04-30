@@ -1,5 +1,5 @@
 /*
- * arp_cache.h - manage the ARP cache
+ * dump.h - helper functions for debugging
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,22 +24,17 @@
  *
  */
 
-#ifndef ARP_CACHE_H
-#define ARP_CACHE_H
+#ifndef DUMP_H
+#define DUMP_H
 
-#include "arp.h"
-#include "param.h"
-#include "net.h"
+#include "global.h"
+#include "plip.h"
 
-#define ARP_CACHE_SIZE (PARAM_NUM_ARP_IP + 1)
+typedef void (*write_prefix_func_t)(void);
 
-extern void arp_cache_init(void);
-extern u08  arp_cache_handle_packet(u08 *ethbuf, u16 ethlen, net_tx_packet_func tx_func);
-extern void arp_cache_worker(u08 *ethbuf, net_tx_packet_func tx_func);
-extern void arp_cache_dump(void);
-extern void arp_cache_clear(void);
-
-/* return 0 if mac not known (yet) */
-extern const u08 *arp_cache_find_mac(const u08 *ip);
+extern void dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f);
+extern void dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f);
+extern void dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f);
+extern void dump_ip_pkt(const u08 *arp_buf, u16 len, write_prefix_func_t f);
 
 #endif

@@ -34,11 +34,6 @@
 #include "net/net.h"
 #include "net/ip.h"
 
-#ifdef HAVE_NAT
-#include "net/arp_cache.h"
-#include "net/dhcp_client.h"
-#endif
-
 #include "net/udp.h"
 #include "net/eth.h"
 #include "net/net.h"
@@ -47,18 +42,14 @@
 #include "pkt_buf.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "ping.h"
 #include "plip_tx.h"
 #include "timer.h"
 #include "eth_state.h"
-#include "debug.h"
+#include "dump.h"
+#include "param.h"
 
 void eth_rx_init(void)
 {
-#ifdef HAVE_NAT
-  // prepare cache
-  arp_cache_init();
-#endif
 }
 
 static void uart_send_prefix(void)
@@ -71,18 +62,22 @@ static u08 filter_packet(plip_packet_t *pkt)
   // drop unknown types
   u16 type = pkt->type;
   if((type != ETH_TYPE_ARP) && (type != ETH_TYPE_IPV4)) {
-    uart_send_prefix();
-    uart_send_pstring(PSTR("type? "));
-    uart_send_hex_word_crlf(type);
+    if(param.show_drop) {
+      uart_send_prefix();
+      uart_send_pstring(PSTR("type? "));
+      uart_send_hex_word_crlf(type);
+    }
     return 0;
   }
   
   // tgt mac: either my mac or broadcast
-  if((!net_compare_my_mac(pkt->dst_addr)) && (!net_compare_bcast_mac(pkt->dst_addr))) {
-    uart_send_prefix();
-    uart_send_pstring(PSTR("mac? "));
-    net_dump_mac(pkt->dst_addr);
-    uart_send_crlf();
+  if((!net_compare_mac(param.mac,pkt->dst_addr)) && (!net_compare_bcast_mac(pkt->dst_addr))) {
+    if(param.show_drop) {
+      uart_send_prefix();
+      uart_send_pstring(PSTR("mac? "));
+      net_dump_mac(pkt->dst_addr);
+      uart_send_crlf();
+    }
   }
   
   // ok. pass packet
@@ -105,25 +100,54 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     net_copy_mac(eth_get_tgt_mac(pkt_buf), pkt.dst_addr);
     net_copy_mac(eth_get_src_mac(pkt_buf), pkt.src_addr);
     pkt.type = eth_get_pkt_type(pkt_buf);
+
+    // total size of packet
+    u16 ip_len = len - ETH_HDR_SIZE;
+    pkt.size = ip_len;
     
+    // dump incoming packet
+    if(param.show_pkt) {
+      dump_plip_pkt(&pkt, uart_send_prefix);
+    }
+
+    // depending on type fetch more from buffer
+    u16 mem_len = 0;
+    u08 *buf = pkt_buf + ETH_HDR_SIZE;
+    if(pkt.type == ETH_TYPE_ARP) {
+      // ARP
+      mem_len = ARP_SIZE;
+      enc28j60_packet_rx_blk(buf, mem_len);
+      if(param.show_arp) {
+        dump_arp_pkt(buf,uart_send_prefix);
+      }
+    } else if(pkt.type == ETH_TYPE_IPV4) {
+      // IPv4
+      mem_len = IP_MIN_HDR_SIZE;
+      enc28j60_packet_rx_blk(buf, mem_len);
+      if(param.show_ip) {
+        dump_ip_pkt(buf,ip_len,uart_send_prefix);
+      }
+    }
+    
+    // what to do with the eth packet?
     if(plip_online) {    
       // if it does pass filter then send it via plip
       if(filter_packet(&pkt)) {
         // send pkt via plip
-        u16 ip_len = len - ETH_HDR_SIZE;
-        plip_tx_send(0, 0, ip_len);
+        plip_tx_send(ETH_HDR_SIZE, mem_len, ip_len);
       } else {
-#ifdef DEBUG
-        debug_dump_plip_pkt(&pkt, uart_send_prefix);
-#endif
-        uart_send_prefix();
-        uart_send_pstring(PSTR("drop!")),
-        uart_send_crlf();
+        if(param.show_drop) {
+          uart_send_prefix();
+          uart_send_pstring(PSTR("drop: filter!")),
+          uart_send_crlf();
+        }
       }
     } else {
-      uart_send_prefix();
-      uart_send_pstring(PSTR("offline!"));
-      uart_send_crlf();
+      if(param.show_drop) {
+        uart_send_prefix();
+        uart_send_pstring(PSTR("drop: offline!"));
+        uart_send_crlf();
+      }
     }
   
     // finish packet read

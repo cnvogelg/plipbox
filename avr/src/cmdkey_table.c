@@ -26,110 +26,23 @@
 
 #include "cmdkey_table.h"
 
-#include "ping.h"
 #include "uartutil.h"
 #include "timer.h"
    
 #include "net/net.h"
-#include "net/arp_cache.h"
 #include "net/udp.h"
 #include "net/eth.h"
-#include "net/bootp.h"
 
 #include "pkt_buf.h"
 #include "enc28j60.h"
 
-// ping server
-COMMAND_KEY(cmd_ping_server)
-{
-#ifdef HAVE_NAT
-  u16 id = timer_10ms;
-  ping_eth_send_request(net_get_srv_ip(), id, 0);
-#endif
-}
 
-// ping gateway
-COMMAND_KEY(cmd_ping_gw)
+COMMAND_KEY(cmd_test)
 {
-#ifdef HAVE_NAT
-  u16 id = timer_10ms;
-  ping_eth_send_request(net_get_gateway(), id, 0);
-#endif
-}
-
-// ping amiga
-COMMAND_KEY(cmd_ping_amiga)
-{
-#ifdef HAVE_NAT
-  u16 id = timer_10ms;
-  ping_plip_send_request(net_get_p2p_amiga(), id, 0);
-#endif
-}
-
-// arp cache
-COMMAND_KEY(cmd_dump_arp_cache)
-{
-  arp_cache_dump();
-}
-
-COMMAND_KEY(cmd_clear_arp_cache)
-{
-  arp_cache_clear();
-  uart_send_pstring(PSTR("ARP clear\r\n"));
-}
-
-// ----- tests -----
-// send a udp packet
-COMMAND_KEY(cmd_udp_test)
-{
-#ifdef HAVE_NAT
-  const u08 *mac = arp_cache_find_mac(net_get_srv_ip());
-  if(mac != 0) {
-    u08 *buf = pkt_buf + ETH_HDR_SIZE;
-    u08 off = udp_begin_pkt(buf, net_get_ip(), 42, net_get_srv_ip(), 6800);
-    buf[off] = 'C';
-    buf[off+1] = 'V';
-    udp_finish_pkt(buf, 2);
-    eth_make_to_tgt(pkt_buf, ETH_TYPE_IPV4, mac);
-    u16 size = off + 2 + ETH_HDR_SIZE;
-    enc28j60_packet_tx(pkt_buf, size);
-    uart_send_pstring(PSTR("UDP!\r\n"));
-  }
-#endif
-}
-
-COMMAND_KEY(cmd_bootp_test)
-{
-  bootp_begin_eth_pkt(pkt_buf, BOOTP_REQUEST);
-  u16 size = bootp_finish_eth_pkt(pkt_buf, BOOTP_MIN_SIZE);
-  enc28j60_packet_tx(pkt_buf, size);
-  uart_send_pstring(PSTR("BOOTP!\r\n"));
-}
-
-COMMAND_KEY(cmd_dhcp_test)
-{
-#if 0
-  u16 off = dhcp_begin_eth_pkt_multicast(pkt_buf, BOOTP_REQUEST);
-  u08 *opt = pkt_buf + off;
-  opt = dhcp_add_type(opt, DHCP_TYPE_DISCOVER);
-  dhcp_add_end(opt);
-  u16 size = dhcp_finish_eth_pkt(pkt_buf, BOOTP_MIN_SIZE);
-  enc28j60_packet_tx(pkt_buf, size);
-  uart_send_pstring(PSTR("DHCP!\r\n"));
-#endif
 }
 
 cmdkey_table_t cmdkey_table[] = {
     /* arp handling */
-  { 'c', cmd_dump_arp_cache },
-  { 'C', cmd_clear_arp_cache },
-    /* ping machines */
-  { 's', cmd_ping_server },
-  { 'g', cmd_ping_gw },
-  { 'a', cmd_ping_amiga },
-    /* internal tests */
-  { 'd', cmd_dhcp_test },
-  { 'b', cmd_bootp_test },
-  { 'u', cmd_udp_test },
+  { 'u', cmd_test },
   { 0,0 }
 };

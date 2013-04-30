@@ -28,16 +28,10 @@
 #define NET_H
 
 #include "global.h"
-#include "param.h"
 
 /* typedefs for generic packet tx */
 typedef void (*net_tx_packet_func)(const u08 *buf, u16);
  
-inline u08* net_get_mac(void) { return param.mac_addr; }
-inline u08* net_get_ip(void) { return param.ip_addr; }
-inline u08* net_get_srv_ip(void) { return param.ip_srv_addr; }
-inline u08  net_zero_conf(void) { return param.zero_conf; }
-
 extern void net_copy_mac(const u08 *in, u08 *out);
 extern void net_copy_ip(const u08 *in, u08 *out);
 
@@ -65,17 +59,12 @@ extern const u08 net_zero_ip[4];
 extern const u08 net_ones_ip[4];
 
 /* convenience functions */
-inline void net_copy_my_mac(u08 *out) { net_copy_mac(net_get_mac(), out); }
 inline void net_copy_bcast_mac(u08 *out) { net_copy_mac(net_bcast_mac, out); }
 inline void net_copy_zero_mac(u08 *out) { net_copy_mac(net_zero_mac, out); }
 
-inline void net_copy_my_ip(u08 *out) { net_copy_ip(net_get_ip(), out); }
 inline void net_copy_zero_ip(u08 *out) { net_copy_ip(net_zero_ip, out); }
 
-inline u08 net_compare_my_mac(const u08 *in) { return net_compare_mac(net_get_mac(), in); }
 inline u08 net_compare_bcast_mac(const u08 *in) { return net_compare_mac(net_bcast_mac, in); }
 inline u08 net_compare_zero_mac(const u08 *in) { return net_compare_mac(net_zero_mac, in); }
-
-inline u08 net_compare_my_ip(const u08 *in) { return net_compare_ip(net_get_ip(), in); }
 
 #endif

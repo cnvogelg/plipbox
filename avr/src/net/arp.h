@@ -49,9 +49,6 @@ extern u08 arp_is_ipv4(const u08 *buf, u16 len);
 extern u08 arp_is_req_for_me(const u08 *buf);
 extern u08 arp_is_reply_for_me(const u08 *buf);
 
-extern void arp_make_reply(u08 *buf);
-extern void arp_send_request(u08 *buf, const u08 *ip, net_tx_packet_func tx_func);
-
 extern void arp_dump(const u08 *buf);
 
 /* getter */
