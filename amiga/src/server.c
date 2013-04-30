@@ -327,6 +327,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 }
 /*E*/
 
+#if 0
 PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 {
    BOOL rc = FALSE;
@@ -355,6 +356,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
    }
    return rc;
 }
+#endif
 
 /*F*/ PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
@@ -371,18 +373,10 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
       }
       else
       {
-         if(!sendwelcome(pb)) 
-         {
-            d(("error sending welcome packet\n"));
-            rc = FALSE;
-         }
-         else
-         {
-            GetSysTime(&pb->pb_DevStats.LastStart);
-            pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
-            DoEvent(pb, S2EVENT_ONLINE);
-            d(("i'm now online!\n"));
-         }
+         GetSysTime(&pb->pb_DevStats.LastStart);
+         pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
+         DoEvent(pb, S2EVENT_ONLINE);
+         d(("i'm now online!\n"));
       }
    }
 

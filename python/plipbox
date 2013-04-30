@@ -1,141 +1,134 @@
 #!/usr/bin/env python2.7
 
-import sys
+from __future__ import print_function
+
+import sys, os
 import vpar
 import magplip
 import time
 import argparse
+from select import select
+import struct
 
-import impacket
-from impacket import ImpactDecoder, ImpactPacket
-
+# default param
 par_name = "/tmp/hpar"
-size = 1024
-loops = 10
+tap_name = "/dev/tap0"
+plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
 
 # parse args
 parser = argparse.ArgumentParser()
-parser.add_argument('-t', '--tx', action='store_true', default=False, help="start sending a packet")
+parser.add_argument('-r', '--rx', action='store_true', default=False, help="only receive")
+parser.add_argument('-m', '--multicast', action='store_true', default=False, help="transport IPv4 multicasts")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
 parser.add_argument('-d', '--debug', action='store_true', default=False, help="debug code")
-parser.add_argument('-b', '--bytes', type=int, default=1024, help="buffer size in bytes")
-parser.add_argument('-l', '--loops', type=int, default=10, help="number of test loops")
 args = parser.parse_args()
-args.verbose = True
 
-def log(*v):
+# ----- packet to eth frame -----
+
+def log(*v,**kv):
   global args
   if args.verbose:
-    print v
+    print(*v,**kv)
 
-def dump(data):
-  num = 0
-  for a in data:
-    print "%02x " % ord(a),
-    num += 1
-    if num == 16:
-      num = 0
-      print
-  print
+def raw_to_pkt(raw):
+  """convert a raw ethernet frame to packet format for magplip"""
+  tgt_mac = struct.unpack("BBBBBB",raw[0:6])
+  src_mac = struct.unpack("BBBBBB",raw[6:12])
+  eth_type = struct.unpack("!H",raw[12:14])[0]
+  data = raw[14:]
+  return magplip.Packet(data,eth_type,src_mac,tgt_mac)
 
-def decode_mac(mac):
-  res = []
-  for a in mac:
-    res.append("%02x" % a)
-  return ":".join(res)
+def pkt_to_raw(pkt):
+  tgt = struct.pack("BBBBBB",*pkt.tgt)
+  src = struct.pack("BBBBBB",*pkt.src)
+  eth_type = struct.pack("!H",pkt.ptype)
+  data = pkt.data
+  return tgt + src + eth_type + data
 
+def calc_speed(delta, size):
+  kibs = size / (delta * 1024)
+  return "%6.3f KiB/s" % kibs
+
+def check_pkt(pkt, args):
+  global plipbox_mac
+  bcast = (0xff,0xff,0xff,0xff,0xff,0xff)
+  if pkt.tgt == bcast:
+    if pkt.ptype == 0x800:
+      return args.multicast
+    else:
+      return True
+  elif pkt.tgt != plipbox_mac:
+    return False
+  else:
+    return True
+
+# ----- main loop -----
+print("Welcome to plipbox!")
 vpar = vpar.VPar(par_name,verbose=args.debug)
 mp = magplip.MagPlip(vpar)
-
-# handle IP packet
-def handle_ip(mp, pkt):
-  ipDecoder = ImpactDecoder.IPDecoder()
-  ip = ipDecoder.decode(pkt.data)
-  print ip
-  print pkt.src,pkt.tgt
-  dump(pkt.data)
-  child = ip.child()
-  if isinstance(child, ImpactPacket.ICMP):
-    # is a ping ECHO
-    if child.get_icmp_type() == ImpactPacket.ICMP.ICMP_ECHO:
-      icmp = child
-      print "ECHO -> ECHOREPLY"
-      # send reply
-      src = ip.get_ip_src()
-      dst = ip.get_ip_dst()
-      ip.set_ip_src(dst)
-      ip.set_ip_dst(src)
-      icmp.set_icmp_type(ImpactPacket.ICMP.ICMP_ECHOREPLY)
-      ip.auto_checksum = 1
-      icmp.set_icmp_cksum(0)
-      icmp.auto_checksum = 1
-      new_data = ip.get_packet()
-      log("tx",len(new_data))
-      print ip
-      dump(new_data)
-      mp.send(magplip.Packet(new_data,0x800,pkt.tgt,pkt.src))
-
-# handle ARP packet
-def handle_arp(mp, pkt):
-  arpDecoder = ImpactDecoder.ARPDecoder()
-  arp = arpDecoder.decode(pkt.data)
-  print arp
-  dump(pkt.data)
-  # get protocol addresses
-  spa = arp.get_ar_spa()
-  tpa = arp.get_ar_tpa()
-  # get hardware addresses
-  sha = arp.get_ar_sha()
-  tha = arp.get_ar_tha()
-  # get hw addresses from pkt
-  src = pkt.src
-  tgt = pkt.tgt
-  print spa,tpa
-  print sha,tha
-  print src,tgt
-  fake_mac = (0x14,2,0xc,0xa,0xf,0xe)
-  if spa != tpa:
-    mac = fake_mac
-  else:
-    mac = sha
-  # generate reply
-  arp.set_ar_sha(mac)
-  arp.set_ar_tha(sha)
-  arp.set_ar_spa(tpa)
-  arp.set_ar_tpa(spa)
-  arp.set_ar_op(2)
-  new_data = arp.get_packet()
-  log("tx",len(new_data))
-  print arp
-  dump(new_data)
-  mp.send(magplip.Packet(new_data,0x806,pkt.tgt,pkt.src))
-  
-# main loop
-print "Welcome to plipbox!"
+tapf = os.open(tap_name, os.O_RDWR)
+timeout = 0.1
+last_time = time.time()
 try:
+  print("enter loop")
   while True:
-    has_data = mp.can_recv(timeout=1)
-    log("can_recv: ",has_data)
-    if has_data:
-      # rx: get block
-      s = time.time()
-      pkt = mp.recv()
-      e = time.time()
-      delta = e - s
-      if pkt == None:
-        break
-      log("rx size %d delta %0.2f type %04x" % (len(pkt.data),delta,pkt.ptype))
-      log("src=%s tgt=%s" % (decode_mac(pkt.src), decode_mac(pkt.tgt)))
-      if pkt.ptype == 0x806: # ARP
-        handle_arp(mp, pkt)
-      elif pkt.ptype == 0x800: # IP
-        handle_ip(mp, pkt)
-      else:
-        print("UNKNOWN: %04x" % pkt.ptype)
-        dump(pkt.data)
+
+    # io multiplex
+    r = select([tapf,vpar.par_file],[],[])[0]
+    t = time.time()
+    delta = t - last_time
+    last_time = t
+    
+    # got packet from tap?
+    if tapf in r:
+      # read packet
+      raw_buf = os.read(tapf, 4000)
+      pkt = raw_to_pkt(raw_buf)
+      log("%8.3f  tap:"%delta,pkt,end=' ')
+      # send packet to magplip
+      if not args.rx and check_pkt(pkt, args):
+        for retry in xrange(5):
+          try:
+            s = time.time()
+            mp.send(pkt)
+            e = time.time()
+            delta = e - s
+            log(calc_speed(delta, len(pkt.data)),end=' ')
+            break
+          except magplip.MagPlipError as e:
+            log(e,end=' ')
+          time.sleep(0.1)
+      log()
+    
+    # got packet from parallel?
+    if vpar.par_file in r:
+      has_data = mp.can_recv(timeout=1)
+      if has_data:
+        # rx: get block
+        pkt = None
+        try:
+          s = time.time()
+          pkt = mp.recv()
+          e = time.time()
+          delta = e - s
+        except magplip.MagPlipError as e:
+          log(e)
+        if pkt != None:
+          log("%8.3f  PAR:"%delta,pkt,calc_speed(delta,len(pkt.data)),end=' ')
+          # send to tap
+          if not args.rx:
+            raw_buf = pkt_to_raw(pkt)
+            try:
+              os.write(tapf, raw_buf)
+              log()
+            except OSError as e:
+              log(e)
         
 except KeyboardInterrupt:
   pass
 
 vpar.close()
+os.close(tapf)
+print("done")
+
 
