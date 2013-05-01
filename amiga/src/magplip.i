@@ -91,14 +91,15 @@ PLIP_ADDRFIELDSIZE  equ 6
      USHORT   pf_Sync
      SHORT    pf_Size
      USHORT   pf_CRC
-     USHORT   pf_Type
-     STRUCT   pf_SrcAddr,PLIP_ADDRFIELDSIZE
+     LABEL PLIPFrame_CRC_Offset
      STRUCT   pf_DstAddr,PLIP_ADDRFIELDSIZE
+     STRUCT   pf_SrcAddr,PLIP_ADDRFIELDSIZE
+     USHORT   pf_Type
 ;*** UBYTE    pf_Data[MTU];
-     LABEL PLIPFrame_SIZE
 
 PKTFRAMESIZE_1   equ     4
-PKTFRAMESIZE_2   equ     16
+PKTFRAMESIZE_2   equ     2
+PKTFRAMESIZE_3   equ     14
 
 SYNCBYTE_HEAD    equ     $42
 SYNCBYTE_CRC     equ     $01

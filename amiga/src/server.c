@@ -502,7 +502,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
                                                       ios2->ios2_DataLength));
 
          frame->pf_Type = (USHORT)ios2->ios2_PacketType;
-         frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2;
+         frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2 + PKTFRAMESIZE_3;
          memcpy(frame->pf_SrcAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
          memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
 
@@ -664,7 +664,7 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
    {
       pb->pb_DevStats.PacketsReceived++;
 
-      datasize = frame->pf_Size - PKTFRAMESIZE_2;
+      datasize = frame->pf_Size - (PKTFRAMESIZE_2 + PKTFRAMESIZE_3);
 
       dotracktype(pb, pkttyp = frame->pf_Type, 0, 1, 0, datasize, 0);
 

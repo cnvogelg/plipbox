@@ -110,15 +110,17 @@
 
    /* this _is_ awful, I know */
 #define PKTFRAMESIZE_1           4        /* the sync-field and packet-size */
-#define PKTFRAMESIZE_2           16       /* crc and packet type + addrs = 2 + 2 + 2 * 6 = 16 */
+#define PKTFRAMESIZE_2           2        /* crc only */
+#define PKTFRAMESIZE_3           14       /* ethernet header: dst, src, type */
 
 struct PLIPFrame {
    USHORT   pf_Sync;
    SHORT    pf_Size;
    USHORT   pf_CRC;
-   USHORT   pf_Type;
-   UBYTE    pf_SrcAddr[PLIP_ADDRFIELDSIZE];
+   /* use layout of ethernet header here */
    UBYTE    pf_DstAddr[PLIP_ADDRFIELDSIZE];
+   UBYTE    pf_SrcAddr[PLIP_ADDRFIELDSIZE];
+   USHORT   pf_Type;
    /*UBYTE    pf_Data[MTU];*/
 };
 

@@ -7,24 +7,6 @@ MAGIC=0x42
 CRC=0x01
 NO_CRC=0x02
 
-class Packet:
-    def __init__(self, data=None, ptype=0x400, src=None, tgt=None):
-        self.data = data
-        self.ptype = ptype
-        self.src = src
-        self.tgt = tgt
-
-    def __repr__(self):
-        s = self.decode_mac(self.src)
-        t = self.decode_mac(self.tgt)
-        return "[#%04d:0x%04x:%s->%s]" % (len(self.data),self.ptype,s,t)
-
-    def decode_mac(self, mac):
-        res = []
-        for a in mac:
-            res.append("%02x" % a)
-        return ":".join(res)
-
 class MagPlipError(Exception):
     def __init__(self, value):
         self.value = value
@@ -101,23 +83,6 @@ class MagPlip:
         ok = self.set_next_byte(not toggle_expect, v2, timeout)
         return ok
 
-    def set_next_long(self, toggle_expect, value, timeout=1):
-        v1 = value / 0x10000
-        ok = self.set_next_word(toggle_expect, v1, timeout)
-        if not ok:
-            return False
-        v2 = value % 0x10000
-        ok = self.set_next_word(toggle_expect, v2, timeout)
-        return ok
-
-    def set_next_bytes(self, toggle_expect, buf, timeout=1):
-        for v in buf:
-            ok = self.set_next_byte(toggle_expect, v, timeout)
-            if not ok:
-                return False
-            toggle_expect = not toggle_expect
-        return True
-
     def get_next_byte(self, toggle_expect, timeout=1):
         ok = self.wait_line_toggle(toggle_expect, timeout)
         if not ok:
@@ -135,28 +100,9 @@ class MagPlip:
             return None
         return v1 * 256 + v2
 
-    def get_next_long(self, toggle_expect, timeout=1):
-        v1 = self.get_next_word(toggle_expect, timeout)
-        if v1 == None:
-            return None
-        v2 = self.get_next_word(toggle_expect, timeout)
-        if v2 == None:
-            return None
-        return v1 * 0x10000 + v2
-    
-    def get_next_bytes(self, toggle_expect, num, timeout=1):
-        buf = []
-        for i in xrange(num):
-            v = self.get_next_byte(toggle_expect, timeout)
-            if v == None:
-                return None
-            buf.append(v)
-            toggle_expect = not toggle_expect
-        return buf
-    
     # ----- public API ----
 
-    def send(self, pkt, timeout=1, crc=False):
+    def send(self, raw_pkt, timeout=1, crc=False):
         """send a packet via vpar port"""
         # set HS_LINE (BUSY)
         self.vpar.set_status_mask(vpar.BUSY_MASK)
@@ -169,12 +115,12 @@ class MagPlip:
             ok = self.wait_select(True, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: Waiting for select")
-            # set byte for CRC
+            # set byte for magic code NO_CRC
             ok = self.set_next_byte(True, 0x02, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: CRC flag")
             # send size
-            size = len(pkt.data) + 2 + 2 + 2 * 6 # crc + packet type + 2 * addr
+            size = len(raw_pkt) + 2 # add crc
             ok = self.set_next_word(False, size, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: size value")
@@ -183,22 +129,10 @@ class MagPlip:
             ok = self.set_next_word(False, crc, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: CRC value")
-            # send packet type
-            ok = self.set_next_word(False, pkt.ptype, timeout)
-            if not ok:
-                raise MagPlipError("tx ERROR: ptype value")
-            # send src addr
-            ok = self.set_next_bytes(False, pkt.src, timeout)
-            if not ok:
-                raise MagPlipError("tx ERROR: src addr")
-            # send tgt addr
-            ok = self.set_next_bytes(False, pkt.tgt, timeout)
-            if not ok:
-                raise MagPlipError("tx ERROR: tgt addr")
             # send data
             toggle = False
             pos = 0
-            for a in pkt.data:
+            for a in raw_pkt:
                 ok = self.set_next_byte(toggle, ord(a), timeout)
                 if not ok:
                     raise MagPlipError("tx ERROR: data @%d" % pos)
@@ -242,35 +176,23 @@ class MagPlip:
             crc = self.get_next_word(True, timeout)
             if crc == None:
                 raise MagPlipError("rx ERROR: no crc value")
-            # get type
-            ptype = self.get_next_word(True, timeout)
-            if ptype == None:
-                raise MagPlipError("rx ERROR: no crc value")
-            # get src hw addr
-            src = self.get_next_bytes(True, 6, timeout)
-            if src == None:
-                raise MagPlipError("rx ERROR: no src addr")
-            # get tgt hw addr
-            tgt = self.get_next_bytes(True, 6, timeout)
-            if tgt == None:
-                raise MagPlipError("rx ERROR: no tgt addr")
-            size -= 2 + 2 + 2 * 6 # skip type + crc + 2 * addr 
+            size -= 2 # skip crc
             # get data
             toggle = True
             pos = 0
-            data = ""
+            raw_pkt = ""
             for i in xrange(size):
                 d = self.get_next_byte(toggle, timeout)
                 if d == None:
                     raise MagPlipError("rx ERROR: data @%d" % pos)
-                data += chr(d)
+                raw_pkt += chr(d)
                 toggle = not toggle
                 pos = pos+1
             # wait for select gone
             ok = self.wait_select(False, timeout)
             if not ok:
                 raise MagPlipError("rx ERROR: no unselect")
-            return Packet(data, ptype, src, tgt)
+            return raw_pkt
         finally:
             # clear BUSY
             self.vpar.clr_status_mask(vpar.BUSY_MASK)
