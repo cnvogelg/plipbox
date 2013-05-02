@@ -3,16 +3,20 @@
 from __future__ import print_function
 
 import sys, os
-import vpar
-import magplip
 import time
 import argparse
 from select import select
 import struct
 
+import vpar
+import magplip
+import tap
+import bridge
+
 # default param
 par_name = "/tmp/hpar"
-tap_name = "/dev/tap0"
+tap_name = "tap0"
+eth_name = "en1"
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
 
 # parse args
@@ -73,25 +77,35 @@ def check_pkt(pkt, args):
 
 # ----- main loop -----
 print("Welcome to plipbox!")
+
+# setup vpar and magplip
 vpar = vpar.VPar(par_name,verbose=args.debug)
 mp = magplip.MagPlip(vpar)
-tapf = os.open(tap_name, os.O_RDWR)
+
+# setup tap and bridge
+log("opening tap:",tap_name)
+tap = tap.Tap(tap_name)
+tap_fd = tap.get_fd()
+log("setup bridge:",tap_name,eth_name)
+bridge = bridge.Bridge(tap_name, eth_name)
+bridge.up()
+
 timeout = 0.1
 last_time = time.time()
 try:
-  print("enter loop")
+  log("enter main loop")
   while True:
 
     # io multiplex
-    r = select([tapf,vpar.par_file],[],[])[0]
+    r = select([tap_fd,vpar.par_file],[],[])[0]
     t = time.time()
     delta = t - last_time
     last_time = t
     
     # got packet from tap?
-    if tapf in r:
+    if tap_fd in r:
       # read packet
-      raw_buf = os.read(tapf, 4000)
+      raw_buf = tap.read(4000)
       # decode frame
       eth_frame = EthFrame()
       eth_frame.decode(raw_buf)
@@ -131,7 +145,7 @@ try:
           # send to tap
           if not args.rx:
             try:
-              os.write(tapf, raw_buf)
+              tap.write(raw_buf)
               log()
             except OSError as e:
               log(e)
@@ -139,10 +153,12 @@ try:
           log(e)
         
 except KeyboardInterrupt:
-  pass
+  print
 
+log("shutting down")
 vpar.close()
-os.close(tapf)
-print("done")
+tap.close()
+bridge.down()
+log("done")
 
 
