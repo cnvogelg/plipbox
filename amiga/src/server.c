@@ -635,7 +635,7 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
       }
    }
    if(broadcast) {
-      req->ios2_Req.io_Flags = SANA2IOB_BCAST;
+      req->ios2_Req.io_Flags = SANA2IOF_BCAST;
    }
 }
 
