@@ -22,7 +22,10 @@ class SoPTY:
     return self._fd
   
   def close(self):
-    os.unlink(self._file_name)
+    try:
+      os.unlink(self._file_name)
+    except OSError:
+      pass
     
   def read(self, size):
     return os.read(self._fd, size)

@@ -2,6 +2,7 @@
 
 import vpar
 import time
+import datetime
 
 MAGIC=0x42
 CRC=0x01
@@ -27,29 +28,35 @@ class MagPlip:
         """wait for SELECT signal"""
         t = time.time()
         end = t + timeout
+        found = False
         while t < end:
             s = self.vpar.peek_status() & vpar.SEL_MASK
             if s and value:
-                return True
+                found = True
+                break
             elif not s and not value:
-                return True
-            
+                found = True
+                break
+                
             rem = end - t
             self.vpar.read(rem)
             t = time.time()
-        return False
+        return found
     
     def wait_line_toggle(self, expect, timeout=1):
         """wait for toggle on POUT signal"""
         #print expect
         t = time.time()
         end = t + timeout
+        found = False
         while t < end:
             s = self.vpar.peek_status()
             if expect and ((s & vpar.POUT_MASK) == vpar.POUT_MASK):
-                return True
+                found = True
+                break
             elif (not expect) and ((s & vpar.POUT_MASK) == 0):
-                return True
+                found = True
+                break
             
             # check for SELECT -> arbitration loss?
             if (s & vpar.SEL_MASK) != vpar.SEL_MASK:
@@ -58,7 +65,7 @@ class MagPlip:
             rem = end - t
             self.vpar.read(rem)
             t = time.time()
-        return False
+        return found
     
     def toggle_busy(self, value):
         if value:
@@ -109,12 +116,15 @@ class MagPlip:
         # set magic byte
         self.vpar.set_data(MAGIC)
         # pulse ACK -> trigger IRQ in server
+        trigger = time.time()
         self.vpar.trigger_ack()
         try:
             # wait for select
             ok = self.wait_select(True, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: Waiting for select")
+            start = time.time()
+            first_delta = start - trigger
             # set byte for magic code NO_CRC
             ok = self.set_next_byte(True, 0x02, timeout)
             if not ok:
@@ -142,22 +152,29 @@ class MagPlip:
             ok = self.wait_line_toggle(toggle, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: final toggle")
+            end = time.time()
+            data_delta = end - start
             # wait for select end
             ok = self.wait_select(False, timeout)
             if not ok:
                 raise MagPlipError("tx ERROR: Waiting for unselect")
+            last = time.time()
+            last_delta = last - end
+            return (first_delta, data_delta, last_delta)
         finally:
             # clear HS_LINE (BUSY)
             self.vpar.clr_status_mask(vpar.BUSY_MASK)
 
-    def can_recv(self, timeout=0):
-        """check if we can receive a packet"""
-        # first assume SELECT to be set
-        return self.wait_select(True, timeout)
-
     def recv(self, timeout=1):
         """receive a data packet via vpar port. make sure to call can_recv() before!!"""
         try:
+            first = time.time()
+            # first assume SELECT to be set
+            ok = self.wait_select(True, timeout)
+            if not ok:
+              return None,None
+            start = time.time()
+            first_delta = start - first
             # get magic byte
             magic = self.get_next_byte(True, timeout)
             if not magic:
@@ -188,11 +205,15 @@ class MagPlip:
                 raw_pkt += chr(d)
                 toggle = not toggle
                 pos = pos+1
+            end = time.time()
+            data_delta = end - start
             # wait for select gone
             ok = self.wait_select(False, timeout)
             if not ok:
                 raise MagPlipError("rx ERROR: no unselect")
-            return raw_pkt
+            last = time.time()
+            last_delta = last - end
+            return raw_pkt,(first_delta, data_delta, last_delta)
         finally:
             # clear BUSY
             self.vpar.clr_status_mask(vpar.BUSY_MASK)

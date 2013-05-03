@@ -63,6 +63,12 @@ def calc_speed(delta, size):
   kibs = size / (delta * 1024)
   return "%6.3f KiB/s" % kibs
 
+def get_speed_bar(delta, deltas, n):
+  return "%s %s f=%4.3f l=%4.3f" % (
+    calc_speed(delta, n), calc_speed(deltas[1], n),
+    deltas[0], deltas[1]
+  )
+
 def check_pkt(pkt, args):
   global plipbox_mac
   bcast = (0xff,0xff,0xff,0xff,0xff,0xff)
@@ -120,10 +126,11 @@ try:
         for retry in xrange(5):
           try:
             s = time.time()
-            mp.send(raw_buf)
+            deltas = mp.send(raw_buf)
             e = time.time()
-            delta = e - s
-            log(calc_speed(delta, len(raw_buf)),end=' ')
+            d = e - s
+            n = len(raw_buf)
+            log(get_speed_bar(d, deltas, n), end=' ')
             break
           except magplip.MagPlipError as e:
             log(e,end=' ')
@@ -133,20 +140,20 @@ try:
     
     # got packet from parallel?
     if sp_fd in r[0]:
-      has_data = mp.can_recv(timeout=0.1)
-      if has_data:
-        # rx: get block
-        pkt = None
-        try:
-          # receive frame
-          s = time.time()
-          raw_buf = mp.recv()
-          e = time.time()
-          delta = e - s
+      # rx: get block
+      pkt = None
+      try:
+        # receive frame
+        s = time.time()
+        raw_buf,deltas = mp.recv()
+        e = time.time()
+        d = e - s
+        if raw_buf != None:
           # decode frame
           eth_frame = EthFrame()
           eth_frame.decode(raw_buf)
-          log("%8.3f  PAR:"%delta,eth_frame,calc_speed(delta,len(raw_buf)),end=' ')
+          n = len(raw_buf)
+          log("%8.3f  PAR:"%delta, eth_frame, get_speed_bar(d,deltas,n), end=' ')
           # send to tap
           if not args.rx:
             try:
@@ -154,8 +161,8 @@ try:
               log()
             except OSError as e:
               log(e)
-        except magplip.MagPlipError as e:
-          log(e)
+      except magplip.MagPlipError as e:
+        log(e)
         
 except KeyboardInterrupt:
   print
