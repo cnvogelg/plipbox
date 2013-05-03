@@ -9,12 +9,12 @@ SEL_MASK = 4
 ACK_MASK = 8
 
 class VPar:
-    def __init__(self, par_name=None, verbose=False):
-        self.par_name = par_name
+    def __init__(self, par_file, verbose=False):
         self.verbose = verbose
-        self.par_file = open(self.par_name, "r+b", 0)
+        self.par_file = par_file
         self.ctl = 0
         self.dat = 0
+        self.fd = par_file.get_fd()
     
     def close(self):
         self.par_file.close()
@@ -26,7 +26,7 @@ class VPar:
             
     def has_data(self, timeout=0):
         """poll if new data is available"""
-        ready = select.select([self.par_file],[],[],timeout)[0]
+        ready = select.select([self.fd],[],[],timeout)[0]
         return len(ready)
 
     def read(self, timeout=0):
@@ -41,9 +41,9 @@ class VPar:
     
     def write(self, data):
         self.par_file.write(data)
-        self.par_file.flush()
+        #self.par_file.flush()
     
-    def request_state(self, timeout=10):
+    def request_state(self, timeout=1):
         self.write(chr(0)+chr(0))
         self.read(timeout)
             

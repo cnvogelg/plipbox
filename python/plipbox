@@ -8,13 +8,14 @@ import argparse
 from select import select
 import struct
 
+import sopty
 import vpar
 import magplip
 import tap
 import bridge
 
 # default param
-par_name = "/tmp/hpar"
+par_name = "/tmp/vpar"
 tap_name = "tap0"
 eth_name = "en1"
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
@@ -66,10 +67,7 @@ def check_pkt(pkt, args):
   global plipbox_mac
   bcast = (0xff,0xff,0xff,0xff,0xff,0xff)
   if pkt.tgt_mac == bcast:
-    if pkt.eth_type == 0x800:
-      return args.multicast
-    else:
-      return True
+    return True
   elif pkt.tgt_mac != plipbox_mac:
     return False
   else:
@@ -79,13 +77,20 @@ def check_pkt(pkt, args):
 print("Welcome to plipbox!")
 
 # setup vpar and magplip
-vpar = vpar.VPar(par_name,verbose=args.debug)
+log("opening pty:",par_name)
+sp = sopty.SoPTY(par_name)
+sp_fd = sp.get_fd()
+
+log("vpar")
+vpar = vpar.VPar(sp,verbose=args.debug)
+log("magplip")
 mp = magplip.MagPlip(vpar)
 
 # setup tap and bridge
 log("opening tap:",tap_name)
 tap = tap.Tap(tap_name)
 tap_fd = tap.get_fd()
+
 log("setup bridge:",tap_name,eth_name)
 bridge = bridge.Bridge(tap_name, eth_name)
 bridge.up()
@@ -97,13 +102,13 @@ try:
   while True:
 
     # io multiplex
-    r = select([tap_fd,vpar.par_file],[],[])[0]
+    r = select([tap_fd,sp_fd],[],[])
     t = time.time()
     delta = t - last_time
     last_time = t
     
     # got packet from tap?
-    if tap_fd in r:
+    if tap_fd in r[0]:
       # read packet
       raw_buf = tap.read(4000)
       # decode frame
@@ -127,8 +132,8 @@ try:
       log()
     
     # got packet from parallel?
-    if vpar.par_file in r:
-      has_data = mp.can_recv(timeout=1)
+    if sp_fd in r[0]:
+      has_data = mp.can_recv(timeout=0.1)
       if has_data:
         # rx: get block
         pkt = None
@@ -154,11 +159,10 @@ try:
         
 except KeyboardInterrupt:
   print
-
-log("shutting down")
-vpar.close()
-tap.close()
-bridge.down()
-log("done")
-
-
+finally:
+  log("shutting down")
+  bridge.down()
+  tap.close()
+  vpar.close()
+  sp.close()
+  log("done")

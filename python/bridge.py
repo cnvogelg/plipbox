@@ -7,6 +7,7 @@ class Bridge:
     self._ifa = ifa
     self._ifb = ifb
     self._name = name
+    self._sudo = '/usr/bin/sudo'
     if sys.platform == 'darwin':
       self._ifconfig = '/sbin/ifconfig'
     else:
@@ -17,10 +18,10 @@ class Bridge:
   
   def up(self):
     if sys.platform == 'darwin':
-      self._run([self._ifconfig,self._name,'create'])
-      self._run([self._ifconfig,self._name,'addm',self._ifa,'addm',self._ifb])
-      self._run([self._ifconfig,self._name,'up'])
+      self._run([self._sudo,self._ifconfig,self._name,'create'])
+      self._run([self._sudo,self._ifconfig,self._name,'addm',self._ifa,'addm',self._ifb])
+      self._run([self._sudo,self._ifconfig,self._name,'up'])
     
   def down(self):
     if sys.platform == 'darwin':
-      self._run([self._ifconfig,self._name,'destroy'])
+      self._run([self._sudo,self._ifconfig,self._name,'destroy'])
