@@ -28,6 +28,6 @@
 
 #include "global.h"
 
-extern void eth_tx_send(u16 eth_type, u16 ip_size, u16 copy_size, const u08 *tgt_mac);
+extern void eth_tx_send(u16 eth_type, u16 eth_size);
 
 #endif

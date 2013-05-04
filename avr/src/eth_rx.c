@@ -57,10 +57,10 @@ static void uart_send_prefix(void)
   uart_send_pstring(PSTR(" eth(rx): "));
 }
 
-static u08 filter_packet(plip_packet_t *pkt)
+static u08 filter_packet(const u08 *eth_buf)
 {
   // drop unknown types
-  u16 type = pkt->type;
+  u16 type = eth_get_pkt_type(eth_buf);
   if((type != ETH_TYPE_ARP) && (type != ETH_TYPE_IPV4)) {
     if(param.show_drop) {
       uart_send_prefix();
@@ -71,11 +71,12 @@ static u08 filter_packet(plip_packet_t *pkt)
   }
   
   // tgt mac: either my mac or broadcast
-  if((!net_compare_mac(param.mac,pkt->dst_addr)) && (!net_compare_bcast_mac(pkt->dst_addr))) {
+  const u08 *tgt_addr = eth_get_tgt_mac(eth_buf);
+  if((!net_compare_mac(param.mac,tgt_addr)) && (!net_compare_bcast_mac(tgt_addr))) {
     if(param.show_drop) {
       uart_send_prefix();
       uart_send_pstring(PSTR("mac? "));
-      net_dump_mac(pkt->dst_addr);
+      net_dump_mac(tgt_addr);
       uart_send_crlf();
     }
   }
@@ -96,33 +97,28 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     // first read only the ethernet header into our buffer
     enc28j60_packet_rx_blk(pkt_buf, ETH_HDR_SIZE);
   
-    // copy src/tgt mac and type from eth frame
-    net_copy_mac(eth_get_tgt_mac(pkt_buf), pkt.dst_addr);
-    net_copy_mac(eth_get_src_mac(pkt_buf), pkt.src_addr);
-    pkt.type = eth_get_pkt_type(pkt_buf);
-
     // total size of packet
     u16 ip_len = len - ETH_HDR_SIZE;
-    pkt.size = ip_len;
     
     // dump incoming packet
     if(param.show_pkt) {
-      dump_plip_pkt(&pkt, uart_send_prefix);
+      dump_eth_pkt(pkt_buf, ip_len, uart_send_prefix);
     }
 
     // depending on type fetch more from buffer
-    u16 mem_len = 0;
+    u16 mem_len = ETH_HDR_SIZE;
     u08 *buf = pkt_buf + ETH_HDR_SIZE;
-    if(pkt.type == ETH_TYPE_ARP) {
+    u16 type = eth_get_pkt_type(pkt_buf);
+    if(type == ETH_TYPE_ARP) {
       // ARP
-      mem_len = ARP_SIZE;
+      mem_len += ARP_SIZE;
       enc28j60_packet_rx_blk(buf, mem_len);
       if(param.show_arp) {
         dump_arp_pkt(buf,uart_send_prefix);
       }
-    } else if(pkt.type == ETH_TYPE_IPV4) {
+    } else if(type == ETH_TYPE_IPV4) {
       // IPv4
-      mem_len = IP_MIN_HDR_SIZE;
+      mem_len += IP_MIN_HDR_SIZE;
       enc28j60_packet_rx_blk(buf, mem_len);
       if(param.show_ip) {
         dump_ip_pkt(buf,ip_len,uart_send_prefix);
@@ -132,9 +128,9 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     // what to do with the eth packet?
     if(plip_online) {    
       // if it does pass filter then send it via plip
-      if(filter_packet(&pkt)) {
-        // send pkt via plip
-        plip_tx_send(ETH_HDR_SIZE, mem_len, ip_len);
+      if(filter_packet(pkt_buf)) {
+        // send full pkt via plip
+        plip_tx_send(0, mem_len, ip_len);
       } else {
         if(param.show_drop) {
           uart_send_prefix();

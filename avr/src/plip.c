@@ -124,18 +124,6 @@ static u08 get_next_word(u16 *data, u08 toggle_expect, u08 state_flag)
   return PLIP_STATUS_OK;
 }
 
-static u08 get_next_bytes(u08 *data, u08 size, u08 toggle_expect, u08 state_flag)
-{
-  for(u08 i=0;i<size;i++) {
-    u08 status = get_next_byte(&data[i], toggle_expect, state_flag);
-    if(status != PLIP_STATUS_OK) {
-      return status;
-    }
-    toggle_expect = !toggle_expect;
-  }
-  return PLIP_STATUS_OK;
-}
-
 static u08 wait_for_select(u08 select_state, u08 state_flag)
 {
   timer_100us = 0;
@@ -201,31 +189,10 @@ u08 plip_recv(plip_packet_t *pkt)
   // read crc
   u16 crc;
   if(status == PLIP_STATUS_OK) {
-    pkt->size = size - (2 + 2 + (2* PLIP_ADDR_SIZE));
+    pkt->size = size - 2; // without crc
     status = get_next_word(&crc, 1, PLIP_STATE_CRC);
   }
   size -= 2;
-  
-  // read type
-  u16 type = 0;
-  if(status == PLIP_STATUS_OK) {
-    pkt->crc = crc;
-    status = get_next_word(&type, 1, PLIP_STATE_TYPE);
-  }
-  size -= 2;
-  
-  // read src addr
-  if(status == PLIP_STATUS_OK) {
-    pkt->type = type;
-    status = get_next_bytes(pkt->src_addr, PLIP_ADDR_SIZE, 1, PLIP_STATE_SRC_ADDR);
-  }
-  size -= PLIP_ADDR_SIZE;
-  
-  // read tgt addr
-  if(status == PLIP_STATUS_OK) {
-    status = get_next_bytes(pkt->dst_addr, PLIP_ADDR_SIZE, 1, PLIP_STATE_DST_ADDR);
-  }
-  size -= PLIP_ADDR_SIZE;
   
   // report begin of frame
   if(status == PLIP_STATUS_OK) {
@@ -300,18 +267,6 @@ static u08 set_next_word(u16 word, u08 toggle_expect, u08 state_flag)
   return status;
 }
 
-static u08 set_next_bytes(u08 *data, u08 size, u08 toggle_expect, u08 state_flag)
-{
-  for(u08 i=0;i<size;i++) {
-    u08 status = set_next_byte(data[i], toggle_expect, state_flag);
-    if(status != PLIP_STATUS_OK) {
-      return status;
-    }
-    toggle_expect = !toggle_expect;
-  }
-  return PLIP_STATUS_OK;
-}
-
 u08 plip_send(plip_packet_t *pkt)
 {
   u08 status = PLIP_STATUS_OK;
@@ -344,8 +299,8 @@ u08 plip_send(plip_packet_t *pkt)
   
   // send size
   if(status==PLIP_STATUS_OK) {
-    // pkt size = data size + CRC (word) + TYPE (word) + SRC_ADDR + DST_ADDR
-    u16 size = pkt->size + (2 + 2 + (2*PLIP_ADDR_SIZE)); 
+    // pkt size = data size + CRC (word)
+    u16 size = pkt->size + 2; 
     status = set_next_word(size, 0, PLIP_STATE_SIZE);
   }
   
@@ -354,21 +309,6 @@ u08 plip_send(plip_packet_t *pkt)
     status = set_next_word(pkt->crc, 0, PLIP_STATE_CRC);
   }
   
-  // send type
-  if(status==PLIP_STATUS_OK) {
-    status = set_next_word(pkt->type, 0, PLIP_STATE_TYPE);
-  }
-  
-  // send src addr
-  if(status==PLIP_STATUS_OK) {
-    status = set_next_bytes(pkt->src_addr, PLIP_ADDR_SIZE, 0, PLIP_STATE_SRC_ADDR);
-  }
-  
-  // send dst addr
-  if(status==PLIP_STATUS_OK) {
-    status = set_next_bytes(pkt->dst_addr, PLIP_ADDR_SIZE, 0, PLIP_STATE_SRC_ADDR);
-  }
-
   // send packet bytes
   if(status==PLIP_STATUS_OK) {
     u08 toggle_expect = 0;

@@ -31,19 +31,6 @@
 #include "net/eth.h"
 #include "net/ip.h"
 
-void dump_plip_pkt(const plip_packet_t *pkt, write_prefix_func_t f)
-{
-  f();
-  uart_send_pstring(PSTR("pkt: src="));
-  net_dump_mac(pkt->src_addr);
-  uart_send_pstring(PSTR(" dst="));
-  net_dump_mac(pkt->dst_addr);
-  uart_send_pstring(PSTR(" type="));
-  uart_send_hex_word_spc(pkt->type);
-  uart_send_pstring(PSTR("size="));
-  uart_send_hex_word_crlf(pkt->size);
-}
-
 void dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f)
 {
   f();

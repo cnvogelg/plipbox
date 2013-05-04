@@ -39,27 +39,16 @@ static void uart_send_prefix(void)
   uart_send_pstring(PSTR(" eth(TX): "));
 }
 
-void eth_tx_send(u16 eth_type, u16 ip_size, u16 copy_size, const u08 *tgt_mac)
+void eth_tx_send(u16 eth_type, u16 eth_size)
 {
-  // now build ethernet header
-  eth_set_pkt_type(pkt_buf, eth_type);
-  eth_set_src_mac(pkt_buf, param.mac);
-  eth_set_tgt_mac(pkt_buf, tgt_mac);
-
   // dump eth packet
   if(param.show_pkt) {
-    dump_eth_pkt(pkt_buf, ip_size, uart_send_prefix);
+    dump_eth_pkt(pkt_buf, eth_size, uart_send_prefix);
   }
 
   // wait for tx is possible
   enc28j60_packet_tx_prepare();
 
-  // copy (newly created) eth header
-  enc28j60_packet_tx_begin_range(0);
-  enc28j60_packet_tx_blk(pkt_buf, copy_size);
-  enc28j60_packet_tx_end_range();
-
   // finally send ethernet packet
-  u16 pkt_size = ip_size + ETH_HDR_SIZE;
-  enc28j60_packet_tx_send(pkt_size);
+  enc28j60_packet_tx_send(eth_size);
 }

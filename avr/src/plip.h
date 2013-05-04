@@ -64,10 +64,7 @@ typedef struct {
   u08 crc_type;
   u16 size;
   u16 crc;
-  u16 type;
   u16 real_size; // will be set after tx/rx
-  u08 src_addr[PLIP_ADDR_SIZE];
-  u08 dst_addr[PLIP_ADDR_SIZE];
 } plip_packet_t;
 
 typedef u08 (*plip_packet_func)(plip_packet_t *pkt);

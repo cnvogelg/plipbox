@@ -70,7 +70,7 @@ void plip_tx_worker(u08 plip_online)
   if(plip_online && (retry > 0)) {
 
     if(param.show_pkt) {
-      dump_plip_pkt(&pkt,uart_send_prefix);
+      dump_eth_pkt(pkt_buf,pkt.size,uart_send_prefix);
     }
     
     u08 status = plip_send(&pkt);
@@ -95,7 +95,7 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   pkt.crc_type = PLIP_NOCRC;
 
   if(param.show_pkt) {
-    dump_plip_pkt(&pkt,uart_send_prefix);
+    dump_eth_pkt(pkt_buf,total_size,uart_send_prefix);
   }
   
   u08 status = plip_send(&pkt);

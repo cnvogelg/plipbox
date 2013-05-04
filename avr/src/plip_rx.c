@@ -47,11 +47,9 @@ static u08 offset;
 
 static u08 begin_rx(plip_packet_t *pkt)
 {
-  // start writing packet after (potential) ETH header
-  offset = ETH_HDR_SIZE;
-  
-  // start writing after ETH header
-  enc28j60_packet_tx_begin_range(ETH_HDR_SIZE);
+  // start writing packet with eth header
+  offset = 0;
+  enc28j60_packet_tx_begin_range(0);
   
   return PLIP_STATUS_OK;
 }
@@ -90,15 +88,15 @@ static void uart_send_prefix(void)
 
 //#define DEBUG
 
-static void handle_ip_pkt(plip_packet_t *pkt, u08 eth_online)
+static void handle_ip_pkt(u08 eth_online)
 {
   if(param.show_ip) {
-    dump_ip_pkt(pkt_buf + ETH_HDR_SIZE, pkt->size, uart_send_prefix);
+    dump_ip_pkt(pkt_buf + ETH_HDR_SIZE, pkt.size, uart_send_prefix);
   }
   
   if(eth_online) {
     // simply send packet to ethernet
-    eth_tx_send(ETH_TYPE_IPV4, pkt->size, ETH_HDR_SIZE, pkt->dst_addr);
+    eth_tx_send(ETH_TYPE_IPV4, pkt.size);
   } else {
     // no ethernet online -> we have to drop packet
     uart_send_prefix();
@@ -107,10 +105,10 @@ static void handle_ip_pkt(plip_packet_t *pkt, u08 eth_online)
   }
 }
 
-static void handle_arp_pkt(plip_packet_t *pkt, u08 eth_online)
+static void handle_arp_pkt(u08 eth_online)
 {
   u08 *arp_buf = pkt_buf + ETH_HDR_SIZE;
-  u16 arp_size = pkt->size;
+  u16 arp_size = pkt.size;
   
   // make sure its an IPv4 ARP packet
   if(!arp_is_ipv4(arp_buf, arp_size)) {
@@ -127,7 +125,7 @@ static void handle_arp_pkt(plip_packet_t *pkt, u08 eth_online)
   // ARP request should now be something like this:
   // src_mac = Amiga MAC
   // src_ip = Amiga IP
-  const u08 *pkt_src_mac = pkt->src_addr;
+  const u08 *pkt_src_mac = eth_get_src_mac(pkt_buf);
   const u08 *arp_src_mac = arp_get_src_mac(arp_buf);
   
   // pkt src and arp src must be the same
@@ -140,7 +138,7 @@ static void handle_arp_pkt(plip_packet_t *pkt, u08 eth_online)
     
   // send ARP packet to ethernet
   if(eth_online) {
-    eth_tx_send(ETH_TYPE_ARP, arp_size, ETH_HDR_SIZE, pkt->dst_addr);
+    eth_tx_send(ETH_TYPE_ARP, pkt.size);
   } else {
     // no ethernet online -> we have to drop packet
     uart_send_prefix();
@@ -149,11 +147,12 @@ static void handle_arp_pkt(plip_packet_t *pkt, u08 eth_online)
   }
 }
 
-static u08 update_my_mac(plip_packet_t *pkt)
+static u08 update_my_mac(const u08 *eth_buf)
 {
   // update mac if its not a broadcast or zero mac
-  if(!net_compare_bcast_mac(pkt->src_addr) && !net_compare_zero_mac(pkt->src_addr)) {
-    net_copy_mac(pkt->src_addr, param.mac);
+  const u08 *src_addr = eth_get_src_mac(eth_buf);
+  if(!net_compare_bcast_mac(src_addr) && !net_compare_zero_mac(src_addr)) {
+    net_copy_mac(src_addr, param.mac);
    
     uart_send_prefix();
     uart_send_pstring(PSTR("UPDATE: mac="));
@@ -187,25 +186,25 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
     if(status == PLIP_STATUS_OK) {
 
       if(param.show_pkt) {
-        dump_plip_pkt(&pkt, uart_send_prefix);
+        dump_eth_pkt(pkt_buf, pkt.size, uart_send_prefix);
       }
 
       // update mac?
       if(!has_mac) {
-        if(update_my_mac(&pkt)) {
+        if(update_my_mac(pkt_buf)) {
           has_mac = 1;
         }
       }
 
       // got a valid packet from plip -> check type
-      u16 type = pkt.type;
+      u16 type = eth_get_pkt_type(pkt_buf);
       // handle IP packet
       if(type == ETH_TYPE_IPV4) {
-        handle_ip_pkt(&pkt, eth_online);
+        handle_ip_pkt(eth_online);
       }
       // handle ARP packet
       else if(type == ETH_TYPE_ARP) {
-        handle_arp_pkt(&pkt, eth_online);
+        handle_arp_pkt(eth_online);
       }
       // unknown packet type
       else {
