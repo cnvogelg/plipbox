@@ -37,6 +37,8 @@
 #include "net/udp.h"
 #include "net/eth.h"
 #include "net/net.h"
+#include "net/ip.h"
+#include "net/udp.h"
 
 #include "enc28j60.h"
 #include "pkt_buf.h"
@@ -58,11 +60,48 @@ static void uart_send_prefix(void)
   uart_send_pstring(PSTR(" eth(rx): "));
 }
 
+static u08 filter_broadcast_ipv4(const u08 *eth_buf, u08 dump_flag)
+{
+  const u08 *ip_buf = eth_buf + ETH_HDR_SIZE;
+  const u08 *tgt_ip = ip_get_tgt_ip(ip_buf);
+  u08 is_ip_bcast = net_compare_bcast_ip(tgt_ip);
+  // accept eth broadcast only if ip is also a broadcast (255.255.255.255)
+  if(!is_ip_bcast) {
+    if(dump_flag) {
+      uart_send_pstring(PSTR("bcast ip? "));
+    }
+    return 0;
+  }
+  // make sure its a udp
+  u08 ip_proto = ip_get_protocol(ip_buf);
+  if(ip_proto != IP_PROTOCOL_UDP) {
+    if(dump_flag) {
+      uart_send_pstring(PSTR("bcast no udp? "));
+    }
+    return 0;
+  }
+  // make sure its a bootp udp
+  const u08 *udp_buf = ip_buf + ip_get_hdr_length(ip_buf);
+  u16 src_port = udp_get_src_port(udp_buf);
+  u16 tgt_port = udp_get_tgt_port(udp_buf);
+  u08 is_bootp = ((src_port == 67) && (tgt_port == 68)) ||
+    ((src_port == 68) && (tgt_port == 67));
+  if(!is_bootp) {
+    if(dump_flag) {
+      uart_send_pstring(PSTR("no bootp? "));
+    }
+    return 0;
+  }
+  return 1;
+}
+
 static u08 filter_packet(const u08 *eth_buf, u08 dump_flag)
 {
   // drop unknown types
   u16 type = eth_get_pkt_type(eth_buf);
-  if((type != ETH_TYPE_ARP) && (type != ETH_TYPE_IPV4)) {
+  u08 is_ipv4 = (type == ETH_TYPE_IPV4);
+  u08 is_arp = (type == ETH_TYPE_ARP);
+  if(!is_ipv4 && !is_arp) {
     if(dump_flag) {
       uart_send_pstring(PSTR("type? "));
     }
@@ -71,11 +110,20 @@ static u08 filter_packet(const u08 *eth_buf, u08 dump_flag)
   
   // tgt mac: either my mac or broadcast
   const u08 *tgt_addr = eth_get_tgt_mac(eth_buf);
-  if((!net_compare_mac(param.mac_addr,tgt_addr)) && (!net_compare_bcast_mac(tgt_addr))) {
+  u08 is_bcast = net_compare_bcast_mac(tgt_addr);
+  u08 is_mine  = net_compare_mac(param.mac_addr,tgt_addr);
+  if(!is_mine && !is_bcast) {
     if(dump_flag) {
       uart_send_pstring(PSTR("mac? "));
     }
     return 0;
+  }
+  
+  // check broadcast
+  if(is_bcast) {
+    if(is_ipv4) {
+      return filter_broadcast_ipv4(eth_buf, dump_flag);
+    }
   }
   
   // ok. pass packet
@@ -120,13 +168,13 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         plip_tx_send(0, mem_len, len);
       } else {
         if(dump_flag) {
-          uart_send_pstring(PSTR("<drop:Filter>")),
+          uart_send_pstring(PSTR("-> DROP")),
           uart_send_crlf();
         }
       }
     } else {
       if(dump_flag) {
-        uart_send_pstring(PSTR("<drop:Offline>"));
+        uart_send_pstring(PSTR("Offline -> DROP"));
         uart_send_crlf();
       }
     }

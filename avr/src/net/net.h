@@ -63,6 +63,7 @@ inline void net_copy_bcast_mac(u08 *out) { net_copy_mac(net_bcast_mac, out); }
 inline void net_copy_zero_mac(u08 *out) { net_copy_mac(net_zero_mac, out); }
 
 inline void net_copy_zero_ip(u08 *out) { net_copy_ip(net_zero_ip, out); }
+inline u08 net_compare_bcast_ip(const u08 *in) { return net_compare_ip(net_ones_ip, in); }
 
 inline u08 net_compare_bcast_mac(const u08 *in) { return net_compare_mac(net_bcast_mac, in); }
 inline u08 net_compare_zero_mac(const u08 *in) { return net_compare_mac(net_zero_mac, in); }
