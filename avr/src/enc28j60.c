@@ -553,12 +553,12 @@ void enc28j60_power_up( void )
 // With the bit set, broadcast packets are filtered.
 void enc28j60_enable_broadcast ( void ) 
 {
-    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN|ERXFCON_PMEN|ERXFCON_BCEN);
+    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/|ERXFCON_BCEN);
 }
 
 void enc28j60_disable_broadcast ( void ) 
 {
-    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN|ERXFCON_PMEN);
+    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
 }
 
 uint8_t enc28j60_do_BIST ( void ) 
