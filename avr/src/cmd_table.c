@@ -95,6 +95,7 @@ COMMAND(cmd_param_toggle)
     case 'e': val = &param.dump_eth; break;
     case 'i': val = &param.dump_ip; break;
     case 'a': val = &param.dump_arp; break;
+    case 'p': val = &param.dump_proto; break;
     default: return CMD_PARSE_ERROR;
   }
   
@@ -126,5 +127,6 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("de"), cmd_param_toggle },
   { CMD_NAME("di"), cmd_param_toggle },
   { CMD_NAME("da"), cmd_param_toggle },
+  { CMD_NAME("dp"), cmd_param_toggle },
   { 0,0 } // last entry
 };

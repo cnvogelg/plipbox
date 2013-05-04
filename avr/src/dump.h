@@ -33,6 +33,7 @@
 extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
 extern void dump_arp_pkt(const u08 *arp_buf);
 extern void dump_ip_pkt(const u08 *ip_buf);
+extern void dump_ip_protocol(const u08 *ip_buf);
 
 extern void dump_line(const u08 *eth_buf, u16 size);
 

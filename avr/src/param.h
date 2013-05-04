@@ -35,13 +35,13 @@
 #define DUMP_DIR_ETH_TX   8
 
 typedef struct {
+  u08 mac_addr[6];
+
   u08 dump_dirs;
   u08 dump_eth;
   u08 dump_ip;
   u08 dump_arp;
-  u08 dump_drop;
-  
-  u08 mac_addr[6];
+  u08 dump_proto;  
 } param_t;
   
 extern param_t param;  

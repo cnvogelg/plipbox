@@ -47,10 +47,10 @@ static const param_t PROGMEM default_param = {
   .dump_eth = 0,
   .dump_ip = 0,
   .dump_arp = 0,
-  .dump_drop = 0,
+  .dump_proto = 0,
   
   // use same mac as plipbox.device!
-  .mac_addr = { 0x1a, 0xaf, 0xa0, 0x47, 0x11 }
+  .mac_addr = { 0x1a, 0x11, 0xaf, 0xa0, 0x47, 0x11 }
 };
 
 // dump all params
@@ -79,8 +79,8 @@ void param_dump(void)
   uart_send_hex_byte(param.dump_arp);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("do: dump drops "));
-  uart_send_hex_byte(param.dump_drop);
+  uart_send_pstring(PSTR("dp: dump proto "));
+  uart_send_hex_byte(param.dump_proto);
   uart_send_crlf();
 }
 

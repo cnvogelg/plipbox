@@ -31,6 +31,7 @@
 #include "net/arp.h"
 #include "net/eth.h"
 #include "net/ip.h"
+#include "net/udp.h"
 #include "param.h"
 
 void dump_eth_pkt(const u08 *eth_buf, u16 size)
@@ -111,6 +112,35 @@ void dump_ip_pkt(const u08 *ip_buf)
   uart_send(' ');
 }
 
+static void dump_udp_port(u16 port)
+{
+  if(port == 67) {
+    uart_send_pstring(PSTR("BOOTPS"));
+  } else if(port == 68) {
+    uart_send_pstring(PSTR("BOOTPC"));
+  } else {
+    uart_send(' ');
+    uart_send_hex_word(port);
+    uart_send(' ');
+  }
+}
+
+extern void dump_ip_protocol(const u08 *ip_buf)
+{
+  const u08 *proto_buf = ip_buf + ip_get_hdr_length(ip_buf);
+  u08 proto = ip_get_protocol(ip_buf);
+  if(proto == IP_PROTOCOL_UDP) {
+    uart_send_pstring(PSTR("[UDP:"));
+    u16 src_port = udp_get_src_port(proto_buf);
+    u16 tgt_port = udp_get_tgt_port(proto_buf);
+    dump_udp_port(src_port);
+    uart_send('>');
+    dump_udp_port(tgt_port);
+    uart_send(']');
+    uart_send(' ');
+  }
+}
+
 extern void dump_line(const u08 *eth_buf, u16 size)
 {
   if(param.dump_eth) {
@@ -125,6 +155,9 @@ extern void dump_line(const u08 *eth_buf, u16 size)
   } else if(type == ETH_TYPE_IPV4) {
     if(param.dump_ip) {
       dump_ip_pkt(ip_buf);
+      if(param.dump_proto) {
+        dump_ip_protocol(ip_buf);
+      }
     }
   }
 }
