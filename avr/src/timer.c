@@ -110,9 +110,7 @@ void timer_init(void)
 // timer counter
 volatile u16 timer_100us = 0;
 volatile u16 timer_10ms = 0;
-volatile u16 timer2_10ms = 0;
-volatile u32 clock_1s = 0;
-static u08 clock_10ms = 0;
+volatile u32 time_stamp = 0;
 
 // timer2 compare A handler
 #ifdef TIMER2_COMPA_vect
@@ -122,19 +120,13 @@ ISR(TIMER2_COMP_vect)
 #endif
 {
   timer_100us++;
+  time_stamp++;
 }
 
 // timer1 compare A handler
 ISR(TIMER1_COMPA_vect)
 {
   timer_10ms++;
-  timer2_10ms++;
-
-  clock_10ms++;
-  if(clock_10ms == 100) {
-    clock_1s ++;
-    clock_10ms = 0;
-  }
 }
 
 void timer_delay_10ms(u16 timeout)

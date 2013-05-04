@@ -54,6 +54,36 @@ void dword_to_hex(u32 addr,u08 *out)
   word_to_hex((u16)(addr&0xffff),out+4);
 }
 
+void byte_to_dec(u08 value, u08 *out)
+{
+  u08 h = value / 100;
+  u08 t = value % 100;
+  u08 o = t % 10;
+  t = t / 10;
+  out[0] = '0' + h;
+  out[1] = '0' + t;
+  out[2] = '0' + o;
+}
+
+void dword_to_dec(u32 value, u08 *out, u08 num_digits, u08 point_pos)
+{
+  // start backwards
+  u08 *pos = out + num_digits - 1;
+  if(point_pos < num_digits) {
+    pos++;
+  }
+  for(u08 i=0;i<num_digits;i++) {
+    if(i == point_pos) {
+      *pos = '.';
+      pos--;
+    }
+    u08 dec = value % 10;
+    *pos = '0' + dec;
+    pos--;
+    value /= 10;
+  }
+}
+
 // parse
 
 u08 parse_nybble(u08 c,u08 *value)
@@ -115,4 +145,25 @@ u08 parse_dword(const u08 *str,u32 *value)
   *value = (u32)val << 24 | (u32)val2 << 16 | (u32)val3 << 8 | val4;
   return 1;
 }
+
+u08 parse_byte_dec(const u08 *buf, u08 *out)
+{
+  u08 value = 0;
+  u08 digits = 0;
+  while(digits < 3) {
+    u08 c = buf[digits];
+    if((c<'0')||(c>'9')) {
+      break;
+    }
+    c -= '0';
+    value *= 10;
+    value += c;
+    digits++;
+  }
+  if(digits > 0) {
+    *out = value;
+  }
+  return digits;
+}
+
 

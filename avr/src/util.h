@@ -38,6 +38,11 @@ extern void byte_to_hex(u08 in,u08 *out);
 extern void word_to_hex(u16 in,u08 *out);
 // convert dword to 6 hex chars
 extern void dword_to_hex(u32 in,u08 *out);
+// convert a byte to 3 dec chars
+extern void byte_to_dec(u08 value, u08 *out);
+// convert a dword to <num_digits> (up to 10) with fixed point at <point_pos>
+// if <point_pos> < <num_digits> then no point is printed
+extern void dword_to_dec(u32 value, u08 *out, u08 num_digits, u08 point_pos);
 
 // ----- parse functions: 01=ok, 00=error -----
 // parse a nybble
@@ -48,6 +53,8 @@ extern u08 parse_byte(const u08 *str,u08 *value);
 extern u08 parse_word(const u08 *str,u16 *value);
 // parse a 6 byte dword
 extern u08 parse_dword(const u08 *str,u32 *value);
+// parse a decimal byte value
+extern u08 parse_byte_dec(const u08 *buf, u08 *out);
 
 #endif
 

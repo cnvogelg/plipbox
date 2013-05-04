@@ -40,6 +40,8 @@ void uart_send_data(u08 *data,u08 size);
 void uart_send_crlf(void);
 // send a Space
 void uart_send_spc(void);
+// send time stamp
+void uart_send_time_stamp_spc(void);
 
 // send a hex byte
 void uart_send_hex_byte_crlf(u08 data);

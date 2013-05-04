@@ -51,6 +51,7 @@ u08 eth_state_worker(u08 plip_online)
         // check if eth adapter is online
         if(enc28j60_is_link_up()) {
           state = ETH_STATE_LINK_UP;
+          uart_send_time_stamp_spc();
           uart_send_pstring(PSTR(" eth: link up\r\n"));
         }
       }
@@ -60,6 +61,7 @@ u08 eth_state_worker(u08 plip_online)
         // check if eth adapter went offline
         if(!enc28j60_is_link_up()) {
           state = ETH_STATE_LINK_DOWN;
+          uart_send_time_stamp_spc();
           uart_send_pstring(PSTR(" eth: link down\r\n"));
         }
       }  

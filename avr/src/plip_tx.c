@@ -53,6 +53,7 @@ static u08 get_plip_data(u08 *data)
 
 static void uart_send_prefix(void)
 {
+  uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("plip(TX): "));
 }
 

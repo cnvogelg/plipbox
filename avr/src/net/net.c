@@ -84,42 +84,11 @@ void net_dump_mac(const u08 *in)
   uart_send_string(mac_str);
 }
 
-static void byte_to_dec(u08 value, u08 *out)
-{
-  u08 h = value / 100;
-  u08 t = value % 100;
-  u08 o = t % 10;
-  t = t / 10;
-  out[0] = '0' + h;
-  out[1] = '0' + t;
-  out[2] = '0' + o;
-}
-
-static u08 parse_dec(const u08 *buf, u08 *out)
-{
-  u08 value = 0;
-  u08 digits = 0;
-  while(digits < 3) {
-    u08 c = buf[digits];
-    if((c<'0')||(c>'9')) {
-      break;
-    }
-    c -= '0';
-    value *= 10;
-    value += c;
-    digits++;
-  }
-  if(digits > 0) {
-    *out = value;
-  }
-  return digits;
-}
-
 u08 net_parse_ip(const u08 *buf, u08 *ip)
 {
   for(int i=0;i<4;i++) {
     u08 value;
-    u08 digits = parse_dec(buf,&value);
+    u08 digits = parse_byte_dec(buf,&value);
     if(digits == 0) {
       return 0;
     }

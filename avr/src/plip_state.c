@@ -50,6 +50,7 @@ u08 plip_state_worker(void)
         u08 line = plip_get_line_status();
         if(line == PLIP_LINE_OK) {
           state = PLIP_STATE_LINK_UP;
+          uart_send_time_stamp_spc();
           uart_send_pstring(PSTR("plip: link up\r\n"));
         }
       }
@@ -59,6 +60,7 @@ u08 plip_state_worker(void)
         u08 line = plip_get_line_status();
         if(line != PLIP_LINE_OK) {
           state = PLIP_STATE_LINK_DOWN;
+          uart_send_time_stamp_spc();
           uart_send_pstring(PSTR("plip: link down\r\n"));
         }
       }

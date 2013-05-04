@@ -27,6 +27,7 @@
 #include "uart.h"
 #include "util.h"
 #include "uartutil.h"
+#include "timer.h"
 
 void uart_send_pstring(PGM_P data)
 {
@@ -65,7 +66,15 @@ void uart_send_spc(void)
   uart_send((u08)' ');
 }
 
-static u08 buf[8];
+static u08 buf[12];
+
+void uart_send_time_stamp_spc(void)
+{
+  u32 ts = time_stamp;
+  dword_to_dec(ts, buf, 10, 4);
+  buf[11] = ' ';
+  uart_send_data(buf,12);
+}
 
 void uart_send_hex_byte_crlf(u08 data)
 {
