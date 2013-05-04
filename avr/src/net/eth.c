@@ -33,14 +33,3 @@ u08  eth_is_broadcast_tgt(const u08 *pkt)
   const u08 *mac = eth_get_tgt_mac(pkt);
   return net_compare_bcast_mac(mac);
 }
-
-extern void eth_dump(const u08 *pkt)
-{
-  uart_send_string("eth:tgt=");
-  net_dump_mac(pkt + ETH_OFF_TGT_MAC);
-  uart_send_string(",src=");
-  net_dump_mac(pkt + ETH_OFF_SRC_MAC);
-  uart_send_string(",type=");
-  u16 type = eth_get_pkt_type(pkt);
-  uart_send_hex_word_spc(type);
-}

@@ -25,60 +25,106 @@
  */
 
 #include "dump.h"
+#include "uart.h"
 #include "uartutil.h"
 #include "net/net.h"
 #include "net/arp.h"
 #include "net/eth.h"
 #include "net/ip.h"
+#include "param.h"
 
-void dump_eth_pkt(const u08 *eth_buf, u16 size, write_prefix_func_t f)
+void dump_eth_pkt(const u08 *eth_buf, u16 size)
 {
-  f();
-  uart_send_pstring(PSTR("pkt: src="));
+  uart_send('[');
+  uart_send_hex_word(size);
+  uart_send(',');
+  uart_send_hex_word(eth_get_pkt_type(eth_buf));
+  uart_send(',');
   net_dump_mac(eth_get_src_mac(eth_buf));
-  uart_send_pstring(PSTR(" dst="));
+  uart_send('>');
   net_dump_mac(eth_get_tgt_mac(eth_buf));
-  uart_send_pstring(PSTR(" type="));
-  uart_send_hex_word_spc(eth_get_pkt_type(eth_buf));
-  uart_send_pstring(PSTR("size="));
-  uart_send_hex_word_crlf(size);  
+  uart_send(']');
+  uart_send(' ');
 }
 
-void dump_arp_pkt(const u08 *arp_buf, write_prefix_func_t f)
+void dump_arp_pkt(const u08 *arp_buf)
 {
-  f();
-  uart_send_pstring(PSTR("-> ARP: op="));
+  uart_send_pstring(PSTR("[ARP:"));
+
+  // ARP op
   u16 op = arp_get_op(arp_buf);
-  uart_send_hex_word_spc(op);
-  uart_send_crlf();
+  if(op == ARP_REQUEST) {
+    uart_send_pstring(PSTR("REQ "));
+  } else if(op == ARP_REPLY) {
+    uart_send_pstring(PSTR("REPL"));
+  } else {
+    uart_send_hex_word(op);
+  }
+  uart_send(',');
   
-  f();
-  uart_send_pstring(PSTR("    src mac="));
+  // src pair
+  uart_send('(');
   net_dump_mac(arp_get_src_mac(arp_buf));
-  uart_send_pstring(PSTR(" ip="));
+  uart_send(',');
   net_dump_ip(arp_get_src_ip(arp_buf));
-  uart_send_crlf();
-  
-  f();
-  uart_send_pstring(PSTR("    tgt mac="));
+  uart_send(')');
+  uart_send('>');
+
+  // tgt pair
+  uart_send('(');
   net_dump_mac(arp_get_tgt_mac(arp_buf));
-  uart_send_pstring(PSTR(" ip="));
+  uart_send(',');
   net_dump_ip(arp_get_tgt_ip(arp_buf));
-  uart_send_crlf();
+  uart_send(')');
+  
+  uart_send(']');
+  uart_send(' ');
 }
 
-void dump_ip_pkt(const u08 *ip_buf, u16 len, write_prefix_func_t f)
+void dump_ip_pkt(const u08 *ip_buf)
 {
-  f();
-  uart_send_pstring(PSTR("-> IP: proto="));
-  uart_send_hex_byte_spc(ip_get_protocol(ip_buf));
-  uart_send_pstring(PSTR("  len="));
-  uart_send_hex_word_spc(ip_get_total_length(ip_buf));
-  uart_send_pstring(PSTR("  got="));
-  uart_send_hex_word_spc(len);
-  uart_send_pstring(PSTR("  src ip="));
+  uart_send_pstring(PSTR("[IP4:"));
+
+  // size
+  uart_send_hex_word(ip_get_total_length(ip_buf));
+
+  // ip proto
+  u08 proto = ip_get_protocol(ip_buf);
+  if(proto == IP_PROTOCOL_ICMP) {
+    uart_send_pstring(PSTR(",ICMP"));
+  } else if(proto == IP_PROTOCOL_TCP) {
+    uart_send_pstring(PSTR(",TCP "));
+  } else if(proto == IP_PROTOCOL_UDP) {
+    uart_send_pstring(PSTR(",UDP "));
+  } else {
+    uart_send(',');
+    uart_send_hex_word(proto);
+  }
+
+  // src/tgt ip
+  uart_send(',');
   net_dump_ip(ip_get_src_ip(ip_buf));
-  uart_send_pstring(PSTR("  tgt ip="));
+  uart_send('>');
   net_dump_ip(ip_get_tgt_ip(ip_buf)),
-  uart_send_crlf();
+
+  uart_send(']');
+  uart_send(' ');
+}
+
+extern void dump_line(const u08 *eth_buf, u16 size)
+{
+  if(param.dump_eth) {
+    dump_eth_pkt(eth_buf, size);
+  }
+  const u08 *ip_buf = eth_buf + ETH_HDR_SIZE;
+  u16 type = eth_get_pkt_type(eth_buf);
+  if(type == ETH_TYPE_ARP) {
+    if(param.dump_arp) {
+      dump_arp_pkt(ip_buf);
+    }
+  } else if(type == ETH_TYPE_IPV4) {
+    if(param.dump_ip) {
+      dump_ip_pkt(ip_buf);
+    }
+  }
 }

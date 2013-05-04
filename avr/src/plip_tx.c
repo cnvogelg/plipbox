@@ -65,13 +65,20 @@ void plip_tx_init(void)
 
 static u08 retry;
 
+static void dump(void)
+{
+  uart_send_prefix();
+  dump_line(pkt_buf, pkt.size);
+  uart_send_crlf();
+}
+
 void plip_tx_worker(u08 plip_online)
 {
   // shall we retry to send the last packet
   if(plip_online && (retry > 0)) {
 
-    if(param.show_pkt) {
-      dump_eth_pkt(pkt_buf,pkt.size,uart_send_prefix);
+    if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+      dump();
     }
     
     u08 status = plip_send(&pkt);
@@ -82,7 +89,8 @@ void plip_tx_worker(u08 plip_online)
       retry = 0;
     } else {
       uart_send_pstring(PSTR("retry: failed: "));
-      uart_send_hex_byte_crlf(status);
+      uart_send_hex_byte(status);
+      uart_send_crlf();
       retry --;
     }
   }  
@@ -95,8 +103,8 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   pkt.size = total_size;
   pkt.crc_type = PLIP_NOCRC;
 
-  if(param.show_pkt) {
-    dump_eth_pkt(pkt_buf,total_size,uart_send_prefix);
+  if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+    dump();
   }
   
   u08 status = plip_send(&pkt);
@@ -104,7 +112,8 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   if(status != PLIP_STATUS_OK) {
     uart_send_prefix();
     uart_send_pstring(PSTR("first: failed: "));
-    uart_send_hex_byte_crlf(status);
+    uart_send_hex_byte(status);
+    uart_send_crlf();
     retry = 5;
   } else {
     retry = 0;

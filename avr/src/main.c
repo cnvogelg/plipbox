@@ -80,7 +80,8 @@ int main (void)
     while(1) {}
   } else {
     uart_send_pstring(PSTR("enc28j60: rev="));
-    uart_send_hex_byte_crlf(rev);
+    uart_send_hex_byte(rev);
+    uart_send_crlf();
   }
     
   // main loop

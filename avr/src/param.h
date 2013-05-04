@@ -29,11 +29,17 @@
 
 #include "global.h"
 
+#define DUMP_DIR_PLIP_RX  1
+#define DUMP_DIR_ETH_RX   2
+#define DUMP_DIR_PLIP_TX  4
+#define DUMP_DIR_ETH_TX   8
+
 typedef struct {
-  u08 show_drop;
-  u08 show_pkt;
-  u08 show_arp;
-  u08 show_ip;
+  u08 dump_dirs;
+  u08 dump_eth;
+  u08 dump_ip;
+  u08 dump_arp;
+  u08 dump_drop;
   
   u08 mac_addr[6];
 } param_t;

@@ -49,8 +49,6 @@ extern u08 arp_is_ipv4(const u08 *buf, u16 len);
 extern u08 arp_is_req_for_me(const u08 *buf);
 extern u08 arp_is_reply_for_me(const u08 *buf);
 
-extern void arp_dump(const u08 *buf);
-
 /* getter */
 inline u16 arp_get_op(const u08 *buf) { return net_get_word(buf + ARP_OFF_OP); }
 inline const u08* arp_get_src_mac(const u08 *buf) { return buf + ARP_OFF_SRC_MAC; }

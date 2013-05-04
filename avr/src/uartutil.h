@@ -44,15 +44,11 @@ void uart_send_spc(void);
 void uart_send_time_stamp_spc(void);
 
 // send a hex byte
-void uart_send_hex_byte_crlf(u08 data);
-// send a hex byte
-void uart_send_hex_byte_spc(u08 data);
+void uart_send_hex_byte(u08 data);
 // send a hex word
-void uart_send_hex_word_crlf(u16 data);
-// send a hex word
-void uart_send_hex_word_spc(u16 data);
-// send a hex6 dword
-void uart_send_hex_dword_crlf(u32 data); 
+void uart_send_hex_word(u16 data);
+// send a hex dword
+void uart_send_hex_dword(u32 data); 
 
 #endif
 

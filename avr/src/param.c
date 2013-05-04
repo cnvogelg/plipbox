@@ -43,10 +43,11 @@ uint16_t eeprom_crc16 EEMEM;
 
 // default 
 static const param_t PROGMEM default_param = {
-  .show_drop = 0,
-  .show_pkt = 0,
-  .show_ip = 0,
-  .show_arp = 0,
+  .dump_dirs = 0,
+  .dump_eth = 0,
+  .dump_ip = 0,
+  .dump_arp = 0,
+  .dump_drop = 0,
   
   // use same mac as plipbox.device!
   .mac_addr = { 0x1a, 0xaf, 0xa0, 0x47, 0x11 }
@@ -56,22 +57,31 @@ static const param_t PROGMEM default_param = {
 void param_dump(void)
 {
   // mac
-  uart_send_pstring(PSTR("m)ac address:  "));
+  uart_send_pstring(PSTR("m: mac address "));
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
   
   // dump options
-  uart_send_pstring(PSTR("sd) show drop: "));
-  uart_send_hex_byte_crlf(param.show_drop);
+  uart_send_pstring(PSTR("dd: dump dirs  "));
+  uart_send_hex_byte(param.dump_dirs);
+  uart_send_pstring(PSTR("  [1=plip(rx),2=eth(rx),4=plip(tx),8=eth(tx)]"));
+  uart_send_crlf();
 
-  uart_send_pstring(PSTR("sp) show pkt:  "));
-  uart_send_hex_byte_crlf(param.show_pkt);
+  uart_send_pstring(PSTR("de: dump ETH   "));
+  uart_send_hex_byte(param.dump_eth);
+  uart_send_crlf();
 
-  uart_send_pstring(PSTR("si) show ip:   "));
-  uart_send_hex_byte_crlf(param.show_ip);
+  uart_send_pstring(PSTR("di: dump IP    "));
+  uart_send_hex_byte(param.dump_ip);
+  uart_send_crlf();
 
-  uart_send_pstring(PSTR("sa) show arp:  "));
-  uart_send_hex_byte_crlf(param.show_arp);
+  uart_send_pstring(PSTR("da: dump ARP   "));
+  uart_send_hex_byte(param.dump_arp);
+  uart_send_crlf();
+  
+  uart_send_pstring(PSTR("do: dump drops "));
+  uart_send_hex_byte(param.dump_drop);
+  uart_send_crlf();
 }
 
 // build check sum for parameter block

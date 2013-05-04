@@ -46,18 +46,3 @@ u08 arp_is_ipv4(const u08 *buf, u16 len)
   
   return (hw_type == 1) && (pt_type == 0x800) && (hw_size == 6) && (pt_size == 4);
 }
-
-void arp_dump(const u08 *buf)
-{
-  uart_send_pstring(PSTR("ARP:src_mac="));
-  net_dump_mac(buf + ARP_OFF_SRC_MAC);
-  uart_send_pstring(PSTR(",src_ip="));
-  net_dump_ip(buf + ARP_OFF_SRC_IP);
-  uart_send_pstring(PSTR(",tgt_mac="));
-  net_dump_mac(buf + ARP_OFF_TGT_MAC);
-  uart_send_pstring(PSTR(",tgt_ip="));
-  net_dump_ip(buf + ARP_OFF_TGT_IP);
-  uart_send_pstring(PSTR(",op="));
-  u16 op = arp_get_op(buf);
-  uart_send_hex_word_spc(op);
-}

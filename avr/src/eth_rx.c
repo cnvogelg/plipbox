@@ -63,10 +63,11 @@ static u08 filter_packet(const u08 *eth_buf)
   // drop unknown types
   u16 type = eth_get_pkt_type(eth_buf);
   if((type != ETH_TYPE_ARP) && (type != ETH_TYPE_IPV4)) {
-    if(param.show_drop) {
+    if(param.dump_drop) {
       uart_send_prefix();
       uart_send_pstring(PSTR("type? "));
-      uart_send_hex_word_crlf(type);
+      uart_send_hex_word(type);
+      uart_send_crlf();
     }
     return 0;
   }
@@ -74,12 +75,13 @@ static u08 filter_packet(const u08 *eth_buf)
   // tgt mac: either my mac or broadcast
   const u08 *tgt_addr = eth_get_tgt_mac(eth_buf);
   if((!net_compare_mac(param.mac_addr,tgt_addr)) && (!net_compare_bcast_mac(tgt_addr))) {
-    if(param.show_drop) {
+    if(param.dump_drop) {
       uart_send_prefix();
       uart_send_pstring(PSTR("mac? "));
       net_dump_mac(tgt_addr);
       uart_send_crlf();
     }
+    return 0;
   }
   
   // ok. pass packet
@@ -105,20 +107,10 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     enc28j60_packet_rx_blk(pkt_buf, mem_len);
     
     // dump incoming packet
-    if(param.show_pkt) {
-      dump_eth_pkt(pkt_buf, len, uart_send_prefix);
-    }
-    // depending on type dump more info
-    u08 *buf = pkt_buf + ETH_HDR_SIZE;
-    u16 type = eth_get_pkt_type(pkt_buf);
-    if(type == ETH_TYPE_ARP) {
-      if(param.show_arp) {
-        dump_arp_pkt(buf,uart_send_prefix);
-      }
-    } else if(type == ETH_TYPE_IPV4) {
-      if(param.show_ip) {
-        dump_ip_pkt(buf,len - ETH_HDR_SIZE,uart_send_prefix);
-      }
+    if(param.dump_dirs & DUMP_DIR_ETH_RX) {
+      uart_send_prefix();
+      dump_line(pkt_buf, len);
+      uart_send_crlf();
     }
     
     // what to do with the eth packet?
@@ -128,14 +120,14 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         // send full pkt via plip
         plip_tx_send(0, mem_len, len);
       } else {
-        if(param.show_drop) {
+        if(param.dump_drop) {
           uart_send_prefix();
           uart_send_pstring(PSTR("drop: filter!")),
           uart_send_crlf();
         }
       }
     } else {
-      if(param.show_drop) {
+      if(param.dump_drop) {
         uart_send_prefix();
         uart_send_pstring(PSTR("drop: offline!"));
         uart_send_crlf();

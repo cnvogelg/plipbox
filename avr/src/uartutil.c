@@ -76,35 +76,19 @@ void uart_send_time_stamp_spc(void)
   uart_send_data(buf,12);
 }
 
-void uart_send_hex_byte_crlf(u08 data)
+void uart_send_hex_byte(u08 data)
 {
   byte_to_hex(data,buf);
   uart_send_data(buf,2);
-  uart_send_crlf();
 }
 
-void uart_send_hex_byte_spc(u08 data)
-{
-  byte_to_hex(data,buf);
-  uart_send_data(buf,2);
-  uart_send_spc();
-}
-
-void uart_send_hex_word_crlf(u16 data)
+void uart_send_hex_word(u16 data)
 {
   word_to_hex(data,buf);
   uart_send_data(buf,4);
-  uart_send_crlf();
 }
 
-void uart_send_hex_word_spc(u16 data)
-{
-  word_to_hex(data,buf);
-  uart_send_data(buf,4);
-  uart_send_spc();
-}
-
-void uart_send_hex_dword_crlf(u32 data)
+void uart_send_hex_dword(u32 data)
 {
   dword_to_hex(data,buf);
   uart_send_data(buf,8);

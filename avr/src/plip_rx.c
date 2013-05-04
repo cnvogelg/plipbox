@@ -91,10 +91,6 @@ static void uart_send_prefix(void)
 
 static void handle_ip_pkt(u08 eth_online)
 {
-  if(param.show_ip) {
-    dump_ip_pkt(pkt_buf + ETH_HDR_SIZE, pkt.size - ETH_HDR_SIZE, uart_send_prefix);
-  }
-  
   if(eth_online) {
     // simply send packet to ethernet
     eth_tx_send(ETH_TYPE_IPV4, pkt.size);
@@ -116,11 +112,6 @@ static void handle_arp_pkt(u08 eth_online)
     uart_send_prefix();
     uart_send_pstring(PSTR("ARP: type?"));
     return;
-  }
-
-  // show arp packet
-  if(param.show_arp) {
-    dump_arp_pkt(arp_buf, uart_send_prefix);
   }
 
   // ARP request should now be something like this:
@@ -156,13 +147,16 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
     // also keep a copy in our local pkt_buf (up to max size)
     u08 status = plip_recv(&pkt);
     if(status == PLIP_STATUS_OK) {
-
-      if(param.show_pkt) {
-        dump_eth_pkt(pkt_buf, pkt.size, uart_send_prefix);
-      }
-
       // got a valid packet from plip -> check type
       u16 type = eth_get_pkt_type(pkt_buf);
+
+      // dump packet?
+      if(param.dump_dirs & DUMP_DIR_PLIP_RX) {
+        uart_send_prefix();
+        dump_line(pkt_buf, pkt.size);
+        uart_send_crlf();
+      }
+
       // handle IP packet
       if(type == ETH_TYPE_IPV4) {
         handle_ip_pkt(eth_online);
@@ -175,13 +169,15 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
       else {
         uart_send_prefix();
         uart_send_pstring(PSTR("type? "));
-        uart_send_hex_word_crlf(type);
+        uart_send_hex_word(type);
+        uart_send_crlf();
       }
     } else {
       // report receiption error
       uart_send_prefix();
       uart_send_pstring(PSTR("recv? "));
-      uart_send_hex_byte_crlf(status);
+      uart_send_hex_byte(status);
+      uart_send_crlf();
     }
   }
 }

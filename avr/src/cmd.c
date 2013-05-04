@@ -138,7 +138,8 @@ static void cmd_loop(void)
           // execute command
           status = found->func(argc, (const u08 **)&cmd_args);
           // show result
-          uart_send_hex_byte_spc(status);
+          uart_send_hex_byte(status);
+          uart_send_spc();
           u08 type = status & CMD_MASK;
           if(type == CMD_MASK_OK) {
             uart_send_pstring(PSTR("OK\r\n"));

@@ -49,6 +49,5 @@ inline u08  eth_is_ipv4_pkt(const u08 *pkt) { return eth_get_pkt_type(pkt) == ET
 inline void eth_set_pkt_type(u08 *pkt, u16 type) { net_put_word(pkt + ETH_OFF_TYPE, type); }
 
 extern u08  eth_is_broadcast_tgt(const u08 *pkt);
-extern void eth_dump(const u08 *pkt);
 
 #endif

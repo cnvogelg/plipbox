@@ -43,8 +43,10 @@ static void uart_send_prefix(void)
 void eth_tx_send(u16 eth_type, u16 eth_size)
 {
   // dump eth packet
-  if(param.show_pkt) {
-    dump_eth_pkt(pkt_buf, eth_size, uart_send_prefix);
+  if(param.dump_dirs & DUMP_DIR_ETH_TX) {
+    uart_send_prefix();
+    dump_line(pkt_buf, eth_size);
+    uart_send_crlf();
   }
 
   // wait for tx is possible
