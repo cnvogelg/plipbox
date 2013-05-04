@@ -94,32 +94,28 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
   
   // get next packet
   u16 len = enc28j60_packet_rx_begin();
-  if(len > 0) {
-    // first read only the ethernet header into our buffer
-    enc28j60_packet_rx_blk(pkt_buf, ETH_HDR_SIZE);
+  if(len > 0) {    
+    // try to fill packet buffer
+    u16 mem_len = len;
+    if(mem_len > PKT_BUF_SIZE) {
+      mem_len = PKT_BUF_SIZE;
+    }
+    
+    // pre-fetch via SPI into packet buffer
+    enc28j60_packet_rx_blk(pkt_buf, mem_len);
     
     // dump incoming packet
     if(param.show_pkt) {
       dump_eth_pkt(pkt_buf, len, uart_send_prefix);
     }
-
-    // depending on type fetch more from buffer
-    u16 mem_len = ETH_HDR_SIZE;
+    // depending on type dump more info
     u08 *buf = pkt_buf + ETH_HDR_SIZE;
     u16 type = eth_get_pkt_type(pkt_buf);
     if(type == ETH_TYPE_ARP) {
-      // ARP
-      mem_len += ARP_SIZE;
-      enc28j60_packet_rx_blk(buf, ARP_SIZE);
-      // dump
       if(param.show_arp) {
         dump_arp_pkt(buf,uart_send_prefix);
       }
     } else if(type == ETH_TYPE_IPV4) {
-      // IPv4
-      mem_len += IP_MIN_HDR_SIZE;
-      enc28j60_packet_rx_blk(buf, IP_MIN_HDR_SIZE);
-      // dump
       if(param.show_ip) {
         dump_ip_pkt(buf,len - ETH_HDR_SIZE,uart_send_prefix);
       }
