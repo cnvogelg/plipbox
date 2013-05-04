@@ -31,7 +31,4 @@
 extern void plip_rx_init(void);
 extern void plip_rx_worker(u08 plip_state, u08 eth_online);
 
-extern void plip_rx_reset_config(void);
-extern u08  plip_rx_is_configured(void);
-
 #endif

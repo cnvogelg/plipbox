@@ -147,35 +147,6 @@ static void handle_arp_pkt(u08 eth_online)
   }
 }
 
-static u08 update_my_mac(const u08 *eth_buf)
-{
-  // update mac if its not a broadcast or zero mac
-  const u08 *src_addr = eth_get_src_mac(eth_buf);
-  if(!net_compare_bcast_mac(src_addr) && !net_compare_zero_mac(src_addr)) {
-    net_copy_mac(src_addr, param.mac);
-   
-    uart_send_prefix();
-    uart_send_pstring(PSTR("UPDATE: mac="));
-    net_dump_mac(param.mac);
-    uart_send_crlf();
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-static u08 has_mac;
-
-void plip_rx_reset_config(void)
-{
-  has_mac = 0;
-}
-  
-u08 plip_rx_is_configured(void)
-{
-  return has_mac;
-}
-
 void plip_rx_worker(u08 plip_state, u08 eth_online)
 {
   // do we have a PLIP packet waiting?
@@ -187,13 +158,6 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
 
       if(param.show_pkt) {
         dump_eth_pkt(pkt_buf, pkt.size, uart_send_prefix);
-      }
-
-      // update mac?
-      if(!has_mac) {
-        if(update_my_mac(pkt_buf)) {
-          has_mac = 1;
-        }
       }
 
       // got a valid packet from plip -> check type

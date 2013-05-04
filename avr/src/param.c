@@ -46,7 +46,10 @@ static const param_t PROGMEM default_param = {
   .show_drop = 0,
   .show_pkt = 0,
   .show_ip = 0,
-  .show_arp = 0
+  .show_arp = 0,
+  
+  // use same mac as plipbox.device!
+  .mac = { 0x1a, 0xaf, 0xa0, 0x47, 0x11 }
 };
 
 // dump all params

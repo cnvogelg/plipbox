@@ -29,15 +29,8 @@
 
 #include "global.h"
 
-#define PLIP_STATE_NO_AMIGA     0
-#define PLIP_STATE_GOT_AMIGA    1
-#define PLIP_STATE_LINK_UP      2
-#define PLIP_STATE_WAIT_CONFIG  3
-#define PLIP_STATE_CONFIGURED   4
-#define PLIP_STATE_ONLINE       5
-#define PLIP_STATE_LINK_DOWN    6
-#define PLIP_STATE_OFFLINE      7
-#define PLIP_STATE_LOST_AMIGA   8
+#define PLIP_STATE_LINK_DOWN    0
+#define PLIP_STATE_LINK_UP      1
 
 // 64*10 ms
 #define PLIP_STATE_TIMER_MASK    0xffc0   

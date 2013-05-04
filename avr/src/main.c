@@ -73,12 +73,22 @@ int main (void)
   plip_rx_init();
   plip_tx_init();
   
+  // setup ethernet
+  u08 rev = enc28j60_init(param.mac);
+  if(rev == 0) {
+    uart_send_pstring(PSTR("enc28j60: ERROR SETTING UP!!\r\n"));
+    while(1) {}
+  } else {
+    uart_send_pstring(PSTR("enc28j60: rev="));
+    uart_send_hex_byte_crlf(rev);
+  }
+    
   // main loop
   while(1) {
     u08 plip_state = plip_state_worker();
-    u08 plip_online = (plip_state == PLIP_STATE_ONLINE);
+    u08 plip_online = (plip_state == PLIP_STATE_LINK_UP);
     u08 eth_state = eth_state_worker(plip_online);
-    u08 eth_online = (eth_state == ETH_STATE_ONLINE);
+    u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
     
     eth_rx_worker(eth_state, plip_online);
     plip_rx_worker(plip_state, eth_online);

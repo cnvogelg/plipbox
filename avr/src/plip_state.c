@@ -30,7 +30,7 @@
 #include "timer.h"
 #include "uartutil.h"
 
-static u08 state = PLIP_STATE_NO_AMIGA;
+static u08 state = PLIP_STATE_LINK_DOWN;
 static u16 my_timer;
 
 static u08 time_passed(void)
@@ -42,65 +42,26 @@ static u08 time_passed(void)
   return 0;
 }
 
-static void check_lost_line(void)
-{
-  u08 line = plip_get_line_status();
-  if(line == PLIP_LINE_OFF) {
-    state = PLIP_STATE_LOST_AMIGA;
-  } else if(line == PLIP_LINE_DISABLED) {
-    state = PLIP_STATE_LINK_DOWN;
-  }
-}
-
 u08 plip_state_worker(void)
 {
-  u08 line;
-  
   switch(state) {
-    case PLIP_STATE_NO_AMIGA: // amiga powered off
-      line = plip_get_line_status();
-      if(line != PLIP_LINE_OFF) {
-        state = PLIP_STATE_GOT_AMIGA;
-      }
-      break;
-    case PLIP_STATE_GOT_AMIGA:
-      uart_send_pstring(PSTR("plip: got amiga\r\n"));
-      state = PLIP_STATE_OFFLINE;
-      break;
-    case PLIP_STATE_OFFLINE: // amiga powered on, but driver not active
-      line = plip_get_line_status();
-      if(line == PLIP_LINE_OFF) {
-        state = PLIP_STATE_LOST_AMIGA;
-      } else if(line == PLIP_LINE_OK) {
-        state = PLIP_STATE_LINK_UP;
+    case PLIP_STATE_LINK_DOWN:
+      if(time_passed()) {
+        u08 line = plip_get_line_status();
+        if(line == PLIP_LINE_OK) {
+          state = PLIP_STATE_LINK_UP;
+          uart_send_pstring(PSTR("plip: link up\r\n"));
+        }
       }
       break;
     case PLIP_STATE_LINK_UP:
-      uart_send_pstring(PSTR("plip: link up\r\n"));
-      state = PLIP_STATE_WAIT_CONFIG;
-      break;
-    case PLIP_STATE_WAIT_CONFIG: // driver active but no config yet
-      if(plip_rx_is_configured()) {
-        state = PLIP_STATE_CONFIGURED;
-      }
-      check_lost_line();
-      break;
-    case PLIP_STATE_CONFIGURED:
-      uart_send_pstring(PSTR("plip: configured\r\n"));
-      state = PLIP_STATE_ONLINE;
-      break;
-    case PLIP_STATE_ONLINE: // driver active and operational
       if(time_passed()) {
-        check_lost_line();
+        u08 line = plip_get_line_status();
+        if(line != PLIP_LINE_OK) {
+          state = PLIP_STATE_LINK_DOWN;
+          uart_send_pstring(PSTR("plip: link down\r\n"));
+        }
       }
-      break;
-    case PLIP_STATE_LINK_DOWN:
-      uart_send_pstring(PSTR("plip: link down\r\n"));
-      state = PLIP_STATE_OFFLINE;
-      break;
-    case PLIP_STATE_LOST_AMIGA:
-      uart_send_pstring(PSTR("plip: lost amiga\r\n"));
-      state = PLIP_STATE_NO_AMIGA;
       break;
   }
   return state;

@@ -29,14 +29,8 @@
 
 #include "global.h"
 
-#define ETH_STATE_DISABLED    0
-#define ETH_STATE_INIT        1
-#define ETH_STATE_RETRY_INIT  2
-#define ETH_STATE_OFFLINE     3
-#define ETH_STATE_ONLINE      4
-#define ETH_STATE_LINK_UP     5
-#define ETH_STATE_LINK_DOWN   6
-#define ETH_STATE_EXIT        7
+#define ETH_STATE_LINK_DOWN   0
+#define ETH_STATE_LINK_UP     1
    
 // 64*10 ms
 #define ETH_STATE_TIMER_MASK    0xffc0   

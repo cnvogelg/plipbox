@@ -87,7 +87,7 @@ static u08 filter_packet(const u08 *eth_buf)
 
 void eth_rx_worker(u08 eth_state, u08 plip_online)
 {
-  if(eth_state == ETH_STATE_OFFLINE) {
+  if(eth_state == ETH_STATE_LINK_DOWN) {
     return;
   }
   
