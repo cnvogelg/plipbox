@@ -91,7 +91,7 @@ static void uart_send_prefix(void)
 static void handle_ip_pkt(u08 eth_online)
 {
   if(param.show_ip) {
-    dump_ip_pkt(pkt_buf + ETH_HDR_SIZE, pkt.size, uart_send_prefix);
+    dump_ip_pkt(pkt_buf + ETH_HDR_SIZE, pkt.size - ETH_HDR_SIZE, uart_send_prefix);
   }
   
   if(eth_online) {

@@ -49,12 +49,18 @@ static const param_t PROGMEM default_param = {
   .show_arp = 0,
   
   // use same mac as plipbox.device!
-  .mac = { 0x1a, 0xaf, 0xa0, 0x47, 0x11 }
+  .mac_addr = { 0x1a, 0xaf, 0xa0, 0x47, 0x11 }
 };
 
 // dump all params
 void param_dump(void)
 {
+  // mac
+  uart_send_pstring(PSTR("m)ac address:  "));
+  net_dump_mac(param.mac_addr);
+  uart_send_crlf();
+  
+  // dump options
   uart_send_pstring(PSTR("sd) show drop: "));
   uart_send_hex_byte_crlf(param.show_drop);
 

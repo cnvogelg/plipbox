@@ -74,7 +74,7 @@ int main (void)
   plip_tx_init();
   
   // setup ethernet
-  u08 rev = enc28j60_init(param.mac);
+  u08 rev = enc28j60_init(param.mac_addr);
   if(rev == 0) {
     uart_send_pstring(PSTR("enc28j60: ERROR SETTING UP!!\r\n"));
     while(1) {}

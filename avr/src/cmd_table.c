@@ -95,6 +95,7 @@ COMMAND(cmd_param_set_ip)
     return CMD_PARSE_ERROR;
   }
 }
+#endif
 
 COMMAND(cmd_param_set_mac)
 {
@@ -107,7 +108,6 @@ COMMAND(cmd_param_set_mac)
     return CMD_PARSE_ERROR;
   }
 }
-#endif
 
 COMMAND(cmd_param_toggle)
 {
@@ -142,7 +142,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("ps"), cmd_param_save },
   { CMD_NAME("pl"), cmd_param_load },
   { CMD_NAME("pr"), cmd_param_reset },
-//  { CMD_NAME("nm"), cmd_param_set_mac },
+  { CMD_NAME("m"), cmd_param_set_mac },
 //  { CMD_NAME("ni"), cmd_param_set_ip },
 //  { CMD_NAME("ns"), cmd_param_set_ip },
   { CMD_NAME("sd"), cmd_param_toggle },

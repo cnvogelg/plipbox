@@ -35,7 +35,7 @@ typedef struct {
   u08 show_arp;
   u08 show_ip;
   
-  u08 mac[6];
+  u08 mac_addr[6];
 } param_t;
   
 extern param_t param;  
