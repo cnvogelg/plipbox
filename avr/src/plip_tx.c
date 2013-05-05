@@ -32,6 +32,7 @@
 #include "net/eth.h"
 #include "dump.h"
 #include "param.h"
+#include "uart.h"
 
 static u16 send_pos = 0;
 static u16 max_pos = 0;
@@ -65,10 +66,17 @@ void plip_tx_init(void)
 
 static u08 retry;
 
-static void dump(void)
+static void dump_begin(void)
 {
   uart_send_prefix();
   dump_line(pkt_buf, pkt.size);
+}
+
+static void dump_end(void)
+{
+  if(param.dump_plip) {
+    dump_plip();
+  }
   uart_send_crlf();
 }
 
@@ -78,20 +86,22 @@ void plip_tx_worker(u08 plip_online)
   if(plip_online && (retry > 0)) {
 
     if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
-      dump();
+      dump_begin();
     }
     
     u08 status = plip_send(&pkt);
     if(status == PLIP_STATUS_OK) {
-      uart_send_prefix();
-      uart_send_pstring(PSTR("retry: OK"));
-      uart_send_crlf();
+      uart_send_pstring(PSTR("retry: OK "));
       retry = 0;
     } else {
       uart_send_pstring(PSTR("retry: failed: "));
       uart_send_hex_byte(status);
-      uart_send_crlf();
+      uart_send(' ');
       retry --;
+    }
+
+    if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+      dump_end();
     }
   }  
 }
@@ -104,19 +114,23 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   pkt.crc_type = PLIP_NOCRC;
 
   if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
-    dump();
+    dump_begin();
   }
   
   u08 status = plip_send(&pkt);
   
   if(status != PLIP_STATUS_OK) {
-    uart_send_prefix();
     uart_send_pstring(PSTR("first: failed: "));
     uart_send_hex_byte(status);
-    uart_send_crlf();
+    uart_send(' ');
     retry = 5;
   } else {
     retry = 0;
   }
+  
+  if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+    dump_end();
+  }
+  
   return status;
 }

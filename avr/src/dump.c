@@ -33,11 +33,16 @@
 #include "net/ip.h"
 #include "net/udp.h"
 #include "param.h"
+#include "plip.h"
+#include "util.h"
 
 void dump_eth_pkt(const u08 *eth_buf, u16 size)
 {
+  u08 buf[4];
+  
   uart_send('[');
-  uart_send_hex_word(size);
+  dword_to_dec(size, buf, 4, 4);
+  uart_send_data(buf,4);
   uart_send(',');
   uart_send_hex_word(eth_get_pkt_type(eth_buf));
   uart_send(',');
@@ -139,6 +144,39 @@ extern void dump_ip_protocol(const u08 *ip_buf)
     uart_send(']');
     uart_send(' ');
   }
+}
+
+extern void dump_plip(void)
+{
+  u32 d;
+  u08 buf[8];
+
+  uart_send('{');
+
+  d = plip_timestamps.enter - plip_timestamps.can_enter;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+
+  uart_send(',');
+
+  d = plip_timestamps.data_begin - plip_timestamps.enter;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+
+  uart_send(',');
+  
+  d = plip_timestamps.data_end - plip_timestamps.data_begin;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+  
+  uart_send(',');
+  
+  d = plip_timestamps.leave - plip_timestamps.data_end;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+  
+  uart_send('}');
+  uart_send(' ');
 }
 
 extern void dump_line(const u08 *eth_buf, u16 size)

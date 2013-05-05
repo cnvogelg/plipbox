@@ -70,6 +70,16 @@ typedef struct {
 typedef u08 (*plip_packet_func)(plip_packet_t *pkt);
 typedef u08 (*plip_data_func)(u08 *data);
 
+typedef struct {
+  u32 can_enter;
+  u32 enter;
+  u32 data_begin;
+  u32 data_end;
+  u32 leave;
+} plip_timestamps_t;
+
+extern plip_timestamps_t plip_timestamps;
+
 // ----- Parameter -----
 
 extern u16 plip_rx_timeout; // timeout for next byte in 100us

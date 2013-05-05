@@ -121,7 +121,7 @@ static void handle_arp_pkt(u08 eth_online)
   const u08 *arp_src_mac = arp_get_src_mac(arp_buf);
   
   // pkt src and arp src must be the same
-  if(!net_compare_mac(pkt_src_mac, arp_src_mac)) {
+  if(!net_compare_mac(pkt_src_mac, arp_src_mac) && !net_compare_zero_mac(pkt_src_mac)) {
     uart_send_prefix();
     uart_send_pstring(PSTR("ARP: pkt!=src mac!"));
     uart_send_crlf();
@@ -154,6 +154,9 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
       if(param.dump_dirs & DUMP_DIR_PLIP_RX) {
         uart_send_prefix();
         dump_line(pkt_buf, pkt.size);
+        if(param.dump_plip) {
+          dump_plip();
+        }
         uart_send_crlf();
       }
 

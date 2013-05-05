@@ -43,6 +43,8 @@ static plip_data_func     fill_tx_func = 0;
 
 u16 plip_timeout = 5000; // = 500ms in 100us ticks
 
+plip_timestamps_t plip_timestamps;
+
 void plip_recv_init(plip_packet_func begin_func, 
                     plip_data_func   fill_func,
                     plip_packet_func end_func)
@@ -137,6 +139,8 @@ static u08 wait_for_select(u08 select_state, u08 state_flag)
 
 u08 plip_can_recv(void)
 {
+  plip_timestamps.can_enter = time_stamp;
+  
   // check PTRSEL -> is 1=write loop in magplip (SETCIAOUTPUT)
   if(!TEST_SELECT()) {
     return PLIP_STATUS_IDLE;
@@ -153,6 +157,8 @@ u08 plip_can_recv(void)
 u08 plip_recv(plip_packet_t *pkt)
 {
   u08 status = PLIP_STATUS_OK;
+
+  plip_timestamps.enter = time_stamp;
 
   pkt->real_size = 0;
   
@@ -194,6 +200,8 @@ u08 plip_recv(plip_packet_t *pkt)
   }
   size -= 2;
   
+  plip_timestamps.data_begin = time_stamp;
+  
   // report begin of frame
   if(status == PLIP_STATUS_OK) {
     status = begin_rx_func(pkt);
@@ -226,6 +234,8 @@ u08 plip_recv(plip_packet_t *pkt)
     status = end_rx_func(pkt);
   }
 
+  plip_timestamps.data_end = time_stamp;
+
   // clear all strobes occurred during recv
   par_low_strobe_count = 0;
 
@@ -236,6 +246,8 @@ u08 plip_recv(plip_packet_t *pkt)
   if(status == PLIP_STATUS_OK) {
     status = wait_for_select(0, PLIP_STATE_END);
   }
+  
+  plip_timestamps.leave = time_stamp;
   
   return status;
 }
@@ -272,6 +284,8 @@ u08 plip_send(plip_packet_t *pkt)
   u08 status = PLIP_STATUS_OK;
   pkt->real_size = 0;
   
+  plip_timestamps.can_enter = time_stamp;
+  
   // did the peer already begin sending?
   if(TEST_LINE() || TEST_SELECT()) {
     // immediately start the receiption
@@ -293,6 +307,8 @@ u08 plip_send(plip_packet_t *pkt)
   // wait for amiga to enter recv loop
   status = wait_for_select(1, PLIP_STATE_START);
   
+  plip_timestamps.enter = time_stamp;
+  
   // send crc type
   u08 crc_type = pkt->crc_type;
   status = set_next_byte(crc_type, 1, PLIP_STATE_CRC_TYPE);
@@ -308,6 +324,8 @@ u08 plip_send(plip_packet_t *pkt)
   if(status==PLIP_STATUS_OK) {
     status = set_next_word(pkt->crc, 0, PLIP_STATE_CRC);
   }
+  
+  plip_timestamps.data_begin = time_stamp;
   
   // send packet bytes
   if(status==PLIP_STATUS_OK) {
@@ -334,6 +352,8 @@ u08 plip_send(plip_packet_t *pkt)
     pkt->real_size = i;
   }
   
+  plip_timestamps.data_end = time_stamp;
+  
   // restore: data input
   par_low_data_set_input();
 
@@ -347,6 +367,8 @@ u08 plip_send(plip_packet_t *pkt)
   if(status == PLIP_STATUS_OK) {
     status = wait_for_select(0, PLIP_STATE_END);
   }
+  
+  plip_timestamps.leave = time_stamp;
   
   return status;
 }

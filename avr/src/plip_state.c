@@ -32,6 +32,7 @@
 
 static u08 state = PLIP_STATE_LINK_DOWN;
 static u16 my_timer;
+static u08 count_down;
 
 static u08 time_passed(void)
 {
@@ -59,9 +60,14 @@ u08 plip_state_worker(void)
       if(time_passed()) {
         u08 line = plip_get_line_status();
         if(line != PLIP_LINE_OK) {
-          state = PLIP_STATE_LINK_DOWN;
-          uart_send_time_stamp_spc();
-          uart_send_pstring(PSTR("plip: link down\r\n"));
+          count_down ++;
+          if(count_down == 5) {
+            state = PLIP_STATE_LINK_DOWN;
+            uart_send_time_stamp_spc();
+            uart_send_pstring(PSTR("plip: link down\r\n"));
+          }
+        } else {
+          count_down = 0;
         }
       }
       break;
