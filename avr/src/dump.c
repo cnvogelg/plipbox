@@ -32,6 +32,7 @@
 #include "net/eth.h"
 #include "net/ip.h"
 #include "net/udp.h"
+#include "net/tcp.h"
 #include "param.h"
 #include "plip.h"
 #include "util.h"
@@ -130,6 +131,19 @@ static void dump_udp_port(u16 port)
   }
 }
 
+static void dump_tcp_port(u16 port)
+{
+  if(port == 21) {
+    uart_send_pstring(PSTR("FTPctl"));
+  } else if(port == 20) {
+    uart_send_pstring(PSTR("FTPdat"));
+  } else {
+    uart_send(' ');
+    uart_send_hex_word(port);
+    uart_send(' ');
+  }
+}
+
 extern void dump_ip_protocol(const u08 *ip_buf)
 {
   const u08 *proto_buf = ip_buf + ip_get_hdr_length(ip_buf);
@@ -141,6 +155,31 @@ extern void dump_ip_protocol(const u08 *ip_buf)
     dump_udp_port(src_port);
     uart_send('>');
     dump_udp_port(tgt_port);
+    uart_send(']');
+    uart_send(' ');
+  }
+  else if(proto == IP_PROTOCOL_TCP) {
+    uart_send_pstring(PSTR("[TCP:"));
+    u16 src_port = tcp_get_src_port(proto_buf);
+    u16 tgt_port = tcp_get_tgt_port(proto_buf);
+    dump_tcp_port(src_port);
+    uart_send('>');
+    dump_tcp_port(tgt_port);
+
+    u16 flags = tcp_get_flags(proto_buf);
+    uart_send_pstring(PSTR(",flags="));
+    uart_send_hex_word(flags);
+
+    uart_send_pstring(PSTR(",seq="));
+    u32 seq = tcp_get_seq_num(proto_buf);
+    uart_send_hex_dword(seq);
+    
+    if(flags & TCP_FLAGS_ACK) {
+      u32 ack = tcp_get_ack_num(proto_buf);
+      uart_send_pstring(PSTR(",ack="));
+      uart_send_hex_dword(ack);
+    }
+    
     uart_send(']');
     uart_send(' ');
   }

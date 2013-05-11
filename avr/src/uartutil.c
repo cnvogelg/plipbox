@@ -92,5 +92,4 @@ void uart_send_hex_dword(u32 data)
 {
   dword_to_hex(data,buf);
   uart_send_data(buf,8);
-  uart_send_crlf();
 }
