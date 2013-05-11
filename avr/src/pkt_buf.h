@@ -32,7 +32,12 @@
 
 #define PKT_BUF_SIZE    128
 
-extern u08 pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t pkt;
+/* plip rx side / eth tx */
+extern u08 rx_pkt_buf[PKT_BUF_SIZE];
+extern plip_packet_t rx_pkt;
+
+/* plip tx side / eth rx */
+extern u08 tx_pkt_buf[PKT_BUF_SIZE];
+extern plip_packet_t tx_pkt;
 
 #endif

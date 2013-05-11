@@ -146,21 +146,21 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
       mem_len = PKT_BUF_SIZE;
     }
     
-    // pre-fetch via SPI into packet buffer
-    enc28j60_packet_rx_blk(pkt_buf, mem_len);
+    // pre-fetch via SPI into packet buffer (-> tx plip bufer)
+    enc28j60_packet_rx_blk(tx_pkt_buf, mem_len);
     dump_latency_data.rx_leave = time_stamp;
     
     // dump incoming packet
     u08 dump_flag = param.dump_dirs & DUMP_DIR_ETH_RX;
     if(dump_flag) {
       uart_send_prefix();
-      dump_line(pkt_buf, len);
+      dump_line(tx_pkt_buf, len);
     }
     
     // what to do with the eth packet?
     if(plip_online) {    
       // if it does pass filter then send it via plip
-      if(filter_packet(pkt_buf, dump_flag)) {
+      if(filter_packet(tx_pkt_buf, dump_flag)) {
         // finish dump line first
         if(dump_flag) {
           uart_send_crlf();

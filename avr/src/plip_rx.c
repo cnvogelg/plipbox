@@ -59,7 +59,7 @@ static u08 transfer_rx(u08 *data)
 {
   // clone packet to our packet buffer
   if(offset < PKT_BUF_SIZE) {
-    pkt_buf[offset] = *data;
+    rx_pkt_buf[offset] = *data;
     offset ++;
   }
   
@@ -92,8 +92,8 @@ static void uart_send_prefix(void)
 
 static u08 filter_arp_pkt(void)
 {
-  u08 *arp_buf = pkt_buf + ETH_HDR_SIZE;
-  u16 arp_size = pkt.size;
+  u08 *arp_buf = rx_pkt_buf + ETH_HDR_SIZE;
+  u16 arp_size = rx_pkt.size;
   
   // make sure its an IPv4 ARP packet
   if(!arp_is_ipv4(arp_buf, arp_size)) {
@@ -105,7 +105,7 @@ static u08 filter_arp_pkt(void)
   // ARP request should now be something like this:
   // src_mac = Amiga MAC
   // src_ip = Amiga IP
-  const u08 *pkt_src_mac = eth_get_src_mac(pkt_buf);
+  const u08 *pkt_src_mac = eth_get_src_mac(rx_pkt_buf);
   const u08 *arp_src_mac = arp_get_src_mac(arp_buf);
   
   // pkt src and arp src must be the same
@@ -125,16 +125,16 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
     // receive PLIP packet and store it in eth chip tx buffer
     // also keep a copy in our local pkt_buf (up to max size)
     dump_latency_data.rx_enter = time_stamp;
-    u08 status = plip_recv(&pkt);
+    u08 status = plip_recv(&rx_pkt);
     dump_latency_data.rx_leave = time_stamp;
     if(status == PLIP_STATUS_OK) {
       // got a valid packet from plip -> check type
-      u16 type = eth_get_pkt_type(pkt_buf);
+      u16 type = eth_get_pkt_type(rx_pkt_buf);
 
       // dump packet?
       if(param.dump_dirs & DUMP_DIR_PLIP_RX) {
         uart_send_prefix();
-        dump_line(pkt_buf, pkt.size);
+        dump_line(rx_pkt_buf, rx_pkt.size);
         if(param.dump_plip) {
           dump_plip();
         }
@@ -163,7 +163,7 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
         if(eth_online) {
           // simply send packet to ethernet
           dump_latency_data.tx_enter = time_stamp;
-          eth_tx_send(type, pkt.size);
+          eth_tx_send(type, rx_pkt.size);
           dump_latency_data.tx_leave = time_stamp;
           
           if(param.dump_latency) {

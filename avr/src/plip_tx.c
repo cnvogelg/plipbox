@@ -42,7 +42,7 @@ static u08 get_plip_data(u08 *data)
 {
   // fetch data from buffer
   if(send_pos < max_pos) {
-    *data = pkt_buf[send_pos++];
+    *data = tx_pkt_buf[send_pos++];
     return PLIP_STATUS_OK;
   }  
   // fetch data directly from packet buffer on enc28j60
@@ -69,7 +69,7 @@ static u08 retry;
 static void dump_begin(void)
 {
   uart_send_prefix();
-  dump_line(pkt_buf, pkt.size);
+  dump_line(tx_pkt_buf, tx_pkt.size);
 }
 
 static void dump_end(void)
@@ -85,22 +85,28 @@ void plip_tx_worker(u08 plip_online)
   // shall we retry to send the last packet
   if(plip_online && (retry > 0)) {
 
+    u08 dump_it = 0;
     if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
       dump_begin();
+      dump_it = 1;
     }
     
-    u08 status = plip_send(&pkt);
+    u08 status = plip_send(&tx_pkt);
     if(status == PLIP_STATUS_OK) {
-      uart_send_pstring(PSTR("retry: OK "));
+      if(dump_it) { 
+        uart_send_pstring(PSTR("retry: OK "));
+      }
       retry = 0;
     } else {
-      uart_send_pstring(PSTR("retry: failed: "));
-      uart_send_hex_byte(status);
-      uart_send(' ');
+      if(dump_it) {
+        uart_send_pstring(PSTR("retry: failed: "));
+        uart_send_hex_byte(status);
+        uart_send(' ');
+      }
       retry --;
     }
 
-    if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+    if(dump_it) {
       dump_end();
     }
   }  
@@ -110,25 +116,29 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
 {
   send_pos = mem_offset;
   max_pos = mem_offset + mem_size;
-  pkt.size = total_size;
-  pkt.crc_type = PLIP_NOCRC;
+  tx_pkt.size = total_size;
+  tx_pkt.crc_type = PLIP_NOCRC;
 
+  u08 dump_it = 0;
   if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
     dump_begin();
+    dump_it = 1;
   }
   
-  u08 status = plip_send(&pkt);
+  u08 status = plip_send(&tx_pkt);
   
   if(status != PLIP_STATUS_OK) {
-    uart_send_pstring(PSTR("first: failed: "));
-    uart_send_hex_byte(status);
-    uart_send(' ');
+    if(dump_it) {
+      uart_send_pstring(PSTR("first: failed: "));
+      uart_send_hex_byte(status);
+      uart_send(' ');
+    }
     retry = 5;
   } else {
     retry = 0;
   }
   
-  if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+  if(dump_it) {
     dump_end();
   }
   
