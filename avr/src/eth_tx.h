@@ -28,6 +28,6 @@
 
 #include "global.h"
 
-extern void eth_tx_send(u16 eth_type, u16 eth_size);
+extern void eth_tx_send(u16 eth_size);
 
 #endif

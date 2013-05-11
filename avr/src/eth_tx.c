@@ -40,7 +40,7 @@ static void uart_send_prefix(void)
   uart_send_pstring(PSTR(" eth(TX): "));
 }
 
-void eth_tx_send(u16 eth_type, u16 eth_size)
+void eth_tx_send(u16 eth_size)
 {
   // dump eth packet
   if(param.dump_dirs & DUMP_DIR_ETH_TX) {

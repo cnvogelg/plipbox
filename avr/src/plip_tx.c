@@ -80,36 +80,38 @@ static void dump_end(void)
   uart_send_crlf();
 }
 
-void plip_tx_worker(u08 plip_online)
+u08 plip_tx_get_retries(void)
 {
-  // shall we retry to send the last packet
-  if(plip_online && (retry > 0)) {
+  return retry;
+}
 
-    u08 dump_it = 0;
-    if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
-      dump_begin();
-      dump_it = 1;
+u08 plip_tx_send_retry(void)
+{
+  u08 dump_it = 0;
+  if(param.dump_dirs & DUMP_DIR_PLIP_TX) {
+    dump_begin();
+    dump_it = 1;
+  }
+  
+  u08 status = plip_send(&tx_pkt);
+  if(status == PLIP_STATUS_OK) {
+    if(dump_it) { 
+      uart_send_pstring(PSTR("retry: OK "));
     }
-    
-    u08 status = plip_send(&tx_pkt);
-    if(status == PLIP_STATUS_OK) {
-      if(dump_it) { 
-        uart_send_pstring(PSTR("retry: OK "));
-      }
-      retry = 0;
-    } else {
-      if(dump_it) {
-        uart_send_pstring(PSTR("retry: failed: "));
-        uart_send_hex_byte(status);
-        uart_send(' ');
-      }
-      retry --;
-    }
-
+    retry = 0;
+  } else {
     if(dump_it) {
-      dump_end();
+      uart_send_pstring(PSTR("retry: failed: "));
+      uart_send_hex_byte(status);
+      uart_send(' ');
     }
-  }  
+    retry --;
+  }
+
+  if(dump_it) {
+    dump_end();
+  }
+  return status;
 }
 
 u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
@@ -129,7 +131,7 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   
   if(status != PLIP_STATUS_OK) {
     if(dump_it) {
-      uart_send_pstring(PSTR("first: failed: "));
+      uart_send_pstring(PSTR("postponed: "));
       uart_send_hex_byte(status);
       uart_send(' ');
     }

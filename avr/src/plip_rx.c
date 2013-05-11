@@ -118,8 +118,29 @@ static u08 filter_arp_pkt(void)
   return 1;
 }
 
-void plip_rx_worker(u08 plip_state, u08 eth_online)
+static u08 rx_postponed;
+
+static void send(void)
 {
+  // simply send packet to ethernet
+  dump_latency_data.tx_enter = time_stamp;
+  eth_tx_send(rx_pkt.size);
+  dump_latency_data.tx_leave = time_stamp;
+  
+  if(param.dump_latency) {
+    uart_send_prefix();
+    dump_latency();
+    uart_send_crlf();
+  }
+}
+
+void plip_rx_worker(u08 plip_state, u08 eth_online, u08 tx_postponed)
+{
+  if(rx_postponed) {
+    send();
+    rx_postponed = 0;
+  }
+  
   // do we have a PLIP packet waiting?
   if(plip_can_recv() == PLIP_STATUS_OK) {
     // receive PLIP packet and store it in eth chip tx buffer
@@ -161,15 +182,10 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
       // send to ethernet
       if(send_it) {
         if(eth_online) {
-          // simply send packet to ethernet
-          dump_latency_data.tx_enter = time_stamp;
-          eth_tx_send(type, rx_pkt.size);
-          dump_latency_data.tx_leave = time_stamp;
-          
-          if(param.dump_latency) {
-            uart_send_prefix();
-            dump_latency();
-            uart_send_crlf();
+          if(!tx_postponed) {
+            send();
+          } else {
+            rx_postponed = 1;
           }
         } else {
           // no ethernet online -> we have to drop packet

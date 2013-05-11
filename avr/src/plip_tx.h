@@ -29,7 +29,8 @@
 #include "global.h"
 
 extern void plip_tx_init(void);
-extern void plip_tx_worker(u08 plip_online);
+extern u08  plip_tx_get_retries(void);
+extern u08  plip_tx_send_retry(void);
 extern u08  plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size);
 
 #endif

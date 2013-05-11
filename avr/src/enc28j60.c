@@ -230,10 +230,10 @@
 // the entire available packet buffer space is allocated
 
 #define RXSTART_INIT        0x0000  // start of RX buffer, room for 2 packets
-#define RXSTOP_INIT         0x0BFF  // end of RX buffer
+#define RXSTOP_INIT         0x19FF  // end of RX buffer
                             
-#define TXSTART_INIT        0x0C00  // start of TX buffer, room for 1 packet
-#define TXSTOP_INIT         0x11FF  // end of TX buffer
+#define TXSTART_INIT        0x1A00  // start of TX buffer, room for 1 packet
+#define TXSTOP_INIT         0x1FFF  // end of TX buffer
                             
 #define SCRATCH_START       0x1200  // start of scratch area
 #define SCRATCH_LIMIT       0x2000  // past end of area, i.e. 3.5 Kb 
