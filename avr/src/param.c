@@ -49,6 +49,7 @@ static const param_t PROGMEM default_param = {
   .dump_arp = 0,
   .dump_proto = 0,
   .dump_plip = 0,
+  .dump_latency = 0,
   
   // use same mac as plipbox.device!
   .mac_addr = { 0x1a, 0x11, 0xaf, 0xa0, 0x47, 0x11 }
@@ -68,24 +69,28 @@ void param_dump(void)
   uart_send_pstring(PSTR("  [1=plip(rx),2=eth(rx),4=plip(tx),8=eth(tx)]"));
   uart_send_crlf();
 
-  uart_send_pstring(PSTR("de: dump ETH   "));
+  uart_send_pstring(PSTR("de: dump ETH     "));
   uart_send_hex_byte(param.dump_eth);
   uart_send_crlf();
 
-  uart_send_pstring(PSTR("di: dump IP    "));
+  uart_send_pstring(PSTR("di: dump IP      "));
   uart_send_hex_byte(param.dump_ip);
   uart_send_crlf();
 
-  uart_send_pstring(PSTR("da: dump ARP   "));
+  uart_send_pstring(PSTR("da: dump ARP     "));
   uart_send_hex_byte(param.dump_arp);
   uart_send_crlf();
   
-  uart_send_pstring(PSTR("dp: dump proto "));
+  uart_send_pstring(PSTR("dp: dump proto   "));
   uart_send_hex_byte(param.dump_proto);
   uart_send_crlf();
 
-  uart_send_pstring(PSTR("dl: dump plip  "));
+  uart_send_pstring(PSTR("dl: dump plip    "));
   uart_send_hex_byte(param.dump_plip);
+  uart_send_crlf();
+
+  uart_send_pstring(PSTR("dy: dump latency "));
+  uart_send_hex_byte(param.dump_latency);
   uart_send_crlf();
 }
 

@@ -42,6 +42,7 @@
 #include "uartutil.h"
 #include "param.h"
 #include "dump.h"
+#include "timer.h"
 
 static u08 offset;
 
@@ -89,20 +90,7 @@ static void uart_send_prefix(void)
 
 //#define DEBUG
 
-static void handle_ip_pkt(u08 eth_online)
-{
-  if(eth_online) {
-    // simply send packet to ethernet
-    eth_tx_send(ETH_TYPE_IPV4, pkt.size);
-  } else {
-    // no ethernet online -> we have to drop packet
-    uart_send_prefix();
-    uart_send_pstring(PSTR("IP: DROP!"));
-    uart_send_crlf();
-  }
-}
-
-static void handle_arp_pkt(u08 eth_online)
+static u08 filter_arp_pkt(void)
 {
   u08 *arp_buf = pkt_buf + ETH_HDR_SIZE;
   u16 arp_size = pkt.size;
@@ -111,7 +99,7 @@ static void handle_arp_pkt(u08 eth_online)
   if(!arp_is_ipv4(arp_buf, arp_size)) {
     uart_send_prefix();
     uart_send_pstring(PSTR("ARP: type?"));
-    return;
+    return 0;
   }
 
   // ARP request should now be something like this:
@@ -125,18 +113,9 @@ static void handle_arp_pkt(u08 eth_online)
     uart_send_prefix();
     uart_send_pstring(PSTR("ARP: pkt!=src mac!"));
     uart_send_crlf();
-    return;
+    return 0;
   }
-    
-  // send ARP packet to ethernet
-  if(eth_online) {
-    eth_tx_send(ETH_TYPE_ARP, pkt.size);
-  } else {
-    // no ethernet online -> we have to drop packet
-    uart_send_prefix();
-    uart_send_pstring(PSTR("ARP: DROP!"));
-    uart_send_crlf();
-  }
+  return 1;
 }
 
 void plip_rx_worker(u08 plip_state, u08 eth_online)
@@ -145,7 +124,9 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
   if(plip_can_recv() == PLIP_STATUS_OK) {
     // receive PLIP packet and store it in eth chip tx buffer
     // also keep a copy in our local pkt_buf (up to max size)
+    dump_latency_data.rx_enter = time_stamp;
     u08 status = plip_recv(&pkt);
+    dump_latency_data.rx_leave = time_stamp;
     if(status == PLIP_STATUS_OK) {
       // got a valid packet from plip -> check type
       u16 type = eth_get_pkt_type(pkt_buf);
@@ -161,12 +142,13 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
       }
 
       // handle IP packet
+      u08 send_it = 0;
       if(type == ETH_TYPE_IPV4) {
-        handle_ip_pkt(eth_online);
+        send_it = 1;
       }
       // handle ARP packet
       else if(type == ETH_TYPE_ARP) {
-        handle_arp_pkt(eth_online);
+        send_it = filter_arp_pkt();
       }
       // unknown packet type
       else {
@@ -175,6 +157,28 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
         uart_send_hex_word(type);
         uart_send_crlf();
       }
+      
+      // send to ethernet
+      if(send_it) {
+        if(eth_online) {
+          // simply send packet to ethernet
+          dump_latency_data.tx_enter = time_stamp;
+          eth_tx_send(type, pkt.size);
+          dump_latency_data.tx_leave = time_stamp;
+          
+          if(param.dump_latency) {
+            uart_send_prefix();
+            dump_latency();
+            uart_send_crlf();
+          }
+        } else {
+          // no ethernet online -> we have to drop packet
+          uart_send_prefix();
+          uart_send_pstring(PSTR("Offline -> DROP!"));
+          uart_send_crlf();
+        }      
+      }
+      
     } else {
       // report receiption error
       uart_send_prefix();

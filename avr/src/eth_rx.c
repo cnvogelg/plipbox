@@ -137,6 +137,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
   }
   
   // get next packet
+  dump_latency_data.rx_enter = time_stamp;
   u16 len = enc28j60_packet_rx_begin();
   if(len > 0) {    
     // try to fill packet buffer
@@ -147,6 +148,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     
     // pre-fetch via SPI into packet buffer
     enc28j60_packet_rx_blk(pkt_buf, mem_len);
+    dump_latency_data.rx_leave = time_stamp;
     
     // dump incoming packet
     u08 dump_flag = param.dump_dirs & DUMP_DIR_ETH_RX;
@@ -165,7 +167,15 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         }
         
         // send full pkt via plip
+        dump_latency_data.tx_enter = time_stamp;
         plip_tx_send(0, mem_len, len);
+        dump_latency_data.tx_leave = time_stamp;
+
+        if(param.dump_latency) {
+          uart_send_prefix();
+          dump_latency();
+          uart_send_crlf();
+        }
       } else {
         if(dump_flag) {
           uart_send_pstring(PSTR("-> DROP")),

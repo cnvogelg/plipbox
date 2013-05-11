@@ -179,6 +179,35 @@ extern void dump_plip(void)
   uart_send(' ');
 }
 
+dump_latency_t dump_latency_data; 
+
+extern void dump_latency(void)
+{
+  u32 d;
+  u08 buf[8];
+  
+  uart_send('<');
+  
+  d = dump_latency_data.rx_leave - dump_latency_data.rx_enter;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+
+  uart_send(',');
+  
+  d = dump_latency_data.tx_enter - dump_latency_data.rx_leave;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+
+  uart_send(',');
+
+  d = dump_latency_data.tx_leave - dump_latency_data.tx_enter;
+  dword_to_dec(d,buf,5,4);
+  uart_send_data(buf,6);
+  
+  uart_send('>');
+  uart_send(' ');
+}
+
 extern void dump_line(const u08 *eth_buf, u16 size)
 {
   if(param.dump_eth) {

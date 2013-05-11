@@ -42,7 +42,8 @@ typedef struct {
   u08 dump_ip;
   u08 dump_arp;
   u08 dump_proto;
-  u08 dump_plip;  
+  u08 dump_plip;
+  u08 dump_latency;
 } param_t;
   
 extern param_t param;  

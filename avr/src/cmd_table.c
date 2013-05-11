@@ -97,6 +97,7 @@ COMMAND(cmd_param_toggle)
     case 'a': val = &param.dump_arp; break;
     case 'p': val = &param.dump_proto; break;
     case 'l': val = &param.dump_plip; break;
+    case 'y': val = &param.dump_latency; break;
     default: return CMD_PARSE_ERROR;
   }
   
@@ -130,5 +131,6 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("da"), cmd_param_toggle },
   { CMD_NAME("dp"), cmd_param_toggle },
   { CMD_NAME("dl"), cmd_param_toggle },
+  { CMD_NAME("dy"), cmd_param_toggle },
   { 0,0 } // last entry
 };
