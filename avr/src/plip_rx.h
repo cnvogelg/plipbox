@@ -29,6 +29,6 @@
 #include "global.h"
 
 extern void plip_rx_init(void);
-extern void plip_rx_worker(u08 plip_state, u08 eth_online, u08 tx_postponed);
+extern void plip_rx_worker(u08 plip_state, u08 eth_online);
 
 #endif

@@ -84,8 +84,6 @@ int main (void)
     uart_send_crlf();
   }
   
-  u08 tx_postponed = 0;
-    
   // main loop
   while(1) {
     u08 plip_state = plip_state_worker();
@@ -93,8 +91,8 @@ int main (void)
     u08 eth_state = eth_state_worker(plip_online);
     u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
     
-    tx_postponed = eth_rx_worker(eth_state, plip_online);
-    plip_rx_worker(plip_state, eth_online, tx_postponed);
+    eth_rx_worker(eth_state, plip_online);
+    plip_rx_worker(plip_state, eth_online);
     
     cmd_worker();
   }

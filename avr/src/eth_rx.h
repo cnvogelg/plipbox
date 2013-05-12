@@ -31,6 +31,6 @@
 #define HELPER_WORKER_TIMER_MASK  0xffc0
 
 extern void eth_rx_init(void);
-extern u08 eth_rx_worker(u08 eth_state, u08 plip_online);
+extern void eth_rx_worker(u08 eth_state, u08 plip_online);
 
 #endif

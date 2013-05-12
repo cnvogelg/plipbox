@@ -88,17 +88,31 @@ COMMAND(cmd_param_set_mac)
 
 COMMAND(cmd_param_toggle)
 {
+  u08 group = argv[0][0];
   u08 type = argv[0][1];
   u08 *val = 0;
-  switch(type) {
-    case 'd': val = &param.dump_dirs; break;
-    case 'e': val = &param.dump_eth; break;
-    case 'i': val = &param.dump_ip; break;
-    case 'a': val = &param.dump_arp; break;
-    case 'p': val = &param.dump_proto; break;
-    case 'l': val = &param.dump_plip; break;
-    case 'y': val = &param.dump_latency; break;
-    default: return CMD_PARSE_ERROR;
+  
+  if(group == 'd') {
+    switch(type) {
+      case 'd': val = &param.dump_dirs; break;
+      case 'e': val = &param.dump_eth; break;
+      case 'i': val = &param.dump_ip; break;
+      case 'a': val = &param.dump_arp; break;
+      case 'p': val = &param.dump_proto; break;
+      case 'l': val = &param.dump_plip; break;
+      case 'y': val = &param.dump_latency; break;
+      default: return CMD_PARSE_ERROR;
+    }
+  } 
+  else if(group == 't') {
+    if(type == 'r') {
+      val = &param.tx_retries;
+    } else {
+      return CMD_PARSE_ERROR;
+    }
+  }
+  else {
+    return CMD_PARSE_ERROR;
   }
   
   if(argc == 1) {
@@ -124,6 +138,8 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("pr"), cmd_param_reset },
   // set mac
   { CMD_NAME("m"), cmd_param_set_mac },
+  // tx retries
+  { CMD_NAME("tr"), cmd_param_toggle },
   // dump commands
   { CMD_NAME("dd"), cmd_param_toggle },
   { CMD_NAME("de"), cmd_param_toggle },

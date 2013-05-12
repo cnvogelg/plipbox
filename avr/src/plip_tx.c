@@ -135,7 +135,7 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
       uart_send_hex_byte(status);
       uart_send(' ');
     }
-    retry = 5;
+    retry = param.tx_retries;
   } else {
     retry = 0;
   }

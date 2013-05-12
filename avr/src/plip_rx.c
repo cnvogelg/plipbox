@@ -134,7 +134,7 @@ static void send(void)
   }
 }
 
-void plip_rx_worker(u08 plip_state, u08 eth_online, u08 tx_postponed)
+void plip_rx_worker(u08 plip_state, u08 eth_online)
 {
   if(rx_postponed) {
     send();
@@ -182,9 +182,10 @@ void plip_rx_worker(u08 plip_state, u08 eth_online, u08 tx_postponed)
       // send to ethernet
       if(send_it) {
         if(eth_online) {
-          if(!tx_postponed) {
+          if(plip_tx_get_retries() == 0) {
             send();
           } else {
+            // is a tx packet currently postponed? -> delay sending my packet
             rx_postponed = 1;
           }
         } else {

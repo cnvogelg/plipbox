@@ -130,20 +130,18 @@ static u08 filter_packet(const u08 *eth_buf, u08 dump_flag)
   return 1;
 }
 
-u08 eth_rx_worker(u08 eth_state, u08 plip_online)
+void eth_rx_worker(u08 eth_state, u08 plip_online)
 {
-  u08 tx_postponed = 0;
-  
   // first try to send postponed
   if(plip_tx_get_retries() > 0) {
     u08 status = plip_tx_send_retry();
     if(status != PLIP_STATUS_OK) {
-      return 0;
+      return;
     }
   }
   
   if(eth_state == ETH_STATE_LINK_DOWN) {
-    return 0;
+    return;
   }
 
   // get next packet
@@ -178,12 +176,9 @@ u08 eth_rx_worker(u08 eth_state, u08 plip_online)
         
         // send full pkt via plip
         dump_latency_data.tx_enter = time_stamp;
-        u08 status = plip_tx_send(0, mem_len, len);
+        plip_tx_send(0, mem_len, len);
         dump_latency_data.tx_leave = time_stamp;
         
-        // was send postponed?
-        tx_postponed = (status != PLIP_STATUS_OK);
-
         if(param.dump_latency) {
           uart_send_prefix();
           dump_latency();
@@ -205,5 +200,4 @@ u08 eth_rx_worker(u08 eth_state, u08 plip_online)
     // finish packet read
     enc28j60_packet_rx_end();
   }
-  return tx_postponed;
 }
