@@ -36,13 +36,20 @@
 #include "pkt_buf.h"
 #include "enc28j60.h"
 
+#include "stats.h"
 
-COMMAND_KEY(cmd_test)
+COMMAND_KEY(cmd_dump_stats)
 {
+  stats_dump();
+}
+
+COMMAND_KEY(cmd_reset_stats)
+{
+  stats_reset();
 }
 
 cmdkey_table_t cmdkey_table[] = {
-    /* arp handling */
-  { 'u', cmd_test },
+  { 'd', cmd_dump_stats },
+  { 'r', cmd_reset_stats },
   { 0,0 }
 };

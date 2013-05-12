@@ -30,6 +30,7 @@
 
 #include "net/net.h"
 #include "param.h"
+#include "stats.h"
 
 COMMAND(cmd_quit)
 {
@@ -129,6 +130,18 @@ COMMAND(cmd_param_toggle)
   return CMD_OK;
 }
 
+COMMAND(cmd_stats_dump)
+{
+  stats_dump();
+  return CMD_OK;
+}
+
+COMMAND(cmd_stats_reset)
+{
+  stats_reset();
+  return CMD_OK;
+}
+
 cmd_table_t cmd_table[] = {
   { CMD_NAME("q"), cmd_quit },
   { CMD_NAME("v"), cmd_version },
@@ -136,6 +149,9 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("ps"), cmd_param_save },
   { CMD_NAME("pl"), cmd_param_load },
   { CMD_NAME("pr"), cmd_param_reset },
+  // stats
+  { CMD_NAME("sd"), cmd_stats_dump },
+  { CMD_NAME("sr"), cmd_stats_reset },
   // set mac
   { CMD_NAME("m"), cmd_param_set_mac },
   // tx retries

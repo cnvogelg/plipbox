@@ -33,6 +33,7 @@
 #include "dump.h"
 #include "param.h"
 #include "uart.h"
+#include "stats.h"
 
 static u16 send_pos = 0;
 static u16 max_pos = 0;
@@ -95,17 +96,24 @@ u08 plip_tx_send_retry(void)
   
   u08 status = plip_send(&tx_pkt);
   if(status == PLIP_STATUS_OK) {
+    stats.tx_cnt ++;
+    stats.tx_bytes += tx_pkt.size;
     if(dump_it) { 
       uart_send_pstring(PSTR("retry: OK "));
     }
     retry = 0;
   } else {
+    stats.tx_err ++;
+    stats.last_tx_err = status;
     if(dump_it) {
       uart_send_pstring(PSTR("retry: failed: "));
       uart_send_hex_byte(status);
       uart_send(' ');
     }
     retry --;
+    if(retry == 0) {
+      stats.tx_drop ++;
+    }
   }
 
   if(dump_it) {
@@ -130,6 +138,8 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
   u08 status = plip_send(&tx_pkt);
   
   if(status != PLIP_STATUS_OK) {
+    stats.tx_err ++;
+    stats.last_tx_err = status;
     if(dump_it) {
       uart_send_pstring(PSTR("postponed: "));
       uart_send_hex_byte(status);
@@ -137,6 +147,8 @@ u08 plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size)
     }
     retry = param.tx_retries;
   } else {
+    stats.tx_cnt ++;
+    stats.tx_bytes += total_size;
     retry = 0;
   }
   

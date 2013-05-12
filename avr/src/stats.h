@@ -45,8 +45,8 @@ typedef struct {
   u08 last_rx_err;
   u16 rx_drop;
   u16 tx_drop;
-  u16 rx_coll;
-  u16 tx_coll;
+  u16 rx_filter;
+  u16 tx_filter;
 } stats_t;
 
 extern stats_t stats;

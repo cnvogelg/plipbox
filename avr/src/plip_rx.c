@@ -43,6 +43,7 @@
 #include "param.h"
 #include "dump.h"
 #include "timer.h"
+#include "stats.h"
 
 static u08 offset;
 
@@ -136,24 +137,30 @@ static void send(void)
 
 void plip_rx_worker(u08 plip_state, u08 eth_online)
 {
+  // if last packet was postponed then send it now
   if(rx_postponed) {
     send();
     rx_postponed = 0;
   }
   
+  u08 dump_it = param.dump_dirs & DUMP_DIR_PLIP_RX;
+  
   // do we have a PLIP packet waiting?
   if(plip_can_recv() == PLIP_STATUS_OK) {
+    
     // receive PLIP packet and store it in eth chip tx buffer
     // also keep a copy in our local pkt_buf (up to max size)
     dump_latency_data.rx_enter = time_stamp;
     u08 status = plip_recv(&rx_pkt);
     dump_latency_data.rx_leave = time_stamp;
-    if(status == PLIP_STATUS_OK) {
+        
+    // packet receive was ok
+    if(status == PLIP_STATUS_OK) {      
       // got a valid packet from plip -> check type
       u16 type = eth_get_pkt_type(rx_pkt_buf);
 
       // dump packet?
-      if(param.dump_dirs & DUMP_DIR_PLIP_RX) {
+      if(dump_it) {
         uart_send_prefix();
         dump_line(rx_pkt_buf, rx_pkt.size);
         if(param.dump_plip) {
@@ -177,10 +184,14 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
         uart_send_pstring(PSTR("type? "));
         uart_send_hex_word(type);
         uart_send_crlf();
+        send_it = 0;
       }
       
       // send to ethernet
       if(send_it) {
+        stats.rx_cnt ++;
+        stats.rx_bytes += rx_pkt.size;
+        
         if(eth_online) {
           if(plip_tx_get_retries() == 0) {
             send();
@@ -193,10 +204,17 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
           uart_send_prefix();
           uart_send_pstring(PSTR("Offline -> DROP!"));
           uart_send_crlf();
+          stats.rx_drop ++;
         }      
+      } else {
+        stats.rx_filter ++;
       }
       
     } else {
+      // account stats
+      stats.rx_err ++;
+      stats.last_rx_err = status;
+      
       // report receiption error
       uart_send_prefix();
       uart_send_pstring(PSTR("recv? "));
