@@ -176,6 +176,7 @@ S2SS_PLIP_COLLISIONS equ ((((S2WireType_Ethernet) & $ffff) << 16) ! S2SS_COLLISI
      APTR   pb_OldExceptData
      ULONG  pb_OldExcept
      STRUCT pb_CfgAddr,PLIP_ADDRFIELDSIZE
+     STRUCT pb_DefAddr,PLIP_ADDRFIELDSIZE
      APTR   pb_Frame
    LABEL PLIPBase_SIZE
 

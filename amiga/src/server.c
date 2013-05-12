@@ -805,7 +805,8 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
          case S2_CONFIGINTERFACE:
             if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
             {
-               memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
+               /* copy address from src addr */
+               memcpy(pb->pb_CfgAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
                if (!goonline(pb))
                {
                   ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;

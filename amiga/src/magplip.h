@@ -245,6 +245,7 @@ struct PLIPBase
    APTR                        pb_OldExceptData;
    ULONG                       pb_OldExcept;
    UBYTE                       pb_CfgAddr[PLIP_ADDRFIELDSIZE];
+   UBYTE                       pb_DefAddr[PLIP_ADDRFIELDSIZE];
    struct PLIPFrame        *   pb_Frame;
 };
 

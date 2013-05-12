@@ -282,6 +282,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          pb->pb_CfgAddr[3] = 0xa0;
          pb->pb_CfgAddr[4] = 0x47;
          pb->pb_CfgAddr[5] = 0x11;
+         memcpy(pb->pb_DefAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
 
          /*
          ** Each opnener get's it's own BufferManagement. This is neccessary
@@ -611,7 +612,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 
       case S2_GETSTATIONADDRESS:
          memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* current */
-         memcpy(ios2->ios2_DstAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* default */
+         memcpy(ios2->ios2_DstAddr, pb->pb_DefAddr, PLIP_ADDRFIELDSIZE); /* default */
       break;
          
       case S2_DEVICEQUERY:
