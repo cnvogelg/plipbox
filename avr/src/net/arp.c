@@ -26,12 +26,6 @@
 
 #include "arp.h"
 #include "net.h"
-#include "eth.h"
-
-#include "uartutil.h"
-
-   /* debug */
-#define DUMP_ARP
 
 u08 arp_is_ipv4(const u08 *buf, u16 len)
 {

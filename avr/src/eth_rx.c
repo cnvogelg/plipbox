@@ -28,7 +28,6 @@
 
 #include "eth_rx.h"
 
-#include "net/icmp.h"
 #include "net/arp.h"
 #include "net/eth.h"
 #include "net/net.h"

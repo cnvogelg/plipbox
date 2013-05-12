@@ -58,7 +58,5 @@ inline u32  tcp_get_seq_num(const u08 *tcp_buf) { return net_get_long(tcp_buf + 
 inline u32  tcp_get_ack_num(const u08 *tcp_buf) { return net_get_long(tcp_buf + TCP_ACK_NUM_OFF); }
 inline u16  tcp_get_flags(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_FLAGS_OFF) & 0x1ff; }
 inline u16  tcp_get_window_size(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_WINDOW_OFF); }
-
-inline u08  tcp_is_tcp_pkt(const u08 *buf) { return ip_is_ipv4_protocol(buf, IP_PROTOCOL_TCP); }
   
 #endif

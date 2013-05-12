@@ -47,8 +47,6 @@ extern void net_put_long(u08 *buf, u32 value);
 extern void net_dump_mac(const u08 *in);
 extern void net_dump_ip(const u08 *in);
 
-extern u08  net_is_my_subnet(const u08 *ip);
-
 extern u08 net_parse_ip(const u08 *buf, u08 *ip);
 extern u08 net_parse_mac(const u08 *buf, u08 *mac);
 

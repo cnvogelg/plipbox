@@ -140,21 +140,3 @@ u08  net_compare_ip(const u08 *a, const u08 *b)
   }
   return 1;
 }
-
-#if 0
-u08 net_is_my_subnet(const u08 *ip)
-{
-  const u08 *my_ip = net_get_ip();
-  const u08 *net_mask = net_get_netmask();
-  for(int i=0;i<4;i++) {
-    u08 diff = ip[i] ^ my_ip[i];
-    diff &= net_mask[i];
-    if(diff != 0) {
-      return 0;
-    }
-  }
-  return 1;
-}
-#endif
-
-

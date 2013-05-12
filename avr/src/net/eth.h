@@ -41,13 +41,9 @@
 
 inline const u08* eth_get_tgt_mac(const u08 *pkt) { return pkt + ETH_OFF_TGT_MAC; }
 inline const u08 *eth_get_src_mac(const u08 *pkt) { return pkt + ETH_OFF_SRC_MAC; }
-inline void eth_set_tgt_mac(u08 *pkt, const u08 *mac) { net_copy_mac(mac, pkt + ETH_OFF_TGT_MAC); }
-inline void eth_set_src_mac(u08 *pkt, const u08 *mac) { net_copy_mac(mac, pkt + ETH_OFF_SRC_MAC); }
 inline u16 eth_get_pkt_type(const u08 *pkt) { return net_get_word(pkt + ETH_OFF_TYPE); }
 inline u08 eth_is_arp_pkt(const u08 *pkt) { return eth_get_pkt_type(pkt) == ETH_TYPE_ARP; }
 inline u08  eth_is_ipv4_pkt(const u08 *pkt) { return eth_get_pkt_type(pkt) == ETH_TYPE_IPV4; }  
 inline void eth_set_pkt_type(u08 *pkt, u16 type) { net_put_word(pkt + ETH_OFF_TYPE, type); }
-
-extern u08  eth_is_broadcast_tgt(const u08 *pkt);
 
 #endif

@@ -30,7 +30,6 @@
 #include "net/eth.h"
 #include "net/ip.h"
 #include "net/arp.h"
-#include "net/icmp.h"
 
 #include "plip_state.h"
 #include "pkt_buf.h"

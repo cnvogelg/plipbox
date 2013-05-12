@@ -38,19 +38,10 @@
 #define UDP_CHECKSUM_OFF  6
 #define UDP_DATA_OFF      8
 
-extern u08 udp_begin_pkt(u08 *buf, const u08 *src_ip, u16 src_port, const u08 *tgt_ip, u16 tgt_port);
-extern u16 udp_finish_pkt(u08 *buf, u16 data_size);
-extern u16 udp_calc_checksum(const u08 *buf);
-extern void udp_set_checksum(u08 *buf);
-
 inline const u08 *udp_get_data_ptr(const u08 *udp_buf) { return udp_buf + UDP_DATA_OFF; }
 inline u16  udp_get_src_port(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_SRC_PORT_OFF); }
 inline u16  udp_get_tgt_port(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_TGT_PORT_OFF); }
-inline void udp_set_src_port(u08 *udp_buf, u16 port) { return net_put_word(udp_buf + UDP_SRC_PORT_OFF, port); }
-inline void udp_set_tgt_port(u08 *udp_buf, u16 port) { return net_put_word(udp_buf + UDP_TGT_PORT_OFF, port); }
 inline u16  udp_get_length(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_LENGTH_OFF); }
 inline u16  udp_get_checksum(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_CHECKSUM_OFF); }
-
-inline u08  udp_is_udp_pkt(const u08 *buf) { return ip_is_ipv4_protocol(buf, IP_PROTOCOL_UDP); }
   
 #endif
