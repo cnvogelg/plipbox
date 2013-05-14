@@ -503,7 +503,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 
          frame->pf_Type = (USHORT)ios2->ios2_PacketType;
          frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2 + PKTFRAMESIZE_3;
-         memcpy(frame->pf_SrcAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
+         memcpy(frame->pf_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
          memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
 
          bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
