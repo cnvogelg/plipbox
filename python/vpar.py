@@ -1,7 +1,7 @@
 # vpar.py - access virtual parallel port of patched FS-UAE
 
 import select
-import datetime
+import time
 
 # bit masks for ctl flags
 BUSY_MASK = 1
@@ -88,4 +88,7 @@ class VPar:
         return self.ctl
 
     def log(self, msg):
-        print datetime.datetime.utcnow(),msg
+        ts = time.time()
+        sec = int(ts)
+        usec = int(ts * 1000000) % 1000000 
+        print "%8d.%06d" % (sec,usec),msg
