@@ -572,12 +572,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          memset(ios2->ios2_DstAddr, 0xff, PLIP_ADDRFIELDSIZE);
               /* fall through */
       case CMD_WRITE:
-         if (ios2->ios2_Req.io_Flags & SANA2IOF_RAW)
-         {
-            ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
-            ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-         }
-         else if(ios2->ios2_DataLength > pb->pb_MTU)
+         if(ios2->ios2_DataLength > pb->pb_MTU)
          {
             ios2->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
          }

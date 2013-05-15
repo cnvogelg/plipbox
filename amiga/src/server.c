@@ -498,17 +498,26 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 
       if (!(pb->pb_Flags & PLIPF_RECEIVING))
       {
+         UBYTE *frame_ptr;
+         
          d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
                                                       ios2->ios2_DataLength));
 
-         frame->pf_Type = (USHORT)ios2->ios2_PacketType;
-         frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2 + PKTFRAMESIZE_3;
-         memcpy(frame->pf_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
-         memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
+         /* copy raw frame: simply overwrite ethernet frame part of plip packet */
+         if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
+            frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2;
+            frame_ptr = &frame->pf_DstAddr[0];
+         } else {
+            frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2 + PKTFRAMESIZE_3;
+            frame->pf_Type = (USHORT)ios2->ios2_PacketType;
+            memcpy(frame->pf_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
+            memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
+            frame_ptr = (UBYTE *)(frame + 1);
+         }
 
          bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
 
-         if (!(*bm->bm_CopyFromBuffer)((UBYTE*)(frame+1),
+         if (!(*bm->bm_CopyFromBuffer)(frame_ptr,
                                      ios2->ios2_Data, ios2->ios2_DataLength))
          {
             rc = AW_BUFFER_ERROR;
@@ -619,14 +628,49 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 }
 /*E*/
 
-PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame)
+PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *frame)
 {
    int i;
    BOOL broadcast; 
+   LONG datasize;
+   BYTE *frame_ptr;
+   struct BufferManagement *bm;
+   BOOL ok;
    
+   /* deliver a raw frame: copy data right into ethernet header */
+   if(req->ios2_Req.io_Flags & SANA2IOF_RAW) {
+      frame_ptr = &frame->pf_DstAddr[0];
+      datasize = frame->pf_Size - PKTFRAMESIZE_2;
+      req->ios2_Req.io_Flags = SANA2IOF_RAW;
+   }
+   else {
+      frame_ptr = (UBYTE *)(frame + 1);
+      datasize = frame->pf_Size - (PKTFRAMESIZE_2 + PKTFRAMESIZE_3);
+      req->ios2_Req.io_Flags = 0;
+   }
+
+   req->ios2_DataLength = datasize;
+   
+   /* copy packet buffer */
+   bm = (struct BufferManagement *)req->ios2_BufferManagement;
+   if (!(*bm->bm_CopyToBuffer)(req->ios2_Data, frame_ptr, datasize))
+   {
+      d(("CopyToBuffer: error\n"));
+      req->ios2_Req.io_Error = S2ERR_SOFTWARE;
+      req->ios2_WireError = S2WERR_BUFF_ERROR;
+      ok = FALSE;
+   }
+   else
+   {
+      req->ios2_Req.io_Error = req->ios2_WireError = 0;
+      ok = TRUE;
+   }
+   
+   /* now extract addresses from ethernet header */
    memcpy(req->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
    memcpy(req->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
    
+   /* need to set broadcast flag? */
    broadcast = TRUE;
    for(i=0;i<PLIP_ADDRFIELDSIZE;i++) {
       if(frame->pf_DstAddr[i] != 0xff) {
@@ -635,8 +679,10 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
       }
    }
    if(broadcast) {
-      req->ios2_Req.io_Flags = SANA2IOF_BCAST;
+      req->ios2_Req.io_Flags |= SANA2IOF_BCAST;
    }
+   
+   return ok;
 }
 
    /*
@@ -647,7 +693,6 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
    LONG datasize;
    struct IOSana2Req *got;
    ULONG pkttyp;
-   struct BufferManagement *bm;
    BOOL rv;
    struct PLIPFrame *frame = pb->pb_Frame;
 
@@ -680,25 +725,15 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
             /* check if this one requests for the new packet we got */
          if (got->ios2_PacketType == pkttyp )
          {
+            BOOL ok;
+            
             Remove((struct Node*)got);
 
-            bm = (struct BufferManagement *)got->ios2_BufferManagement;
-
-            if (!(*bm->bm_CopyToBuffer)(got->ios2_Data, (UBYTE*)(frame+1), datasize))
-            {
-               d(("CopyToBuffer: error\n"));
-               got->ios2_Req.io_Error = S2ERR_SOFTWARE;
-               got->ios2_WireError = S2WERR_BUFF_ERROR;
+            /* deliver packet */
+            ok = deliverreadreq(got, frame);
+            if(!ok) {
                DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
             }
-            else
-            {
-               got->ios2_Req.io_Error = got->ios2_WireError = 0;
-            }
-
-            got->ios2_Req.io_Flags = 0;
-            got->ios2_DataLength = datasize;
-            fillreadreq(got, frame);
 
             d(("packet received, satisfying S2Request\n"));
             DevTermIO(pb, got);
@@ -734,20 +769,10 @@ PRIVATE REGARGS VOID fillreadreq(struct IOSana2Req *req, struct PLIPFrame *frame
 
       if (got)
       {
-         bm = (struct BufferManagement *)got->ios2_BufferManagement;
-         if (!(*bm->bm_CopyToBuffer)(got->ios2_Data, (UBYTE*)(frame+1), datasize))
-         {
-            got->ios2_Req.io_Error = S2ERR_SOFTWARE;
-            got->ios2_WireError = S2WERR_BUFF_ERROR;
+         BOOL ok = deliverreadreq(got, frame);
+         if(!ok) {
+            DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
          }
-         else
-         {
-            got->ios2_Req.io_Error = got->ios2_WireError = 0;
-         }
-         
-         got->ios2_Req.io_Flags = 0;
-         got->ios2_DataLength = datasize;
-         fillreadreq(got, frame);
 
          d(("orphan read\n"));
 
