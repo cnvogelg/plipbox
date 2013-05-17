@@ -16,7 +16,7 @@ class SoPTY:
     self._cmd = ['/bin/stty','-f',self._slave_name,
       'cs8','raw','-echo','-onlcr','-echoctl','-echoke','-echoe','-iexten']
     subprocess.check_call(self._cmd)
-    subprocess.check_call(['/bin/stty','-f',self._slave_name])
+    #subprocess.check_call(['/bin/stty','-f',self._slave_name])
   
   def get_fd(self):
     return self._fd

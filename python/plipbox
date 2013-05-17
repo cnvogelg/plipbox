@@ -69,11 +69,34 @@ def get_speed_bar(delta, deltas, n):
     deltas[0], deltas[1]
   )
 
-def check_pkt(pkt, args):
+def check_bootp_bcast(raw_buf):
+  eth_off = 14
+  # check IP proto
+  proto = ord(raw_buf[eth_off+9])
+  if proto != 17: # must be UDP
+    return False
+  # check tgt ip
+  off = eth_off + 16 # eth hdr + ip: tgt
+  tgt_ip = struct.unpack("BBBB",raw_buf[off:off+4])
+  if tgt_ip != (255,255,255,255):
+    return False
+  # check udp port
+  udp_off = eth_off + (ord(raw_buf[eth_off]) & 0xf) * 4
+  src_port = struct.unpack("!H",raw_buf[udp_off:udp_off+2])[0] 
+  tgt_port = struct.unpack("!H",raw_buf[udp_off+2:udp_off+4])[0]
+  bootp = (67, 68)
+  return src_port in bootp and tgt_port in bootp
+  
+def check_pkt(pkt, raw_buf, args):
   global plipbox_mac
   bcast = (0xff,0xff,0xff,0xff,0xff,0xff)
   if pkt.tgt_mac == bcast:
-    return True
+    if pkt.eth_type == 0x806: # ARP
+      return True
+    elif pkt.eth_type == 0x800: # IPv4
+      return check_bootp_bcast(raw_buf)
+    else:
+      return False
   elif pkt.tgt_mac != plipbox_mac:
     return False
   else:
@@ -102,16 +125,14 @@ bridge = bridge.Bridge(tap_name, eth_name)
 bridge.up()
 
 timeout = 0.1
-last_time = time.time()
+start = time.time()
 try:
   log("enter main loop")
   while True:
 
     # io multiplex
     r = select([tap_fd,sp_fd],[],[])
-    t = time.time()
-    delta = t - last_time
-    last_time = t
+    t = time.time() - start
     
     # got packet from tap?
     if tap_fd in r[0]:
@@ -120,23 +141,18 @@ try:
       # decode frame
       eth_frame = EthFrame()
       eth_frame.decode(raw_buf)
-      log("%8.3f  tap:"%delta,eth_frame,end=' ')
       # send packet to magplip
-      if not args.rx and check_pkt(eth_frame, args):
-        for retry in xrange(5):
-          try:
-            s = time.time()
-            deltas = mp.send(raw_buf)
-            e = time.time()
-            d = e - s
-            n = len(raw_buf)
-            log(get_speed_bar(d, deltas, n), end=' ')
-            break
-          except magplip.MagPlipError as e:
-            log(e,end=' ')
-          # retry delay
-          time.sleep(0.1)
-      log()
+      if not args.rx and check_pkt(eth_frame, raw_buf, args):
+        log("%12.6f  tap:" % t , eth_frame, end=' ')
+        try:
+          s = time.time()
+          deltas = mp.send(raw_buf)
+          e = time.time()
+          d = e - s
+          n = len(raw_buf)
+          log(get_speed_bar(d, deltas, n))
+        except magplip.MagPlipError as e:
+          log(e)
     
     # got packet from parallel?
     if sp_fd in r[0]:
@@ -153,7 +169,7 @@ try:
           eth_frame = EthFrame()
           eth_frame.decode(raw_buf)
           n = len(raw_buf)
-          log("%8.3f  PAR:"%delta, eth_frame, get_speed_bar(d,deltas,n), end=' ')
+          log("%12.6f *PAR:" % t, eth_frame, get_speed_bar(d,deltas,n), end=' ')
           # send to tap
           if not args.rx:
             try:
