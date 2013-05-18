@@ -102,6 +102,50 @@ def check_pkt(pkt, raw_buf, args):
   else:
     return True
 
+def handle_tap(tap, mp, t, args):
+  # read packet
+  raw_buf = tap.read(4000)
+  # decode frame
+  eth_frame = EthFrame()
+  eth_frame.decode(raw_buf)
+  # send packet to magplip
+  if not args.rx and check_pkt(eth_frame, raw_buf, args):
+    log("%12.6f  tap:" % t , eth_frame, end=' ')
+    try:
+      s = time.time()
+      deltas = mp.send(raw_buf)
+      e = time.time()
+      d = e - s
+      n = len(raw_buf)
+      log(get_speed_bar(d, deltas, n))
+    except magplip.MagPlipError as e:
+      log(e)
+
+def handle_par(mp, tap, t, args):
+  # rx: get block
+  pkt = None
+  try:
+    # receive frame
+    s = time.time()
+    raw_buf,deltas = mp.recv()
+    e = time.time()
+    d = e - s
+    if raw_buf != None:
+      # decode frame
+      eth_frame = EthFrame()
+      eth_frame.decode(raw_buf)
+      n = len(raw_buf)
+      log("%12.6f *PAR:" % t, eth_frame, get_speed_bar(d,deltas,n), end=' ')
+      # send to tap
+      if not args.rx:
+        try:
+          tap.write(raw_buf)
+          log()
+        except OSError as e:
+          log(e)
+  except magplip.MagPlipError as e:
+    log(e)
+
 # ----- main loop -----
 print("Welcome to plipbox!")
 
@@ -125,10 +169,18 @@ bridge = bridge.Bridge(tap_name, eth_name)
 bridge.up()
 
 timeout = 0.1
+do_sync = True
 start = time.time()
 try:
   log("enter main loop")
   while True:
+    # need a vpar re-sync 
+    if do_sync:
+      log("sync vpar with emu")
+      vpar.request_state()
+      log("start magplip")
+      mp.start()
+      do_sync = False
 
     # io multiplex
     r = select([tap_fd,sp_fd],[],[])
@@ -136,50 +188,19 @@ try:
     
     # got packet from tap?
     if tap_fd in r[0]:
-      # read packet
-      raw_buf = tap.read(4000)
-      # decode frame
-      eth_frame = EthFrame()
-      eth_frame.decode(raw_buf)
-      # send packet to magplip
-      if not args.rx and check_pkt(eth_frame, raw_buf, args):
-        log("%12.6f  tap:" % t , eth_frame, end=' ')
-        try:
-          s = time.time()
-          deltas = mp.send(raw_buf)
-          e = time.time()
-          d = e - s
-          n = len(raw_buf)
-          log(get_speed_bar(d, deltas, n))
-        except magplip.MagPlipError as e:
-          log(e)
+      handle_tap(tap, mp, t, args)
     
     # got packet from parallel?
     if sp_fd in r[0]:
-      # rx: get block
-      pkt = None
-      try:
-        # receive frame
-        s = time.time()
-        raw_buf,deltas = mp.recv()
-        e = time.time()
-        d = e - s
-        if raw_buf != None:
-          # decode frame
-          eth_frame = EthFrame()
-          eth_frame.decode(raw_buf)
-          n = len(raw_buf)
-          log("%12.6f *PAR:" % t, eth_frame, get_speed_bar(d,deltas,n), end=' ')
-          # send to tap
-          if not args.rx:
-            try:
-              tap.write(raw_buf)
-              log()
-            except OSError as e:
-              log(e)
-      except magplip.MagPlipError as e:
-        log(e)
-        
+      handle_par(mp, tap, t, args)
+    
+    # check emulator flags in vpar
+    if vpar.check_init_flag():
+      do_sync = True
+    if vpar.check_exit_flag():
+      log("emu exit")
+      break
+      
 except KeyboardInterrupt:
   print
 finally:

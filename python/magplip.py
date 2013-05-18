@@ -18,11 +18,10 @@ class MagPlipError(Exception):
 class MagPlip:
     def __init__(self, v):
         self.vpar = v
-        # first make sure we have updated values - drain data and status channels
-        self.vpar.drain()
-        self.vpar.request_state()
+    
+    def start(self):
         # clear HS_LINE
-        self.vpar.clr_status_mask(vpar.BUSY_MASK)
+        self.vpar.clr_control_mask(vpar.BUSY_MASK)
     
     def wait_select(self, value, timeout=1):
         """wait for SELECT signal"""
@@ -30,7 +29,7 @@ class MagPlip:
         end = t + timeout
         found = False
         while t < end:
-            s = self.vpar.peek_status() & vpar.SEL_MASK
+            s = self.vpar.peek_control() & vpar.SEL_MASK
             if s and value:
                 found = True
                 break
@@ -39,7 +38,7 @@ class MagPlip:
                 break
                 
             rem = end - t
-            self.vpar.read(rem)
+            self.vpar.poll_state(rem)
             t = time.time()
         return found
     
@@ -50,7 +49,7 @@ class MagPlip:
         end = t + timeout
         found = False
         while t < end:
-            s = self.vpar.peek_status()
+            s = self.vpar.peek_control()
             if expect and ((s & vpar.POUT_MASK) == vpar.POUT_MASK):
                 found = True
                 break
@@ -63,15 +62,15 @@ class MagPlip:
                 return False
                 
             rem = end - t
-            self.vpar.read(rem)
+            self.vpar.poll_state(rem)
             t = time.time()
         return found
     
     def toggle_busy(self, value):
         if value:
-            self.vpar.clr_status_mask(vpar.BUSY_MASK)
+            self.vpar.clr_control_mask(vpar.BUSY_MASK)
         else:
-            self.vpar.set_status_mask(vpar.BUSY_MASK)
+            self.vpar.set_control_mask(vpar.BUSY_MASK)
             
     def set_next_byte(self, toggle_expect, value, timeout=1):
         ok = self.wait_line_toggle(toggle_expect, timeout)
@@ -94,7 +93,8 @@ class MagPlip:
         ok = self.wait_line_toggle(toggle_expect, timeout)
         if not ok:
             return None
-        data = self.vpar.get_data()
+        self.vpar.poll_state(0)
+        data = self.vpar.peek_data()
         self.toggle_busy(not toggle_expect)
         return data
     
@@ -112,7 +112,7 @@ class MagPlip:
     def send(self, raw_pkt, timeout=1, crc=False):
         """send a packet via vpar port"""
         # set HS_LINE (BUSY)
-        self.vpar.set_status_mask(vpar.BUSY_MASK)
+        self.vpar.set_control_mask(vpar.BUSY_MASK)
         # set magic byte
         self.vpar.set_data(MAGIC)
         # pulse ACK -> trigger IRQ in server
@@ -163,7 +163,7 @@ class MagPlip:
             return (first_delta, data_delta, last_delta)
         finally:
             # clear HS_LINE (BUSY)
-            self.vpar.clr_status_mask(vpar.BUSY_MASK)
+            self.vpar.clr_control_mask(vpar.BUSY_MASK, timeout=1)
 
     def recv(self, timeout=1):
         """receive a data packet via vpar port. make sure to call can_recv() before!!"""
@@ -216,5 +216,5 @@ class MagPlip:
             return raw_pkt,(first_delta, data_delta, last_delta)
         finally:
             # clear BUSY
-            self.vpar.clr_status_mask(vpar.BUSY_MASK)
+            self.vpar.clr_control_mask(vpar.BUSY_MASK, timeout=1)
 
