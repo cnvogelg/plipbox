@@ -23,6 +23,7 @@ class VPar:
         self.fd = par_file.get_fd()
         self.init_flag = False
         self.exit_flag = False
+        self.reply_flag = False
     
     def close(self):
         """close the associated vpar I/O channel"""
@@ -41,22 +42,31 @@ class VPar:
         # poll port - if something is here read it first
         if self._has_data(timeout):
             d = self.par_file.read(2)
-            self.ctl = ord(d[0])
-            self.dat = ord(d[1])
-            if self.ctl & VPAR_INIT == VPAR_INIT:
+            ctl = ord(d[0])
+            dat = ord(d[1])
+            if ctl & VPAR_INIT == VPAR_INIT:
                 self.init_flag = True
-            if self.ctl & VPAR_EXIT == VPAR_EXIT:
+            if ctl & VPAR_EXIT == VPAR_EXIT:
                 self.exit_flag = True
+            if ctl & VPAR_REPLY == VPAR_REPLY:
+                self.reply_flag = True
+            self.ctl = ctl & 0xf
+            self.dat = dat
             if self.verbose:
-                self._log("%s: ctl=%02x dat=%02x [%02x %02x]" % (what, self.ctl, self.dat, self.ctl, self.dat))
+                self._log("%s: ctl=%02x dat=%02x [%02x %02x]" % (what, self.ctl, self.dat, ctl, dat))
             return True
         else:
           return False
     
     def _write(self, data, timeout=None):
         self.par_file.write(data)
-        # always receive ack value
-        return self._read(timeout, "AK")
+        # wait for reply from emu. skip updates
+        num = 0
+        while self._read(timeout, "R%d" % num):
+            # make sure it has reply flag set
+            if self.check_reply_flag():
+                break
+            num += 1
     
     def poll_state(self, timeout=0):
         """check if a state update is available on I/O channel
@@ -116,6 +126,11 @@ class VPar:
         """check and clear exit flag"""
         v = self.exit_flag
         self.exit_flag = False
+        return v
+    
+    def check_reply_flag(self):
+        v = self.reply_flag
+        self.reply_flag = False
         return v
     
     def _log(self, msg):
