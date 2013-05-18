@@ -64,9 +64,9 @@ def calc_speed(delta, size):
   return "%6.3f KiB/s" % kibs
 
 def get_speed_bar(delta, deltas, n):
-  return "%s %s f=%4.3f l=%4.3f" % (
+  return "%s %s f=%4.3f l=%4.3f a=%4.3f" % (
     calc_speed(delta, n), calc_speed(deltas[1], n),
-    deltas[0], deltas[1]
+    deltas[0], deltas[1], delta
   )
 
 def check_bootp_bcast(raw_buf):
@@ -118,8 +118,10 @@ def handle_tap(tap, mp, t, args):
       d = e - s
       n = len(raw_buf)
       log(get_speed_bar(d, deltas, n))
-    except magplip.MagPlipError as e:
-      log(e)
+    except magplip.MagPlipError as ex:
+      e = time.time()
+      d = e - s
+      log("%s. delta=%5.3f" % (ex, d))
 
 def handle_par(mp, tap, t, args):
   # rx: get block
@@ -143,8 +145,10 @@ def handle_par(mp, tap, t, args):
           log()
         except OSError as e:
           log(e)
-  except magplip.MagPlipError as e:
-    log(e)
+  except magplip.MagPlipError as ex:
+    e = time.time()
+    d = e - s
+    log("%s. delta=%5.3f" % (ex, d))
 
 # ----- main loop -----
 print("Welcome to plipbox!")
