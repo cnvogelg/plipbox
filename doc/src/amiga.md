@@ -1,5 +1,5 @@
-plipbox Setup on Amiga
-======================
+plipbox: Amiga Setup
+====================
 
 0. Changes
 ----------

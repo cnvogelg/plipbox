@@ -1,5 +1,5 @@
-Build your own plipbox device
-=============================
+plipbox: Hardware
+=================
 
 1. Arduino (2009)
 ----------------
