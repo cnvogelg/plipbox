@@ -48,6 +48,8 @@ Documentation
 -------------
 
  - [Change Log](ChangeLog.md): Changes in the releases
+ - [Introduction](doc/src/intro.md): Introduction on plipbox
  - [Hardware](doc/src/hardware.md): How to build the device hardware
  - [Firmware](doc/src/firmware.md): How to setup the firmware
  - [Amiga Setup](doc/src/amiga.md): How to setup plipbox.device on your Amiga
+ - [Python Emulator](doc/src/python.md): A plipbox emulator if you run your Amiga in FS-UAE
