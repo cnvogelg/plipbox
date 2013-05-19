@@ -47,7 +47,7 @@ to the source code here.
 Documentation
 -------------
 
- - [ChangeLog][ChangeLog.md]: Changes in the releases
+ - [Change Log](ChangeLog.md): Changes in the releases
  - [Hardware](doc/src/hardware.md): How to build the device hardware
  - [Firmware](doc/src/firmware.md): How to setup the firmware
  - [Amiga Setup](doc/src/amiga.md): How to setup plipbox.device on your Amiga
