@@ -23,8 +23,8 @@
 #  02111-1307  USA.
 #
 
-VERSION := 0.2
-SUBDIRS := avr/src amiga/src
+VERSION := 0.3
+SUBDIRS := avr/src amiga/src doc/src
 DISTFILES := Makefile README COPYING INSTALL contrib doc avr amiga
 PROJECT := plipbox
 
