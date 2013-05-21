@@ -177,6 +177,15 @@ A command is always finished by pressing Return.
     resent to the Amiga if the arbitration on the PLIP was lost. The default
     is 0 i.e. packet is dropped.
 
+  - **fe <n>**: Toggle filtering of incoming packets on Ethernet port. If the
+    filter is enabled then IP multicast and unknown broadcast packets are
+    removed. This increases the performance of plipbox as unwanted packets are
+    not transferred via PLIP.
+
+  - **fp <n>**: Toggle filtering of incoming packets on PLIP port. If this
+    filter is enabled then unknown packets sent from the Amiga are silently
+    dropped.
+
 #### Statistics
 
   - **sd**: Dump the statistics information. The plipbox records a number of 
