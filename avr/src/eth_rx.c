@@ -165,9 +165,18 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
     }
     
     // what to do with the eth packet?
-    if(plip_online) {    
+    if(plip_online) {
+      u08 send_it;
+       
+      // filter packet
+      if(param.filter_eth) {
+        send_it = filter_packet(tx_pkt_buf, dump_flag);
+      } else {
+        send_it = 1;
+      }
+      
       // if it does pass filter then send it via plip
-      if(filter_packet(tx_pkt_buf, dump_flag)) {
+      if(send_it) {
         // finish dump line first
         if(dump_flag) {
           uart_send_crlf();
@@ -185,7 +194,7 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
         }
       } else {
         if(dump_flag) {
-          uart_send_pstring(PSTR("-> DROP")),
+          uart_send_pstring(PSTR("Filter -> DROP")),
           uart_send_crlf();
         }
       }

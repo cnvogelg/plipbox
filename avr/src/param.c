@@ -52,6 +52,8 @@ static const param_t PROGMEM default_param = {
   .dump_latency = 0,
   
   .tx_retries = 0,
+  .filter_plip = 1,
+  .filter_eth = 1,
   // use same mac as plipbox.device!
   .mac_addr = { 0x1a, 0x11, 0xaf, 0xa0, 0x47, 0x11 }
 };
@@ -59,7 +61,7 @@ static const param_t PROGMEM default_param = {
 // dump all params
 void param_dump(void)
 {
-  // mac
+  // options
   uart_send_pstring(PSTR("m: mac address   "));
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
@@ -68,10 +70,19 @@ void param_dump(void)
   uart_send_hex_byte(param.tx_retries);
   uart_send_crlf();
   
-  // dump options
+  uart_send_pstring(PSTR("fe: filter ETH   "));
+  uart_send_hex_byte(param.filter_eth);
+  uart_send_crlf();
+  
+  uart_send_pstring(PSTR("fp: filter PLIP  "));
+  uart_send_hex_byte(param.filter_plip);
+  uart_send_crlf();
+  
+  // diagnosis
+  uart_send_crlf();
+  
   uart_send_pstring(PSTR("dd: dump dirs    "));
   uart_send_hex_byte(param.dump_dirs);
-  uart_send_pstring(PSTR("  [1=plip(rx),2=eth(rx),4=plip(tx),8=eth(tx)]"));
   uart_send_crlf();
 
   uart_send_pstring(PSTR("de: dump ETH     "));

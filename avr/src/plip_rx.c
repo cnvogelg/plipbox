@@ -168,22 +168,26 @@ void plip_rx_worker(u08 plip_state, u08 eth_online)
         uart_send_crlf();
       }
 
-      // handle IP packet
+      // filter packet
       u08 send_it = 0;
-      if(type == ETH_TYPE_IPV4) {
+      if(param.filter_plip) {
+        if(type == ETH_TYPE_IPV4) {
+          send_it = 1;
+        }
+        // handle ARP packet
+        else if(type == ETH_TYPE_ARP) {
+          send_it = filter_arp_pkt();
+        }
+        // unknown packet type
+        else {
+          uart_send_prefix();
+          uart_send_pstring(PSTR("type? "));
+          uart_send_hex_word(type);
+          uart_send_crlf();
+          send_it = 0;
+        }
+      } else {
         send_it = 1;
-      }
-      // handle ARP packet
-      else if(type == ETH_TYPE_ARP) {
-        send_it = filter_arp_pkt();
-      }
-      // unknown packet type
-      else {
-        uart_send_prefix();
-        uart_send_pstring(PSTR("type? "));
-        uart_send_hex_word(type);
-        uart_send_crlf();
-        send_it = 0;
       }
       
       // send to ethernet
