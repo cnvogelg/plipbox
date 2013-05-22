@@ -16,8 +16,9 @@ class MagPlipError(Exception):
         return repr(self.value)
 
 class MagPlip:
-    def __init__(self, v):
+    def __init__(self, v, debug=False):
         self.vpar = v
+        self.debug = debug
     
     def start(self):
         # clear HS_LINE
@@ -28,6 +29,7 @@ class MagPlip:
         t = time.time()
         end = t + timeout
         found = False
+        self._log("wait_select: value=%d" % value)
         while t < end:
             s = self.vpar.peek_control() & vpar.SEL_MASK
             if s and value:
@@ -40,9 +42,31 @@ class MagPlip:
             rem = end - t
             self.vpar.poll_state(rem)
             t = time.time()
+        self._log("wait_select: value=%d -> %s" % (value,found))
         if not found:
           delta = t - start
           raise MagPlipError("%s: no select. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
+
+    def wait_strobe(self, timeout=1, ctx="", start=0):
+        """wait for STROBE signal"""
+        t = time.time()
+        end = t + timeout
+        found = False
+        self._log("wait_strobe")
+        while t < end:
+            s = self.vpar.check_strobe_flag()
+            if s:
+                found = True
+                break
+                
+            rem = end - t
+            self.vpar.poll_state(rem)
+            t = time.time()
+        if self.debug:
+          self._log("wait_strobe: %s" % found)
+        if not found:
+          delta = t - start
+          raise MagPlipError("%s: no strobe flag. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
     
     def wait_line_toggle(self, expect, timeout=1, ctx="", start=0):
         """wait for toggle on POUT signal"""
@@ -50,6 +74,7 @@ class MagPlip:
         t = time.time()
         end = t + timeout
         found = False
+        self._log("wait_line_toggle: POUT == %s" % expect)
         while t < end:
             s = self.vpar.peek_control()
             if expect and ((s & vpar.POUT_MASK) == vpar.POUT_MASK):
@@ -67,6 +92,7 @@ class MagPlip:
             rem = end - t
             self.vpar.poll_state(rem)
             t = time.time()
+        self._log("wait_line_toggle: POUT == %s -> found: %s" % (expect, found))
         if not found:
           delta = t - start
           raise MagPlipError("%s: missing line toggle. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
@@ -148,26 +174,38 @@ class MagPlip:
     def recv(self, timeout=1):
         """receive a data packet via vpar port. make sure to call can_recv() before!!"""
         try:
+            self._log("+++ recv +++")
             first = time.time()
+            # remove any old strobe flags
+            self.vpar.check_strobe_flag()
             # first assume SELECT to be set
             self.wait_select(True, timeout, "tx", first)
+            # then we need a strobe signal
+            self.wait_strobe(timeout, "tx", first)
             start = time.time()
             first_delta = start - first
             # get magic byte
+            self._log("get magic")
             magic = self.get_next_byte(True, timeout, "rx:magic byte,", start)
+            if magic != 0x42:
+                raise MagPlipError("rx:invalid magic: %02x" % magic)
             # get crc mode
+            self._log("get crc_mode")
             crc_mode = self.get_next_byte(False, timeout, "rx:crc flag", start)
             if crc_mode < 1 or crc_mode > 2:
                 raise MagPlipError("rx:invalid CRC mode: %d" % crc_mode)
             # get size
+            self._log("get size")
             size = self.get_next_word(True, timeout, "rx:size", start)
             # get crc
+            self._log("get crc")
             crc = self.get_next_word(True, timeout, "rx:crc", start)
             size -= 2 # skip crc
             # get data
             toggle = True
             pos = 0
             raw_pkt = ""
+            self._log("get data")
             for i in xrange(size):
                 d = self.get_next_byte(toggle, timeout, "rx:data@%d" % pos, start)
                 raw_pkt += chr(d)
@@ -179,8 +217,17 @@ class MagPlip:
             self.wait_select(False, timeout, "rx:end select", start)
             last = time.time()
             last_delta = last - end
+            self._log("--- recv ---")
             return raw_pkt,(first_delta, data_delta, last_delta)
         finally:
             # clear BUSY
             self.vpar.clr_control_mask(vpar.BUSY_MASK, timeout=1)
+
+    def _log(self, msg):
+        if not self.debug:
+          return
+        ts = time.time()
+        sec = int(ts)
+        usec = int(ts * 1000000) % 1000000 
+        print "%8d.%06d MP:" % (sec,usec),msg
 

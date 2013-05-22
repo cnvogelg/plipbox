@@ -15,17 +15,17 @@ import tap
 import bridge
 
 # default param
-par_name = "/tmp/vpar"
-tap_name = "tap0"
-eth_name = "en1"
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
 
 # parse args
 parser = argparse.ArgumentParser()
 parser.add_argument('-r', '--rx', action='store_true', default=False, help="only receive")
-parser.add_argument('-m', '--multicast', action='store_true', default=False, help="transport IPv4 multicasts")
+parser.add_argument('-e', '--eth-if', default="en1", help="ethernet interface name")
+parser.add_argument('-t', '--tap-if', default="tap0", help="tap interface name")
+parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
 parser.add_argument('-d', '--debug', action='store_true', default=False, help="debug code")
+parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
 args = parser.parse_args()
 
 # ----- eth frame decoding -----
@@ -104,24 +104,27 @@ def check_pkt(pkt, raw_buf, args):
 
 def handle_tap(tap, mp, t, args):
   # read packet
-  raw_buf = tap.read(4000)
+  raw_buf = tap.read(2048)
   # decode frame
   eth_frame = EthFrame()
   eth_frame.decode(raw_buf)
   # send packet to magplip
-  if not args.rx and check_pkt(eth_frame, raw_buf, args):
-    log("%12.6f  tap:" % t , eth_frame, end=' ')
-    try:
-      s = time.time()
-      deltas = mp.send(raw_buf)
-      e = time.time()
-      d = e - s
-      n = len(raw_buf)
-      log(get_speed_bar(d, deltas, n))
-    except magplip.MagPlipError as ex:
-      e = time.time()
-      d = e - s
-      log("%s. delta=%5.3f" % (ex, d))
+  if not args.rx:
+    # check if packet is passed
+    keep = args.eth_pass or check_pkt(eth_frame, raw_buf, args)
+    if keep:
+      log("%12.6f  tap:" % t , eth_frame, end=' ')
+      try:
+        s = time.time()
+        deltas = mp.send(raw_buf)
+        e = time.time()
+        d = e - s
+        n = len(raw_buf)
+        log(get_speed_bar(d, deltas, n))
+      except magplip.MagPlipError as ex:
+        e = time.time()
+        d = e - s
+        log("%s. delta=%5.3f" % (ex, d))
 
 def handle_par(mp, tap, t, args):
   # rx: get block
@@ -154,21 +157,34 @@ def handle_par(mp, tap, t, args):
 print("Welcome to plipbox!")
 
 # setup vpar and magplip
-log("opening pty:",par_name)
-sp = sopty.SoPTY(par_name)
+vpar_link = args.vpar_link
+log("opening pty:",vpar_link)
+sp = sopty.SoPTY(vpar_link)
 sp_fd = sp.get_fd()
 
 log("vpar")
 vpar = vpar.VPar(sp,verbose=args.debug)
 log("magplip")
-mp = magplip.MagPlip(vpar)
+mp = magplip.MagPlip(vpar,debug=args.debug)
 
 # setup tap and bridge
-log("opening tap:",tap_name)
+tap_name = args.tap_if
+eth_name = args.eth_if
 tap = tap.Tap(tap_name)
+
+# check interfaces
+if tap.has_interface(tap_name):
+  print("tap",tap_name,"interface already exists!")
+  sys.exit(1)
+if not tap.has_interface(eth_name):
+  print("ethernet",eth_name,"interface not found! use -e to set one.")
+  sys.exit(1)
+
+log("opening tap:",tap_name)
+tap.open()
 tap_fd = tap.get_fd()
 
-log("setup bridge:",tap_name,eth_name)
+log("setup bridge:",tap_name, eth_name)
 bridge = bridge.Bridge(tap_name, eth_name)
 bridge.up()
 
@@ -200,6 +216,7 @@ try:
     
     # check emulator flags in vpar
     if vpar.check_init_flag():
+      log("emu restarted")
       do_sync = True
     if vpar.check_exit_flag():
       log("emu exit")

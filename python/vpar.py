@@ -24,6 +24,7 @@ class VPar:
         self.init_flag = False
         self.exit_flag = False
         self.reply_flag = False
+        self.strobe_flag = False
     
     def close(self):
         """close the associated vpar I/O channel"""
@@ -38,6 +39,42 @@ class VPar:
         ready = select.select([self.fd],[],[],timeout)[0]
         return len(ready) > 0
 
+    def _decode_ctl(self, ctl, only=False):
+        is_busy = (ctl & 1) == 1
+        is_pout = (ctl & 2) == 2
+        is_select = (ctl & 4) == 4
+
+        if is_busy:
+            res = "BUSY "
+        elif only:
+            res = "---- "
+        else:
+            res = "busy "
+
+        if is_pout:
+            res += "POUT "
+        elif only:
+            res += "---- "
+        else:
+            res += "pout "
+
+        if is_select:
+            res += "SELECT "
+        elif only:
+            res += "------ "
+        else:
+            res += "select "
+
+        if ctl & VPAR_STROBE == VPAR_STROBE:
+            res += "STROBE "
+        if ctl & VPAR_INIT == VPAR_INIT:
+            res += "INIT "
+        if ctl & VPAR_EXIT == VPAR_EXIT:
+            res += "EXIT "
+        if ctl & VPAR_REPLY == VPAR_REPLY:
+            res += "REPLY "
+        return res
+
     def _read(self, timeout=0, what="RX"):
         # poll port - if something is here read it first
         if self._has_data(timeout):
@@ -50,10 +87,13 @@ class VPar:
                 self.exit_flag = True
             if ctl & VPAR_REPLY == VPAR_REPLY:
                 self.reply_flag = True
-            self.ctl = ctl & 0xf
+            if ctl & VPAR_STROBE == VPAR_STROBE:
+                self.strobe_flag = True
+            self.ctl = ctl & 0x7
             self.dat = dat
             if self.verbose:
-                self._log("%s: ctl=%02x dat=%02x [%02x %02x]" % (what, self.ctl, self.dat, ctl, dat))
+                self._log("%s: ctl=%02x dat=%02x [%02x %02x] %s" % \
+                    (what, self.ctl, self.dat, ctl, dat, self._decode_ctl(ctl)))
             return True
         else:
           return False
@@ -84,28 +124,28 @@ class VPar:
         """trigger ACK flag of emulator's parallel port"""
         cmd = ACK_MASK
         if self.verbose:
-            self._log("tx: ack [%02x %02x]" % (cmd,0))        
+            self._log("tx: ACK           [%02x %02x]" % (cmd,0))        
         return self._write(chr(cmd) + chr(0))
 
     def set_control_mask(self, val, timeout=None):
         """set bits of control port"""
         cmd = 0x40 + val
         if self.verbose:
-            self._log("tx: set=%02x [%02x %02x]" % (val,cmd,0))
+            self._log("tx: SET=%02x        [%02x %02x] %s" % (val,cmd,0,self._decode_ctl(val,True)))
         return self._write(chr(cmd)+chr(0), timeout)
         
     def clr_control_mask(self, val, timeout=None):
         """clear bits of control port"""
         cmd = 0x80 + val
         if self.verbose:
-            self._log("tx: clr=%02x [%02x %02x]" % (val,cmd,0))
+            self._log("tx: CLEAR=%02x      [%02x %02x] %s" % (val,cmd,0,self._decode_ctl(val,True)))
         return self._write(chr(cmd)+chr(0), timeout)
         
     def set_data(self, val, timeout=None):
         """set data port value (if configured as input)"""
         cmd = 0x10
         if self.verbose:
-            self._log("tx: dat=%02x [%02x %02x]" % (val,cmd,val))
+            self._log("tx: DATA=%02x       [%02x %02x]" % (val,cmd,val))
         return self._write(chr(cmd)+chr(val), timeout)
         
     def peek_control(self):
@@ -131,6 +171,11 @@ class VPar:
     def check_reply_flag(self):
         v = self.reply_flag
         self.reply_flag = False
+        return v
+    
+    def check_strobe_flag(self):
+        v = self.strobe_flag
+        self.strobe_flag = False
         return v
     
     def _log(self, msg):

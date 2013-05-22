@@ -12,11 +12,18 @@ class SoPTY:
       os.unlink(self._file_name)
     os.symlink(self._slave_name, self._file_name)
     self._fd = master
-    # set a clean pty
-    self._cmd = ['/bin/stty','-f',self._slave_name,
+    self._clean_tty()
+    
+  def _clean_tty(self):
+    """make given tty really transparent for 8 bit transfers"""
+    # stty uses -f on Mac OS X but -F on Linux
+    if sys.platform == 'darwin':
+        flag = '-f'
+    else:
+        flag = '-F'
+    self._cmd = ['/bin/stty',flag,self._slave_name,
       'cs8','raw','-echo','-onlcr','-echoctl','-echoke','-echoe','-iexten']
     subprocess.check_call(self._cmd)
-    #subprocess.check_call(['/bin/stty','-f',self._slave_name])
   
   def get_fd(self):
     return self._fd
