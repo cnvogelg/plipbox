@@ -101,7 +101,7 @@ static u08 parse_args(u08 len)
 
 static void cmd_loop(void)
 {
-  uart_send_pstring(PSTR("cmd\r\n"));
+  uart_send_pstring(PSTR("command mode. enter '?' for help.\r\n"));
   u08 num_chars = 1;
   u08 status = CMD_OK;
   while(status != CMD_QUIT) {

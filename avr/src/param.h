@@ -37,6 +37,8 @@
 typedef struct {
   u08 mac_addr[6];
   u08 tx_retries;
+  u08 filter_eth;
+  u08 filter_plip;
 
   u08 dump_dirs;
   u08 dump_eth;

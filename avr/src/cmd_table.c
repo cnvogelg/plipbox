@@ -104,7 +104,14 @@ COMMAND(cmd_param_toggle)
       case 'y': val = &param.dump_latency; break;
       default: return CMD_PARSE_ERROR;
     }
-  } 
+  }
+  else if(group == 'f') {
+    switch(type) {
+      case 'e': val = &param.filter_eth; break;
+      case 'p': val = &param.filter_plip; break;
+      default: return CMD_PARSE_ERROR;
+    }
+  }
   else if(group == 't') {
     if(type == 'r') {
       val = &param.tx_retries;
@@ -142,6 +149,34 @@ COMMAND(cmd_stats_reset)
   return CMD_OK;
 }
 
+COMMAND(cmd_help)
+{
+  uart_send_pstring(PSTR(
+    "q        quit command mode\r\n"
+    "v        print plipbox version\r\n"
+    "p        print parameters\r\n"
+    "ps       save parameters to EEPROM\r\n"
+    "pl       load parameters from EEPROM\r\n"
+    "sd       dump statistics\r\n"
+    "sr       reset statistics\r\n"
+    "\r\n"
+    "m  <mac> set mac address: 'aa:bb:cc:dd:ee:ff'\r\n"
+    "tr <num> number of PLIP tx retries\r\n"
+    "fp [on]  enable filtering of PLIP packets\r\n"
+    "fe [on]  enable filtering of ETH packets\r\n"
+    "\r\n"
+    "dd <val> select diagnosis directions. add values:\r\n"
+    "         [1=plip(rx),2=eth(rx),4=plip(tx),8=eth(tx)]\r\n"
+    "de [on]  toggle dump ethernet packets\r\n"
+    "di [on]  toggle dump IP contents\r\n"
+    "da [on]  toggle dump ARP contents\r\n"
+    "dp [on]  toggle dump TCP/UDP contents\r\n"
+    "dl [on]  toggle dump PLIP info\r\n"
+    "dy [on]  toggle dump transfer latency\r\n"
+  ));
+  return CMD_OK;
+}
+
 cmd_table_t cmd_table[] = {
   { CMD_NAME("q"), cmd_quit },
   { CMD_NAME("v"), cmd_version },
@@ -152,10 +187,11 @@ cmd_table_t cmd_table[] = {
   // stats
   { CMD_NAME("sd"), cmd_stats_dump },
   { CMD_NAME("sr"), cmd_stats_reset },
-  // set mac
+  // options
   { CMD_NAME("m"), cmd_param_set_mac },
-  // tx retries
   { CMD_NAME("tr"), cmd_param_toggle },
+  { CMD_NAME("fp"), cmd_param_toggle },
+  { CMD_NAME("fe"), cmd_param_toggle },
   // dump commands
   { CMD_NAME("dd"), cmd_param_toggle },
   { CMD_NAME("de"), cmd_param_toggle },
@@ -164,5 +200,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("dp"), cmd_param_toggle },
   { CMD_NAME("dl"), cmd_param_toggle },
   { CMD_NAME("dy"), cmd_param_toggle },
+  // help
+  { CMD_NAME("?"), cmd_help },
   { 0,0 } // last entry
 };
