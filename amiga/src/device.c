@@ -275,14 +275,12 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          if (pb->pb_DevNode.lib_OpenCnt == 1)
             pb->pb_Unit = unit;
 
-         /* fake ethernet addresses */
-         pb->pb_CfgAddr[0] = 0x1a;
-         pb->pb_CfgAddr[1] = 0x11;
-         pb->pb_CfgAddr[2] = 0xaf;
-         pb->pb_CfgAddr[3] = 0xa0;
-         pb->pb_CfgAddr[4] = 0x47;
-         pb->pb_CfgAddr[5] = 0x11;
-         memcpy(pb->pb_DefAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
+         /* setup default mac */
+         {
+            unsigned char addr[6] = { 0x1a,0x11,0xaf,0xa0,0x47,0x11};
+            memcpy(pb->pb_CfgAddr, addr, PLIP_ADDRFIELDSIZE);
+            memcpy(pb->pb_DefAddr, addr, PLIP_ADDRFIELDSIZE);
+         }
 
          /*
          ** Each opnener get's it's own BufferManagement. This is neccessary
