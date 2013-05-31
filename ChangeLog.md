@@ -28,3 +28,11 @@ version 0.3 (19.5.2013)
 - added a Python-based software emulation for the plipbox that operates with
   a patched FS-UAE Amiga emulator
 - new approach makes the device zero-conf. Just attach and it works.
+
+version 0.4 (01.6.2013)
+-----------------------
+
+- added hardware description for plipbox nano hardware
+- added schematic and board design for plipbox nano base board
+- added new firmware -nano for new plipbox nano pinout
+- Amiga driver unchanged and stays at 0.3

@@ -102,7 +102,7 @@ endif
 # mainfile/project name
 PROJECT = plipbox
 VERSION_MAJ = 0
-VERSION_MIN = 3
+VERSION_MIN = 4
 VERSION_EXTRA =
 BUILD_DATE = $(shell date '+%Y%m%d')
 
