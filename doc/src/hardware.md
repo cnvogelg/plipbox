@@ -92,8 +92,8 @@ parallel port of your Amiga.
 I already ship a schematic and layout for a single layer PCB that provides such
 a base board:
 
-  * [Schematic](hardware/nano_adapter/nano_adapter_sch.pdf)
-  * [Board Layout](hardware/nano_adapter/nano_adapter_brd.pdf)
+  * [Schematic](/hardware/nano_adapter/nano_adapter_sch.pdf)
+  * [Board Layout](/hardware/nano_adapter/nano_adapter_brd.pdf)
 
  
 ### 1.3 Serial Port for Terminal Access
