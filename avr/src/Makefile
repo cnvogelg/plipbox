@@ -34,12 +34,11 @@ else
 AVRLIBC_DIR = /usr/lib/avr
 endif
 
-ALL_BOARDS= arduino avrnetio
-DIST_BOARDS= arduino avrnetio
+ALL_BOARDS= arduino avrnetio nano
+DIST_BOARDS= arduino avrnetio nano
 
 # select board
 BOARD ?= arduino
-DEFINES ?= USE_BLA
 DEBUG ?= 0
 
 ifeq "$(BOARD)" "arduino"
@@ -61,6 +60,24 @@ LDR_SPEED = 57600
 LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
 
 else
+ifeq "$(BOARD)" "nano"
+
+MCU = atmega328
+FLASH_MCU = m328p
+F_CPU = 16000000
+MAX_SIZE = 30720
+MAX_SRAM = 1024
+UART_BAUD = 57600
+
+LDR_PROG = arduino
+LDR_SPEED = 57600
+LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
+
+# its a subclass of the Arduino board
+DEFINES += HAVE_arduino
+BOARDFILE = arduino.c
+
+else
 ifeq "$(BOARD)" "avrnetio"
 
 MCU = atmega32
@@ -76,6 +93,7 @@ else
 
 $(error "Unsupported board '$(BOARD)'. Only $(ALL_BOARDS) allowed!")
 
+endif
 endif
 endif
 
@@ -99,7 +117,8 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # source files
-SRC := $(BOARD).c
+BOARDFILE ?= $(BOARD).c
+SRC := $(BOARDFILE)
 SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c plip.c
 SRC += pkt_buf.c param.c

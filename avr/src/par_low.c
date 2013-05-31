@@ -55,9 +55,15 @@ void par_low_init(void)
   // setup STROBE/SELECT IRQ
   cli();
 #ifdef EICRA
+#ifdef HAVE_nano
+  EICRA = _BV(ISC11); // falling edge of INT1 (STROBE)
+  EIFR = 0;
+  EIMSK = _BV(INT1);
+#else
   EICRA = _BV(ISC01); // falling edge of INT0 (STROBE)
   EIFR = 0;
   EIMSK = _BV(INT0);
+#endif
 #else
   MCUCR = _BV(ISC01);
   GIFR = 0;
@@ -103,8 +109,12 @@ void par_low_pulse_ack(u08 delay)
   par_low_set_ack_hi();
 }
 
-// INT0 Strobe Handler
+// INT Strobe Handler
+#ifdef HAVE_nano
+ISR(INT1_vect)
+#else
 ISR(INT0_vect)
+#endif
 {
   par_low_strobe_count ++;
 }
