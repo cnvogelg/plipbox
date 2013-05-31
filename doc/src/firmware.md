@@ -20,6 +20,12 @@ You can find out the port associated with your Arduino by looking at the registe
 
 ### 1.2 Flash on Arduino Hardware with "avrdude"
 
+First select correct firmware file for flashing. The firmware used for the
+Arduino 2009 prototype is called `*-ardiuno-*.hex` and the firmware for the
+plipbox nano production version is called `*-nano-*.hex`. Choose the version
+matching your hardware. Both have the same features but use a slightly
+different pinout for accessing the Amiga's parallel port.
+
 For flashing the firmware you need a flash tool on your Mac/PC that talks via
 this serial port. I use [avrdude][ad] here. It is available on all platforms and
 a command line tools.
@@ -31,8 +37,8 @@ Now open a shell/terminal/cmd.exe on your OS and call the firmware tool with:
         > avrdude -p m328p -P <your_serial_port> -b 57600 -c arduino -U flash:w:plipbox-0.1-57600-arduino-atmega328.hex
 
 This assumes that you have the plipbox firmware file called 
-`plipbox-0.1-57600-arduino-atmega328.hex` in your current directory.
-In the release archive you can find it in the `firmware` directory.
+`plipbox-0.4-57600-arduino-atmega328.hex` in your current directory.
+In the release archive you can find it in the `avr/firmware` directory.
 
 Furthermore, replace `<your_serial_port>` with the device name of your
 Ardiuno serial device found in section 1.1.
