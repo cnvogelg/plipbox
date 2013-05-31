@@ -10,7 +10,7 @@
 //
 // Adjusted by Christian Vogelgsaang to be Arduino-free C code
 
-#include <avr/delay.h>
+#include <util/delay.h>
 
 #include "enc28j60.h"
 

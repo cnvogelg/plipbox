@@ -24,7 +24,7 @@
  *
  */
 
-#include <avr/delay.h>
+#include <util/delay.h>
 
 #include "eth_rx.h"
 
