@@ -179,9 +179,6 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    pb->pb_Flags = PLIPF_NOTCONFIGURED | PLIPF_OFFLINE;
    pb->pb_Timeout = PLIP_DEFTIMEOUT;
 
-      /* set signal to unallocated state */
-   pb->pb_IntSig = (ULONG)-1;
-
       /* initialise the lists */
    NewList((struct List*)&pb->pb_ReadList);
    NewList((struct List*)&pb->pb_WriteList);
@@ -278,8 +275,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          /* setup default mac */
          {
             unsigned char addr[6] = { 0x1a,0x11,0xaf,0xa0,0x47,0x11};
-            memcpy(pb->pb_CfgAddr, addr, PLIP_ADDRFIELDSIZE);
-            memcpy(pb->pb_DefAddr, addr, PLIP_ADDRFIELDSIZE);
+            memcpy(pb->pb_CfgAddr, addr, HW_ADDRFIELDSIZE);
+            memcpy(pb->pb_DefAddr, addr, HW_ADDRFIELDSIZE);
          }
 
          /*
@@ -567,7 +564,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 
       case S2_BROADCAST:
               /* set broadcast addr: ff:ff:ff:ff:ff:ff */
-         memset(ios2->ios2_DstAddr, 0xff, PLIP_ADDRFIELDSIZE);
+         memset(ios2->ios2_DstAddr, 0xff, HW_ADDRFIELDSIZE);
               /* fall through */
       case CMD_WRITE:
          if(ios2->ios2_DataLength > pb->pb_MTU)
@@ -604,8 +601,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
       break;
 
       case S2_GETSTATIONADDRESS:
-         memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE); /* current */
-         memcpy(ios2->ios2_DstAddr, pb->pb_DefAddr, PLIP_ADDRFIELDSIZE); /* default */
+         memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE); /* current */
+         memcpy(ios2->ios2_DstAddr, pb->pb_DefAddr, HW_ADDRFIELDSIZE); /* default */
       break;
          
       case S2_DEVICEQUERY:
@@ -616,7 +613,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          devquery->DevQueryFormat = 0;        /* "this is format 0" */
          devquery->DeviceLevel = 0;           /* "this spec defines level 0" */
          
-         if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = PLIP_ADDRFIELDSIZE * 8; /* Bits! */
+         if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = HW_ADDRFIELDSIZE * 8; /* Bits! */
          if (devquery->SizeAvailable >= 22) devquery->MTU           = pb->pb_MTU;
          if (devquery->SizeAvailable >= 26) devquery->BPS           = pb->pb_ReportBPS;
          if (devquery->SizeAvailable >= 30) devquery->HardwareType  = S2WireType_Ethernet;

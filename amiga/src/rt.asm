@@ -37,6 +37,9 @@
     IFND EXEC_INITIALIZERS_I
     INCLUDE "exec/initializers.i"
     ENDC
+    IFND EXEC_LIBRARIES_I
+    INCLUDE "exec/libraries.i"
+    ENDC
     IFND DOS_DOS_I
     INCLUDE "dos/dos.i"
     ENDC
@@ -83,7 +86,7 @@ devid:
     cnop 0,2
 
 inittable:
-    dc.l  PLIPBase_SIZE
+    dc.l  700   ; hack!! - use libsize tool to recalc!
     dc.l  functable,datatable,_DevInit
 
 functable:

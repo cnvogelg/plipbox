@@ -68,6 +68,9 @@
 #ifndef __COMPILER_H
 #include "compiler.h"
 #endif
+#ifndef __HW_H
+#include "hw.h"
+#endif
 
 
 /****************************************************************************/
@@ -102,34 +105,6 @@
 #define PLIP_MAXARBITRATIONDELAY 999999
 #define PLIP_MAXTIMEOUT          999999
 #define PLIP_MAXBPS              0x7fffffff
-
-   /* transport ethernet addresses */
-#define PLIP_ADDRFIELDSIZE       6
-
-/****************************************************************************/
-
-   /* this _is_ awful, I know */
-#define PKTFRAMESIZE_1           4        /* the sync-field and packet-size */
-#define PKTFRAMESIZE_2           2        /* crc only */
-#define PKTFRAMESIZE_3           14       /* ethernet header: dst, src, type */
-
-struct PLIPFrame {
-   USHORT   pf_Sync;
-   SHORT    pf_Size;
-   USHORT   pf_CRC;
-   /* use layout of ethernet header here */
-   UBYTE    pf_DstAddr[PLIP_ADDRFIELDSIZE];
-   UBYTE    pf_SrcAddr[PLIP_ADDRFIELDSIZE];
-   USHORT   pf_Type;
-   /*UBYTE    pf_Data[MTU];*/
-};
-
-
-#define SYNCBYTE_HEAD   0x42
-#define SYNCBYTE_CRC    0x01
-#define SYNCBYTE_NOCRC  0x02
-#define SYNCWORD_CRC    ((SYNCBYTE_HEAD << 8) | SYNCBYTE_CRC)
-#define SYNCWORD_NOCRC  ((SYNCBYTE_HEAD << 8) | SYNCBYTE_NOCRC)
 
 /****************************************************************************/
 
@@ -198,24 +173,14 @@ struct PLIPBase
    UBYTE                       pb_Unit;         /* unit of 1st OpenDevice() */
    UBYTE                       pb_pad1; /* make the following long alligned */
    BPTR                        pb_SegList;               /* pointer to code */
-   struct Library          *   pb_MiscBase,          /* various libs & res. */
-                           *   pb_CIAABase,
-                           *   pb_UtilityBase,
-                           *   pb_TimerBase,
-                           *   pb_DOSBase,
-                           *   pb_SysBase;
+   struct Library          *   pb_UtilityBase;
+   struct Library          *   pb_DOSBase;
+   struct Library          *   pb_SysBase;
    struct ServerStartup    *   pb_Startup;            /* main server proces */
    struct Process          *   pb_Server;             /* main server proces */
    struct Task             *   pb_Task;         /* used for server shutdown */
-   struct Interrupt            pb_Interrupt;          /* for AddICRVector() */
-   ULONG                       pb_IntSig;        /* sent from int to server */
-   ULONG                       pb_IntSigMask;                  /* for speed */
    ULONG                       pb_ServerStoppedSigMask;     /* for shutdown */
-   struct MsgPort          *   pb_ServerPort,       /* for IOReq forwarding */
-                           *   pb_TimeoutPort,      /* for timeout handling */
-                           *   pb_CollPort;       /* for collision handling */
-   struct timerequest          pb_TimeoutReq,       /* for timeout handling */
-                               pb_CollReq;        /* for collision handling */
+   struct MsgPort          *   pb_ServerPort;       /* for IOReq forwarding */
    struct Sana2DeviceStats     pb_DevStats;            /* SANA-2 wants this */
    struct Sana2SpecialStatRecord
                                pb_SpecialStats[S2SS_COUNT];
@@ -231,22 +196,21 @@ struct PLIPBase
                                pb_TrackListSem,
                                pb_ReadOrphanListSem,
                                pb_Lock;
+                               
    ULONG                       pb_Retries;                 /* config values */
    ULONG                       pb_ReportBPS;
    ULONG                       pb_MTU;
-   ULONG                       pb_AllocFlags;
    ULONG                       pb_Timeout;
    LONG                        pb_CollisionDelay;
    LONG                        pb_ArbitrationDelay;
-   volatile UBYTE              pb_TimeoutSet;/* if != 0, a timeout occurred */
+   
    volatile UBYTE              pb_Flags;                       /* see below */
+   UBYTE                       pb_pad2;
    volatile UWORD              pb_ExtFlags;                    /* see below */
-   APTR                        pb_OldExceptCode;
-   APTR                        pb_OldExceptData;
-   ULONG                       pb_OldExcept;
-   UBYTE                       pb_CfgAddr[PLIP_ADDRFIELDSIZE];
-   UBYTE                       pb_DefAddr[PLIP_ADDRFIELDSIZE];
-   struct PLIPFrame        *   pb_Frame;
+   UBYTE                       pb_CfgAddr[HW_ADDRFIELDSIZE];
+   UBYTE                       pb_DefAddr[HW_ADDRFIELDSIZE];
+   struct HWBase               pb_HWBase;
+   struct HWFrame        *     pb_Frame;
 };
 
 #ifdef __SASC
@@ -255,12 +219,7 @@ struct PLIPBase
      */
 #  define SysBase      pb->pb_SysBase
 #  define DOSBase      pb->pb_DOSBase
-#  define TimeBase     pb->pb_TimeBase
 #  define UtilityBase  pb->pb_UtilityBase
-#  define MiscBase     pb->pb_MiscBase
-#  define CIAABase     pb->pb_CIAABase
-#  define CiaBase      pb->pb_CIAABase
-#  define TimerBase    pb->pb_TimerBase
      /*
      ** This macro declares a local variable which temporary gets
      ** SysBase directly from AbsExecBase.
@@ -285,15 +244,13 @@ struct PLIPBase
 #define PLIPB_NOTCONFIGURED   2   /* not configured */
 #define PLIPB_OFFLINE         3   /* currently not online (sic!) */
 #define PLIPB_SENDCRC         4   /* send with CRC sum */
-#define PLIPB_RECEIVING       5   /* set by interrupt */
-#define PLIPB_COLLISION       6   /* arbitration detected a collision */
-#define PLIPB_SERVERSTOPPED   7   /* set by server while passing away */
+#define PLIPB_COLLISION       5   /* arbitration detected a collision */
+#define PLIPB_SERVERSTOPPED   6   /* set by server while passing away */
 
 #define PLIPF_EXCLUSIVE       (1<<PLIPB_EXCLUSIVE)
 #define PLIPF_NOTCONFIGURED   (1<<PLIPB_NOTCONFIGURED)
 #define PLIPF_OFFLINE         (1<<PLIPB_OFFLINE)
 #define PLIPF_SENDCRC         (1<<PLIPB_SENDCRC)
-#define PLIPF_RECEIVING       (1<<PLIPB_RECEIVING)
 #define PLIPF_COLLISION       (1<<PLIPB_COLLISION)
 #define PLIPF_SERVERSTOPPED   (1<<PLIPB_SERVERSTOPPED)
 #define PLIPF_REPLYSS         (1<<PLIPB_REPLYSS)

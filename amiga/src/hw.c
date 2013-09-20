@@ -1,0 +1,486 @@
+/*
+ * hw.c - hardware dependent part of driver
+ */
+
+#define DEBUG 15
+
+/*F*/ /* includes */
+#ifndef CLIB_EXEC_PROTOS_H
+#include <clib/exec_protos.h>
+#include <pragmas/exec_sysbase_pragmas.h>
+#endif
+#ifndef CLIB_DOS_PROTOS_H
+#include <clib/dos_protos.h>
+#include <pragmas/dos_pragmas.h>
+#endif
+#ifndef CLIB_CIA_PROTOS_H
+#include <clib/cia_protos.h>
+#include <pragmas/cia_pragmas.h>
+#endif
+#ifndef CLIB_MISC_PROTOS_H
+#include <clib/misc_protos.h>
+#include <pragmas/misc_pragmas.h>
+#endif
+#ifndef CLIB_TIME_PROTOS_H
+#include <clib/timer_protos.h>
+#include <pragmas/timer_pragmas.h>
+#endif
+#ifndef CLIB_UTILITY_PROTOS_H
+#include <clib/utility_protos.h>
+#include <pragmas/utility_pragmas.h>
+#endif
+
+#ifndef EXEC_MEMORY_H
+#include <exec/memory.h>
+#endif
+#ifndef EXEC_INTERRUPTS_H
+#include <exec/interrupts.h>
+#endif
+#ifndef EXEC_DEVICES_H
+#include <exec/devices.h>
+#endif
+#ifndef EXEC_IO_H
+#include <exec/io.h>
+#endif
+
+#ifndef DEVICES_SANA2_H
+#include <devices/sana2.h>
+#endif
+
+#ifndef HARDWARE_CIA_H
+#include <hardware/cia.h>
+#endif
+
+#ifndef RESOURCES_MISC_H
+#include <resources/misc.h>
+#endif
+
+#ifndef _STRING_H
+#include <string.h>
+#endif
+
+#ifndef __MAGPLIP_H
+#include "magplip.h"
+#endif
+#ifndef __DEBUG_H
+#include "debug.h"
+#endif
+#ifndef __COMPILER_H
+#include "compiler.h"
+#endif
+#ifndef __HW_H
+#include "hw.h"
+#endif
+/*E*/
+
+/* externs in asm code */
+GLOBAL VOID ASM interrupt(REG(a1) struct HWB *hwb);
+GLOBAL USHORT ASM CRC16(REG(a0) UBYTE *, REG(d0) SHORT);
+GLOBAL BOOL ASM hwsend(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
+GLOBAL BOOL ASM hwrecv(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
+   /* amiga.lib provides for these symbols */
+GLOBAL FAR volatile struct CIA ciaa,ciab;
+
+PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBase *hwb);
+
+/* CIA access macros & functions */
+#define CLEARINT        SetICR(CIAABase, CIAICRF_FLG)
+#define DISABLEINT      AbleICR(CIAABase, CIAICRF_FLG)
+#define ENABLEINT       AbleICR(CIAABase, CIAICRF_FLG | CIAICRF_SETCLR)
+
+#define HS_LINE_MASK    CIAF_PRTRBUSY
+#define HS_REQUEST_MASK CIAF_PRTRPOUT
+
+#define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
+#define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
+#define PARINIT(b)      SETCIAINPUT; \
+                        ciab.ciaddra &= ~HS_LINE_MASK; \
+                        ciab.ciaddra |= HS_REQUEST_MASK | CIAF_PRTRSEL
+#define PAREXIT \
+                        ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
+                        ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
+#define TESTLINE(b)     (ciab.ciapra & HS_LINE_MASK)
+#define SETREQUEST(b)   ciab.ciapra |= HS_REQUEST_MASK
+#define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQUEST_MASK
+
+GLOBAL BOOL hw_init(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   
+   BOOL rc = FALSE;
+   
+   /* clone sys base, process */
+   hwb->hwb_SysBase = pb->pb_SysBase;
+   hwb->hwb_Server = pb->pb_Server;
+   hwb->hwb_MaxMTU = (UWORD)pb->pb_MTU;
+   d2(("sysbase=%08lx, server=%08lx, hwb=%08lx, MTU=%d\n",
+      hwb->hwb_SysBase, hwb->hwb_Server, hwb, hwb->hwb_MaxMTU));
+   
+   if ((hwb->hwb_IntSig = AllocSignal(-1)) != -1)
+   {
+      hwb->hwb_IntSigMask = 1L << hwb->hwb_IntSig;
+      d2(("int sigmask=%08lx\n",hwb->hwb_IntSigMask));
+   
+      if ((hwb->hwb_CollPort = CreateMsgPort()))
+      {
+         if ((hwb->hwb_TimeoutPort = CreateMsgPort()))
+         {
+            ULONG sigmask;
+            struct Process *proc = pb->pb_Server;
+            
+            /* save old exception setup */
+            hwb->hwb_OldExcept = SetExcept(0, 0xffffffff); /* turn'em off */
+            hwb->hwb_OldExceptCode = proc->pr_Task.tc_ExceptCode;
+            hwb->hwb_OldExceptData = proc->pr_Task.tc_ExceptData;
+
+            /* create new exception setup */
+            proc->pr_Task.tc_ExceptCode = (APTR)&exceptcode;
+            proc->pr_Task.tc_ExceptData = (APTR)pb;
+            sigmask = 1 << hwb->hwb_TimeoutPort->mp_SigBit;
+            SetSignal(0, sigmask);
+            SetExcept(sigmask, sigmask);
+
+            /* enter port address */
+            hwb->hwb_CollReq.tr_node.io_Message.mn_ReplyPort = hwb->hwb_CollPort;
+            if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&hwb->hwb_CollReq, 0))
+             {
+                TimerBase = (struct Library *)hwb->hwb_CollReq.tr_node.io_Device;
+
+                /* preset the io command, this will never change */
+                hwb->hwb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
+
+                /* setup the timeout stuff */
+                hwb->hwb_TimeoutReq.tr_node.io_Flags = IOF_QUICK;
+                hwb->hwb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = hwb->hwb_TimeoutPort;
+                hwb->hwb_TimeoutReq.tr_node.io_Device = hwb->hwb_CollReq.tr_node.io_Device;
+                hwb->hwb_TimeoutReq.tr_node.io_Unit = hwb->hwb_CollReq.tr_node.io_Unit;
+                hwb->hwb_TimeoutReq.tr_node.io_Command = TR_ADDREQUEST;
+                hwb->hwb_TimeoutSet = 0xff;
+
+                hwb->hwb_CollSigMask = 1 << hwb->hwb_CollPort->mp_SigBit;
+
+                rc = TRUE;
+             }
+             else
+             {
+                d(("couldn't open timer.device"));
+             }
+          }
+          else
+          {
+             d(("no port for timeout handling\n"));
+          }
+       }
+       else
+       {
+          d(("no port for collision handling\n"));
+       }
+    } 
+    else 
+    {
+       d(("no interrupt signal\n",rc));
+    }
+    
+    return rc;              
+}
+
+GLOBAL VOID hw_cleanup(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   
+   /* stop collision timer */
+   if(hwb->hwb_Flags & HWF_COLL_TIMER_RUNNING)
+   {
+         /* finnish pending timer requests */
+      AbortIO((struct IORequest*)&hwb->hwb_CollReq);
+      WaitIO((struct IORequest*)&hwb->hwb_CollReq);      
+   }
+   
+   if (hwb->hwb_TimeoutPort)
+   {
+      struct Process *proc = pb->pb_Server;
+      
+      /* restore old exception setup */
+      SetExcept(0, 0xffffffff);    /* turn'em off */
+      proc->pr_Task.tc_ExceptCode = hwb->hwb_OldExceptCode;
+      proc->pr_Task.tc_ExceptData = hwb->hwb_OldExceptData;
+      SetExcept(hwb->hwb_OldExcept, 0xffffffff);
+
+      if (TimerBase)
+      {
+         WaitIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+         CloseDevice((struct IORequest*)&hwb->hwb_CollReq);
+      }
+      DeleteMsgPort(hwb->hwb_TimeoutPort);
+   }
+   
+   if (hwb->hwb_CollPort) {
+      DeleteMsgPort(hwb->hwb_CollPort);
+   }
+   
+   if (hwb->hwb_IntSig != -1) {
+      FreeSignal(hwb->hwb_IntSig);
+   }
+}
+
+/*
+ * hwattach - setup hardware if device gets online
+ */
+GLOBAL BOOL hw_attach(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   BOOL rc = FALSE;
+
+   d(("entered\n"));
+
+   hwb->hwb_AllocFlags = 0;
+   if (MiscBase = OpenResource("misc.resource"))
+   {
+      if (CIAABase = OpenResource("ciaa.resource"))
+      {
+         CiaBase = CIAABase;
+
+         d(("ciabase is %lx\n",CiaBase));
+
+         /* obtain exclusive access to the parallel hardware */
+         if (!AllocMiscResource(MR_PARALLELPORT, pb->pb_DevNode.lib_Node.ln_Name))
+         {
+            hwb->hwb_AllocFlags |= 1;
+            if (!AllocMiscResource(MR_PARALLELBITS, pb->pb_DevNode.lib_Node.ln_Name))
+            {
+               hwb->hwb_AllocFlags |= 2;
+
+               /* Add our interrupt to handle CIAICRB_FLG.
+               ** This is also cia.resource means of granting exclusive
+               ** access to the related registers in the CIAs.
+               */
+               hwb->hwb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
+               hwb->hwb_Interrupt.is_Node.ln_Pri  = 127;
+               hwb->hwb_Interrupt.is_Node.ln_Name = SERVERTASKNAME;
+               hwb->hwb_Interrupt.is_Data         = (APTR)hwb;
+               hwb->hwb_Interrupt.is_Code         = (VOID (*)())&interrupt;
+
+               d(("interrupt @%08lx\n",&interrupt));
+
+               /* We must Disable() bcos there could be an interrupt already
+               ** waiting for us. We may, however, not Able/SetICR() before
+               ** we have access!
+               */
+               Disable();
+               if (!AddICRVector(CIAABase, CIAICRB_FLG, &hwb->hwb_Interrupt))
+               {
+                  DISABLEINT;                       /* this is what I meant */
+                  rc = TRUE;
+               }
+               Enable();
+
+               if (rc)
+               {
+                  hwb->hwb_AllocFlags |= 4;
+                  PARINIT(pb);    /* cia to input, handshake in/out setting */
+                  CLEARREQUEST(pb);                /* setup handshake lines */
+                  CLEARINT;                         /* clear this interrupt */
+                  ENABLEINT;                            /* allow interrupts */
+               }
+
+            }
+            else
+               d(("no parallelbits\n"));
+         }
+         else
+            d(("no parallelport\n"));
+      }
+      else
+         d(("no misc resource\n"));
+   }
+   else
+      d(("no misc resource\n"));
+
+   return rc;
+}
+
+/*
+ * shutdown hardware if device gets offline
+ */
+GLOBAL VOID hw_detach(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   
+   if (hwb->hwb_AllocFlags & 4)
+   {
+      PAREXIT;
+      DISABLEINT;
+      CLEARINT;
+      RemICRVector(CIAABase, CIAICRB_FLG, &hwb->hwb_Interrupt);
+   }
+
+   if (hwb->hwb_AllocFlags & 2) FreeMiscResource(MR_PARALLELBITS);
+
+   if (hwb->hwb_AllocFlags & 1) FreeMiscResource(MR_PARALLELPORT);
+
+   hwb->hwb_AllocFlags = 0;
+}
+
+PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   
+   d8(("+ex\n"));
+   
+   /*extern void KPrintF(char *,...);
+   KPrintF("exceptcode\n");*/
+
+   /* remove the I/O Block from the port */
+   WaitIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+
+   /* this tells the xfer routines to cease polling */
+   hwb->hwb_TimeoutSet = 0xff;
+   
+   d8(("-ex\n"));
+   return sigmask;            /* re-enable the signal */
+}
+
+GLOBAL BOOL hw_begin_send(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   BOOL having_line = FALSE;
+    
+   if (!TESTLINE(pb))                               /* is the line free ? */
+   {
+      SETREQUEST(pb);                     /* indicate our request to send */
+      if (!TESTLINE(pb))                      /* is the line still free ? */
+         having_line = TRUE;
+      else
+      {
+         if (!(hwb->hwb_Flags & HWF_RECV_PENDING))
+            CLEARREQUEST(pb);                         /* reset line state */
+         d2(("couldn't get the line-1\n"));
+      }
+   }
+   else d2(("couldn't get the line-2\n"));
+    
+   return having_line;
+}
+
+GLOBAL void hw_abort_send(struct PLIPBase *pb)
+{
+   CLEARREQUEST(pb);                         /* reset line state */
+}
+
+GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   BOOL rc;
+
+   /* wait until I/O block is safe to be reused */
+   while(!hwb->hwb_TimeoutSet) Delay(1L);
+   
+   /* start new timeout timer */
+   hwb->hwb_TimeoutReq.tr_time.tv_secs = 0;
+   hwb->hwb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
+   hwb->hwb_TimeoutSet = 0;
+   SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+
+   /* hw send */
+   d8(("+tx\n"));
+   rc = hwsend(hwb, frame);
+   d8(("-tx: %d\n", rc));
+      
+   /* stop timeout timer */ 
+   AbortIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+   
+   return rc;
+}
+
+GLOBAL BOOL hw_recv_pending(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   if ((hwb->hwb_Flags & HWF_RECV_PENDING) == HWF_RECV_PENDING) 
+   {
+      return TRUE;
+   } 
+   else {
+      return FALSE;
+   }
+}
+
+GLOBAL VOID hw_recv_ack(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   SetSignal(0, hwb->hwb_IntSigMask);
+}
+
+GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   BOOL rc;
+
+   /* wait until I/O block is safe to be reused */
+   while(!hwb->hwb_TimeoutSet) Delay(1L);
+    
+   /* start new timeout timer */
+   hwb->hwb_TimeoutReq.tr_time.tv_secs    = 0;
+   hwb->hwb_TimeoutReq.tr_time.tv_micro   = pb->pb_Timeout;
+   hwb->hwb_TimeoutSet = 0;
+   SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+
+   /* hw recv */
+   d2(("+rx\n"));
+   rc = hwrecv(hwb, frame);
+   d2(("+rx: %d\n", rc));
+    
+   /* stop timeout timer */
+   AbortIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+
+   return rc;
+}
+
+GLOBAL ULONG hw_get_sigmask(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   return hwb->hwb_IntSigMask | hwb->hwb_CollSigMask;
+}
+
+GLOBAL BOOL hw_handle_sigmask(struct PLIPBase *pb, ULONG sigmask)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+
+   /* collision timer was triggered */
+   if (sigmask & hwb->hwb_CollSigMask)
+   {
+      /* pop message */
+      AbortIO((struct IORequest*)&hwb->hwb_CollReq);
+      WaitIO((struct IORequest*)&hwb->hwb_CollReq);
+      hwb->hwb_Flags &= ~HWF_COLL_TIMER_RUNNING;
+      d(("collision timer wakeup\n"));
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+GLOBAL BOOL hw_can_send(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+   
+   /* make sure no timer is currently pending */
+   if ((hwb->hwb_Flags & HWF_COLL_TIMER_RUNNING) == 0) 
+   {
+      return TRUE;
+   }
+   else 
+   {
+      return FALSE;
+   }
+}
+
+GLOBAL VOID hw_handle_collision(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = &pb->pb_HWBase;
+
+   /* start collision timer */
+   hwb->hwb_CollReq.tr_time.tv_secs    = 0;
+   hwb->hwb_CollReq.tr_time.tv_micro   = pb->pb_CollisionDelay;
+   SendIO((struct IORequest*)&hwb->hwb_CollReq);
+   hwb->hwb_Flags |= HWF_COLL_TIMER_RUNNING;
+}

@@ -48,7 +48,7 @@ STDFLAGS    = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST NOSTKCHK NOCHK
 #
 # this applies only to normal compilation:
 #
-NORMCFLAGS  = $(STDFLAGS)
+NORMCFLAGS  = $(STDFLAGS) DEBUG LINE
 #
 # this applies only to optimized compilation:
 #
@@ -74,9 +74,9 @@ OPTLDFLAGS  = NOICONS SC SD ND $(LIBS) TO
 #
 # the object files
 #
-NORMOBJ=rt.o device.no server.no track.no magport.o crc16.o
+NORMOBJ=rt.o device.no server.no track.no magport.o crc16.o hw.no
 OPTOBJ=rt.o device.opt$(CPUSUFFIX) server.opt$(CPUSUFFIX) \
-       track.opt$(CPUSUFFIX) magport.o crc16.o
+       track.opt$(CPUSUFFIX) magport.o crc16.o hw.opt$(CPUSUFFIX)
 #
 #####################################################################
 
@@ -105,7 +105,7 @@ OPTOBJ=rt.o device.opt$(CPUSUFFIX) server.opt$(CPUSUFFIX) \
 #
 # targets
 #
-all: $(DEVICE_DIR)/$(NAME)
+all: libsize $(DEVICE_DIR)/$(NAME)
 
 all_opt: $(DEVICE_DIR)/$(NAME).$(CPUSUFFIX)
 
@@ -120,6 +120,9 @@ $(DEVICE_DIR)/$(NAME).$(CPUSUFFIX): $(OPTOBJ)
 
 $(DEVICE_DIR)/$(NAME): $(NORMOBJ)
    $(LD) $(NORMOBJ) $(LDFLAGS) $@
+   
+libsize: libsize.c
+	 sc libsize.c link TO libsize $(CINCLUDES)
 #
 #####################################################################
 
@@ -130,6 +133,7 @@ $(DEVICE_DIR)/$(NAME): $(NORMOBJ)
 rt.o: rt.asm magplip.i magplip_rev.i
 crc16.o: crc16.asm
 magport.o: magport.asm magplip.i
+hw.opt$(CPUSUFFIX) hw.no: hw.c hw.h
 device.opt$(CPUSUFFIX) device.no: device.c magplip.h
 server.opt$(CPUSUFFIX) server.no: server.c magplip.h
 track.opt$(CPUSUFFIX) track.no: track.c magplip.h

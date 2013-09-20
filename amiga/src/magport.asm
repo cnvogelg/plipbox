@@ -1,45 +1,3 @@
-;
-;  $VER: port.asm 1.7 (21 Feb 1998)
-;
-;  magplip.device - Parallel Line Internet Protocol
-;
-;  Assembler routines for efficient port handling.
-;
-;  Original code written by Oliver Wagner and Michael Balzer.
-;
-;  This version has been completely reworked by Marius Gröger, introducing
-;  slight protocol changes. The new source is a lot better organized and
-;  maintainable.
-;
-;  Additional changes and code cleanup by Jan Kratochvil and Martin Mares.
-;  The new source is significantly faster and yet better maintainable.
-;
-;  (C) Copyright 1993-1994 Oliver Wagner & Michael Balzer
-;  (C) Copyright 1995 Jan Kratochvil & Martin Mares
-;  (C) Copyright 1995-1996 Marius Gröger
-;      All Rights Reserved
-;
-;  $HISTORY:
-;
-;  21 Feb 1998 : 001.007 :  added SysBase to A6 in the interrupt handler
-;  29 Mar 1996 : 001.006 :  changed copyright note
-;  24 Feb 1996 : 001.005 :  + added PRTRSEL data direction signal
-;                           + minor re-arrangements
-;  30 Dec 1995 : 001.004 :  support for single frame buffer
-;  05 Dec 1995 : 001.003 :  + short branches explicitly coded as such
-;                           + some condition jumps which were effectively
-;                             unconditional changed to bra's
-;  30 Aug 1995 : 001.002 :  support for timer-timed timeout :-)
-;  20 Aug 1995 : 001.001 :  + removed need for conditional compiling, as we
-;                             we want a generic, symmetrical code
-;                           + in interrupt handlers, A6 points already to
-;                             SysBase
-;                           + using JSRLIB/JMPLIB macros
-;                           + removed implicit some assumptions on the values
-;                             behind symbolic names
-;  13 Feb 1995 : 001.000 :  created (in fact manually compiled from 'C'-
-;                           original) (jk/mm)
-;
       section "text",code
 
 
@@ -100,7 +58,7 @@ SETCIAINPUT MACRO
 ;     interrupt() - ICR FLG interrupt server
 ;
 ; SYNOPSIS
-;     void interrupt(struct PLIPBase *)
+;     void interrupt(struct HWBase *)
 ;                    A1
 ;
 ; FUNCTION
@@ -113,15 +71,15 @@ SETCIAINPUT MACRO
 ;     in the flags field.
 ;
 _interrupt:
-        btst    #PLIPB_RECEIVING,pb_Flags(a1)
+        btst    #HWB_RECV_PENDING,hwb_Flags(a1)
         bne.s   skipint
         moveq   #HS_LINE_BIT,d0
         btst    d0,ciab+ciapra
         beq.s   skipint
-        bset    #PLIPB_RECEIVING,pb_Flags(a1)
-        move.l  pb_IntSigMask(a1),d0
-        move.l  pb_SysBase(a1),a6
-        move.l  pb_Server(a1),a1
+        bset    #HWB_RECV_PENDING,hwb_Flags(a1)
+        move.l  hwb_IntSigMask(a1),d0
+        move.l  hwb_SysBase(a1),a6
+        move.l  hwb_Server(a1),a1
         JSRLIB  Signal
 skipint:
         moveq #0,d0
@@ -133,8 +91,8 @@ skipint:
 ;     hwsend() - low level send routine
 ;
 ; SYNOPSIS
-;     void hwsend(struct PLIPBase *)
-;                  A0
+;     void hwsend(struct HWBase *, struct HWFrame *)
+;                 A0               A1
 ;
 ; FUNCTION
 ;     This routine sends the PLIPBase->pb_Frame to the other side. It
@@ -143,18 +101,18 @@ skipint:
 ;
 _hwsend:
          movem.l  d2-d7/a2-a6,-(sp)
-         move.l   a0,a2                               ; a2 = PLIPBase
+         move.l   a0,a2                               ; a2 = HWBase
+         move.l   a1,a4                               ; a4 = Frame
          moveq    #FALSE,d2                           ; d2 = return value
          moveq    #0,d3
          move.l   d3,d4
          moveq    #HS_REQUEST_BIT,d3                  ; d3 = HS_REQUEST
          moveq    #HS_LINE_BIT,d4                     ; d4 = HS_LINE
-         move.l   pb_Frame(a2),a4                     ; a4 = Frame
 
          ;
          ; CRC wanted ?
          ;
-         btst     #PLIPB_SENDCRC,pb_Flags(a2)
+         btst     #HWB_SEND_CRC,hwb_Flags(a2)
          beq.s    hww_NoCRC
          ; yes
          move.w   #SYNCWORD_CRC,pf_Sync(a4)
@@ -168,7 +126,7 @@ _hwsend:
 hww_NoCRC:
          move.w   #SYNCWORD_NOCRC,pf_Sync(a4)
 
-hww_CRC  move.l   pb_CIAABase(a2),a6
+hww_CRC  move.l   hwb_CIAABase(a2),a6
          moveq    #CIAICRF_FLG,d0
          JSRLIB   AbleICR                             ; DISABLEINT
          lea      BaseAX,a5
@@ -184,7 +142,7 @@ hww_LoopShake1:
          eor.b    d7,d0
          btst     d4,d0                               ; WAITINPUTTOGGLE
          bne.s    hww_cont1
-         tst.b    pb_TimeoutSet(a2)
+         tst.b    hwb_TimeoutSet(a2)
          beq.s    hww_LoopShake1
          bra.s    hww_TimedOut
 hww_cont1:
@@ -198,7 +156,7 @@ hww_LoopShake2:
          eor.b    d7,d0
          btst     d4,d0                               ; WAITINPUTTOGGLE
          bne.s    hww_cont2
-         tst.b    pb_TimeoutSet(a2)
+         tst.b    hwb_TimeoutSet(a2)
          beq.s    hww_LoopShake2
          bra.s    hww_TimedOut
 hww_cont2:
@@ -225,8 +183,8 @@ Return   rts
 ;     hwrecv() - low level receive routine
 ;
 ; SYNOPSIS
-;     void hwrecv(struct PLIPBase *)
-;                 A0
+;     void hwrecv(struct HWBase *, struct HWFrame *)
+;                 A0               A1
 ;
 ; FUNCTION
 ;     This routine receives a magPLIP frame and stores it into
@@ -236,15 +194,15 @@ Return   rts
 ;
 _hwrecv:
          movem.l  d2-d7/a2-a6,-(sp)
-         move.l   a0,a2                               ; a2 = PLIPBase
+         move.l   a0,a2                               ; a2 = HWBase
+         move.l   a1,a4
          moveq    #FALSE,d5                           ; d5 = return value
-         move.l   pb_CIAABase(a2),a6                  ; a6 = CIABase
+         move.l   hwb_CIAABase(a2),a6                 ; a6 = CIABase
          moveq    #0,d3
          move.l   d3,d2
          moveq    #HS_REQUEST_BIT,d3                  ; d3 = HS_REQUEST
          moveq    #HS_LINE_BIT,d2                     ; d2 = HS_LINE
          lea      BaseAX,a5                           ; a5 = ciab+ciapra
-         move.l   pb_Frame(a2),a4                     ; a4 = Frame
 
          moveq    #CIAICRF_FLG,d0
          JSRLIB   AbleICR                             ; DISABLEINT
@@ -260,7 +218,7 @@ hwr_LoopShake1:
          eor.b    d7,d0
          btst     d2,d0                               ; WAITINPUTTOGGLE
          bne.s    hwr_cont1
-         tst.b    pb_TimeoutSet(a2)
+         tst.b    hwb_TimeoutSet(a2)
          beq.s    hwr_LoopShake1
          bra      hwr_TimedOut
 hwr_cont1:
@@ -281,7 +239,7 @@ hwr_LoopShake2
          eor.b    d7,d0
          btst     d2,d0                               ; WAITINPUTTOGGLE
          bne.s    hwr_cont2
-         tst.b    pb_TimeoutSet(a2)
+         tst.b    hwb_TimeoutSet(a2)
          beq.s    hwr_LoopShake2
          bra.s    hwr_TimedOut
 hwr_cont2:
@@ -296,7 +254,7 @@ hwr_LoopShake3:
          eor.b    d7,d0
          btst     d2,d0                               ; WAITINPUTTOGGLE
          bne.s    hwr_cont3
-         tst.b    pb_TimeoutSet(a2)
+         tst.b    hwb_TimeoutSet(a2)
          beq.s    hwr_LoopShake3
          bra.s    hwr_TimedOut
 hwr_cont3:
@@ -307,7 +265,7 @@ hwr_cont3:
          move.w   -2(a3),d6                           ; = length
          sub.w    #PKTFRAMESIZE_2+PKTFRAMESIZE_3,d6   ; check MTU size (without eth hdr)
          bcs.s    hwr_TimedOut
-         cmp.w    pb_MTU+2(a2),d6
+         cmp.w    hwb_MaxMTU(a2),d6
          bhi.s    hwr_TimedOut
          add.w    #PKTFRAMESIZE_2+PKTFRAMESIZE_3-1,d6
 
@@ -319,7 +277,7 @@ hwr_LoopShake4:
          eor.b    d7,d0
          btst     d2,d0
          bne.s    hwr_cont4
-         tst.b    pb_TimeoutSet(a2)
+         tst.b    hwb_TimeoutSet(a2)
          beq.s    hwr_LoopShake4
          bra.s    hwr_TimedOut
 hwr_cont4:
@@ -341,7 +299,7 @@ hwr_DoneRead:
 hwr_ReadOkay:
          moveq    #TRUE,d5
 hwr_TimedOut:
-         bclr     #PLIPB_RECEIVING,pb_Flags(a2)
+         bclr     #HWB_RECV_PENDING,hwb_Flags(a2)
          SETCIAINPUT a5
          bclr     d3,(a5)                             ; CLEARREQUEST ciab+ciapra
          moveq    #CIAICRF_FLG,d0

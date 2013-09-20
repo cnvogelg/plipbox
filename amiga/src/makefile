@@ -32,7 +32,7 @@ install: release
 	cp plipbox.config $(INSTALL_DIR)/
 
 clean: clean_obj
-	rm -rf $(BIN_DIR)
+	rm -rf $(BIN_DIR) libsize libsize.lnk
 
 clean_obj:
 	rm -f *.no *.o *.opt???

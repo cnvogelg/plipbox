@@ -53,7 +53,7 @@
 ** 12 Feb 1995 : 001.000 :  reworked original
 */
 
-#define DEBUG 0
+#define DEBUG 15
 
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
@@ -64,46 +64,13 @@
 #include <clib/dos_protos.h>
 #include <pragmas/dos_pragmas.h>
 #endif
-#ifndef CLIB_CIA_PROTOS_H
-#include <clib/cia_protos.h>
-#include <pragmas/cia_pragmas.h>
-#endif
-#ifndef CLIB_MISC_PROTOS_H
-#include <clib/misc_protos.h>
-#include <pragmas/misc_pragmas.h>
-#endif
-#ifndef CLIB_TIME_PROTOS_H
-#include <clib/timer_protos.h>
-#include <pragmas/timer_pragmas.h>
-#endif
-#ifndef CLIB_UTILITY_PROTOS_H
-#include <clib/utility_protos.h>
-#include <pragmas/utility_pragmas.h>
-#endif
 
 #ifndef EXEC_MEMORY_H
 #include <exec/memory.h>
 #endif
-#ifndef EXEC_INTERRUPTS_H
-#include <exec/interrupts.h>
-#endif
-#ifndef EXEC_DEVICES_H
-#include <exec/devices.h>
-#endif
-#ifndef EXEC_IO_H
-#include <exec/io.h>
-#endif
 
 #ifndef DEVICES_SANA2_H
 #include <devices/sana2.h>
-#endif
-
-#ifndef HARDWARE_CIA_H
-#include <hardware/cia.h>
-#endif
-
-#ifndef RESOURCES_MISC_H
-#include <resources/misc.h>
 #endif
 
 #ifndef _STRING_H
@@ -118,6 +85,9 @@
 #endif
 #ifndef __COMPILER_H
 #include "compiler.h"
+#endif
+#ifndef __HW_H
+#include "hw.h"
 #endif
 /*E*/
 
@@ -137,13 +107,6 @@ typedef enum { AW_OK, AW_ABORTED, AW_BUFFER_ERROR, AW_ERROR } AW_RESULT;
    /* external functions */
 GLOBAL VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
 GLOBAL VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2);
-GLOBAL USHORT ASM CRC16(REG(a0) UBYTE *, REG(d0) SHORT);
-GLOBAL BOOL ASM hwsend(REG(a0) BASEPTR);
-GLOBAL BOOL ASM hwrecv(REG(a0) BASEPTR);
-GLOBAL VOID ASM interrupt(REG(a1) BASEPTR);
-
-   /* amiga.lib provides for these symbols */
-GLOBAL FAR volatile struct CIA ciaa,ciab;
 /*E*/
 /*F*/ /* exports */
 PUBLIC VOID SAVEDS ServerTask(void);
@@ -153,142 +116,12 @@ PRIVATE struct PLIPBase *startup(void);
 PRIVATE REGARGS VOID DoEvent(BASEPTR, long event);
 PRIVATE VOID readargs(BASEPTR);
 PRIVATE BOOL init(BASEPTR);
-PRIVATE BOOL hwattach(BASEPTR);
-PRIVATE VOID hwdetach(BASEPTR);
 PRIVATE REGARGS BOOL goonline(BASEPTR);
 PRIVATE REGARGS VOID gooffline(BASEPTR);
 PRIVATE REGARGS AW_RESULT arbitratedwrite(BASEPTR, struct IOSana2Req *ios2);
 PRIVATE REGARGS VOID dowritereqs(BASEPTR);
 PRIVATE REGARGS VOID doreadreqs(BASEPTR);
 PRIVATE REGARGS VOID dos2reqs(BASEPTR);
-/*E*/
-
-/*F*/ /* CIA access macros & functions */
-
-#define CLEARINT        SetICR(CIAABase, CIAICRF_FLG)
-#define DISABLEINT      AbleICR(CIAABase, CIAICRF_FLG)
-#define ENABLEINT       AbleICR(CIAABase, CIAICRF_FLG | CIAICRF_SETCLR)
-
-#define HS_LINE_MASK    CIAF_PRTRBUSY
-#define HS_REQUEST_MASK CIAF_PRTRPOUT
-
-#  define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
-#  define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
-#  define PARINIT(b)      SETCIAINPUT;                                       \
-                        ciab.ciaddra &= ~HS_LINE_MASK; \
-                        ciab.ciaddra |= HS_REQUEST_MASK | CIAF_PRTRSEL
-#  define PAREXIT \
-                        ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
-                        ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
-#  define TESTLINE(b)     (ciab.ciapra & HS_LINE_MASK)
-#  define SETREQUEST(b)   ciab.ciapra |= HS_REQUEST_MASK
-#  define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQUEST_MASK
-
-/*E*/
-
-   /*
-   ** functions to gain/release hardware, initialise communication
-   ** and for xmission timeout handling
-   */
-/*F*/ PRIVATE BOOL hwattach(BASEPTR)
-{
-   BOOL rc = FALSE;
-
-   d(("entered\n"));
-
-   if (MiscBase = OpenResource("misc.resource"))
-   {
-      if (CIAABase = OpenResource("ciaa.resource"))
-      {
-         CiaBase = CIAABase;
-
-         d(("ciabase is %lx\n",CiaBase));
-
-         /* obtain exclusive access to the parallel hardware */
-         if (!AllocMiscResource(MR_PARALLELPORT, pb->pb_DevNode.lib_Node.ln_Name))
-         {
-            pb->pb_AllocFlags |= 1;
-            if (!AllocMiscResource(MR_PARALLELBITS, pb->pb_DevNode.lib_Node.ln_Name))
-            {
-               pb->pb_AllocFlags |= 2;
-
-               /* Add our interrupt to handle CIAICRB_FLG.
-               ** This is also cia.resource means of granting exclusive
-               ** access to the related registers in the CIAs.
-               */
-               pb->pb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
-               pb->pb_Interrupt.is_Node.ln_Pri  = 127;
-               pb->pb_Interrupt.is_Node.ln_Name = SERVERTASKNAME;
-               pb->pb_Interrupt.is_Data         = (APTR)pb;
-               pb->pb_Interrupt.is_Code         = (VOID (*)())&interrupt;
-
-               /* We must Disable() bcos there could be an interrupt already
-               ** waiting for us. We may, however, not Able/SetICR() before
-               ** we have access!
-               */
-               Disable();
-               if (!AddICRVector(CIAABase, CIAICRB_FLG, &pb->pb_Interrupt))
-               {
-                  DISABLEINT;                       /* this is what I meant */
-                  rc = TRUE;
-               }
-               Enable();
-
-               if (rc)
-               {
-                  pb->pb_AllocFlags |= 4;
-                  PARINIT(pb);    /* cia to input, handshake in/out setting */
-                  CLEARREQUEST(pb);                /* setup handshake lines */
-                  CLEARINT;                         /* clear this interrupt */
-                  ENABLEINT;                            /* allow interrupts */
-               }
-
-            }
-            else
-               d(("no parallelbits\n"));
-         }
-         else
-            d(("no parallelport\n"));
-      }
-      else
-         d(("no misc resource\n"));
-   }
-   else
-      d(("no misc resource\n"));
-
-   return rc;
-}
-/*E*/
-/*F*/ PRIVATE VOID hwdetach(BASEPTR)
-{
-   if (pb->pb_AllocFlags & 4)
-   {
-      PAREXIT;
-      DISABLEINT;
-      CLEARINT;
-      RemICRVector(CIAABase, CIAICRB_FLG, &pb->pb_Interrupt);
-   }
-
-   if (pb->pb_AllocFlags & 2) FreeMiscResource(MR_PARALLELBITS);
-
-   if (pb->pb_AllocFlags & 1) FreeMiscResource(MR_PARALLELPORT);
-
-   pb->pb_AllocFlags = 0;
-}
-/*E*/
-/*F*/ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) BASEPTR)
-{
-   /*extern void KPrintF(char *,...);
-   KPrintF("exceptcode\n");*/
-
-   /* remove the I/O Block from the port */
-   WaitIO((struct IORequest*)&pb->pb_TimeoutReq);
-
-   /* this tells the xfer routines to cease polling */
-   pb->pb_TimeoutSet = 0xff;
-
-   return sigmask;            /* re-enable the signal */
-}
 /*E*/
 
    /*
@@ -327,37 +160,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 }
 /*E*/
 
-#if 0
-PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
-{
-   BOOL rc = FALSE;
-   
-   /* setup welcome packet */
-   struct PLIPFrame *frame = pb->pb_Frame;
-   frame->pf_Type = 0x0042; 
-   frame->pf_Size = PKTFRAMESIZE_2; /* no extra payload */
-   memcpy(frame->pf_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
-   memcpy(frame->pf_DstAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);   
-   
-   if (!TESTLINE(pb)) /* is the line free ? */
-   {
-      SETREQUEST(pb);
-      
-      /* wait until I/O block is safe to be reused */
-      while(!pb->pb_TimeoutSet) Delay(1L);
-      pb->pb_TimeoutReq.tr_time.tv_secs = 0;
-      pb->pb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
-      pb->pb_TimeoutSet = 0;
-      SendIO((struct IORequest*)&pb->pb_TimeoutReq);
-      rc = hwsend(pb);
-      AbortIO((struct IORequest*)&pb->pb_TimeoutReq);
-      
-      CLEARREQUEST(pb);
-   }
-   return rc;
-}
-#endif
-
 /*F*/ PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
    BOOL rc = TRUE;
@@ -366,14 +168,15 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 
    if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
    {
-      if (!hwattach(pb))
+      if (!hw_attach(pb))
       {
          d(("error going online\n"));
          rc = FALSE;
       }
       else
       {
-         GetSysTime(&pb->pb_DevStats.LastStart);
+         /* TODO: missing TimeBase */
+         /*GetSysTime(&pb->pb_DevStats.LastStart);*/
          pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
          DoEvent(pb, S2EVENT_ONLINE);
          d(("i'm now online!\n"));
@@ -387,7 +190,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 {
    if (!(pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED)))
    {
-      hwdetach(pb);
+      hw_detach(pb);
 
       pb->pb_Flags |= PLIPF_OFFLINE;
 
@@ -428,120 +231,48 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
    */
 /*F*/ PRIVATE REGARGS AW_RESULT arbitratedwrite(BASEPTR, struct IOSana2Req *ios2)
 {
-   BOOL having_line;
+   BOOL can_send;
    AW_RESULT rc;
-   struct PLIPFrame *frame = pb->pb_Frame;
+   struct HWFrame *frame = pb->pb_Frame;
 
-   /*
-   ** Arbitration
-   ** ===========================================================
-   **
-   ** Pseudo code of the arbitration:
-   **
-   **  if LINE is high (other side is ready to receive) then
-   **     set REQUEST high (tell the other side we're ready to send)
-   **     if LINE is high (other side is still ready to receive) then
-   **        we have the line, do transfer
-   **     reset REQUEST to low (tell other side we're ready to receive)
-   **
-   **    AW_OK             if we could transmit all the data correctly
-   **    AW_BUFF_ERROR     if the BufferManagement callback failed
-   **    AW_ERROR          if we got the line, but the actual transfer
-   **                      failed, perhaps due to a timeout
-   **    AW_ABORT          if we couldn't get the line
-   */
-
-   having_line = FALSE;
-
-   if (!TESTLINE(pb))                               /* is the line free ? */
-   {
-      SETREQUEST(pb);                     /* indicate our request to send */
-      
-#if 0
-   /*
-   ** I have removed again the ARBITRATIONDELAY feature, although I am not
-   ** really sure if this is a good thing. Anyway I didn't experience
-   ** any more those nasty line errors, that initially made me implementing
-   ** this. For now I've left the code here to let you play with it. Please
-   ** report any comments concerning this.
-   **
-   ** In fact the arbitration leaves a small door for undetected, real
-   ** collisision, as the request lines are used for handshake during the
-   ** transmission process. The CLEARREQUEST after NOT getting the line
-   ** could be misinterpreted by the other side as the first handshake. Up
-   ** to now I couldn't conceive a satisfying solution for this.
-   */
-
-      if (pb->pb_ArbitrationDelay > 0)
-      {
-         pb->pb_CollReq.tr_time.tv_secs    = 0;
-         pb->pb_CollReq.tr_time.tv_micro   = pb->pb_ArbitrationDelay;
-         pb->pb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
-         DoIO((struct IORequest*)&pb->pb_CollReq);
-      }
-#endif
-
-      if (!TESTLINE(pb))                      /* is the line still free ? */
-         having_line = TRUE;
-      else
-      {
-         if (!(pb->pb_Flags & PLIPF_RECEIVING))
-            CLEARREQUEST(pb);                         /* reset line state */
-         d2(("couldn't get the line-1\n"));
-      }
-   }
-   else d2(("couldn't get the line-2\n"));
-
-   if (having_line)
+   can_send = hw_begin_send(pb);
+   if (can_send)
    {
       struct BufferManagement *bm;
 
-      if (!(pb->pb_Flags & PLIPF_RECEIVING))
+      UBYTE *frame_ptr;
+      
+      d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
+                                                   ios2->ios2_DataLength));
+
+      /* copy raw frame: simply overwrite ethernet frame part of plip packet */
+      if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
+         frame->hwf_Size = ios2->ios2_DataLength + HW_EXTRA_HDR_SIZE;
+         frame_ptr = &frame->hwf_DstAddr[0];
+      } else {
+         frame->hwf_Size = ios2->ios2_DataLength + HW_EXTRA_HDR_SIZE + HW_ETH_HDR_SIZE;
+         frame->hwf_Type = (USHORT)ios2->ios2_PacketType;
+         memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
+         memcpy(frame->hwf_DstAddr, ios2->ios2_DstAddr, HW_ADDRFIELDSIZE);
+         frame_ptr = (UBYTE *)(frame + 1);
+      }
+
+      bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
+
+      if (!(*bm->bm_CopyFromBuffer)(frame_ptr,
+                                  ios2->ios2_Data, ios2->ios2_DataLength))
       {
-         UBYTE *frame_ptr;
-         
-         d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
-                                                      ios2->ios2_DataLength));
-
-         /* copy raw frame: simply overwrite ethernet frame part of plip packet */
-         if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
-            frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2;
-            frame_ptr = &frame->pf_DstAddr[0];
-         } else {
-            frame->pf_Size = ios2->ios2_DataLength + PKTFRAMESIZE_2 + PKTFRAMESIZE_3;
-            frame->pf_Type = (USHORT)ios2->ios2_PacketType;
-            memcpy(frame->pf_SrcAddr, pb->pb_CfgAddr, PLIP_ADDRFIELDSIZE);
-            memcpy(frame->pf_DstAddr, ios2->ios2_DstAddr, PLIP_ADDRFIELDSIZE);
-            frame_ptr = (UBYTE *)(frame + 1);
-         }
-
-         bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
-
-         if (!(*bm->bm_CopyFromBuffer)(frame_ptr,
-                                     ios2->ios2_Data, ios2->ios2_DataLength))
-         {
-            rc = AW_BUFFER_ERROR;
-            CLEARREQUEST(pb);                         /* reset line state */
-         }
-         else
-         {
-            /* wait until I/O block is safe to be reused */
-            while(!pb->pb_TimeoutSet) Delay(1L);
-            pb->pb_TimeoutReq.tr_time.tv_secs = 0;
-            pb->pb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
-            pb->pb_TimeoutSet = 0;
-            SendIO((struct IORequest*)&pb->pb_TimeoutReq);
-            rc = hwsend(pb) ? AW_OK : AW_ERROR;
-            AbortIO((struct IORequest*)&pb->pb_TimeoutReq);
-#if DEBUG&8
-            if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->pf_Size));
-#endif
-         }
+         rc = AW_BUFFER_ERROR;
+         hw_abort_send(pb);
       }
       else
       {
-         d4(("arbitration error!\n"));
-         rc = AW_ABORTED;
+         d8(("+hw_send\n"));
+         rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
+         d8(("-hw_send\n"));
+#if DEBUG&8
+         if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->hwf_Size));
+#endif
       }
    }
    else
@@ -554,6 +285,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 {
    struct IOSana2Req *currentwrite, *nextwrite;
    AW_RESULT code;
+   struct HWBase *hwb = &pb->pb_HWBase;
 
    ObtainSemaphore(&pb->pb_WriteListSem);
 
@@ -561,7 +293,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
        nextwrite = (struct IOSana2Req *) currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ;
        currentwrite = nextwrite )
    {
-      if (pb->pb_Flags & PLIPF_RECEIVING)
+      if (hw_recv_pending(pb))
       {
          d(("incoming data!"));
          break;
@@ -616,7 +348,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
       {
          d(("packet transmitted successfully\n"));
          pb->pb_DevStats.PacketsSent++;
-         dotracktype(pb, (ULONG) pb->pb_Frame->pf_Type, 1, 0, currentwrite->ios2_DataLength, 0, 0);
+         dotracktype(pb, (ULONG) pb->pb_Frame->hwf_Type, 1, 0, currentwrite->ios2_DataLength, 0, 0);
          currentwrite->ios2_Req.io_Error = S2ERR_NO_ERROR;
          currentwrite->ios2_WireError = S2WERR_GENERIC_ERROR;
          Remove((struct Node*)currentwrite);
@@ -628,7 +360,7 @@ PRIVATE REGARGS BOOL sendwelcome(BASEPTR)
 }
 /*E*/
 
-PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *frame)
+PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *frame)
 {
    int i;
    BOOL broadcast; 
@@ -639,13 +371,13 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
    
    /* deliver a raw frame: copy data right into ethernet header */
    if(req->ios2_Req.io_Flags & SANA2IOF_RAW) {
-      frame_ptr = &frame->pf_DstAddr[0];
-      datasize = frame->pf_Size - PKTFRAMESIZE_2;
+      frame_ptr = &frame->hwf_DstAddr[0];
+      datasize = frame->hwf_Size - HW_EXTRA_HDR_SIZE;
       req->ios2_Req.io_Flags = SANA2IOF_RAW;
    }
    else {
       frame_ptr = (UBYTE *)(frame + 1);
-      datasize = frame->pf_Size - (PKTFRAMESIZE_2 + PKTFRAMESIZE_3);
+      datasize = frame->hwf_Size - (HW_EXTRA_HDR_SIZE + HW_ETH_HDR_SIZE);
       req->ios2_Req.io_Flags = 0;
    }
 
@@ -667,13 +399,13 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
    }
    
    /* now extract addresses from ethernet header */
-   memcpy(req->ios2_SrcAddr, frame->pf_SrcAddr, PLIP_ADDRFIELDSIZE);
-   memcpy(req->ios2_DstAddr, frame->pf_DstAddr, PLIP_ADDRFIELDSIZE);
+   memcpy(req->ios2_SrcAddr, frame->hwf_SrcAddr, HW_ADDRFIELDSIZE);
+   memcpy(req->ios2_DstAddr, frame->hwf_DstAddr, HW_ADDRFIELDSIZE);
    
    /* need to set broadcast flag? */
    broadcast = TRUE;
-   for(i=0;i<PLIP_ADDRFIELDSIZE;i++) {
-      if(frame->pf_DstAddr[i] != 0xff) {
+   for(i=0;i<HW_ADDRFIELDSIZE;i++) {
+      if(frame->hwf_DstAddr[i] != 0xff) {
          broadcast = FALSE;
          break;
       }
@@ -694,24 +426,18 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
    struct IOSana2Req *got;
    ULONG pkttyp;
    BOOL rv;
-   struct PLIPFrame *frame = pb->pb_Frame;
+   struct HWFrame *frame = pb->pb_Frame;
 
-   /* wait until I/O block is safe to be reused */
-   while(!pb->pb_TimeoutSet) Delay(1L);
-   pb->pb_TimeoutReq.tr_time.tv_secs    = 0;
-   pb->pb_TimeoutReq.tr_time.tv_micro   = pb->pb_Timeout;
-   pb->pb_TimeoutSet = 0;
-   SendIO((struct IORequest*)&pb->pb_TimeoutReq);
-   rv = hwrecv(pb);
-   AbortIO((struct IORequest*)&pb->pb_TimeoutReq);
-
+   d8(("+hw_recv\n"));
+   rv = hw_recv_frame(pb, frame);
+   d8(("-hw_recv\n"));
    if (rv)
    {
       pb->pb_DevStats.PacketsReceived++;
 
-      datasize = frame->pf_Size - (PKTFRAMESIZE_2 + PKTFRAMESIZE_3);
+      datasize = frame->hwf_Size - (HW_EXTRA_HDR_SIZE + HW_ETH_HDR_SIZE);
 
-      dotracktype(pb, pkttyp = frame->pf_Type, 0, 1, 0, datasize, 0);
+      dotracktype(pb, pkttyp = frame->hwf_Type, 0, 1, 0, datasize, 0);
 
       d(("packet %08lx, size %ld received\n",pkttyp,datasize));
 
@@ -746,7 +472,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
    }
    else
    {
-      d8(("Error receiving (%ld. len=%ld)\n", rv, frame->pf_Size));
+      d8(("Error receiving (%ld. len=%ld)\n", rv, frame->hwf_Size));
       /* something went wrong during receipt */
       DoEvent(pb, S2EVENT_HARDWARE | S2EVENT_ERROR | S2EVENT_RX);
       got = NULL;
@@ -804,7 +530,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
    */
    while(ios2 = (struct IOSana2Req *)GetMsg(pb->pb_ServerPort))
    {
-      if (pb->pb_Flags & PLIPF_RECEIVING)
+      if (hw_recv_pending(pb))
       {
          d(("incoming data!"));
          break;
@@ -831,7 +557,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
             if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
             {
                /* copy address from src addr */
-               memcpy(pb->pb_CfgAddr, ios2->ios2_SrcAddr, PLIP_ADDRFIELDSIZE);
+               memcpy(pb->pb_CfgAddr, ios2->ios2_SrcAddr, HW_ADDRFIELDSIZE);
                if (!goonline(pb))
                {
                   ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -951,83 +677,34 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
 /*F*/ PRIVATE BOOL init(BASEPTR)
 {
    BOOL rc = FALSE;
-   ULONG sigmask;
 
-   if ((pb->pb_IntSig = AllocSignal(-1)) != -1)
-   {
-      pb->pb_IntSigMask = 1L << pb->pb_IntSig;
-   
-      if ((pb->pb_ServerPort = CreateMsgPort()))
-      {
-         if ((pb->pb_CollPort = CreateMsgPort()))
+   readargs(pb);
+      
+   if ((pb->pb_ServerPort = CreateMsgPort()))
+   {  
+      /* init hardware */
+      if(hw_init(pb)) {         
+         d(("allocating 0x%lx/%ld bytes frame buffer\n",
+                  sizeof(struct HWFrame)+pb->pb_MTU,
+                  sizeof(struct HWFrame)+pb->pb_MTU));
+         if ((pb->pb_Frame = AllocVec((ULONG)sizeof(struct HWFrame) +
+                                       pb->pb_MTU, MEMF_CLEAR|MEMF_ANY)))
          {
-            if ((pb->pb_TimeoutPort = CreateMsgPort()))
-            {
-               /* save old exception setup */
-               pb->pb_OldExcept = SetExcept(0, 0xffffffff); /* turn'em off */
-               pb->pb_OldExceptCode = pb->pb_Server->pr_Task.tc_ExceptCode;
-               pb->pb_OldExceptData = pb->pb_Server->pr_Task.tc_ExceptData;
-
-               /* create new exception setup */
-               pb->pb_Server->pr_Task.tc_ExceptCode = (APTR)&exceptcode;
-               pb->pb_Server->pr_Task.tc_ExceptData = (APTR)pb;
-               SetSignal(0, sigmask = (1 << pb->pb_TimeoutPort->mp_SigBit));
-               SetExcept(sigmask, sigmask);
-
-               /* enter port address */
-               pb->pb_CollReq.tr_node.io_Message.mn_ReplyPort = pb->pb_CollPort;
-               if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&pb->pb_CollReq, 0))
-               {
-                  TimerBase = (struct Library *)pb->pb_CollReq.tr_node.io_Device;
-
-                  /* preset the io command, this will never change */
-                  pb->pb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
-
-                  /* setup the timeout stuff */
-                  pb->pb_TimeoutReq.tr_node.io_Flags = IOF_QUICK;
-                  pb->pb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = pb->pb_TimeoutPort;
-                  pb->pb_TimeoutReq.tr_node.io_Device = pb->pb_CollReq.tr_node.io_Device;
-                  pb->pb_TimeoutReq.tr_node.io_Unit = pb->pb_CollReq.tr_node.io_Unit;
-                  pb->pb_TimeoutReq.tr_node.io_Command = TR_ADDREQUEST;
-                  pb->pb_TimeoutSet = 0xff;
-
-                  readargs(pb);
-                  d(("allocating 0x%lx/%ld bytes frame buffer\n",
-                                       sizeof(struct PLIPFrame)+pb->pb_MTU,
-                                       sizeof(struct PLIPFrame)+pb->pb_MTU));
-                  if ((pb->pb_Frame = AllocVec((ULONG)sizeof(struct PLIPFrame) +
-                                                  pb->pb_MTU, MEMF_CLEAR|MEMF_ANY)))
-                  {
-                     rc = TRUE;
-                  }
-                  else
-                  {
-                     d(("couldn't allocate frame buffer\n"));
-                  }
-               }
-               else
-               {
-                  d(("couldn't open timer.device"));
-               }
-            }
-            else
-            {
-               d(("no port for timeout handling\n"));
-            }
+            rc = TRUE;
          }
          else
          {
-            d(("no port for collision handling\n"));
+            d(("couldn't allocate frame buffer\n"));
          }
       }
       else
       {
-         d(("no server port\n"));
+         d(("hw init failed\n"));
       }
    }
    else
    {
-      d(("no signal\n",rc));
+      d(("no server port\n"));
    }
 
    d(("left %ld\n",rc));
@@ -1046,25 +723,9 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
 
    if (pb->pb_Frame) FreeVec(pb->pb_Frame);
 
-   if (pb->pb_TimeoutPort)
-   {
-      /* restore old exception setup */
-      SetExcept(0, 0xffffffff);    /* turn'em off */
-      pb->pb_Server->pr_Task.tc_ExceptCode = pb->pb_OldExceptCode;
-      pb->pb_Server->pr_Task.tc_ExceptData = pb->pb_OldExceptData;
-      SetExcept(pb->pb_OldExcept, 0xffffffff);
-
-      if (TimerBase)
-      {
-         WaitIO((struct IORequest*)&pb->pb_TimeoutReq);
-         CloseDevice((struct IORequest*)&pb->pb_CollReq);
-      }
-      DeleteMsgPort(pb->pb_TimeoutPort);
-   }
-   if (pb->pb_CollPort) DeleteMsgPort(pb->pb_CollPort);
+   hw_cleanup(pb);
 
    if (pb->pb_ServerPort) DeleteMsgPort(pb->pb_ServerPort);
-   if (pb->pb_IntSig != -1) FreeSignal(pb->pb_IntSig);
 
    if (pb->pb_Flags & PLIPF_REPLYSS)
    {
@@ -1084,7 +745,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
    d(("server running\n"));
 
    if (pb = startup())
-   {
+   {      
          /* if we fail to allocate all resources, this flag reminds cleanup()
          ** to ReplyMsg() the startup message
          */
@@ -1092,8 +753,8 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
 
       if (init(pb))
       {
-         ULONG recv=0, portsigmask, timersigmask, wmask;
-         BOOL running, timerqueued = FALSE;
+         ULONG recv=0, portsigmask, hwsigmask, wmask;
+         BOOL running;
 
          /* Ok, we are fine and will tell this mother personally :-) */
          pb->pb_Startup->ss_Error = 0;
@@ -1103,95 +764,102 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct PLIPFrame *fr
          ReplyMsg((struct Message*)pb->pb_Startup);
 
          portsigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
-         timersigmask = 1 << pb->pb_CollPort->mp_SigBit;
+         hwsigmask = hw_get_sigmask(pb);
       
-         wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | pb->pb_IntSigMask | portsigmask | timersigmask;
+         wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | portsigmask | hwsigmask;
 
+         /* main loop of server task */
+         d2(("--- server main loop: %08lx ---\n", wmask));
          for(running=TRUE;running;)
          {
-            d(("wmask is 0x%08lx\n", wmask));
+            d(("** wmask is 0x%08lx\n", wmask));
 
-            if (!(pb->pb_Flags & PLIPF_RECEIVING))
+            /* if no recv is pending then wait for incoming signals */
+            if (!hw_recv_pending(pb)) {
+               d2(("**> wait\n"));
                recv = Wait(wmask);
-            else
-               SetSignal(0, pb->pb_IntSigMask);
-
-            /*if (recv & pb->pb_IntSigMask)*/
-            if (pb->pb_Flags & PLIPF_RECEIVING)
-            {
-               d(("received an interrupt\n"));
-               doreadreqs(pb);
             }
 
+            /* accept pending receive and start reading */
+            d2(("* rx pending\n"));
+            if (hw_recv_pending(pb))
+            {
+               d2(("* rx ack\n"));
+               hw_recv_ack(pb);
+               
+               d2(("*+ do_read\n"));
+               doreadreqs(pb);
+               d2(("*- do_read\n"));
+            }
+
+            /* handle other hw signals, e.g. timeouts */
+            if(recv & hwsigmask)
+            {
+               d2(("*+ hw sigmask\n"));
+               hw_handle_sigmask(pb, recv & hwsigmask);
+               d2(("*- hw sigmask\n"));
+            }
+            
+            /* can we send packets? */
+            d2(("* can send\n"));
+            if(hw_can_send(pb)) {
+               d2(("*+ do_write\n"));
+               dowritereqs(pb);
+               d2(("*- do_write\n"));
+            }
+            
+            /* if pending send now */
+            d2(("* hw_recv_pending\n"));
+            if (hw_recv_pending(pb))
+            {
+               d2(("* hw_recv_ack\n"));
+               hw_recv_ack(pb);
+               
+               d2(("*+ do_read2\n"));
+               doreadreqs(pb);
+               d2(("*- do_read2\n"));
+            }
+            
+            /*
+            ** Possible a collision has occurred, which is indicated by a
+            ** special flag in PLIPBase.
+            **
+            ** Using timer.device we periodically will be waked up. This
+            ** allows us to delay write packets in cases when we cannot get
+            ** the line immediately.
+            **
+            ** If client and server are very close together, regarding the point
+            ** of performance, the same delay time could even force multiple
+            ** collisions (at least theoretical, I made no practical tests).
+            ** Probably a CSMA/CD-like random-timed delay would be ideal.
+            */
+            if (pb->pb_Flags & PLIPF_COLLISION)
+            {
+               pb->pb_Flags &= ~PLIPF_COLLISION;
+               d2(("*+ coll\n"));
+               hw_handle_collision(pb);
+               d2(("*- coll\n"));
+            }
+            
+            /* handle SANA-II send requests */
             if (recv & portsigmask)
             {
                d(("SANA-II request(s)\n"));
                dos2reqs(pb);
             }
 
-            if (recv & timersigmask)
-            {
-               /* pop message */
-               AbortIO((struct IORequest*)&pb->pb_CollReq);
-               WaitIO((struct IORequest*)&pb->pb_CollReq);
-               timerqueued = FALSE;
-               d(("timer wakeup\n"));
-            }
-
-               /* try now to do write requests (if any pending) */
-            if (!timerqueued)
-            {
-               dowritereqs(pb);
-
-                  /* don't let the other side wait too long! */
-               if (pb->pb_Flags & PLIPF_RECEIVING)
-               {
-                  d(("received an interrupt\n"));
-                  SetSignal(0, pb->pb_IntSigMask);
-                  doreadreqs(pb);
-               }
-
-               /*
-               ** Possible a collision has occurred, which is indicated by a
-               ** special flag in PLIPBase.
-               **
-               ** Using timer.device we periodically will be waked up. This
-               ** allows us to delay write packets in cases when we cannot get
-               ** the line immediately.
-               **
-               ** If client and server are very close together, regarding the point
-               ** of performance, the same delay time could even force multiple
-               ** collisions (at least theoretical, I made no practical tests).
-               ** Probably a CSMA/CD-like random-timed delay would be ideal.
-               */
-               if (pb->pb_Flags & PLIPF_COLLISION)
-               {
-                  pb->pb_Flags &= ~PLIPF_COLLISION;
-                  pb->pb_CollReq.tr_time.tv_secs    = 0;
-                  pb->pb_CollReq.tr_time.tv_micro   = pb->pb_CollisionDelay;
-                  SendIO((struct IORequest*)&pb->pb_CollReq);
-                  timerqueued = TRUE;
-               }
-            }
-
+            /* stop server task */
             if (recv & SIGBREAKF_CTRL_C)
             {
                d(("received break signal\n"));
                running = FALSE;
             }
          }
-
-         if (timerqueued)
-         {
-               /* finnish pending timer requests */
-            AbortIO((struct IORequest*)&pb->pb_CollReq);
-            WaitIO((struct IORequest*)&pb->pb_CollReq);
-         }
       }
       else
          d(("init() failed\n"));
 
-      d(("cleaning up\n"));
+      d2(("--- server exit main loop ---\n"));
       cleanup(pb);
 
             /* Exec will enable it's scheduler after we're dead. */
