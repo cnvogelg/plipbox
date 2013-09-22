@@ -44,7 +44,7 @@ NAME        = plipbox.device
 # this applies to normal and optimized compilation:
 #
 STDFLAGS    = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST NOSTKCHK NOCHKABORT\
-	      SMALLCODE SMALLDATA VERBOSE NOICONS STRICT ANSI DEFINE MAGPLIP=1
+	      SMALLCODE SMALLDATA VERBOSE NOICONS STRICT ANSI
 #
 # this applies only to normal compilation:
 #
@@ -57,7 +57,7 @@ OPTCFLAGS   = $(STDFLAGS) $(CPUCCOPT) PARAMETERS=REGISTERS OPT OPTTIME OPTINLINE
 #
 # this applies to assembler compilation
 #
-AFLAGS      = $(ASMINCLUDES) VERBOSE DEFINE MAGPLIP=1
+AFLAGS      = $(ASMINCLUDES) VERBOSE
 #
 #####################################################################
 
@@ -132,10 +132,10 @@ libsize: libsize.c
 #
 rt.o: rt.asm
 hwpar.o: hwpar.asm hwpar.i
-hw.opt$(CPUSUFFIX) hw.no: hw.c hw.h
-device.opt$(CPUSUFFIX) device.no: device.c magplip.h
-server.opt$(CPUSUFFIX) server.no: server.c magplip.h
-track.opt$(CPUSUFFIX) track.no: track.c magplip.h
+hw.opt$(CPUSUFFIX) hw.no: hw.c hw.h global.h
+device.opt$(CPUSUFFIX) device.no: device.c global.h
+server.opt$(CPUSUFFIX) server.no: server.c global.h
+track.opt$(CPUSUFFIX) track.no: track.c global.h
 #
 #####################################################################
 

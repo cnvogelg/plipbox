@@ -1,5 +1,5 @@
-#ifndef __MAGPLIP_H
-#define __MAGPLIP_H
+#ifndef __GLOBAL_H
+#define __GLOBAL_H
 
    /* system header files */
 #ifndef DEVICES_SANA2_H

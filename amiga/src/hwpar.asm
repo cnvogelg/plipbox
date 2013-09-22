@@ -8,7 +8,7 @@
       include "exec/macros.i"
       ENDC
 
-      IFND MAGPLIP_I
+      IFND HWPAR_I
       include "hwpar.i"
       ENDC
 

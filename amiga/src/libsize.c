@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "magplip.h"
+#include "global.h"
 
 int main(int argc, char **argv)
 {

@@ -22,8 +22,8 @@
 #include <string.h>
 #endif
 
-#ifndef __MAGPLIP_H
-#include "magplip.h"
+#ifndef __GLOBAL_H
+#include "global.h"
 #endif
 #ifndef __DEBUG_H
 #include "debug.h"
