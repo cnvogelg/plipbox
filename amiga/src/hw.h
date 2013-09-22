@@ -7,15 +7,10 @@
    /* transport ethernet addresses */
 #define HW_ADDRFIELDSIZE         6
 
-#define HW_EXTRA_HDR_SIZE        2        /* extra fields accounted
-                                             for in hw frame size */
 #define HW_ETH_HDR_SIZE          14       /* ethernet header: dst, src, type */
 
 struct HWFrame {
-   USHORT   hwf_Sync;
-   SHORT    hwf_Size;
-   /* extra fields accounted in hwf_Size */
-   USHORT   hwf_CRC;
+   USHORT   hwf_Size;
    /* use layout of ethernet header here */
    UBYTE    hwf_DstAddr[HW_ADDRFIELDSIZE];
    UBYTE    hwf_SrcAddr[HW_ADDRFIELDSIZE];
@@ -53,11 +48,9 @@ struct HWBase
 
 #define HWB_RECV_PENDING           0
 #define HWB_COLL_TIMER_RUNNING     1
-#define HWB_SEND_CRC               2
 
 #define HWF_RECV_PENDING           (1 << HWB_RECV_PENDING)
 #define HWF_COLL_TIMER_RUNNING     (1 << HWB_COLL_TIMER_RUNNING)
-#define HWF_SEND_CRC               (1 << HWB_SEND_CRC)
 
 #define MiscBase     hwb->hwb_MiscBase
 #define CIAABase     hwb->hwb_CIAABase

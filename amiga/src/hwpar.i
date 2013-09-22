@@ -24,15 +24,11 @@ PLIP_ADDRFIELDSIZE  equ 6
    ; line. See below for definitions.
    ;
 
-   STRUCTURE PLIPFrame,0
-     USHORT   pf_Sync
-     SHORT    pf_Size
-     USHORT   pf_CRC
-     LABEL PLIPFrame_CRC_Offset
-     STRUCT   pf_DstAddr,PLIP_ADDRFIELDSIZE
-     STRUCT   pf_SrcAddr,PLIP_ADDRFIELDSIZE
-     USHORT   pf_Type
-;*** UBYTE    pf_Data[MTU];
+   STRUCTURE HWFrame,0
+     SHORT    hwf_Size
+
+HWF_CMD_SEND     equ     $11
+HWF_CMD_RECV     equ     $22
 
 PKTFRAMESIZE_1   equ     4
 PKTFRAMESIZE_2   equ     2
@@ -61,7 +57,6 @@ SYNCWORD_NOCRC   equ     ((SYNCBYTE_HEAD<<8)|SYNCBYTE_NOCRC)
    LABEL HWBase_SIZE
 
    BITDEF HW,RECV_PENDING,0
-   BITDEF HW,SEND_CRC,2
 
    ;
    ; Why isn't this in exec/types.i ?

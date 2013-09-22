@@ -192,10 +192,10 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 
       /* copy raw frame: simply overwrite ethernet frame part of plip packet */
       if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
-         frame->hwf_Size = ios2->ios2_DataLength + HW_EXTRA_HDR_SIZE;
+         frame->hwf_Size = ios2->ios2_DataLength;
          frame_ptr = &frame->hwf_DstAddr[0];
       } else {
-         frame->hwf_Size = ios2->ios2_DataLength + HW_EXTRA_HDR_SIZE + HW_ETH_HDR_SIZE;
+         frame->hwf_Size = ios2->ios2_DataLength + HW_ETH_HDR_SIZE;
          frame->hwf_Type = (USHORT)ios2->ios2_PacketType;
          memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
          memcpy(frame->hwf_DstAddr, ios2->ios2_DstAddr, HW_ADDRFIELDSIZE);
@@ -317,12 +317,12 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
    /* deliver a raw frame: copy data right into ethernet header */
    if(req->ios2_Req.io_Flags & SANA2IOF_RAW) {
       frame_ptr = &frame->hwf_DstAddr[0];
-      datasize = frame->hwf_Size - HW_EXTRA_HDR_SIZE;
+      datasize = frame->hwf_Size;
       req->ios2_Req.io_Flags = SANA2IOF_RAW;
    }
    else {
       frame_ptr = (UBYTE *)(frame + 1);
-      datasize = frame->hwf_Size - (HW_EXTRA_HDR_SIZE + HW_ETH_HDR_SIZE);
+      datasize = frame->hwf_Size - HW_ETH_HDR_SIZE;
       req->ios2_Req.io_Flags = 0;
    }
 
@@ -380,7 +380,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
    {
       pb->pb_DevStats.PacketsReceived++;
 
-      datasize = frame->hwf_Size - (HW_EXTRA_HDR_SIZE + HW_ETH_HDR_SIZE);
+      datasize = frame->hwf_Size - HW_ETH_HDR_SIZE;
 
       dotracktype(pb, pkttyp = frame->hwf_Type, 0, 1, 0, datasize, 0);
 
