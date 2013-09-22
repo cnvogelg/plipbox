@@ -1,17 +1,5 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H
-/*
-** $VER: debug.h 1.0 (17 Jun 1995)
-**
-** convenient debuggung support
-**
-** (C) Copyright 1995 Marius Gröger
-**     All Rights Reserved
-**
-** $HISTORY:
-**
-** 17 Jun 1995 : 001.000 :  created
-*/
 
 #if (DEBUG != 0)
 extern void KPrintF(char *, ...), KGetChar(void);

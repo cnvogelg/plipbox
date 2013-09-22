@@ -2,7 +2,7 @@
  * hw.c - hardware dependent part of driver
  */
 
-#define DEBUG 15
+#define DEBUG 0
 
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H

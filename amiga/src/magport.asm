@@ -1,9 +1,5 @@
       section "text",code
 
-
-;----------------------------------------------------------------------------
-
-
       IFND HARDARE_CIA_I
       include "hardware/cia.i"
       ENDC
@@ -17,16 +13,10 @@
       ENDC
 
 
-;----------------------------------------------------------------------------
-
-
-      xref    _CRC16
-
       xdef    _interrupt
       xdef    _hwsend
       xdef    _hwrecv
 
-;----------------------------------------------------------------------------
 
 ciaa     equ     $bfe001
 ciab     equ     $bfd000
@@ -109,26 +99,12 @@ _hwsend:
          moveq    #HS_REQUEST_BIT,d3                  ; d3 = HS_REQUEST
          moveq    #HS_LINE_BIT,d4                     ; d4 = HS_LINE
 
-         ;
-         ; CRC wanted ?
-         ;
-         btst     #HWB_SEND_CRC,hwb_Flags(a2)
-         beq.s    hww_NoCRC
-         ; yes
-         move.w   #SYNCWORD_CRC,pf_Sync(a4)
-         lea      PLIPFrame_CRC_Offset(a4),a0
-         move.w   pf_Size(a4),d0
-         subq.w   #PKTFRAMESIZE_2,d0
-         jsr      _CRC16(pc)
-         move.w   d0,pf_CRC(a4)
-         bra.s    hww_CRC
-
-hww_NoCRC:
          move.w   #SYNCWORD_NOCRC,pf_Sync(a4)
 
-hww_CRC  move.l   hwb_CIAABase(a2),a6
+         move.l   hwb_CIAABase(a2),a6
          moveq    #CIAICRF_FLG,d0
          JSRLIB   AbleICR                             ; DISABLEINT
+         
          lea      BaseAX,a5
          SETSELECT
          SETCIAOUTPUT a5
@@ -287,16 +263,6 @@ hwr_cont4:
          dbra     d6,hwr_MainLoop
 
 hwr_DoneRead:
-         subq.b   #SYNCBYTE_CRC,d4
-         bne.s    hwr_ReadOkay
-         lea      PLIPFrame_CRC_Offset(a4),a0
-         move.w   pf_Size(a4),d0
-         subq.w   #PKTFRAMESIZE_2,d0
-         jsr      _CRC16(pc)
-         cmp.w    pf_CRC(a4),d0
-         bne.s    hwr_TimedOut
-
-hwr_ReadOkay:
          moveq    #TRUE,d5
 hwr_TimedOut:
          bclr     #HWB_RECV_PENDING,hwb_Flags(a2)
@@ -306,7 +272,7 @@ hwr_TimedOut:
          JSRLIB   SetICR                              ; CLEARINT
          move.w   #CIAICRF_FLG|CIAICRF_SETCLR,d0
          JSRLIB   AbleICR                             ; ENABLEINT
-  CLRSELECT
+         CLRSELECT
 
          move.l   d5,d0                               ; return value
          movem.l  (sp)+,d2-d7/a2-a6

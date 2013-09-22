@@ -1,33 +1,3 @@
-;*
-;*  $VER: rt.asm 1.3 (01 Apr 1998)
-;*
-;*  magplip.device - Parallel Line Internet Protocol
-;*
-;*  Original code written by Oliver Wagner and Michael Balzer.
-;*
-;*  This version has been completely reworked by Marius Gröger, introducing
-;*  slight protocol changes. The new source is a lot better organized and
-;*  maintainable.
-;*
-;*  Additional changes and code cleanup by Jan Kratochvil and Martin Mares.
-;*  The new source is significantly faster and yet better maintainable.
-;*
-;*  (C) Copyright 1993-1994 Oliver Wagner & Michael Balzer
-;*  (C) Copyright 1995 Jan Kratochvil & Martin Mares
-;*  (C) Copyright 1995-1996 Marius Gröger
-;*      All Rights Reserved
-;*
-;*  $HISTORY:
-;*
-;*  01 Apr 1998 : 001.003 :  integrated modifications for linPLIP from Stephane
-;*  29 Mar 1996 : 001.002 :  changed copyright note
-;*  20 Aug 1995 : 001.001 :  stub() MUST return 0 (jk/mm)
-;*  12 Feb 1995 : 001.000 :  reworked original
-;*
-
-;*
-;* include files
-;*
     IFND EXEC_NODES_I
     INCLUDE "exec/nodes.i"
     ENDC
@@ -44,13 +14,20 @@
     INCLUDE "dos/dos.i"
     ENDC
 
-    INCLUDE "magplip.i"
 
-; Revision informations
-    INCLUDE "magplip_rev.i"
-;*
-;* imports
-;*
+VERSION         EQU        0
+REVISION        EQU        3
+DATE    MACRO
+              dc.b        '21.5.2013'
+      ENDM
+VERS    MACRO
+              dc.b        'plipbox 0.3'
+      ENDM
+VSTRING MACRO
+              dc.b        'plipbox 0.3 (21.5.2013)',13,10,0
+      ENDM
+
+
     xref  _DevInit
 
     xref  _DevOpen

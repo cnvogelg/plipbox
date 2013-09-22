@@ -1,13 +1,5 @@
 #ifndef __COMPILER_H
 #define __COMPILER_H
-/*
-** $VER: compiler.h 1.2 (03 Oct 1995)
-**
-** Compiler abstraction
-**
-** (C) Copyright 1995 Marius Gröger
-**     All Rights Reserved.
-*/
 
 #ifdef __SASC
 /* Implementation notes:

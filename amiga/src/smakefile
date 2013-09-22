@@ -48,7 +48,7 @@ STDFLAGS    = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST NOSTKCHK NOCHK
 #
 # this applies only to normal compilation:
 #
-NORMCFLAGS  = $(STDFLAGS) DEBUG LINE
+NORMCFLAGS  = $(STDFLAGS)
 #
 # this applies only to optimized compilation:
 #
@@ -74,7 +74,7 @@ OPTLDFLAGS  = NOICONS SC SD ND $(LIBS) TO
 #
 # the object files
 #
-NORMOBJ=rt.o device.no server.no track.no magport.o crc16.o hw.no
+NORMOBJ=rt.o device.no server.no track.no magport.o hw.no
 OPTOBJ=rt.o device.opt$(CPUSUFFIX) server.opt$(CPUSUFFIX) \
        track.opt$(CPUSUFFIX) magport.o crc16.o hw.opt$(CPUSUFFIX)
 #
@@ -130,7 +130,7 @@ libsize: libsize.c
 #
 # various dependencies
 #
-rt.o: rt.asm magplip.i magplip_rev.i
+rt.o: rt.asm magplip.i
 crc16.o: crc16.asm
 magport.o: magport.asm magplip.i
 hw.opt$(CPUSUFFIX) hw.no: hw.c hw.h

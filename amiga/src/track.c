@@ -1,28 +1,3 @@
-/*
-** $VER: track.c 1.5 (09 Apr 1996)
-**
-** magplip.device - Parallel Line Internet Protocol
-**
-** Original code written by Oliver Wagner and Michael Balzer.
-**
-** This version has been completely reworked by Marius Gröger,
-** introducing slight protocol changes. The new source is
-** a lot better organized and maintainable.
-**
-** (C) Copyright 1993-1994 Oliver Wagner & Michael Balzer
-** (C) Copyright 1995 Jan Kratochvil & Martin Mares
-** (C) Copyright 1995-1996 Marius Gröger
-**     All Rights Reserved
-**
-** $HISTORY:
-**
-** 09 Apr 1996 : 001.005 :  now multiple users may track one type
-** 29 Mar 1996 : 001.004 :  changed copyright note
-** 30 Aug 1995 : 001.003 :  minor declaration related changes
-** 05 Mar 1995 : 001.001 :  couldn't any longer stand the original, unstructured code
-** 12 Feb 1995 : 001.000 :  reworked original
-*/
-
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>

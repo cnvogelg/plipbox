@@ -1,49 +1,5 @@
 #ifndef __MAGPLIP_H
 #define __MAGPLIP_H
-/*
-** $VER: magplip.h 1.15 (01 Apr 1998)
-**
-** magplip.device - Parallel Line Internet Protocol
-**
-** Original code written by Oliver Wagner and Michael Balzer.
-**
-** This version has been completely reworked by Marius Gröger,
-** introducing slight protocol changes. The new source is
-** a lot better organized and maintainable.
-**
-** Additional changes and code cleanup by Jan Kratochvil and Martin Mares.
-** The new source is significantly faster and yet better maintainable.
-**
-** (C) Copyright 1993-1994 Oliver Wagner & Michael Balzer
-** (C) Copyright 1995 Jan Kratochvil & Martin Mares
-** (C) Copyright 1995 Marius Gröger
-**     All Rights Reserved
-**
-** $HISTORY:
-**
-** 01 Apr 1998 : 001.015 :  intergated linPLIP modifications from Stephane
-** 10 Apr 1996 : 001.014 :  + PLIPF_REPLYSS didn't fit into byte
-**                          + pb_ExtFlags
-** 09 Apr 1996 : 001.013 :  added TrackRe.tr_Count
-** 29 Mar 1996 : 001.012 :  changed copyright note
-** 30 Dec 1995 : 001.011 :  + single dynamic frame buffer
-**                          + added a lot of min/max constants
-** 29 Dec 1995 : 001.010 :  + pb_Startup
-**                          + new flag PLIPF_REPLYSS
-** 03 Sep 1995 : 001.009 :  + removed PLIP(F|B)_SIDEA
-**                          + hardware addressing fields in PLIPBase
-** 30 Aug 1995 : 001.008 :  support for timer-timed timeout :-)
-**                          some pecularities moved to compiler.h
-** 13 Aug 1995 : 001.007 :  code cleanup
-** 29 Jul 1995 : 001.006 :  support for arbitration delay
-** 24 Jul 1995 : 001.005 :  only one delay value in config
-**                          some volatile elements in GD
-** 25 Apr 1995 : 001.004 :  #define's FAR
-** 06 Mar 1995 : 001.003 :  added collision delays
-** 04 Mar 1995 : 001.002 :  packet-type now ULONG
-** 18 Feb 1995 : 001.001 :  some SAS/C wrappers, better data base handling
-** 12 Feb 1995 : 001.000 :  reworked original
-*/
 
    /* system header files */
 #ifndef DEVICES_SANA2_H
