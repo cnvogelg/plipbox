@@ -88,20 +88,20 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBa
 #define DISABLEINT      AbleICR(CIAABase, CIAICRF_FLG)
 #define ENABLEINT       AbleICR(CIAABase, CIAICRF_FLG | CIAICRF_SETCLR)
 
-#define HS_LINE_MASK    CIAF_PRTRBUSY
-#define HS_REQUEST_MASK CIAF_PRTRPOUT
+#define HS_ACK_MASK     CIAF_PRTRBUSY
+#define HS_REQ_MASK     CIAF_PRTRPOUT
 
 #define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
 #define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
 #define PARINIT(b)      SETCIAINPUT; \
-                        ciab.ciaddra &= ~HS_LINE_MASK; \
-                        ciab.ciaddra |= HS_REQUEST_MASK | CIAF_PRTRSEL
+                        ciab.ciaddra &= ~HS_ACK_MASK; \
+                        ciab.ciaddra |= HS_REQ_MASK | CIAF_PRTRSEL
 #define PAREXIT \
                         ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
                         ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
-#define TESTLINE(b)     (ciab.ciapra & HS_LINE_MASK)
-#define SETREQUEST(b)   ciab.ciapra |= HS_REQUEST_MASK
-#define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQUEST_MASK
+#define TESTLINE(b)     (ciab.ciapra & HS_ACK_MASK)
+#define SETREQUEST(b)   ciab.ciapra |= HS_REQ_MASK
+#define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQ_MASK
 
 GLOBAL BOOL hw_init(struct PLIPBase *pb)
 {
@@ -338,33 +338,6 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBa
    
    d8(("-ex\n"));
    return sigmask;            /* re-enable the signal */
-}
-
-GLOBAL BOOL hw_begin_send(struct PLIPBase *pb)
-{
-   struct HWBase *hwb = &pb->pb_HWBase;
-   BOOL having_line = FALSE;
-    
-   if (!TESTLINE(pb))                               /* is the line free ? */
-   {
-      SETREQUEST(pb);                     /* indicate our request to send */
-      if (!TESTLINE(pb))                      /* is the line still free ? */
-         having_line = TRUE;
-      else
-      {
-         if (!(hwb->hwb_Flags & HWF_RECV_PENDING))
-            CLEARREQUEST(pb);                         /* reset line state */
-         d2(("couldn't get the line-1\n"));
-      }
-   }
-   else d2(("couldn't get the line-2\n"));
-    
-   return having_line;
-}
-
-GLOBAL void hw_abort_send(struct PLIPBase *pb)
-{
-   CLEARREQUEST(pb);                         /* reset line state */
 }
 
 GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)

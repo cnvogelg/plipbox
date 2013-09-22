@@ -176,52 +176,42 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    */
 /*F*/ PRIVATE REGARGS AW_RESULT arbitratedwrite(BASEPTR, struct IOSana2Req *ios2)
 {
-   BOOL can_send;
    AW_RESULT rc;
    struct HWFrame *frame = pb->pb_Frame;
+   struct BufferManagement *bm;
+   UBYTE *frame_ptr;
+   
+   d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
+                                                ios2->ios2_DataLength));
 
-   can_send = hw_begin_send(pb);
-   if (can_send)
+   /* copy raw frame: simply overwrite ethernet frame part of plip packet */
+   if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
+      frame->hwf_Size = ios2->ios2_DataLength;
+      frame_ptr = &frame->hwf_DstAddr[0];
+   } else {
+      frame->hwf_Size = ios2->ios2_DataLength + HW_ETH_HDR_SIZE;
+      frame->hwf_Type = (USHORT)ios2->ios2_PacketType;
+      memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
+      memcpy(frame->hwf_DstAddr, ios2->ios2_DstAddr, HW_ADDRFIELDSIZE);
+      frame_ptr = (UBYTE *)(frame + 1);
+   }
+
+   bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
+
+   if (!(*bm->bm_CopyFromBuffer)(frame_ptr,
+                               ios2->ios2_Data, ios2->ios2_DataLength))
    {
-      struct BufferManagement *bm;
-
-      UBYTE *frame_ptr;
-      
-      d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
-                                                   ios2->ios2_DataLength));
-
-      /* copy raw frame: simply overwrite ethernet frame part of plip packet */
-      if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
-         frame->hwf_Size = ios2->ios2_DataLength;
-         frame_ptr = &frame->hwf_DstAddr[0];
-      } else {
-         frame->hwf_Size = ios2->ios2_DataLength + HW_ETH_HDR_SIZE;
-         frame->hwf_Type = (USHORT)ios2->ios2_PacketType;
-         memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
-         memcpy(frame->hwf_DstAddr, ios2->ios2_DstAddr, HW_ADDRFIELDSIZE);
-         frame_ptr = (UBYTE *)(frame + 1);
-      }
-
-      bm = (struct BufferManagement *)ios2->ios2_BufferManagement;
-
-      if (!(*bm->bm_CopyFromBuffer)(frame_ptr,
-                                  ios2->ios2_Data, ios2->ios2_DataLength))
-      {
-         rc = AW_BUFFER_ERROR;
-         hw_abort_send(pb);
-      }
-      else
-      {
-         d8(("+hw_send\n"));
-         rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
-         d8(("-hw_send\n"));
-#if DEBUG&8
-         if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->hwf_Size));
-#endif
-      }
+      rc = AW_BUFFER_ERROR;
    }
    else
-      rc = AW_ABORTED;
+   {
+      d8(("+hw_send\n"));
+      rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
+      d8(("-hw_send\n"));
+#if DEBUG&8
+      if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->hwf_Size));
+#endif
+   }
 
    return rc;
 }
@@ -230,7 +220,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 {
    struct IOSana2Req *currentwrite, *nextwrite;
    AW_RESULT code;
-   struct HWBase *hwb = &pb->pb_HWBase;
 
    ObtainSemaphore(&pb->pb_WriteListSem);
 

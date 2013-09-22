@@ -69,8 +69,6 @@ GLOBAL BOOL hw_attach(struct PLIPBase *pb);
 GLOBAL VOID hw_detach(struct PLIPBase *pb);
 
 GLOBAL BOOL hw_can_send(struct PLIPBase *pb);
-GLOBAL BOOL hw_begin_send(struct PLIPBase *pb);
-GLOBAL VOID hw_abort_send(struct PLIPBase *pb);
 GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
 GLOBAL VOID hw_handle_collision(struct PLIPBase *pb);
 
