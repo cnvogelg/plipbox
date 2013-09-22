@@ -9,7 +9,7 @@
       ENDC
 
       IFND MAGPLIP_I
-      include "magplip.i"
+      include "hwpar.i"
       ENDC
 
 

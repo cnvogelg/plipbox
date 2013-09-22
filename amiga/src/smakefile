@@ -74,9 +74,9 @@ OPTLDFLAGS  = NOICONS SC SD ND $(LIBS) TO
 #
 # the object files
 #
-NORMOBJ=rt.o device.no server.no track.no magport.o hw.no
+NORMOBJ=rt.o device.no server.no track.no hwpar.o hw.no
 OPTOBJ=rt.o device.opt$(CPUSUFFIX) server.opt$(CPUSUFFIX) \
-       track.opt$(CPUSUFFIX) magport.o crc16.o hw.opt$(CPUSUFFIX)
+       track.opt$(CPUSUFFIX) hwpar.o hw.opt$(CPUSUFFIX)
 #
 #####################################################################
 
@@ -130,9 +130,8 @@ libsize: libsize.c
 #
 # various dependencies
 #
-rt.o: rt.asm magplip.i
-crc16.o: crc16.asm
-magport.o: magport.asm magplip.i
+rt.o: rt.asm
+hwpar.o: hwpar.asm hwpar.i
 hw.opt$(CPUSUFFIX) hw.no: hw.c hw.h
 device.opt$(CPUSUFFIX) device.no: device.c magplip.h
 server.opt$(CPUSUFFIX) server.no: server.c magplip.h

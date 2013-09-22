@@ -1,5 +1,5 @@
-   IFND    MAGPLIP_I
-MAGPLIP_I     SET     1
+   IFND    HWPAR_I
+HWPAR_I     SET     1
 
     IFND EXEC_TYPES_I
     INCLUDE "exec/types.i"
@@ -76,4 +76,4 @@ FALSE equ 0
 
 ;****************************************************************************
 
-   ENDC MAGPLIP_I
+   ENDC HWPAR_I
