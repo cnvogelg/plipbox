@@ -107,7 +107,7 @@ _hwsend:
 
          ; if ACK is already set then its an invalid plipbox state!
          move.b   (a5),d7                             ; read par flags, d7 = State
-         btst     d4,d0
+         btst     d4,d7
          bne.s    hww_ExitError
                   
          ; --- initial handshake ---
@@ -115,8 +115,12 @@ _hwsend:
          SETCIAOUTPUT a5
          move.b   #HWF_CMD_SEND,ciaa+ciaprb-BaseAX(a5) ; WRITECIA *p++
          ; initially set REQ high
-         or.b     d3,d7
+         bset     d3,d7
          move.b   d7,(a5)
+        
+         ; packet size
+         move.w   (a4),d6
+         addq.w   #2,d6    ; add size itself
         
          ; --- main loop ---
          ; wait for incoming ACK 
@@ -193,7 +197,7 @@ _hwrecv:
 
          ; if ACK is already set then its an invalid plipbox state!
          move.b   (a5),d7                             ; read par flags, d7 = State
-         btst     d4,d0
+         btst     d4,d7
          bne      hwr_ExitError
          
          ; --- init ---
@@ -258,7 +262,9 @@ hwr_AckOk3:
 
          ; now fetch full size word and check for max MTU
          move.w   -2(a3),d6                           ; = length
-         cmp.w    hwb_MaxMTU(a2),d6
+         tst.w    d6
+         beq.s    hwr_ExitOk                          ; empty buffer
+         cmp.w    hwb_MaxMTU(a2),d6                   ; buffer too large
          bhi.s    hwr_ExitError
 
          ; --- main packet data loop ---
