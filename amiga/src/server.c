@@ -712,6 +712,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
             if (!hw_recv_pending(pb)) {
                d2(("**> wait\n"));
                recv = Wait(wmask);
+               d2(("**> wait: got 0x%08lx\n", recv));
             }
 
             /* accept pending receive and start reading */

@@ -63,9 +63,6 @@ SETCIAINPUT MACRO
 _interrupt:
         btst    #HWB_RECV_PENDING,hwb_Flags(a1)
         bne.s   skipint
-        moveq   #HS_ACK_BIT,d0
-        btst    d0,ciab+ciapra
-        beq.s   skipint
         bset    #HWB_RECV_PENDING,hwb_Flags(a1)
         move.l  hwb_IntSigMask(a1),d0
         move.l  hwb_SysBase(a1),a6

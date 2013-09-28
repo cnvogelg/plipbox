@@ -1,37 +1,145 @@
-# magplip - run magplip protocol on parallel port
+# implementation of the plipbox protocol
 
 import vpar
 import time
 import datetime
 
-MAGIC=0x42
-CRC=0x01
-NO_CRC=0x02
-
-class MagPlipError(Exception):
+class PBProtoError(Exception):
     def __init__(self, value):
         self.value = value
     
     def __str__(self):
         return repr(self.value)
 
-class MagPlip:
+class PBProto:
+    # commands
+    CMD_SEND = 0x11
+    CMD_RECV = 0x22
+    
+    # control lines
+    SEL = vpar.SEL_MASK     # in
+    ACK = vpar.BUSY_MASK    # out
+    REQ = vpar.POUT_MASK    # in
+  
     def __init__(self, v, debug=False):
         self.vpar = v
         self.debug = debug
+        self.recv_buf = None
+        self.send_buf = None
     
     def start(self):
-        # clear HS_LINE
-        self.vpar.clr_control_mask(vpar.BUSY_MASK)
+        # clear ACK
+        self._set_ack(0)
     
-    def wait_select(self, value, timeout=1, ctx="", start=0):
+    def send(self, buf):
+        """Ask Amiga to receive a frame from me"""
+        # simply trigger ack
+        self.vpar.trigger_ack()
+        # is a collision?
+        if self.recv_buf != None:
+            self._log("collision! already a recv buf set.")
+            return False
+        # prepare buffer 
+        self.recv_buf = buf
+        return True
+    
+    def recv(self):
+        """Did the Amiga send a buffer?"""
+        s = self.send_buf
+        self.send_buf = None
+        return s
+    
+    def handle(self):
+        """wait for an incoming command"""
+        self._log("handle_cmd")
+        # each command must begin with a SEL
+        self._wait_select(1)
+        # wait for first REQ=1
+        self._wait_req(1)
+        # read command byte
+        cmd = self.vpar.peek_data()
+        # confirm byte by toggling ACK
+        self._set_ack(1)
+        self._log("got cmd: %02x" % cmd)
+        if cmd == self.CMD_SEND:
+            size = self._cmd_send()
+        elif cmd == self.CMD_RECV:
+            size = self._cmd_recv()
+        else:
+            size = 0
+            self._log("UNKNOWN COMMAND!")
+        # clr ack
+        self._set_ack(0)
+        # wait for SEL gone
+        self._wait_select(0)
+        return cmd,size
+    
+    def _cmd_send(self):
+        """Amiga sends a buffer"""
+        self._log("+++ incoming send +++")
+        # get size HI
+        self._wait_req(0)
+        hi = self.vpar.peek_data()
+        self._set_ack(0)
+        # get size LO
+        self._wait_req(1)
+        lo = self.vpar.peek_data()
+        self._set_ack(1)
+        size = hi * 256 + lo
+        self._log("size: %d" % size)
+        # get data
+        toggle = False
+        data = ""
+        for i in xrange(size):
+            self._wait_req(toggle)
+            d = self.vpar.peek_data()
+            data += chr(d)
+            self._set_ack(toggle)
+            toggle = not toggle
+        self.send_buf = data
+        self._log("--- incoming send ---")
+        return size
+
+    def _cmd_recv(self):
+        """Amiga wants to receive a buffer"""
+        self._log("+++ incoming recv +++")
+        data = self.recv_buf
+        if data == None:
+            size = 0
+        else:
+            size = len(data)
+        self._log("size: %d" % size)
+        hi = size / 256
+        lo = size % 256
+        # send size HI
+        self.vpar.set_data(hi)
+        self._set_ack(0)
+        self._wait_req(0)
+        # send size LO
+        self.vpar.set_data(lo)
+        self._set_ack(1)
+        self._wait_req(1)
+        # send data
+        toggle = False
+        for i in xrange(size):
+            d = ord(data[i])
+            self.vpar.set_data(d)
+            self._set_ack(toggle)
+            self._wait_req(toggle)
+            toggle = not toggle
+        # clear buffer
+        self.recv_buf = None
+        self._log("--- incoming recv ---")
+        return size
+
+    def _wait_select(self, value, timeout=1, ctx="", start=0):
         """wait for SELECT signal"""
         t = time.time()
         end = t + timeout
         found = False
         self._log("wait_select: value=%d" % value)
         while t < end:
-            s = self.vpar.peek_control() & vpar.SEL_MASK
+            s = self.vpar.peek_control() & self.SEL
             if s and value:
                 found = True
                 break
@@ -45,30 +153,9 @@ class MagPlip:
         self._log("wait_select: value=%d -> %s" % (value,found))
         if not found:
           delta = t - start
-          raise MagPlipError("%s: no select. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
+          raise PBProtoError("%s: no select. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
 
-    def wait_strobe(self, timeout=1, ctx="", start=0):
-        """wait for STROBE signal"""
-        t = time.time()
-        end = t + timeout
-        found = False
-        self._log("wait_strobe")
-        while t < end:
-            s = self.vpar.check_strobe_flag()
-            if s:
-                found = True
-                break
-                
-            rem = end - t
-            self.vpar.poll_state(rem)
-            t = time.time()
-        if self.debug:
-          self._log("wait_strobe: %s" % found)
-        if not found:
-          delta = t - start
-          raise MagPlipError("%s: no strobe flag. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
-    
-    def wait_line_toggle(self, expect, timeout=1, ctx="", start=0):
+    def _wait_req(self, expect, timeout=1, ctx="", start=0):
         """wait for toggle on POUT signal"""
         #print expect
         t = time.time()
@@ -87,7 +174,7 @@ class MagPlip:
             # check for SELECT -> arbitration loss?
             if (s & vpar.SEL_MASK) != vpar.SEL_MASK:
                 delta = t - start
-                raise MagPlipError("%s: lost select in line toggle. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
+                raise PBProtoError("%s: lost select in line toggle. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
                 
             rem = end - t
             self.vpar.poll_state(rem)
@@ -95,139 +182,19 @@ class MagPlip:
         self._log("wait_line_toggle: POUT == %s -> found: %s" % (expect, found))
         if not found:
           delta = t - start
-          raise MagPlipError("%s: missing line toggle. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
+          raise PBProtoError("%s: missing line toggle. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
     
-    def toggle_busy(self, value):
+    def _set_ack(self, value):
         if value:
-            self.vpar.clr_control_mask(vpar.BUSY_MASK)
-        else:
             self.vpar.set_control_mask(vpar.BUSY_MASK)
+        else:
+            self.vpar.clr_control_mask(vpar.BUSY_MASK)
             
-    def set_next_byte(self, toggle_expect, value, timeout=1, ctx="", start=0):
-        self.wait_line_toggle(toggle_expect, timeout, ctx, start)
-        self.vpar.set_data(value)
-        self.toggle_busy(toggle_expect)
-        return True
-
-    def set_next_word(self, toggle_expect, value, timeout=1, ctx="", start=0):
-        v1 = value / 256
-        self.set_next_byte(toggle_expect, v1, timeout, ctx + "/b1", start)
-        v2 = value % 256
-        self.set_next_byte(not toggle_expect, v2, timeout, ctx + "/b2", start)
-
-    def get_next_byte(self, toggle_expect, timeout=1, ctx="", start=0):
-        self.wait_line_toggle(toggle_expect, timeout, ctx, start)
-        self.vpar.poll_state(0)
-        data = self.vpar.peek_data()
-        self.toggle_busy(not toggle_expect)
-        return data
-    
-    def get_next_word(self, toggle_expect, timeout=1, ctx="", start=0):
-        v1 = self.get_next_byte(toggle_expect, timeout, ctx + "/b1", start)
-        v2 = self.get_next_byte(not toggle_expect, timeout, ctx + "/b2", start)
-        return v1 * 256 + v2
-
-    # ----- public API ----
-
-    def send(self, raw_pkt, timeout=1, crc=False):
-        """send a packet via vpar port"""
-        # set HS_LINE (BUSY)
-        self.vpar.set_control_mask(vpar.BUSY_MASK)
-        # set magic byte
-        self.vpar.set_data(MAGIC)
-        # pulse ACK -> trigger IRQ in server
-        trigger = time.time()
-        self.vpar.trigger_ack()
-        try:
-            # wait for select
-            self.wait_select(True, timeout, "tx", trigger)
-            start = time.time()
-            first_delta = start - trigger
-            # set byte for magic code NO_CRC
-            self.set_next_byte(True, 0x02, timeout, "tx:crc flag", start)
-            # send size
-            size = len(raw_pkt) + 2 # add crc
-            self.set_next_word(False, size, timeout, "tx:size", start)
-            # send CRC
-            crc = 0
-            self.set_next_word(False, crc, timeout, "tx:crc", start)
-            # send data
-            toggle = False
-            pos = 0
-            for a in raw_pkt:
-                self.set_next_byte(toggle, ord(a), timeout, "tx:data@%d" % pos, start)
-                toggle = not toggle
-                pos += 1
-            # wait for final toggle
-            self.wait_line_toggle(toggle, timeout, "tx:final toggle", start)
-            end = time.time()
-            data_delta = end - start
-            # wait for select end
-            self.wait_select(False, timeout, "tx:end select", start)
-            last = time.time()
-            last_delta = last - end
-            return (first_delta, data_delta, last_delta)
-        finally:
-            # clear HS_LINE (BUSY)
-            self.vpar.clr_control_mask(vpar.BUSY_MASK, timeout=1)
-
-    def recv(self, timeout=1):
-        """receive a data packet via vpar port. make sure to call can_recv() before!!"""
-        try:
-            self._log("+++ recv +++")
-            first = time.time()
-            # remove any old strobe flags
-            self.vpar.check_strobe_flag()
-            # first assume SELECT to be set
-            self.wait_select(True, timeout, "tx", first)
-            # then we need a strobe signal
-            self.wait_strobe(timeout, "tx", first)
-            start = time.time()
-            first_delta = start - first
-            # get magic byte
-            self._log("get magic")
-            magic = self.get_next_byte(True, timeout, "rx:magic byte,", start)
-            if magic != 0x42:
-                raise MagPlipError("rx:invalid magic: %02x" % magic)
-            # get crc mode
-            self._log("get crc_mode")
-            crc_mode = self.get_next_byte(False, timeout, "rx:crc flag", start)
-            if crc_mode < 1 or crc_mode > 2:
-                raise MagPlipError("rx:invalid CRC mode: %d" % crc_mode)
-            # get size
-            self._log("get size")
-            size = self.get_next_word(True, timeout, "rx:size", start)
-            # get crc
-            self._log("get crc")
-            crc = self.get_next_word(True, timeout, "rx:crc", start)
-            size -= 2 # skip crc
-            # get data
-            toggle = True
-            pos = 0
-            raw_pkt = ""
-            self._log("get data")
-            for i in xrange(size):
-                d = self.get_next_byte(toggle, timeout, "rx:data@%d" % pos, start)
-                raw_pkt += chr(d)
-                toggle = not toggle
-                pos = pos+1
-            end = time.time()
-            data_delta = end - start
-            # wait for select gone
-            self.wait_select(False, timeout, "rx:end select", start)
-            last = time.time()
-            last_delta = last - end
-            self._log("--- recv ---")
-            return raw_pkt,(first_delta, data_delta, last_delta)
-        finally:
-            # clear BUSY
-            self.vpar.clr_control_mask(vpar.BUSY_MASK, timeout=1)
-
     def _log(self, msg):
         if not self.debug:
           return
         ts = time.time()
         sec = int(ts)
         usec = int(ts * 1000000) % 1000000 
-        print "%8d.%06d MP:" % (sec,usec),msg
+        print "%8d.%06d pp:" % (sec,usec),msg
 

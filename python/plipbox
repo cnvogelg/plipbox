@@ -10,7 +10,7 @@ import struct
 
 import sopty
 import vpar
-import magplip
+import pbproto
 import tap
 import bridge
 
@@ -60,13 +60,15 @@ class EthFrame:
     return "[%04d:0x%04x,%s->%s]" % (self.size, self.eth_type,s,t)
     
 def calc_speed(delta, size):
-  kibs = size / (delta * 1024)
+  if delta > 0:
+    kibs = size / (delta * 1024)
+  else:
+    kibs = 0
   return "%6.3f KiB/s" % kibs
 
-def get_speed_bar(delta, deltas, n):
-  return "%s %s f=%4.3f l=%4.3f a=%4.3f" % (
-    calc_speed(delta, n), calc_speed(deltas[1], n),
-    deltas[0], deltas[1], delta
+def get_speed_bar(delta, n):
+  return "%s   %12.6f s" % (
+    calc_speed(delta, n), delta
   )
 
 def check_bootp_bcast(raw_buf):
@@ -102,45 +104,40 @@ def check_pkt(pkt, raw_buf, args):
   else:
     return True
 
-def handle_tap(tap, mp, t, args):
+def handle_tap(tap, pb, t, args):
   # read packet
   raw_buf = tap.read(2048)
   # decode frame
   eth_frame = EthFrame()
   eth_frame.decode(raw_buf)
-  # send packet to magplip
+  # send packet to plipbox
   if not args.rx:
     # check if packet is passed
     keep = args.eth_pass or check_pkt(eth_frame, raw_buf, args)
     if keep:
-      log("%12.6f  tap:" % t , eth_frame, end=' ')
-      try:
-        s = time.time()
-        deltas = mp.send(raw_buf)
-        e = time.time()
-        d = e - s
-        n = len(raw_buf)
-        log(get_speed_bar(d, deltas, n))
-      except magplip.MagPlipError as ex:
-        e = time.time()
-        d = e - s
-        log("%s. delta=%5.3f" % (ex, d))
+      log("%12.6f tap->PAR:" % t , eth_frame)
+      # submit to par send
+      pb.send(raw_buf)
 
-def handle_par(mp, tap, t, args):
+def handle_par(pb, tap, t, args):
   # rx: get block
   pkt = None
   try:
-    # receive frame
+    # handle par command
     s = time.time()
-    raw_buf,deltas = mp.recv()
+    cmd,n = pb.handle()
     e = time.time()
     d = e - s
+    log("%12.6f *CMD%02x* :" % (t,cmd), get_speed_bar(d,n))
+    
+    # was a buffer received?
+    raw_buf = pb.recv()
     if raw_buf != None:
       # decode frame
       eth_frame = EthFrame()
       eth_frame.decode(raw_buf)
       n = len(raw_buf)
-      log("%12.6f *PAR:" % t, eth_frame, get_speed_bar(d,deltas,n), end=' ')
+      log("%12.6f PAR->tap:" % t, eth_frame, end=' ')
       # send to tap
       if not args.rx:
         try:
@@ -148,7 +145,7 @@ def handle_par(mp, tap, t, args):
           log()
         except OSError as e:
           log(e)
-  except magplip.MagPlipError as ex:
+  except pbproto.PBProtoError as ex:
     e = time.time()
     d = e - s
     log("%s. delta=%5.3f" % (ex, d))
@@ -156,7 +153,7 @@ def handle_par(mp, tap, t, args):
 # ----- main loop -----
 print("Welcome to plipbox!")
 
-# setup vpar and magplip
+# setup vpar and plipbox protocol
 vpar_link = args.vpar_link
 log("opening pty:",vpar_link)
 sp = sopty.SoPTY(vpar_link)
@@ -164,8 +161,8 @@ sp_fd = sp.get_fd()
 
 log("vpar")
 vpar = vpar.VPar(sp,verbose=args.debug)
-log("magplip")
-mp = magplip.MagPlip(vpar,debug=args.debug)
+log("plipbox")
+pb = pbproto.PBProto(vpar,debug=args.debug)
 
 # setup tap and bridge
 tap_name = args.tap_if
@@ -198,8 +195,8 @@ try:
     if do_sync:
       log("sync vpar with emu")
       vpar.request_state()
-      log("start magplip")
-      mp.start()
+      log("start plipbox protocol")
+      pb.start()
       do_sync = False
 
     # io multiplex
@@ -208,11 +205,11 @@ try:
     
     # got packet from tap?
     if tap_fd in r[0]:
-      handle_tap(tap, mp, t, args)
+      handle_tap(tap, pb, t, args)
     
     # got packet from parallel?
     if sp_fd in r[0]:
-      handle_par(mp, tap, t, args)
+      handle_par(pb, tap, t, args)
     
     # check emulator flags in vpar
     if vpar.check_init_flag():
