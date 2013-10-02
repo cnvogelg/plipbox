@@ -473,6 +473,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 /*E*/
 /*F*/ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1) struct IOSana2Req *ios2, REG(a6) BASEPTR)
 {
+   ULONG mtu;
+   
       /* mark request as active */
    ios2->ios2_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
    ios2->ios2_Req.io_Error = S2ERR_NO_ERROR;
@@ -522,7 +524,12 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          memset(ios2->ios2_DstAddr, 0xff, HW_ADDRFIELDSIZE);
               /* fall through */
       case CMD_WRITE:
-         if(ios2->ios2_DataLength > pb->pb_MTU)
+              /* determine max valid size */
+         mtu = pb->pb_MTU;
+         if(!(ios2->ios2_Req.io_Flags & SANA2IOF_RAW)) {
+            mtu -= HW_ETH_HDR_SIZE;
+         }
+         if(ios2->ios2_DataLength > mtu)
          {
             ios2->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
          }

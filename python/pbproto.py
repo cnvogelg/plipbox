@@ -33,14 +33,14 @@ class PBProto:
     
     def send(self, buf):
         """Ask Amiga to receive a frame from me"""
-        # simply trigger ack
-        self.vpar.trigger_ack()
         # is a collision?
         if self.recv_buf != None:
             self._log("collision! already a recv buf set.")
             return False
         # prepare buffer 
         self.recv_buf = buf
+        # simply trigger ack
+        self.vpar.trigger_ack()
         return True
     
     def recv(self):
@@ -48,6 +48,10 @@ class PBProto:
         s = self.send_buf
         self.send_buf = None
         return s
+    
+    def must_handle(self):
+        """check if need to handle"""
+        return self.vpar.peek_control() & self.SEL == self.SEL
     
     def handle(self):
         """wait for an incoming command"""
@@ -91,6 +95,7 @@ class PBProto:
         toggle = False
         data = ""
         for i in xrange(size):
+            self._log("rx #%04d/%04d" % (i,size))
             self._wait_req(toggle)
             d = self.vpar.peek_data()
             data += chr(d)
@@ -111,21 +116,24 @@ class PBProto:
         self._log("size: %d" % size)
         hi = size / 256
         lo = size % 256
+        # sync
+        self._wait_req(0)
         # send size HI
         self.vpar.set_data(hi)
         self._set_ack(0)
-        self._wait_req(0)
+        self._wait_req(1)
         # send size LO
         self.vpar.set_data(lo)
         self._set_ack(1)
-        self._wait_req(1)
+        self._wait_req(0)
         # send data
         toggle = False
         for i in xrange(size):
+            self._log("tx #%04d/%04d" % (i,size))
             d = ord(data[i])
             self.vpar.set_data(d)
             self._set_ack(toggle)
-            self._wait_req(toggle)
+            self._wait_req(not toggle)
             toggle = not toggle
         # clear buffer
         self.recv_buf = None

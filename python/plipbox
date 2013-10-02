@@ -115,13 +115,16 @@ def handle_tap(tap, pb, t, args):
     # check if packet is passed
     keep = args.eth_pass or check_pkt(eth_frame, raw_buf, args)
     if keep:
-      log("%12.6f tap->PAR:" % t , eth_frame)
+      log("%12.6f tap->PAR: [%4d] " % (t, len(raw_buf)), eth_frame)
       # submit to par send
       pb.send(raw_buf)
+      return pb.must_handle()
+  return False
 
 def handle_par(pb, tap, t, args):
   # rx: get block
   pkt = None
+  cmd = 0
   try:
     # handle par command
     s = time.time()
@@ -129,26 +132,26 @@ def handle_par(pb, tap, t, args):
     e = time.time()
     d = e - s
     log("%12.6f *CMD%02x* :" % (t,cmd), get_speed_bar(d,n))
-    
-    # was a buffer received?
-    raw_buf = pb.recv()
-    if raw_buf != None:
-      # decode frame
-      eth_frame = EthFrame()
-      eth_frame.decode(raw_buf)
-      n = len(raw_buf)
-      log("%12.6f PAR->tap:" % t, eth_frame, end=' ')
-      # send to tap
-      if not args.rx:
-        try:
-          tap.write(raw_buf)
-          log()
-        except OSError as e:
-          log(e)
   except pbproto.PBProtoError as ex:
     e = time.time()
     d = e - s
-    log("%s. delta=%5.3f" % (ex, d))
+    log("%12.6f *CMD%02x* : ERROR %s. delta=%5.3f" % (t, cmd, ex, d))
+  
+  # was a buffer received?
+  raw_buf = pb.recv()
+  if raw_buf != None:
+    # decode frame
+    eth_frame = EthFrame()
+    eth_frame.decode(raw_buf)
+    n = len(raw_buf)
+    log("%12.6f PAR->tap: [%4d] " % (t,len(raw_buf)), eth_frame, end=' ')
+    # send to tap
+    if not args.rx:
+      try:
+        tap.write(raw_buf)
+        log()
+      except OSError as e:
+        log(e)
 
 # ----- main loop -----
 print("Welcome to plipbox!")
@@ -204,11 +207,12 @@ try:
     t = time.time() - start
     
     # got packet from tap?
+    need_handle = False
     if tap_fd in r[0]:
-      handle_tap(tap, pb, t, args)
+      need_handle = handle_tap(tap, pb, t, args)
     
     # got packet from parallel?
-    if sp_fd in r[0]:
+    if sp_fd in r[0] or need_handle:
       handle_par(pb, tap, t, args)
     
     # check emulator flags in vpar

@@ -88,18 +88,18 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBa
 #define DISABLEINT      AbleICR(CIAABase, CIAICRF_FLG)
 #define ENABLEINT       AbleICR(CIAABase, CIAICRF_FLG | CIAICRF_SETCLR)
 
-#define HS_ACK_MASK     CIAF_PRTRBUSY
+#define HS_RAK_MASK     CIAF_PRTRBUSY
 #define HS_REQ_MASK     CIAF_PRTRPOUT
 
 #define SETCIAOUTPUT    ciab.ciapra |= CIAF_PRTRSEL; ciaa.ciaddrb = 0xFF
 #define SETCIAINPUT     ciab.ciapra &= ~CIAF_PRTRSEL; ciaa.ciaddrb = 0x00
 #define PARINIT(b)      SETCIAINPUT; \
-                        ciab.ciaddra &= ~HS_ACK_MASK; \
+                        ciab.ciaddra &= ~HS_RAK_MASK; \
                         ciab.ciaddra |= HS_REQ_MASK | CIAF_PRTRSEL
 #define PAREXIT \
                         ciab.ciaddra &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT); \
                         ciab.ciapra  &= ~(CIAF_PRTRSEL | CIAF_PRTRBUSY | CIAF_PRTRPOUT)
-#define TESTLINE(b)     (ciab.ciapra & HS_ACK_MASK)
+#define TESTLINE(b)     (ciab.ciapra & HS_RAK_MASK)
 #define SETREQUEST(b)   ciab.ciapra |= HS_REQ_MASK
 #define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQ_MASK
 
@@ -121,59 +121,44 @@ GLOBAL BOOL hw_init(struct PLIPBase *pb)
       hwb->hwb_IntSigMask = 1L << hwb->hwb_IntSig;
       d2(("int sigmask=%08lx\n",hwb->hwb_IntSigMask));
    
-      if ((hwb->hwb_CollPort = CreateMsgPort()))
+      if ((hwb->hwb_TimeoutPort = CreateMsgPort()))
       {
-         if ((hwb->hwb_TimeoutPort = CreateMsgPort()))
+         ULONG sigmask;
+         struct Process *proc = pb->pb_Server;
+         
+         /* save old exception setup */
+         hwb->hwb_OldExcept = SetExcept(0, 0xffffffff); /* turn'em off */
+         hwb->hwb_OldExceptCode = proc->pr_Task.tc_ExceptCode;
+         hwb->hwb_OldExceptData = proc->pr_Task.tc_ExceptData;
+
+         /* create new exception setup */
+         proc->pr_Task.tc_ExceptCode = (APTR)&exceptcode;
+         proc->pr_Task.tc_ExceptData = (APTR)pb;
+         sigmask = 1 << hwb->hwb_TimeoutPort->mp_SigBit;
+         SetSignal(0, sigmask);
+         SetExcept(sigmask, sigmask);
+
+         /* enter port address */
+         hwb->hwb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = hwb->hwb_TimeoutPort;
+         if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&hwb->hwb_TimeoutReq, 0))
          {
-            ULONG sigmask;
-            struct Process *proc = pb->pb_Server;
-            
-            /* save old exception setup */
-            hwb->hwb_OldExcept = SetExcept(0, 0xffffffff); /* turn'em off */
-            hwb->hwb_OldExceptCode = proc->pr_Task.tc_ExceptCode;
-            hwb->hwb_OldExceptData = proc->pr_Task.tc_ExceptData;
+             TimerBase = (struct Library *)hwb->hwb_TimeoutReq.tr_node.io_Device;
 
-            /* create new exception setup */
-            proc->pr_Task.tc_ExceptCode = (APTR)&exceptcode;
-            proc->pr_Task.tc_ExceptData = (APTR)pb;
-            sigmask = 1 << hwb->hwb_TimeoutPort->mp_SigBit;
-            SetSignal(0, sigmask);
-            SetExcept(sigmask, sigmask);
+             /* setup the timeout stuff */
+             hwb->hwb_TimeoutReq.tr_node.io_Flags = IOF_QUICK;
+             hwb->hwb_TimeoutReq.tr_node.io_Command = TR_ADDREQUEST;
+             hwb->hwb_TimeoutSet = 0xff;
 
-            /* enter port address */
-            hwb->hwb_CollReq.tr_node.io_Message.mn_ReplyPort = hwb->hwb_CollPort;
-            if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&hwb->hwb_CollReq, 0))
-             {
-                TimerBase = (struct Library *)hwb->hwb_CollReq.tr_node.io_Device;
-
-                /* preset the io command, this will never change */
-                hwb->hwb_CollReq.tr_node.io_Command = TR_ADDREQUEST;
-
-                /* setup the timeout stuff */
-                hwb->hwb_TimeoutReq.tr_node.io_Flags = IOF_QUICK;
-                hwb->hwb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = hwb->hwb_TimeoutPort;
-                hwb->hwb_TimeoutReq.tr_node.io_Device = hwb->hwb_CollReq.tr_node.io_Device;
-                hwb->hwb_TimeoutReq.tr_node.io_Unit = hwb->hwb_CollReq.tr_node.io_Unit;
-                hwb->hwb_TimeoutReq.tr_node.io_Command = TR_ADDREQUEST;
-                hwb->hwb_TimeoutSet = 0xff;
-
-                hwb->hwb_CollSigMask = 1 << hwb->hwb_CollPort->mp_SigBit;
-
-                rc = TRUE;
-             }
-             else
-             {
-                d(("couldn't open timer.device"));
-             }
+             rc = TRUE;
           }
           else
           {
-             d(("no port for timeout handling\n"));
+             d(("couldn't open timer.device"));
           }
        }
        else
        {
-          d(("no port for collision handling\n"));
+          d(("no port for timeout handling\n"));
        }
     } 
     else 
@@ -187,14 +172,6 @@ GLOBAL BOOL hw_init(struct PLIPBase *pb)
 GLOBAL VOID hw_cleanup(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
-   
-   /* stop collision timer */
-   if(hwb->hwb_Flags & HWF_COLL_TIMER_RUNNING)
-   {
-         /* finnish pending timer requests */
-      AbortIO((struct IORequest*)&hwb->hwb_CollReq);
-      WaitIO((struct IORequest*)&hwb->hwb_CollReq);      
-   }
    
    if (hwb->hwb_TimeoutPort)
    {
@@ -212,10 +189,6 @@ GLOBAL VOID hw_cleanup(struct PLIPBase *pb)
          CloseDevice((struct IORequest*)&hwb->hwb_CollReq);
       }
       DeleteMsgPort(hwb->hwb_TimeoutPort);
-   }
-   
-   if (hwb->hwb_CollPort) {
-      DeleteMsgPort(hwb->hwb_CollPort);
    }
    
    if (hwb->hwb_IntSig != -1) {
@@ -357,7 +330,7 @@ GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
    /* hw send */
    d8(("+tx\n"));
    rc = hwsend(hwb, frame);
-   d8(("-tx: %d\n", rc));
+   d8(("-tx: %s\n", rc ? "ok":"ERR"));
       
    /* stop timeout timer */ 
    AbortIO((struct IORequest*)&hwb->hwb_TimeoutReq);
@@ -377,12 +350,6 @@ GLOBAL BOOL hw_recv_pending(struct PLIPBase *pb)
    }
 }
 
-GLOBAL VOID hw_recv_ack(struct PLIPBase *pb)
-{
-   struct HWBase *hwb = &pb->pb_HWBase;
-   SetSignal(0, hwb->hwb_IntSigMask);
-}
-
 GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
@@ -398,62 +365,18 @@ GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
    SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
 
    /* hw recv */
-   d2(("+rx\n"));
+   d8(("+rx\n"));
    rc = hwrecv(hwb, frame);
-   d2(("+rx: %d\n", rc));
+   d8(("+rx: %s\n", rc ? "ok":"ERR"));
     
    /* stop timeout timer */
    AbortIO((struct IORequest*)&hwb->hwb_TimeoutReq);
-
+   
    return rc;
 }
 
-GLOBAL ULONG hw_get_sigmask(struct PLIPBase *pb)
+GLOBAL ULONG hw_recv_sigmask(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    return hwb->hwb_IntSigMask | hwb->hwb_CollSigMask;
-}
-
-GLOBAL BOOL hw_handle_sigmask(struct PLIPBase *pb, ULONG sigmask)
-{
-   struct HWBase *hwb = &pb->pb_HWBase;
-
-   /* collision timer was triggered */
-   if (sigmask & hwb->hwb_CollSigMask)
-   {
-      /* pop message */
-      AbortIO((struct IORequest*)&hwb->hwb_CollReq);
-      WaitIO((struct IORequest*)&hwb->hwb_CollReq);
-      hwb->hwb_Flags &= ~HWF_COLL_TIMER_RUNNING;
-      d(("collision timer wakeup\n"));
-      return TRUE;
-   }
-
-   return FALSE;
-}
-
-GLOBAL BOOL hw_can_send(struct PLIPBase *pb)
-{
-   struct HWBase *hwb = &pb->pb_HWBase;
-   
-   /* make sure no timer is currently pending */
-   if ((hwb->hwb_Flags & HWF_COLL_TIMER_RUNNING) == 0) 
-   {
-      return TRUE;
-   }
-   else 
-   {
-      return FALSE;
-   }
-}
-
-GLOBAL VOID hw_handle_collision(struct PLIPBase *pb)
-{
-   struct HWBase *hwb = &pb->pb_HWBase;
-
-   /* start collision timer */
-   hwb->hwb_CollReq.tr_time.tv_secs    = 0;
-   hwb->hwb_CollReq.tr_time.tv_micro   = pb->pb_CollisionDelay;
-   SendIO((struct IORequest*)&hwb->hwb_CollReq);
-   hwb->hwb_Flags |= HWF_COLL_TIMER_RUNNING;
 }

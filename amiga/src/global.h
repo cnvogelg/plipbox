@@ -36,7 +36,7 @@
 #define SERVERTASKNAME           pb->pb_DevNode.lib_Node.ln_Name
 
       /* default values */
-#define PLIP_DEFMTU              1500
+#define PLIP_DEFMTU              1518
 #define PLIP_DEFBPS              100000
 #define PLIP_DEFRETRIES          32
 #define PLIP_DEFTIMEOUT          (500*1000)
@@ -54,7 +54,7 @@
 #define PLIP_MINBPS              1
 
       /* maximum values */
-#define PLIP_MAXMTU              1500
+#define PLIP_MAXMTU              1518
 #define PLIP_MAXRETRIES          127   /* don't try higher values! */
 #define PLIP_MAXPRIORITY         127
 #define PLIP_MAXCOLLISIONDELAY   999999

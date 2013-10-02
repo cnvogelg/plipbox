@@ -39,9 +39,9 @@
 /*F*/ /* defines, types and enums */
 
    /*
-   ** return codes for arbitratedwrite()
+   ** return codes for write_frame()
    */
-typedef enum { AW_OK, AW_ABORTED, AW_BUFFER_ERROR, AW_ERROR } AW_RESULT;
+typedef enum { AW_OK, AW_BUFFER_ERROR, AW_ERROR } AW_RESULT;
 
    /* return val, cut to min or max if exceeding range */
 #define BOUNDS(val, min, max) ((val) <= (max) ? ((val) >= (min) ? (val) :\
@@ -63,7 +63,7 @@ PRIVATE VOID readargs(BASEPTR);
 PRIVATE BOOL init(BASEPTR);
 PRIVATE REGARGS BOOL goonline(BASEPTR);
 PRIVATE REGARGS VOID gooffline(BASEPTR);
-PRIVATE REGARGS AW_RESULT arbitratedwrite(BASEPTR, struct IOSana2Req *ios2);
+PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2);
 PRIVATE REGARGS VOID dowritereqs(BASEPTR);
 PRIVATE REGARGS VOID doreadreqs(BASEPTR);
 PRIVATE REGARGS VOID dos2reqs(BASEPTR);
@@ -174,15 +174,15 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    /*
    ** writing packets
    */
-/*F*/ PRIVATE REGARGS AW_RESULT arbitratedwrite(BASEPTR, struct IOSana2Req *ios2)
+/*F*/ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
 {
    AW_RESULT rc;
    struct HWFrame *frame = pb->pb_Frame;
    struct BufferManagement *bm;
    UBYTE *frame_ptr;
    
-   d(("having line for: type %08lx, size %ld\n",ios2->ios2_PacketType,
-                                                ios2->ios2_DataLength));
+   d(("write: type %08lx, size %ld\n",ios2->ios2_PacketType,
+                                      ios2->ios2_DataLength));
 
    /* copy raw frame: simply overwrite ethernet frame part of plip packet */
    if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
@@ -233,26 +233,9 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
          break;
       }
 
-      code = arbitratedwrite(pb, currentwrite);
+      code = write_frame(pb, currentwrite);
 
-      if (code == AW_ABORTED)                         /* arbitration failed */
-      {
-         pb->pb_Flags |= PLIPF_COLLISION;
-         d(("couldn't get the line, trying again later\n"));
-         pb->pb_SpecialStats[S2SS_COLLISIONS].Count++;
-         d(("pb->pb_SpecialStats[S2SS_COLLISIONS].Count = %ld\n",pb->pb_SpecialStats[S2SS_COLLISIONS].Count));
-         if ((currentwrite->ios2_Req.io_Error++) > pb->pb_Retries)
-         {
-            pb->pb_SpecialStats[S2SS_TXERRORS].Count++;
-            d(("pb->pb_SpecialStats[S2SS_TXERRORS].Count = %ld\n",pb->pb_SpecialStats[S2SS_TXERRORS].Count));
-            currentwrite->ios2_Req.io_Error = S2ERR_TX_FAILURE;
-            currentwrite->ios2_WireError = S2WERR_TOO_MANY_RETIRES;
-            Remove((struct Node*)currentwrite);
-            DevTermIO(pb, currentwrite);
-         }
-         break;
-      }
-      else if (code == AW_BUFFER_ERROR)  /* BufferManagement callback error */
+      if (code == AW_BUFFER_ERROR)  /* BufferManagement callback error */
       {
          d(("buffer error\n"));
          DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
@@ -294,7 +277,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 }
 /*E*/
 
-PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *frame)
+PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 {
    int i;
    BOOL broadcast; 
@@ -390,7 +373,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
             Remove((struct Node*)got);
 
             /* deliver packet */
-            ok = deliverreadreq(got, frame);
+            ok = read_frame(got, frame);
             if(!ok) {
                DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
             }
@@ -429,7 +412,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
 
       if (got)
       {
-         BOOL ok = deliverreadreq(got, frame);
+         BOOL ok = read_frame(got, frame);
          if(!ok) {
             DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
          }
@@ -687,7 +670,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
 
       if (init(pb))
       {
-         ULONG recv=0, portsigmask, hwsigmask, wmask;
+         ULONG recv=0, portsigmask, recvsigmask, wmask;
          BOOL running;
 
          /* Ok, we are fine and will tell this mother personally :-) */
@@ -698,15 +681,15 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
          ReplyMsg((struct Message*)pb->pb_Startup);
 
          portsigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
-         hwsigmask = hw_get_sigmask(pb);
+         recvsigmask = hw_recv_sigmask(pb);
       
-         wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | portsigmask | hwsigmask;
+         wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | portsigmask | recvsigmask;
 
          /* main loop of server task */
-         d2(("--- server main loop: %08lx ---\n", wmask));
+         d(("--- server main loop: %08lx ---\n", wmask));
          for(running=TRUE;running;)
          {
-            d(("** wmask is 0x%08lx\n", wmask));
+            d4(("** wmask is 0x%08lx\n", wmask));
 
             /* if no recv is pending then wait for incoming signals */
             if (!hw_recv_pending(pb)) {
@@ -716,64 +699,27 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
             }
 
             /* accept pending receive and start reading */
-            d2(("* rx pending\n"));
             if (hw_recv_pending(pb))
             {
-               d2(("* rx ack\n"));
-               hw_recv_ack(pb);
-               
                d2(("*+ do_read\n"));
                doreadreqs(pb);
                d2(("*- do_read\n"));
             }
-
-            /* handle other hw signals, e.g. timeouts */
-            if(recv & hwsigmask)
-            {
-               d2(("*+ hw sigmask\n"));
-               hw_handle_sigmask(pb, recv & hwsigmask);
-               d2(("*- hw sigmask\n"));
-            }
             
-            /* can we send packets? */
-            d2(("* can send\n"));
-            if(hw_can_send(pb)) {
+            /* send packets if any */
+            if(recv & SIGBREAKF_CTRL_F)
+            {
                d2(("*+ do_write\n"));
                dowritereqs(pb);
                d2(("*- do_write\n"));
             }
             
             /* if pending send now */
-            d2(("* hw_recv_pending\n"));
             if (hw_recv_pending(pb))
             {
-               d2(("* hw_recv_ack\n"));
-               hw_recv_ack(pb);
-               
                d2(("*+ do_read2\n"));
                doreadreqs(pb);
                d2(("*- do_read2\n"));
-            }
-            
-            /*
-            ** Possible a collision has occurred, which is indicated by a
-            ** special flag in PLIPBase.
-            **
-            ** Using timer.device we periodically will be waked up. This
-            ** allows us to delay write packets in cases when we cannot get
-            ** the line immediately.
-            **
-            ** If client and server are very close together, regarding the point
-            ** of performance, the same delay time could even force multiple
-            ** collisions (at least theoretical, I made no practical tests).
-            ** Probably a CSMA/CD-like random-timed delay would be ideal.
-            */
-            if (pb->pb_Flags & PLIPF_COLLISION)
-            {
-               pb->pb_Flags &= ~PLIPF_COLLISION;
-               d2(("*+ coll\n"));
-               hw_handle_collision(pb);
-               d2(("*- coll\n"));
             }
             
             /* handle SANA-II send requests */
@@ -794,7 +740,7 @@ PRIVATE REGARGS BOOL deliverreadreq(struct IOSana2Req *req, struct HWFrame *fram
       else
          d(("init() failed\n"));
 
-      d2(("--- server exit main loop ---\n"));
+      d(("--- server exit main loop ---\n"));
       cleanup(pb);
 
             /* Exec will enable it's scheduler after we're dead. */

@@ -34,7 +34,6 @@ struct HWBase
    ULONG                       hwb_IntSig;        /* sent from int to server */
    ULONG                       hwb_CollSigMask;
    struct MsgPort          *   hwb_TimeoutPort;      /* for timeout handling */
-   struct MsgPort          *   hwb_CollPort;       /* for collision handling */
    struct Library          *   hwb_TimerBase;
    struct Library          *   hwb_MiscBase;          /* various libs & res. */
    APTR                        hwb_OldExceptCode;
@@ -50,7 +49,6 @@ struct HWBase
 #define HWB_COLL_TIMER_RUNNING     1
 
 #define HWF_RECV_PENDING           (1 << HWB_RECV_PENDING)
-#define HWF_COLL_TIMER_RUNNING     (1 << HWB_COLL_TIMER_RUNNING)
 
 #define MiscBase     hwb->hwb_MiscBase
 #define CIAABase     hwb->hwb_CIAABase
@@ -62,18 +60,13 @@ struct PLIPBase;
 GLOBAL BOOL hw_init(struct PLIPBase *pb);
 GLOBAL VOID hw_cleanup(struct PLIPBase *pb);
 
-GLOBAL ULONG hw_get_sigmask(struct PLIPBase *pb);
-GLOBAL BOOL hw_handle_sigmask(struct PLIPBase *pb, ULONG sigmask);
-
 GLOBAL BOOL hw_attach(struct PLIPBase *pb);
 GLOBAL VOID hw_detach(struct PLIPBase *pb);
 
-GLOBAL BOOL hw_can_send(struct PLIPBase *pb);
 GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
-GLOBAL VOID hw_handle_collision(struct PLIPBase *pb);
 
+GLOBAL ULONG hw_recv_sigmask(struct PLIPBase *pb);
 GLOBAL BOOL hw_recv_pending(struct PLIPBase *pb);
-GLOBAL VOID hw_recv_ack(struct PLIPBase *pb);
 GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
 
 #endif
