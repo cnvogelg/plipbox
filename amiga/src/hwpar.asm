@@ -92,55 +92,81 @@ _hwsend:
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
          lea      BaseAX,a5                           ; a5 = CIA HW base
 
-         ; clear REQ
-         bclr     d3,(a5)                             ; clear REQ
-
-         ; signal plipbox by setting SEL
-         SETSELECT a5
-
-         ; --- initial handshake ---
-         ; par is OUTPUT
-         SETCIAOUTPUT a5
-         move.b   #HWF_CMD_SEND,ciaa+ciaprb-BaseAX(a5) ; WRITECIA *p++
-
-         ; set REQ
-         bset     d3,(a5)
-
-         move.b   (a5),d7                             ; read par flags, d7 = State
-        
-         ; packet size
-         move.w   (a4),d6
-         addq.w   #1,d6    ; add size itself - 1 (dbra)
-        
-         ; --- main loop ---
-         ; wait for incoming ACK 
-hww_WaitAck:
+         ; --- prepare
+         ; Wait RAK == 0
+hww_WaitRak1:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
-         btst     d4,d0                               ; ACK toggled?
-         bne.s    hww_AckOk
+         btst     d4,d0
+         beq.s    hww_RakOk1
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hww_WaitAck
+         beq.s    hww_WaitRak1
          bra.s    hww_ExitError
-hww_AckOk:
-         eor.b    d0,d7
+hww_RakOk1:
+   
+         ; --- init handshake 
+         ; [OUT]
+         SETCIAOUTPUT a5
+         
+         ; Set <CMD_SEND>
+         move.b   #HWF_CMD_SEND,ciaa+ciaprb-BaseAX(a5)
+         
+         ; Set SEL = 1 -> Trigger Plipbox
+         SETSELECT a5
+         
+         ; --- (size +) data loop         
+         ; packet size
+         move.w   (a4),d6
+         addq.w   #1,d6    ; add size itself (word) - 1 (dbra)
+         
+         ; initial toggle value
+         move.b   (a5),d7                             ; read par flags, d7 = State
+         
+         ; Wait RAK == 1, 0, 1, ...
+hww_WaitRak2:
+         move.b   (a5),d0                             ; ciab+ciapra
+         eor.b    d7,d0
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    hww_RakOk2
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    hww_WaitRak2
+         bra.s    hww_ExitError
+hww_RakOk2:
+         eor.b    d0,d7                               ; store current RAK
 
-         ; write next byte of HW packet
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; WRITECIA *p++
+         ; Set <Size|Data_n>
+         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
          bchg     d3,(a5)                             ; set REQ toggle
 
          ; loop for all packet bytes
-         dbra     d6,hww_WaitAck
+         dbra     d6,hww_WaitRak2
 
-hww_ExitOk:
+         ; --- shutdown
+         ; final Wait RAK == 0 (odd size), 1 (even size)
+hww_WaitRak3:
+         move.b   (a5),d0                             ; ciab+ciapra
+         eor.b    d7,d0
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    hww_RakOk3
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    hww_WaitRak3
+         bra.s    hww_ExitError
+hww_RakOk3:
+        
+         ; --- send is OK ---
          moveq    #TRUE,d2                            ; rc = TRUE
 hww_ExitError:
          ; --- exit ---
-         ; par is INPUT
+         ; [IN]
          SETCIAINPUT a5
 
-         ; clear SEL
+         ; REQ = 0
+         bclr      d3,(a5)
+
+         ; SEL = 0
          CLRSELECT a5
 
          move.l   d2,d0                               ; return rc
@@ -169,117 +195,127 @@ _hwrecv:
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
          lea      BaseAX,a5                           ; a5 = ciab+ciapra
 
-         ; clear REQ
-         bclr     d3,(a5)                             ; CLEARREQUEST ciab+ciapra
-
-         ; signal plipbox by setting SEL
-         SETSELECT a5
-
-         ; --- init ---
-         ; par is OUTPUT and set command byte
-         SETCIAOUTPUT a5
-         move.b   #HWF_CMD_RECV,ciaa+ciaprb-BaseAX(a5) ; WRITECIA *p++
-         
-         ; set REQ
-         bset     d3,(a5)
-         
-         move.b   (a5),d7                             ; read par flags, d7 = State
-        
-         ; --- main loop ---
-         ; wait for incoming ACK
-hwr_WaitAck:
+         ; --- prepare
+         ; Wait RAK == 0
+hwr_WaitRak1:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
-         btst     d4,d0                               ; ACK toggled?
-         bne.s    hwr_AckOk
+         btst     d4,d0
+         beq.s    hwr_RakOk1
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitAck
+         beq.s    hwr_WaitRak1
          bra.s    hwr_ExitError
-hwr_AckOk:
-         eor.b    d0,d7
+hwr_RakOk1:
+   
+         ; --- init handshake 
+         ; [OUT]
+         SETCIAOUTPUT a5
          
-         ; par is now INPUT
+         ; Set <CMD_RECV>
+         move.b   #HWF_CMD_RECV,ciaa+ciaprb-BaseAX(a5)
+         
+         ; Set SEL = 1 -> trigger Plipbox
+         SETSELECT a5
+        
+         ; Wait RAK == 1
+hwr_WaitRak2:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0
+         bne.s    hwr_RakOk2
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    hwr_WaitRak2
+         bra.s    hwr_ExitError
+hwr_RakOk2:
+
+         ; [IN]
          SETCIAINPUT a5
  
-         bchg     d3,(a5)                             ; OUTPUTTOGGLE
+         ; Set REQ = 1
+         bset     d3,(a5)
          
          ; --- read size word ---
-         ; wait for incoming ACK for HI size byte
-hwr_WaitAck2:
+         ; Wait RAK == 0
+hwr_WaitRak3:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
-         btst     d4,d0                               ; ACK toggled?
-         bne.s    hwr_AckOk2
+         btst     d4,d0                               ; RAK toggled?
+         beq.s    hwr_RakOk3
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitAck2
+         beq.s    hwr_WaitRak3
          bra.s    hwr_ExitError
-hwr_AckOk2:
-         eor.b    d0,d7
+hwr_RakOk3:
          
-         ; read incoming HI size byte
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
-         bchg     d3,(a5)                             ; OUTPUTTOGGLE
+         ; Read <Size_Hi>
+         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port
+         ; Set REQ = 0
+         bclr     d3,(a5)                             ; REQ toggle
          
-         ; wait for incoming ACK for LO size byte
-hwr_WaitAck3:
+         ; Wait RAK == 1
+hwr_WaitRak4:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
-         btst     d4,d0                               ; ACK toggled?
-         bne.s    hwr_AckOk3
+         btst     d4,d0
+         bne.s    hwr_RakOk4
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitAck3
+         beq.s    hwr_WaitRak4
          bra.s    hwr_ExitError
-hwr_AckOk3:
-         eor.b    d0,d7
+hwr_RakOk4:
          
-         ; read incoming LO size byte
+         ; Read <Size_Lo>
          move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
-         bchg     d3,(a5)                             ; OUTPUTTOGGLE
+         ; Set REQ = 1
+         bset     d3,(a5)                             ; REQ toggle
 
+         ; --- check size
          ; now fetch full size word and check for max MTU
          move.w   -2(a3),d6                           ; = length
          tst.w    d6
-         beq.s    hwr_ExitOk                          ; empty buffer
+         beq.s    hwr_ExitOk                          ; empty size? ok
          cmp.w    hwb_MaxMTU(a2),d6                   ; buffer too large
          bhi.s    hwr_ExitError
 
-         subq.w   #1,d6                               ; correct for dbra
+         subq.w   #1,d6                               ; correct for dbra loop size
+         
+         ; init toggle value
+         move.b   (a5),d7                             ; read par flags, d7 = State
          
          ; --- main packet data loop ---
-         ; wait for incoming ACK on data byte
-hwr_WaitAck4:
+         ; wait for incoming RAK on data byte
+hwr_WaitRak5:
          move.b   (a5),d0                             ; ciab+ciapra
          eor.b    d7,d0
-         btst     d4,d0                               ; ACK toggled?
-         bne.s    hwr_AckOk4
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    hwr_RakOk5
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitAck4
+         beq.s    hwr_WaitRak5
          bra.s    hwr_ExitError
-hwr_AckOk4:
+hwr_RakOk5:
          eor.b    d0,d7
  
-         ; read incoming LO size byte
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
-         bchg     d3,(a5)                             ; OUTPUTTOGGLE
+         ; Read <DATA_n>
+         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port byte
+         bchg     d3,(a5)                             ; toggle REQ
 
          ; loop for all packet bytes
-         dbra     d6,hwr_WaitAck4
+         dbra     d6,hwr_WaitRak5
 
 hwr_ExitOk:
          moveq    #TRUE,d5
 hwr_ExitError:
          ; --- exit ---
+         
          ; reset signal
-         moveq   #0,d0
-         move.l  hwb_IntSigMask(a1),d1
-         JSRLIB  SetSignal
+         moveq    #0,d0
+         move.l   hwb_IntSigMask(a1),d1
+         JSRLIB   SetSignal
          
          ; clear RECV_PENDING flag set by irq
          bclr     #HWB_RECV_PENDING,hwb_Flags(a2)
+         
+         ; clear REQ
+         bclr     d3,(a5)
          
          ; clear SEL
          CLRSELECT a5

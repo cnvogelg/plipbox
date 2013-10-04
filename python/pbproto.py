@@ -29,7 +29,7 @@ class PBProto:
     
     def start(self):
         # clear ACK
-        self._set_ack(0)
+        self._set_rak(0)
     
     def send(self, buf):
         """Ask Amiga to receive a frame from me"""
@@ -51,19 +51,20 @@ class PBProto:
     
     def must_handle(self):
         """check if need to handle"""
+        # we need to react if the Amiga has triggered SEL = 1
         return self.vpar.peek_control() & self.SEL == self.SEL
     
     def handle(self):
         """wait for an incoming command"""
         self._log("handle_cmd")
-        # each command must begin with a SEL
+        # --- begin command
+        # wait SEL == 1
         self._wait_select(1)
-        # wait for first REQ=1
-        self._wait_req(1)
-        # read command byte
+        # read <CMD>
         cmd = self.vpar.peek_data()
-        # confirm byte by toggling ACK
-        self._set_ack(1)
+        # set RAK = 1
+        self._set_rak(1)
+        # --- dispatch command
         self._log("got cmd: %02x" % cmd)
         if cmd == self.CMD_SEND:
             size = self._cmd_send()
@@ -72,9 +73,10 @@ class PBProto:
         else:
             size = 0
             self._log("UNKNOWN COMMAND!")
-        # clr ack
-        self._set_ack(0)
-        # wait for SEL gone
+        # --- end command
+        # set RAK = 0
+        self._set_rak(0)
+        # wait SEL == 0
         self._wait_select(0)
         return cmd,size
     
@@ -82,24 +84,24 @@ class PBProto:
         """Amiga sends a buffer"""
         self._log("+++ incoming send +++")
         # get size HI
-        self._wait_req(0)
-        hi = self.vpar.peek_data()
-        self._set_ack(0)
-        # get size LO
         self._wait_req(1)
+        hi = self.vpar.peek_data()
+        self._set_rak(0)
+        # get size LO
+        self._wait_req(0)
         lo = self.vpar.peek_data()
-        self._set_ack(1)
+        self._set_rak(1)
         size = hi * 256 + lo
         self._log("size: %d" % size)
-        # get data
+        # get data loop
         toggle = False
         data = ""
         for i in xrange(size):
             self._log("rx #%04d/%04d" % (i,size))
-            self._wait_req(toggle)
+            self._wait_req(not toggle)
             d = self.vpar.peek_data()
             data += chr(d)
-            self._set_ack(toggle)
+            self._set_rak(toggle)
             toggle = not toggle
         self.send_buf = data
         self._log("--- incoming send ---")
@@ -116,24 +118,22 @@ class PBProto:
         self._log("size: %d" % size)
         hi = size / 256
         lo = size % 256
-        # sync
-        self._wait_req(0)
         # send size HI
-        self.vpar.set_data(hi)
-        self._set_ack(0)
         self._wait_req(1)
+        self.vpar.set_data(hi)
+        self._set_rak(0)
         # send size LO
-        self.vpar.set_data(lo)
-        self._set_ack(1)
         self._wait_req(0)
+        self.vpar.set_data(lo)
+        self._set_rak(1)
         # send data
         toggle = False
         for i in xrange(size):
+            self._wait_req(not toggle)
             self._log("tx #%04d/%04d" % (i,size))
             d = ord(data[i])
             self.vpar.set_data(d)
-            self._set_ack(toggle)
-            self._wait_req(not toggle)
+            self._set_rak(toggle)
             toggle = not toggle
         # clear buffer
         self.recv_buf = None
@@ -192,7 +192,7 @@ class PBProto:
           delta = t - start
           raise PBProtoError("%s: missing line toggle. delta=%5.3f timeout=%d" % (ctx, delta, timeout))
     
-    def _set_ack(self, value):
+    def _set_rak(self, value):
         if value:
             self.vpar.set_control_mask(vpar.BUSY_MASK)
         else:
