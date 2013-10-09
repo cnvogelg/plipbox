@@ -118,7 +118,7 @@ DISTDIR = ../bin
 
 # source files
 BOARDFILE ?= $(BOARD).c
-SRC := $(BOARDFILE)
+SRC := board/$(BOARDFILE)
 SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c pb_proto.c
 SRC += pkt_buf.c param.c
@@ -202,6 +202,7 @@ dirs:
 	@if [ ! -d $(BUILD) ]; then mkdir -p $(BUILD); fi 
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi
 	@if [ ! -d $(OBJDIR)/net ]; then mkdir -p $(OBJDIR)/net; fi
+	@if [ ! -d $(OBJDIR)/board ]; then mkdir -p $(OBJDIR)/board; fi
 	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
 	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
 

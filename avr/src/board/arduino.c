@@ -1,5 +1,5 @@
 /*
- * arduino2009.c - arduino2009 hardware access
+ * arduino.c - arduino2009 hardware access
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
