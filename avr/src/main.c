@@ -36,11 +36,10 @@
 #include "cmd.h"
 
 #include "net/net.h"
-#include "eth_rx.h"
-#include "plip_rx.h"
-#include "plip_tx.h"
+#include "eth_io.h"
 #include "eth_state.h"
-#include "plip_state.h"
+#include "pb_io.h"
+#include "pb_state.h"
 
 static void init_hw(void)
 {
@@ -69,9 +68,8 @@ int main (void)
   param_dump();
   uart_send_crlf();
 
-  eth_rx_init();
-  plip_rx_init();
-  plip_tx_init();
+  eth_io_init();
+  pb_io_init();
   
   // setup ethernet
   u08 rev = enc28j60_init(param.mac_addr);
@@ -86,13 +84,13 @@ int main (void)
   
   // main loop
   while(1) {
-    u08 plip_state = plip_state_worker();
-    u08 plip_online = (plip_state == PLIP_STATE_LINK_UP);
-    u08 eth_state = eth_state_worker(plip_online);
+    u08 pb_state = pb_state_worker();
+    u08 pb_online = (pb_state == PB_STATE_LINK_UP);
+    u08 eth_state = eth_state_worker(pb_online);
     u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
     
-    eth_rx_worker(eth_state, plip_online);
-    plip_rx_worker(plip_state, eth_online);
+    eth_io_worker(eth_state, pb_online);
+    pb_io_worker(pb_state, eth_online);
     
     cmd_worker();
   }

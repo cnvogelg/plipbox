@@ -24,17 +24,17 @@
  *
  */
 
-#ifndef PLIP_STATE_H
-#define PLIP_STATE_H
+#ifndef PB_STATE_H
+#define PB_STATE_H
 
 #include "global.h"
 
-#define PLIP_STATE_LINK_DOWN    0
-#define PLIP_STATE_LINK_UP      1
+#define PB_STATE_LINK_DOWN    0
+#define PB_STATE_LINK_UP      1
 
 // 64*10 ms
-#define PLIP_STATE_TIMER_MASK    0xffc0   
+#define PB_STATE_TIMER_MASK    0xffc0   
 
-extern u08 plip_state_worker(void);
+extern u08 pb_state_worker(void);
    
 #endif

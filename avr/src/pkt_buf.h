@@ -28,16 +28,15 @@
 #define PKT_BUF_H
 
 #include "global.h"
-#include "plip.h"
 
 #define PKT_BUF_SIZE    128
 
 /* plip rx side / eth tx */
 extern u08 rx_pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t rx_pkt;
+extern u16 rx_pkt_size;
 
 /* plip tx side / eth rx */
 extern u08 tx_pkt_buf[PKT_BUF_SIZE];
-extern plip_packet_t tx_pkt;
+extern u16 tx_pkt_size;
 
 #endif

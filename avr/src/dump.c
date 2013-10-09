@@ -4,7 +4,7 @@
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
  *
- * This file is part of plipbox.
+ * This file is part of pbprotobox.
  * See README for copyright notice.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -34,8 +34,8 @@
 #include "net/udp.h"
 #include "net/tcp.h"
 #include "param.h"
-#include "plip.h"
 #include "util.h"
+#include "pb_proto.h"
 
 void dump_eth_pkt(const u08 *eth_buf, u16 size)
 {
@@ -185,32 +185,32 @@ extern void dump_ip_protocol(const u08 *ip_buf)
   }
 }
 
-extern void dump_plip(void)
+extern void dump_pb_proto(void)
 {
   u32 d;
   u08 buf[8];
 
   uart_send('{');
 
-  d = plip_timestamps.enter - plip_timestamps.can_enter;
+  d = pb_proto_timestamps.enter - pb_proto_timestamps.can_enter;
   dword_to_dec(d,buf,5,4);
   uart_send_data(buf,6);
 
   uart_send(',');
 
-  d = plip_timestamps.data_begin - plip_timestamps.enter;
+  d = pb_proto_timestamps.data_begin - pb_proto_timestamps.enter;
   dword_to_dec(d,buf,5,4);
   uart_send_data(buf,6);
 
   uart_send(',');
   
-  d = plip_timestamps.data_end - plip_timestamps.data_begin;
+  d = pb_proto_timestamps.data_end - pb_proto_timestamps.data_begin;
   dword_to_dec(d,buf,5,4);
   uart_send_data(buf,6);
   
   uart_send(',');
   
-  d = plip_timestamps.leave - plip_timestamps.data_end;
+  d = pb_proto_timestamps.leave - pb_proto_timestamps.data_end;
   dword_to_dec(d,buf,5,4);
   uart_send_data(buf,6);
   

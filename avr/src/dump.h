@@ -28,7 +28,6 @@
 #define DUMP_H
 
 #include "global.h"
-#include "plip.h"
 
 typedef struct {
   u32 rx_enter;
@@ -43,7 +42,7 @@ extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
 extern void dump_arp_pkt(const u08 *arp_buf);
 extern void dump_ip_pkt(const u08 *ip_buf);
 extern void dump_ip_protocol(const u08 *ip_buf);
-extern void dump_plip(void);
+extern void dump_pb_proto(void);
 extern void dump_latency(void);
 
 extern void dump_line(const u08 *eth_buf, u16 size);

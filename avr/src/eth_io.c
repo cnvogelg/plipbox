@@ -1,5 +1,5 @@
 /*
- * eth_rx.c: handle eth receiption and plip tx
+ * eth_io.c: handle eth receiption and plip tx
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -26,14 +26,9 @@
 
 #include <util/delay.h>
 
-#include "eth_rx.h"
+#include "eth_io.h"
 
 #include "net/arp.h"
-#include "net/eth.h"
-#include "net/net.h"
-#include "net/ip.h"
-
-#include "net/udp.h"
 #include "net/eth.h"
 #include "net/net.h"
 #include "net/ip.h"
@@ -43,13 +38,12 @@
 #include "pkt_buf.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "plip_tx.h"
 #include "timer.h"
 #include "eth_state.h"
 #include "dump.h"
 #include "param.h"
 
-void eth_rx_init(void)
+void eth_io_init(void)
 {
 }
 
@@ -129,17 +123,14 @@ static u08 filter_packet(const u08 *eth_buf, u08 dump_flag)
   return 1;
 }
 
-void eth_rx_worker(u08 eth_state, u08 plip_online)
+void eth_io_worker(u08 eth_state, u08 plip_online)
 {
-  // first try to send postponed
-  if(plip_tx_get_retries() > 0) {
-    u08 status = plip_tx_send_retry();
-    if(status != PLIP_STATUS_OK) {
-      return;
-    }
-  }
-  
   if(eth_state == ETH_STATE_LINK_DOWN) {
+    return;
+  }
+
+  // if a packet is pending then wait
+  if(tx_pkt_size > 0) {
     return;
   }
 
@@ -182,16 +173,13 @@ void eth_rx_worker(u08 eth_state, u08 plip_online)
           uart_send_crlf();
         }
         
-        // send full pkt via plip
-        dump_latency_data.tx_enter = time_stamp;
-        plip_tx_send(0, mem_len, len);
-        dump_latency_data.tx_leave = time_stamp;
+        // store pending packet
+        // -> will be handled by plip_rx.c
+        tx_pkt_size = len;
         
-        if(param.dump_latency) {
-          uart_send_prefix();
-          dump_latency();
-          uart_send_crlf();
-        }
+        // do not end packet here
+        return;
+        
       } else {
         if(dump_flag) {
           uart_send_pstring(PSTR("Filter -> DROP")),

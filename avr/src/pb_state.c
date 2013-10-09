@@ -24,45 +24,44 @@
  *
  */
 
-#include "plip_state.h"
-#include "plip.h"
-#include "plip_rx.h"
+#include "pb_state.h"
+#include "pb_proto.h"
 #include "timer.h"
 #include "uartutil.h"
 
-static u08 state = PLIP_STATE_LINK_DOWN;
+static u08 state = PB_STATE_LINK_DOWN;
 static u16 my_timer;
 static u08 count_down;
 
 static u08 time_passed(void)
 {
-  if((my_timer ^ timer_10ms) & PLIP_STATE_TIMER_MASK) {
+  if((my_timer ^ timer_10ms) & PB_STATE_TIMER_MASK) {
     my_timer = timer_10ms;
     return 1;
   }
   return 0;
 }
 
-u08 plip_state_worker(void)
+u08 pb_state_worker(void)
 {
   switch(state) {
-    case PLIP_STATE_LINK_DOWN:
+    case PB_STATE_LINK_DOWN:
       if(time_passed()) {
-        u08 line = plip_get_line_status();
-        if(line == PLIP_LINE_OK) {
-          state = PLIP_STATE_LINK_UP;
+        u08 line = pb_proto_get_line_status();
+        if(line == PBPROTO_LINE_OK) {
+          state = PB_STATE_LINK_UP;
           uart_send_time_stamp_spc();
           uart_send_pstring(PSTR("plip: link up\r\n"));
         }
       }
       break;
-    case PLIP_STATE_LINK_UP:
+    case PB_STATE_LINK_UP:
       if(time_passed()) {
-        u08 line = plip_get_line_status();
-        if(line != PLIP_LINE_OK) {
+        u08 line = pb_proto_get_line_status();
+        if(line != PBPROTO_LINE_OK) {
           count_down ++;
           if(count_down == 5) {
-            state = PLIP_STATE_LINK_DOWN;
+            state = PB_STATE_LINK_DOWN;
             uart_send_time_stamp_spc();
             uart_send_pstring(PSTR("plip: link down\r\n"));
           }

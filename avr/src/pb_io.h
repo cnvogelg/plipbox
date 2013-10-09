@@ -1,5 +1,5 @@
 /*
- * plip_tx.h: send plip packets
+ * pb_io.h: handle incoming plipbox packets
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,13 +24,11 @@
  *
  */
 
-#ifndef PLIP_TX_H
+#ifndef PLIP_RX_H
 
 #include "global.h"
 
-extern void plip_tx_init(void);
-extern u08  plip_tx_get_retries(void);
-extern u08  plip_tx_send_retry(void);
-extern u08  plip_tx_send(u08 mem_offset, u16 mem_size, u16 total_size);
+extern void pb_io_init(void);
+extern void pb_io_worker(u08 plip_state, u08 eth_online);
 
 #endif

@@ -177,8 +177,6 @@
 #define PAR_IN_BUF_SIZE     (1 << PAR_IN_BUF_BITS)
 #define PAR_IN_BUF_MASK     (PAR_IN_BUF_SIZE - 1)
 
-extern volatile u08 par_low_strobe_count;
-
 // ----- Functions -----
 
 extern void par_low_init(void);
@@ -243,15 +241,6 @@ inline void par_low_set_busy_lo(void)
 inline void par_low_set_busy_hi(void)
 {
   PAR_BUSY_PORT |= PAR_BUSY_MASK;
-}
-
-inline void par_low_toggle_busy(void)
-{
-  if(PAR_BUSY_PORT & PAR_BUSY_MASK) {
-    PAR_BUSY_PORT &= ~PAR_BUSY_MASK;    
-  } else {
-    PAR_BUSY_PORT |= PAR_BUSY_MASK;    
-  }
 }
 
 // STROBE (IN)

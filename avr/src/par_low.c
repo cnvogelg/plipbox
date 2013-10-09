@@ -28,8 +28,6 @@
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
 
-volatile u08 par_low_strobe_count = 0;
-
 void par_low_init(void)
 {
   // /STROBE (IN)
@@ -51,25 +49,6 @@ void par_low_init(void)
   // /ACK (OUT) (1)
   PAR_ACK_DDR |= PAR_ACK_MASK;
   PAR_ACK_PORT |= PAR_ACK_MASK;
-  
-  // setup STROBE/SELECT IRQ
-  cli();
-#ifdef EICRA
-#ifdef HAVE_nano
-  EICRA = _BV(ISC11); // falling edge of INT1 (STROBE)
-  EIFR = 0;
-  EIMSK = _BV(INT1);
-#else
-  EICRA = _BV(ISC01); // falling edge of INT0 (STROBE)
-  EIFR = 0;
-  EIMSK = _BV(INT0);
-#endif
-#else
-  MCUCR = _BV(ISC01);
-  GIFR = 0;
-  GICR = _BV(INT0);
-#endif
-  sei();
 
   par_low_data_set_input();
 }
@@ -107,14 +86,4 @@ void par_low_pulse_ack(u08 delay)
   par_low_set_ack_lo();
   _delay_loop_1(delay);
   par_low_set_ack_hi();
-}
-
-// INT Strobe Handler
-#ifdef HAVE_nano
-ISR(INT1_vect)
-#else
-ISR(INT0_vect)
-#endif
-{
-  par_low_strobe_count ++;
 }
