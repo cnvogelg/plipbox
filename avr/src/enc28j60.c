@@ -273,21 +273,24 @@ static void readBuf(uint16_t len, uint8_t* data) {
     spi_disable_eth();
 }
 
-inline static void readBufBegin(void)
+void enc28j60_packet_rx_byte_begin(void)
 {
   spi_enable_eth();
   spi_out(ENC28J60_READ_BUF_MEM);  
 }
 
+void enc28j60_packet_rx_byte_end(void)
+{
+  spi_disable_eth();
+}
+
 void enc28j60_packet_rx_blk(u08 *data, u16 size)
 {
+  spi_enable_eth();
+  spi_out(ENC28J60_READ_BUF_MEM);
   while(size--) {
     *data++ = spi_in();
   }
-}
-
-inline static void readBufEnd(void)
-{
   spi_disable_eth();
 }
 
@@ -474,35 +477,36 @@ u16 enc28j60_packet_rx(u08 *data, u16 max_size)
   return size;
 }
 
+u08 enc28j60_packet_rx_num_waiting(void)
+{
+  return readRegByte(EPKTCNT);
+}
+
 u16 enc28j60_packet_rx_begin(void) 
 {
     uint16_t len = 0;
-    if (readRegByte(EPKTCNT) > 0) {
-        writeReg(ERDPT, gNextPacketPtr);
+    writeReg(ERDPT, gNextPacketPtr);
 
-        struct {
-            uint16_t nextPacket;
-            uint16_t byteCount;
-            uint16_t status;
-        } header;
-        
-        readBuf(sizeof header, (uint8_t*) &header);
+    struct {
+        uint16_t nextPacket;
+        uint16_t byteCount;
+        uint16_t status;
+    } header;
+    
+    readBuf(sizeof header, (uint8_t*) &header);
 
-        gNextPacketPtr  = header.nextPacket;
-        len = header.byteCount - 4; //remove the CRC count
-        if ((header.status & 0x80)==0) {
-            len = 0;
-            next_pkt();
-        }
-        else
-            readBufBegin();
+    gNextPacketPtr  = header.nextPacket;
+    len = header.byteCount - 4; //remove the CRC count
+    if ((header.status & 0x80)==0) {
+        len = 0;
+        next_pkt();
     }
     return len;
 }
 
 void enc28j60_packet_rx_end(void)
 {
-  next_pkt();
+    next_pkt();
 }
 
 void enc28j60_copyout (uint8_t page, const uint8_t* data) {

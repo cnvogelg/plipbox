@@ -33,6 +33,7 @@
 #define DUMP_DIR_ETH_RX   2
 #define DUMP_DIR_PLIP_TX  4
 #define DUMP_DIR_ETH_TX   8
+#define DUMP_DIR_IO       16
 
 typedef struct {
   u08 mac_addr[6];

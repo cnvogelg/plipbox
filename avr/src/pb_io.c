@@ -68,6 +68,7 @@ static void rx_end(u16 pkt_size)
 {
   // end range in enc28j60 buffer
   enc28j60_packet_tx_end_range();
+  rx_pkt_size = pkt_size;
 }
 
 // ----- recv callbacks -----
@@ -77,6 +78,7 @@ static void tx_begin(u16 *pkt_size)
   // report size of packet
   *pkt_size = tx_pkt_size;
   offset = 0;
+  enc28j60_packet_rx_byte_begin();
 }
 
 static void tx_data(u08 *data)
@@ -94,6 +96,7 @@ static void tx_end(u16 pkt_size)
 {
   // reset size of packet
   tx_pkt_size = 0;
+  enc28j60_packet_rx_byte_end();
   enc28j60_packet_rx_end();
 }
 
@@ -116,10 +119,16 @@ void pb_io_init(void)
   pb_proto_init(&funcs);
 }
 
-static void uart_send_prefix(void)
+static void uart_send_prefix_pbp(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("plip(rx): "));
+  uart_send_pstring(PSTR("pbp(rx): "));
+}
+
+static void uart_send_prefix_eth(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("eth(TX): "));
 }
 
 //#define DEBUG
@@ -131,8 +140,9 @@ static u08 filter_arp_pkt(void)
   
   // make sure its an IPv4 ARP packet
   if(!arp_is_ipv4(arp_buf, arp_size)) {
-    uart_send_prefix();
+    uart_send_prefix_pbp();
     uart_send_pstring(PSTR("ARP: type?"));
+    uart_send_crlf();
     return 0;
   }
 
@@ -144,7 +154,7 @@ static u08 filter_arp_pkt(void)
   
   // pkt src and arp src must be the same
   if(!net_compare_mac(pkt_src_mac, arp_src_mac) && !net_compare_zero_mac(pkt_src_mac)) {
-    uart_send_prefix();
+    uart_send_prefix_pbp();
     uart_send_pstring(PSTR("ARP: pkt!=src mac!"));
     uart_send_crlf();
     return 0;
@@ -159,7 +169,7 @@ static void send(void)
 
   // dump eth packet
   if(param.dump_dirs & DUMP_DIR_ETH_TX) {
-    uart_send_prefix();
+    uart_send_prefix_eth();
     dump_line(rx_pkt_buf, rx_pkt_size);
     uart_send_crlf();
   }
@@ -173,7 +183,7 @@ static void send(void)
   dump_latency_data.tx_leave = time_stamp;
   
   if(param.dump_latency) {
-    uart_send_prefix();
+    uart_send_prefix_eth();
     dump_latency();
     uart_send_crlf();
   }
@@ -188,7 +198,7 @@ static void handle_pb_send(u08 eth_online)
 
   // dump packet?
   if(dump_it) {
-    uart_send_prefix();
+    uart_send_prefix_pbp();
     dump_line(rx_pkt_buf, rx_pkt_size);
     if(param.dump_plip) {
       dump_pb_proto();
@@ -208,7 +218,7 @@ static void handle_pb_send(u08 eth_online)
     }
     // unknown packet type
     else {
-      uart_send_prefix();
+      uart_send_prefix_pbp();
       uart_send_pstring(PSTR("type? "));
       uart_send_hex_word(type);
       uart_send_crlf();
@@ -227,7 +237,7 @@ static void handle_pb_send(u08 eth_online)
       send();
     } else {
       // no ethernet online -> we have to drop packet
-      uart_send_prefix();
+      uart_send_prefix_eth();
       uart_send_pstring(PSTR("Offline -> DROP!"));
       uart_send_crlf();
       stats.rx_drop ++;
@@ -241,16 +251,40 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
 {
   // call protocol handler
   u08 cmd;
-  u08 status = pb_proto_handle(&cmd);
+  u16 size;
+  u08 status = pb_proto_handle(&cmd, &size);
   
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
     return;
   }
   else if(status == PBPROTO_STATUS_OK) {
+    u08 dump_it = param.dump_dirs & DUMP_DIR_IO;  
+    
+    // io is ok
+    if(dump_it) {
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("io: ok. "));
+      uart_send_hex_byte(cmd);
+      uart_send_spc();
+      uart_send_hex_word(size);
+      uart_send_crlf();
+    }
+    
     // do we have a packet received?
     if(cmd == PBPROTO_CMD_SEND) {
       handle_pb_send(eth_online);
     }
+  }
+  else {
+    // dump error
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("io: ERR "));
+    uart_send_hex_byte(cmd);
+    uart_send_spc();
+    uart_send_hex_byte(status);
+    uart_send_spc();
+    uart_send_hex_word(size);
+    uart_send_crlf();  
   }
 }

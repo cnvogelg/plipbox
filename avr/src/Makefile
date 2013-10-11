@@ -38,7 +38,7 @@ ALL_BOARDS= arduino avrnetio nano
 DIST_BOARDS= arduino avrnetio nano
 
 # select board
-BOARD ?= arduino
+BOARD ?= nano
 DEBUG ?= 0
 
 ifeq "$(BOARD)" "arduino"

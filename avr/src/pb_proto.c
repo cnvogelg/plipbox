@@ -109,7 +109,7 @@ static u08 wait_sel(u08 select_state, u08 state_flag)
 // ---------- Handler ----------
 
 // amiga wants to send a packet
-static u08 cmd_send(void)
+static u08 cmd_send(u16 *ret_size)
 {
   u08 hi, lo;
   u08 status;
@@ -136,8 +136,9 @@ static u08 cmd_send(void)
   funcs->send_begin(&size);
   
   // --- data loop ---
-  u08 toggle = 0;
-  for(u16 i = 0; i < size; i++) {
+  u08 toggle = 1;
+  u16 i;
+  for(i = 0; i < size; i++) {
     status = wait_req(toggle, PBPROTO_STAGE_DATA);
     if(status != PBPROTO_STATUS_OK) {
       break;
@@ -145,12 +146,13 @@ static u08 cmd_send(void)
     u08 data = par_low_data_in();
     funcs->send_data(&data);
     if(toggle) {
-      SET_RAK();
-    } else {
       CLR_RAK();
+    } else {
+      SET_RAK();
     }
     toggle = !toggle;
   }
+  *ret_size = i;
   
   // report end of frame
   funcs->send_end(size);
@@ -159,15 +161,16 @@ static u08 cmd_send(void)
 }
 
 // amiga wants to receive a packet
-static u08 cmd_recv(void)
+static u08 cmd_recv(u16 *ret_size)
 {
   u16 size;
   
   // ask for size
   funcs->recv_begin(&size);
+  *ret_size = size;
     
   // --- size hi ----
-  u08 status = wait_req(1, PBPROTO_STAGE_SIZE_LO);
+  u08 status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
   if(status != PBPROTO_STATUS_OK) {
     return status;
   }
@@ -180,7 +183,7 @@ static u08 cmd_recv(void)
   CLR_RAK();
   
   // --- size lo ---
-  status = wait_req(0, PBPROTO_STAGE_SIZE_HI);
+  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
   if(status != PBPROTO_STATUS_OK) {
     return status;
   }
@@ -189,7 +192,7 @@ static u08 cmd_recv(void)
   SET_RAK();
   
   // --- data ---
-  u08 toggle = 0;
+  u08 toggle = 1;
   for(u16 i = 0; i < size; i++) {
     status = wait_req(toggle, PBPROTO_STAGE_DATA);
     if(status != PBPROTO_STATUS_OK) {
@@ -199,9 +202,9 @@ static u08 cmd_recv(void)
     funcs->recv_data(&data);
     par_low_data_out(data);
     if(toggle) {
-      SET_RAK();
-    } else {
       CLR_RAK();
+    } else {
+      SET_RAK();
     }
     toggle = !toggle;
   }
@@ -219,7 +222,7 @@ static u08 cmd_recv(void)
   return status;
 }
 
-u08 pb_proto_handle(u08 *ret_cmd)
+u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
 {
   u08 result;
    
@@ -229,7 +232,12 @@ u08 pb_proto_handle(u08 *ret_cmd)
   // make sure that SEL == 1
   if(!GET_SELECT()) {
     return PBPROTO_STATUS_IDLE;
-  } 
+  }
+  
+  // make sure that REQ == 0
+  if(GET_REQ()) {
+    return PBPROTO_STATUS_IDLE;
+  }
   
   // read command byte and execute it
   u08 cmd = par_low_data_in();
@@ -239,10 +247,10 @@ u08 pb_proto_handle(u08 *ret_cmd)
 
   switch(cmd) {
     case PBPROTO_CMD_RECV:
-      result = cmd_recv();
+      result = cmd_recv(ret_size);
       break;
     case PBPROTO_CMD_SEND:
-      result = cmd_send();
+      result = cmd_send(ret_size);
       break;
     default:
       result = PBPROTO_STATUS_INVALID_CMD;

@@ -87,7 +87,7 @@ extern u16 pb_proto_rx_timeout; // timeout for next byte in 100us
 
 extern void pb_proto_init(pb_proto_funcs_t *f);
 extern u08  pb_proto_get_line_status(void);
-extern u08  pb_proto_handle(u08 *cmd);
+extern u08  pb_proto_handle(u08 *cmd, u16 *size);
 extern void pb_proto_request_recv(void);
 
 #endif

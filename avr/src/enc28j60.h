@@ -31,8 +31,11 @@ extern uint8_t enc28j60_do_BIST ( void );
 
 /* splitted send/receive */
 extern u16  enc28j60_packet_rx(u08 *data, u16 max_size);
+extern u08  enc28j60_packet_rx_num_waiting(void);
 extern u16  enc28j60_packet_rx_begin(void);
+extern void enc28j60_packet_rx_byte_begin(void);
 inline u08  enc28j60_packet_rx_byte(void) { return spi_in(); }
+extern void enc28j60_packet_rx_byte_end(void);
 extern void enc28j60_packet_rx_blk(u08 *data, u16 size);
 extern void enc28j60_packet_rx_end(void);
 

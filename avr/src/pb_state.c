@@ -51,7 +51,7 @@ u08 pb_state_worker(void)
         if(line == PBPROTO_LINE_OK) {
           state = PB_STATE_LINK_UP;
           uart_send_time_stamp_spc();
-          uart_send_pstring(PSTR("plip: link up\r\n"));
+          uart_send_pstring(PSTR("pbp: link up\r\n"));
         }
       }
       break;
@@ -63,7 +63,7 @@ u08 pb_state_worker(void)
           if(count_down == 5) {
             state = PB_STATE_LINK_DOWN;
             uart_send_time_stamp_spc();
-            uart_send_pstring(PSTR("plip: link down\r\n"));
+            uart_send_pstring(PSTR("pbp: link down\r\n"));
           }
         } else {
           count_down = 0;

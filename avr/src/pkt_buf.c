@@ -27,7 +27,7 @@
 #include "pkt_buf.h"
 
 u08 rx_pkt_buf[PKT_BUF_SIZE];
-u16 rx_pkt_size;
+u16 rx_pkt_size = 0;
 
 u08 tx_pkt_buf[PKT_BUF_SIZE];
-u16 tx_pkt_size;
+u16 tx_pkt_size = 0;

@@ -42,6 +42,7 @@
 #include "eth_state.h"
 #include "dump.h"
 #include "param.h"
+#include "pb_proto.h"
 
 void eth_io_init(void)
 {
@@ -50,7 +51,7 @@ void eth_io_init(void)
 static void uart_send_prefix(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR(" eth(rx): "));
+  uart_send_pstring(PSTR("eth(rx): "));
 }
 
 static u08 filter_broadcast_ipv4(const u08 *eth_buf, u08 dump_flag)
@@ -129,9 +130,30 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
     return;
   }
 
+  // check for waiting packets
+  u08 num_pkts = enc28j60_packet_rx_num_waiting();
+  if(num_pkts == 0) {
+    return;
+  }
+
+  u08 dump_flag = param.dump_dirs & DUMP_DIR_ETH_RX;
+
   // if a packet is pending then wait
   if(tx_pkt_size > 0) {
+    if(dump_flag) {
+      uart_send_prefix();
+      uart_send_pstring(PSTR("tx busy. waiting... pkts: "));
+      uart_send_hex_byte(num_pkts);
+      uart_send_crlf();
+    }
     return;
+  }
+
+  if(dump_flag) {
+    uart_send_prefix();
+    uart_send_pstring(PSTR("wait pkts: "));
+    uart_send_hex_byte(num_pkts);
+    uart_send_crlf();
   }
 
   // get next packet
@@ -149,7 +171,6 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
     dump_latency_data.rx_leave = time_stamp;
     
     // dump incoming packet
-    u08 dump_flag = param.dump_dirs & DUMP_DIR_ETH_RX;
     if(dump_flag) {
       uart_send_prefix();
       dump_line(tx_pkt_buf, len);
@@ -177,6 +198,15 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
         // -> will be handled by plip_rx.c
         tx_pkt_size = len;
         
+        // now request receive from Amiga
+        pb_proto_request_recv();
+        
+        if(dump_flag) {
+          uart_send_prefix();
+          uart_send_pstring(PSTR("Sent!"));
+          uart_send_crlf();
+        }
+
         // do not end packet here
         return;
         
