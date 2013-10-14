@@ -103,7 +103,9 @@ hww_WaitRak1:
          beq.s    hww_WaitRak1
          bra.s    hww_ExitError
 hww_RakOk1:
-   
+         ; save value for wait loop
+         move.b   d0,d7
+         
          ; --- init handshake 
          ; [OUT]
          SETCIAOUTPUT a5
@@ -118,9 +120,6 @@ hww_RakOk1:
          ; packet size
          move.w   (a4),d6
          addq.w   #1,d6    ; add size itself (word) - 1 (dbra)
-         
-         ; initial toggle value
-         move.b   (a5),d7                             ; read par flags, d7 = State
          
          ; Wait RAK == 1, 0, 1, ...
 hww_WaitRak2:
@@ -261,6 +260,8 @@ hwr_WaitRak4:
          beq.s    hwr_WaitRak4
          bra.s    hwr_ExitError
 hwr_RakOk4:
+         ; save value for wait loop
+         move.b   d0,d7
          
          ; Read <Size_Lo>
          move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
@@ -276,9 +277,6 @@ hwr_RakOk4:
          bhi.s    hwr_ExitError
 
          subq.w   #1,d6                               ; correct for dbra loop size
-         
-         ; init toggle value
-         move.b   (a5),d7                             ; read par flags, d7 = State
          
          ; --- main packet data loop ---
          ; wait for incoming RAK on data byte
