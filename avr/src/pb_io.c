@@ -41,7 +41,7 @@
 #include "timer.h"
 #include "stats.h"
 
-static u08 offset;
+static u16 offset;
 
 // ----- send callbacks -----
 

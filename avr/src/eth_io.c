@@ -138,22 +138,24 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
 
   u08 dump_flag = param.dump_dirs & DUMP_DIR_ETH_RX;
 
+  // warn if more than one packet is waiting
+  if(num_pkts > 1) {
+    if(dump_flag) {
+      uart_send_prefix();
+      uart_send_hex_byte(num_pkts);
+      uart_send_pstring(PSTR(" pkts waiting!"));
+      uart_send_crlf();
+    }
+  }
+
   // if a packet is pending then wait
   if(tx_pkt_size > 0) {
     if(dump_flag) {
       uart_send_prefix();
-      uart_send_pstring(PSTR("tx busy. waiting... pkts: "));
-      uart_send_hex_byte(num_pkts);
+      uart_send_pstring(PSTR("pkt already waiting!"));
       uart_send_crlf();
     }
     return;
-  }
-
-  if(dump_flag) {
-    uart_send_prefix();
-    uart_send_pstring(PSTR("wait pkts: "));
-    uart_send_hex_byte(num_pkts);
-    uart_send_crlf();
   }
 
   // get next packet
