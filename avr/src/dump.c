@@ -206,7 +206,7 @@ extern void dump_line(const u08 *eth_buf, u16 size)
   }
 }
 
-void dump_pb_cmd(u08 cmd, u08 result, u16 size, u32 delta)
+void dump_pb_cmd(u08 cmd, u08 result, u16 size, u32 delta, u32 req_delta)
 {
   u08 buf[4];
   
@@ -219,7 +219,12 @@ void dump_pb_cmd(u08 cmd, u08 result, u16 size, u32 delta)
   dword_to_dec(size, buf, 4, 4);
   uart_send_data(buf,4);
   uart_send_spc();
-  uart_send_hex_dword(delta);
+  uart_send_time_stamp_spc_ext(delta);
+  
+  if(cmd == PBPROTO_CMD_RECV) {
+    uart_send_time_stamp_spc_ext(req_delta);
+  }
+  
   uart_send_crlf();
 }
 

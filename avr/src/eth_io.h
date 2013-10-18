@@ -33,4 +33,6 @@
 extern void eth_io_init(void);
 extern void eth_io_worker(u08 eth_state, u08 plip_online);
 
+extern u32 req_time;
+
 #endif

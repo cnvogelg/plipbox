@@ -124,6 +124,8 @@ static u08 filter_packet(const u08 *eth_buf, u08 dump_flag)
   return 1;
 }
 
+u32 req_time;
+
 void eth_io_worker(u08 eth_state, u08 plip_online)
 {
   if(eth_state == ETH_STATE_LINK_DOWN) {
@@ -197,6 +199,7 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
         // store pending packet
         // -> will be handled by plip_rx.c
         tx_pkt_size = len;
+        req_time = time_stamp;
         
         // now request receive from Amiga
         pb_proto_request_recv();

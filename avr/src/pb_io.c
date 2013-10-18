@@ -233,6 +233,8 @@ static void handle_pb_send(u08 eth_online)
   }    
 }
 
+extern u32 req_time;
+
 void pb_io_worker(u08 plip_state, u08 eth_online)
 {
   // call protocol handler
@@ -249,7 +251,7 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
   else if(status == PBPROTO_STATUS_OK) {
     // io is ok
     if(param.dump_plip) {
-      dump_pb_cmd(cmd, status, size, end - start);
+      dump_pb_cmd(cmd, status, size, end - start, start - req_time);
     }
     
     // do we have a packet received?
@@ -259,6 +261,6 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
   }
   else {
     // dump error
-    dump_pb_cmd(cmd, status, size, end - start);
+    dump_pb_cmd(cmd, status, size, end - start, start - req_time);
   }
 }

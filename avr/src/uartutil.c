@@ -76,6 +76,13 @@ void uart_send_time_stamp_spc(void)
   uart_send_data(buf,12);
 }
 
+void uart_send_time_stamp_spc_ext(u32 ts)
+{
+  dword_to_dec(ts, buf, 10, 4);
+  buf[11] = ' ';
+  uart_send_data(buf,12);
+}
+
 void uart_send_hex_byte(u08 data)
 {
   byte_to_hex(data,buf);
