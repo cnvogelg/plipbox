@@ -39,8 +39,6 @@ static pb_proto_funcs_t    *funcs;
 
 u16 pb_proto_timeout = 5000; // = 500ms in 100us ticks
 
-pb_proto_timestamps_t pb_proto_timestamps;
-
 // ----- Init -----
 
 void pb_proto_init(pb_proto_funcs_t *f)

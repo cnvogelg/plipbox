@@ -67,18 +67,6 @@ typedef struct {
   pb_proto_end_func      recv_end;
 } pb_proto_funcs_t;
 
-// ----- Profiling -----
-
-typedef struct {
-  u32 can_enter;
-  u32 enter;
-  u32 data_begin;
-  u32 data_end;
-  u32 leave;
-} pb_proto_timestamps_t;
-
-extern pb_proto_timestamps_t pb_proto_timestamps;
-
 // ----- Parameter -----
 
 extern u16 pb_proto_rx_timeout; // timeout for next byte in 100us

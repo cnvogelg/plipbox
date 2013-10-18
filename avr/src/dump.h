@@ -29,21 +29,11 @@
 
 #include "global.h"
 
-typedef struct {
-  u32 rx_enter;
-  u32 rx_leave;
-  u32 tx_enter;
-  u32 tx_leave;
-} dump_latency_t;
-
-extern dump_latency_t dump_latency_data;
-
 extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
 extern void dump_arp_pkt(const u08 *arp_buf);
 extern void dump_ip_pkt(const u08 *ip_buf);
 extern void dump_ip_protocol(const u08 *ip_buf);
-extern void dump_pb_proto(void);
-extern void dump_latency(void);
+extern void dump_pb_cmd(u08 cmd, u08 result, u16 size, u32 delta);
 
 extern void dump_line(const u08 *eth_buf, u16 size);
 

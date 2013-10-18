@@ -164,9 +164,6 @@ static u08 filter_arp_pkt(void)
 
 static void send(void)
 {
-  // simply send packet to ethernet
-  dump_latency_data.tx_enter = time_stamp;
-
   // dump eth packet
   if(param.dump_dirs & DUMP_DIR_ETH_TX) {
     uart_send_prefix_eth();
@@ -179,14 +176,6 @@ static void send(void)
 
   // finally send ethernet packet
   enc28j60_packet_tx_send(rx_pkt_size);
-
-  dump_latency_data.tx_leave = time_stamp;
-  
-  if(param.dump_latency) {
-    uart_send_prefix_eth();
-    dump_latency();
-    uart_send_crlf();
-  }
 }
 
 static void handle_pb_send(u08 eth_online)
@@ -200,9 +189,6 @@ static void handle_pb_send(u08 eth_online)
   if(dump_it) {
     uart_send_prefix_pbp();
     dump_line(rx_pkt_buf, rx_pkt_size);
-    if(param.dump_plip) {
-      dump_pb_proto();
-    }
     uart_send_crlf();
   }
 
@@ -252,23 +238,18 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
   // call protocol handler
   u08 cmd;
   u16 size;
+  u32 start = time_stamp;
   u08 status = pb_proto_handle(&cmd, &size);
+  u32 end = time_stamp;
   
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
     return;
   }
   else if(status == PBPROTO_STATUS_OK) {
-    u08 dump_it = param.dump_dirs & DUMP_DIR_IO;  
-    
     // io is ok
-    if(dump_it) {
-      uart_send_time_stamp_spc();
-      uart_send_pstring(PSTR("io: ok. "));
-      uart_send_hex_byte(cmd);
-      uart_send_spc();
-      uart_send_hex_word(size);
-      uart_send_crlf();
+    if(param.dump_plip) {
+      dump_pb_cmd(cmd, status, size, end - start);
     }
     
     // do we have a packet received?
@@ -278,13 +259,6 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
   }
   else {
     // dump error
-    uart_send_time_stamp_spc();
-    uart_send_pstring(PSTR("io: ERR "));
-    uart_send_hex_byte(cmd);
-    uart_send_spc();
-    uart_send_hex_byte(status);
-    uart_send_spc();
-    uart_send_hex_word(size);
-    uart_send_crlf();  
+    dump_pb_cmd(cmd, status, size, end - start);
   }
 }

@@ -157,7 +157,6 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
   }
 
   // get next packet
-  dump_latency_data.rx_enter = time_stamp;
   u16 len = enc28j60_packet_rx_begin();
   if(len > 0) {    
     // try to fill packet buffer
@@ -168,7 +167,6 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
     
     // pre-fetch via SPI into packet buffer (-> tx plip bufer)
     enc28j60_packet_rx_blk(tx_pkt_buf, mem_len);
-    dump_latency_data.rx_leave = time_stamp;
     
     // dump incoming packet
     if(dump_flag) {

@@ -49,7 +49,6 @@ static const param_t PROGMEM default_param = {
   .dump_arp = 0,
   .dump_proto = 0,
   .dump_plip = 0,
-  .dump_latency = 0,
   
   .tx_retries = 0,
   .filter_plip = 1,
@@ -103,10 +102,6 @@ void param_dump(void)
 
   uart_send_pstring(PSTR("dl: dump plip    "));
   uart_send_hex_byte(param.dump_plip);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("dy: dump latency "));
-  uart_send_hex_byte(param.dump_latency);
   uart_send_crlf();
 }
 

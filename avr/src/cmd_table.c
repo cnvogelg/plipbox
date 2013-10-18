@@ -101,7 +101,6 @@ COMMAND(cmd_param_toggle)
       case 'a': val = &param.dump_arp; break;
       case 'p': val = &param.dump_proto; break;
       case 'l': val = &param.dump_plip; break;
-      case 'y': val = &param.dump_latency; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -172,7 +171,6 @@ COMMAND(cmd_help)
     "da [on]  toggle dump ARP contents\r\n"
     "dp [on]  toggle dump TCP/UDP contents\r\n"
     "dl [on]  toggle dump PLIP info\r\n"
-    "dy [on]  toggle dump transfer latency\r\n"
   ));
   return CMD_OK;
 }

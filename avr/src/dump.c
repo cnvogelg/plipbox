@@ -185,68 +185,6 @@ extern void dump_ip_protocol(const u08 *ip_buf)
   }
 }
 
-extern void dump_pb_proto(void)
-{
-  u32 d;
-  u08 buf[8];
-
-  uart_send('{');
-
-  d = pb_proto_timestamps.enter - pb_proto_timestamps.can_enter;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-
-  uart_send(',');
-
-  d = pb_proto_timestamps.data_begin - pb_proto_timestamps.enter;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-
-  uart_send(',');
-  
-  d = pb_proto_timestamps.data_end - pb_proto_timestamps.data_begin;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-  
-  uart_send(',');
-  
-  d = pb_proto_timestamps.leave - pb_proto_timestamps.data_end;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-  
-  uart_send('}');
-  uart_send(' ');
-}
-
-dump_latency_t dump_latency_data; 
-
-extern void dump_latency(void)
-{
-  u32 d;
-  u08 buf[8];
-  
-  uart_send('<');
-  
-  d = dump_latency_data.rx_leave - dump_latency_data.rx_enter;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-
-  uart_send(',');
-  
-  d = dump_latency_data.tx_enter - dump_latency_data.rx_leave;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-
-  uart_send(',');
-
-  d = dump_latency_data.tx_leave - dump_latency_data.tx_enter;
-  dword_to_dec(d,buf,5,4);
-  uart_send_data(buf,6);
-  
-  uart_send('>');
-  uart_send(' ');
-}
-
 extern void dump_line(const u08 *eth_buf, u16 size)
 {
   if(param.dump_eth) {
@@ -267,3 +205,18 @@ extern void dump_line(const u08 *eth_buf, u16 size)
     }
   }
 }
+
+void dump_pb_cmd(u08 cmd, u08 result, u16 size, u32 delta)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("io: "));
+  uart_send_hex_byte(cmd);
+  uart_send_spc();
+  uart_send_hex_byte(result);
+  uart_send_spc();
+  uart_send_hex_word(size);
+  uart_send_spc();
+  uart_send_hex_dword(delta);
+  uart_send_crlf();
+}
+
