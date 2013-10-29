@@ -707,20 +707,9 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
             }
             
             /* send packets if any */
-            if(recv & SIGBREAKF_CTRL_F)
-            {
-               d2(("*+ do_write\n"));
-               dowritereqs(pb);
-               d2(("*- do_write\n"));
-            }
-            
-            /* if pending send now */
-            if (hw_recv_pending(pb))
-            {
-               d2(("*+ do_read2\n"));
-               doreadreqs(pb);
-               d2(("*- do_read2\n"));
-            }
+            d2(("*+ do_write\n"));
+            dowritereqs(pb);
+            d2(("*- do_write\n"));
             
             /* handle SANA-II send requests */
             if (recv & portsigmask)
