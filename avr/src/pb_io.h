@@ -31,4 +31,9 @@
 extern void pb_io_init(void);
 extern void pb_io_worker(u08 plip_state, u08 eth_online);
 
+// SANA info reported by driver
+extern u08 sana_online;
+extern u08 sana_mac[6];
+extern u08 sana_version[2];
+
 #endif

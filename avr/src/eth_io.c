@@ -43,6 +43,7 @@
 #include "dump.h"
 #include "param.h"
 #include "pb_proto.h"
+#include "pb_io.h"
 
 void eth_io_init(void)
 {
@@ -105,7 +106,7 @@ static u08 filter_packet(const u08 *eth_buf, u08 dump_flag)
   // tgt mac: either my mac or broadcast
   const u08 *tgt_addr = eth_get_tgt_mac(eth_buf);
   u08 is_bcast = net_compare_bcast_mac(tgt_addr);
-  u08 is_mine  = net_compare_mac(param.mac_addr,tgt_addr);
+  u08 is_mine  = net_compare_mac(sana_mac,tgt_addr);
   if(!is_mine && !is_bcast) {
     if(dump_flag) {
       uart_send_pstring(PSTR("mac? "));

@@ -18,6 +18,11 @@
 #include <devices/sana2.h>
 #endif
 
+#ifndef CLIB_TIME_PROTOS_H
+#include <clib/timer_protos.h>
+#include <pragmas/timer_pragmas.h>
+#endif
+
 #ifndef _STRING_H
 #include <string.h>
 #endif
@@ -105,13 +110,35 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 }
 /*E*/
 
+#define VERSION_MAX     0
+#define VERSION_MIN     5
+#define MAGIC_ONLINE    0xffff
+#define MAGIC_OFFLINE   0xfffe
+
+/* magic packet to tell plipbox firmware we go online and our MAC */
+PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
+{
+   BOOL rc;
+   struct HWFrame *frame = pb->pb_Frame;
+   
+   frame->hwf_Size = HW_ETH_HDR_SIZE;
+   memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
+   memset(frame->hwf_DstAddr, 0, HW_ADDRFIELDSIZE);
+   frame->hwf_DstAddr[0] = VERSION_MAX;
+   frame->hwf_DstAddr[1] = VERSION_MIN;
+   frame->hwf_Type = magic;
+   
+   rc = hw_send_frame(pb, frame) ? TRUE : FALSE;
+   return rc;
+}
+
 /*F*/ PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
    BOOL rc = TRUE;
 
    d(("trying to go online\n"));
 
-   if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+   if (pb->pb_Flags & PLIPF_OFFLINE)
    {
       if (!hw_attach(pb))
       {
@@ -120,11 +147,17 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
       }
       else
       {
-         /* TODO: missing TimeBase */
-         /*GetSysTime(&pb->pb_DevStats.LastStart);*/
-         pb->pb_Flags &= ~(PLIPF_OFFLINE | PLIPF_NOTCONFIGURED);
-         DoEvent(pb, S2EVENT_ONLINE);
-         d(("i'm now online!\n"));
+         if(send_magic_pkt(pb, MAGIC_ONLINE)) {   
+            struct HWBase *hwb = &pb->pb_HWBase;
+            
+            GetSysTime(&pb->pb_DevStats.LastStart);
+            pb->pb_Flags &= ~PLIPF_OFFLINE;
+            DoEvent(pb, S2EVENT_ONLINE);
+            d(("i'm now online!\n"));
+         } else {
+            d(("hello pkt failed!\n"));
+            rc = FALSE;
+         }
       }
    }
 
@@ -133,8 +166,10 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 /*E*/
 /*F*/ PRIVATE REGARGS VOID gooffline(BASEPTR)
 {
-   if (!(pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED)))
+   if (!(pb->pb_Flags & PLIPF_OFFLINE))
    {
+      send_magic_pkt(pb, MAGIC_OFFLINE);
+      
       hw_detach(pb);
 
       pb->pb_Flags |= PLIPF_OFFLINE;
@@ -471,20 +506,19 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
          break;
 
          case S2_CONFIGINTERFACE:
-            if (pb->pb_Flags & PLIPF_NOTCONFIGURED)
-            {
-               /* copy address from src addr */
-               memcpy(pb->pb_CfgAddr, ios2->ios2_SrcAddr, HW_ADDRFIELDSIZE);
-               if (!goonline(pb))
-               {
-                  ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
-                  ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
-               }
+            /* copy address from src addr */
+            memcpy(pb->pb_CfgAddr, ios2->ios2_SrcAddr, HW_ADDRFIELDSIZE);
+            
+            /* if already online then first go offline */
+            if(!(pb->pb_Flags & PLIPF_OFFLINE)) {
+               gooffline(pb);
             }
-            else
+            
+            /* now go online */
+            if (!goonline(pb))
             {
-               ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
-               ios2->ios2_WireError = S2WERR_IS_CONFIGURED;
+               ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+               ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
             }
          break;
       }
@@ -553,11 +587,6 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
          if (args.retries)
             pb->pb_Retries =
                      BOUNDS(*args.retries, PLIP_MINRETRIES, PLIP_MAXRETRIES);
-
-         if (args.sendcrc)
-            pb->pb_Flags |= PLIPF_SENDCRC;
-          else
-            pb->pb_Flags &= ~PLIPF_SENDCRC;
 
          if (args.collisiondelay)
             pb->pb_CollisionDelay =

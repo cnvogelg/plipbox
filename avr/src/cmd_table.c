@@ -75,18 +75,6 @@ COMMAND(cmd_param_reset)
   return CMD_OK;
 }
 
-COMMAND(cmd_param_set_mac)
-{
-  if(argc != 2) {
-    return CMD_WRONG_ARGC;
-  }
-  if(net_parse_mac(argv[1], param.mac_addr)) {
-    return CMD_OK;
-  } else {
-    return CMD_PARSE_ERROR;
-  }
-}
-
 COMMAND(cmd_param_toggle)
 {
   u08 group = argv[0][0];
@@ -159,7 +147,6 @@ COMMAND(cmd_help)
     "sd       dump statistics\r\n"
     "sr       reset statistics\r\n"
     "\r\n"
-    "m  <mac> set mac address: 'aa:bb:cc:dd:ee:ff'\r\n"
     "tr <num> number of PLIP tx retries\r\n"
     "fp [on]  enable filtering of PLIP packets\r\n"
     "fe [on]  enable filtering of ETH packets\r\n"
@@ -186,7 +173,6 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("sd"), cmd_stats_dump },
   { CMD_NAME("sr"), cmd_stats_reset },
   // options
-  { CMD_NAME("m"), cmd_param_set_mac },
   { CMD_NAME("tr"), cmd_param_toggle },
   { CMD_NAME("fp"), cmd_param_toggle },
   { CMD_NAME("fe"), cmd_param_toggle },

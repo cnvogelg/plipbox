@@ -26,48 +26,27 @@
 
 #include "pb_state.h"
 #include "pb_proto.h"
+#include "pb_io.h"
 #include "timer.h"
 #include "uartutil.h"
 
 static u08 state = PB_STATE_LINK_DOWN;
-static u16 my_timer;
-static u08 count_down;
-
-static u08 time_passed(void)
-{
-  if((my_timer ^ timer_10ms) & PB_STATE_TIMER_MASK) {
-    my_timer = timer_10ms;
-    return 1;
-  }
-  return 0;
-}
 
 u08 pb_state_worker(void)
 {
   switch(state) {
     case PB_STATE_LINK_DOWN:
-      if(time_passed()) {
-        u08 line = pb_proto_get_line_status();
-        if(line == PBPROTO_LINE_OK) {
-          state = PB_STATE_LINK_UP;
-          uart_send_time_stamp_spc();
-          uart_send_pstring(PSTR("pbp: link up\r\n"));
-        }
+      if(sana_online) {
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("pbp: link up\r\n"));
+        state = PB_STATE_LINK_UP;
       }
       break;
     case PB_STATE_LINK_UP:
-      if(time_passed()) {
-        u08 line = pb_proto_get_line_status();
-        if(line != PBPROTO_LINE_OK) {
-          count_down ++;
-          if(count_down == 5) {
-            state = PB_STATE_LINK_DOWN;
-            uart_send_time_stamp_spc();
-            uart_send_pstring(PSTR("pbp: link down\r\n"));
-          }
-        } else {
-          count_down = 0;
-        }
+      if(!sana_online) {
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("pbp: link down\r\n"));
+        state = PB_STATE_LINK_DOWN;
       }
       break;
   }

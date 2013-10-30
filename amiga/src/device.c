@@ -131,7 +131,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    pb->pb_MTU = PLIP_DEFMTU;
    pb->pb_ReportBPS = PLIP_DEFBPS;
    pb->pb_Retries = PLIP_DEFRETRIES;
-   pb->pb_Flags = PLIPF_NOTCONFIGURED | PLIPF_OFFLINE;
+   pb->pb_Flags = PLIPF_OFFLINE;
    pb->pb_Timeout = PLIP_DEFTIMEOUT;
 
       /* initialise the lists */
@@ -499,7 +499,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    switch(ios2->ios2_Req.io_Command)
    {
       case CMD_READ:
-         if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+         if (pb->pb_Flags & PLIPF_OFFLINE)
          {
             ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
             ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
@@ -538,7 +538,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
             ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
             ios2->ios2_WireError = S2WERR_BUFF_ERROR;
          }
-         else if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+         else if (pb->pb_Flags & PLIPF_OFFLINE)
          {
             ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
             ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;
@@ -641,7 +641,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
       break;
 
       case S2_READORPHAN:
-         if (pb->pb_Flags & (PLIPF_OFFLINE | PLIPF_NOTCONFIGURED))
+         if (pb->pb_Flags & PLIPF_OFFLINE)
          {
             ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
             ios2->ios2_WireError = S2WERR_UNIT_OFFLINE;

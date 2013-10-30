@@ -72,7 +72,7 @@ int main (void)
   pb_io_init();
   
   // setup ethernet
-  u08 rev = enc28j60_init(param.mac_addr);
+  u08 rev = enc28j60_init();
   if(rev == 0) {
     uart_send_pstring(PSTR("enc28j60: ERROR SETTING UP!!\r\n"));
     while(1) {}

@@ -16,15 +16,15 @@
 
 
 VERSION         EQU        0
-REVISION        EQU        3
+REVISION        EQU        5
 DATE    MACRO
-              dc.b        '21.5.2013'
+              dc.b        '31.10.2013'
       ENDM
 VERS    MACRO
-              dc.b        'plipbox 0.3'
+              dc.b        'plipbox 0.5'
       ENDM
 VSTRING MACRO
-              dc.b        'plipbox 0.3 (21.5.2013)',13,10,0
+              dc.b        'plipbox 0.5 (31.10.2013)',13,10,0
       ENDM
 
 

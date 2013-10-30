@@ -197,19 +197,13 @@ struct PLIPBase
    */
 #define PLIPB_REPLYSS         0   /* server-startup must be replied */
 #define PLIPB_EXCLUSIVE       1   /* current opener is exclusive */
-#define PLIPB_NOTCONFIGURED   2   /* not configured */
-#define PLIPB_OFFLINE         3   /* currently not online (sic!) */
-#define PLIPB_SENDCRC         4   /* send with CRC sum */
-#define PLIPB_COLLISION       5   /* arbitration detected a collision */
-#define PLIPB_SERVERSTOPPED   6   /* set by server while passing away */
+#define PLIPB_OFFLINE         2   /* currently not online (sic!) */
+#define PLIPB_SERVERSTOPPED   3   /* set by server while passing away */
 
-#define PLIPF_EXCLUSIVE       (1<<PLIPB_EXCLUSIVE)
-#define PLIPF_NOTCONFIGURED   (1<<PLIPB_NOTCONFIGURED)
-#define PLIPF_OFFLINE         (1<<PLIPB_OFFLINE)
-#define PLIPF_SENDCRC         (1<<PLIPB_SENDCRC)
-#define PLIPF_COLLISION       (1<<PLIPB_COLLISION)
-#define PLIPF_SERVERSTOPPED   (1<<PLIPB_SERVERSTOPPED)
 #define PLIPF_REPLYSS         (1<<PLIPB_REPLYSS)
+#define PLIPF_EXCLUSIVE       (1<<PLIPB_EXCLUSIVE)
+#define PLIPF_OFFLINE         (1<<PLIPB_OFFLINE)
+#define PLIPF_SERVERSTOPPED   (1<<PLIPB_SERVERSTOPPED)
 
    /*
    ** Values for PLIPBase->pb_ExtFlags

@@ -363,9 +363,10 @@ static void writePhy (uint8_t address, uint16_t data) {
         ;
 }
 
-uint8_t enc28j60_init (const uint8_t* macaddr) {
+uint8_t enc28j60_init () {
     spi_disable_eth();
     
+    // soft reset cpu
     writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
     _delay_ms(2); // errata B7/2
     
@@ -377,34 +378,37 @@ uint8_t enc28j60_init (const uint8_t* macaddr) {
         return 0;
       }
     }
-        
+    
+    // set packet pointers
     gNextPacketPtr = RXSTART_INIT;
     writeReg(ERXST, RXSTART_INIT);
     writeReg(ERXRDPT, RXSTART_INIT);
     writeReg(ERXND, RXSTOP_INIT);
     writeReg(ETXST, TXSTART_INIT);
     writeReg(ETXND, TXSTOP_INIT);
+    
+    // set packet filter
     enc28j60_enable_broadcast(); // change to add ERXFCON_BCEN recommended by epam
+
+    // BIST pattern generator?
     writeReg(EPMM0, 0x303f);
     writeReg(EPMCS, 0xf7f9);
+    
+    // MAC init
     writeRegByte(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
     writeRegByte(MACON2, 0x00);
     writeOp(ENC28J60_BIT_FIELD_SET, MACON3,
                         MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN);
+    
+    
     writeReg(MAIPG, 0x0C12);
     writeRegByte(MABBIPG, 0x12);
-    writeReg(MAMXFL, MAX_FRAMELEN);  
-    writeRegByte(MAADR5, macaddr[0]);
-    writeRegByte(MAADR4, macaddr[1]);
-    writeRegByte(MAADR3, macaddr[2]);
-    writeRegByte(MAADR2, macaddr[3]);
-    writeRegByte(MAADR1, macaddr[4]);
-    writeRegByte(MAADR0, macaddr[5]);
-    writePhy(PHCON2, PHCON2_HDLDIS);
-    SetBank(ECON1);
-    writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
-    writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+    writeReg(MAMXFL, MAX_FRAMELEN);
 
+    // PHY init
+    writePhy(PHCON2, PHCON2_HDLDIS);
+    
+    // return rev
     uint8_t rev = readRegByte(EREVID);
     // microchip forgot to step the number on the silcon when they
     // released the revision B7. 6 is now rev B7. We still have
@@ -412,6 +416,26 @@ uint8_t enc28j60_init (const uint8_t* macaddr) {
     // there is no B8 out yet
     if (rev > 5) ++rev;
     return rev;
+}
+ 
+void enc28j60_start(const uint8_t* macaddr)
+{      
+    writeRegByte(MAADR5, macaddr[0]);
+    writeRegByte(MAADR4, macaddr[1]);
+    writeRegByte(MAADR3, macaddr[2]);
+    writeRegByte(MAADR2, macaddr[3]);
+    writeRegByte(MAADR1, macaddr[4]);
+    writeRegByte(MAADR0, macaddr[5]);
+    
+    SetBank(ECON1);
+    writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
+    writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+}
+
+void enc28j60_stop(void)
+{
+    SetBank(ECON1);
+    writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);    
 }
 
 uint8_t enc28j60_is_link_up( void ) 

@@ -18,7 +18,11 @@
 #include "global.h"
 #include "spi.h"
 
-extern uint8_t enc28j60_init(const uint8_t* macaddr);
+extern uint8_t enc28j60_init( void );
+
+extern void enc28j60_start(const uint8_t* macaddr);
+extern void enc28j60_stop( void );
+
 extern uint8_t enc28j60_is_link_up ( void );
   
 extern void enc28j60_enable_broadcast( void );

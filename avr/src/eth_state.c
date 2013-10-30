@@ -30,40 +30,29 @@
 #include "uartutil.h"
 #include "uart.h"
 #include "enc28j60.h"
+#include "pb_io.h"
 
 static u08 state = ETH_STATE_LINK_DOWN;
-static u16 my_timer;
-
-static u08 time_passed(void)
-{
-  if((my_timer ^ timer_10ms) & ETH_STATE_TIMER_MASK) {
-    my_timer = timer_10ms;
-    return 1;
-  }
-  return 0;
-}
 
 u08 eth_state_worker(u08 plip_online)
 {
   switch(state) {
     case ETH_STATE_LINK_DOWN:
-      if(time_passed()) {
-        // check if eth adapter is online
-        if(enc28j60_is_link_up()) {
-          state = ETH_STATE_LINK_UP;
-          uart_send_time_stamp_spc();
-          uart_send_pstring(PSTR("eth: link up\r\n"));
-        }
+      if(plip_online) {
+        enc28j60_start(sana_mac);
+        
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("eth: link up\r\n"));
+        state = ETH_STATE_LINK_UP;
       }
       break;
     case ETH_STATE_LINK_UP:
-      if(time_passed()) {
-        // check if eth adapter went offline
-        if(!enc28j60_is_link_up()) {
-          state = ETH_STATE_LINK_DOWN;
-          uart_send_time_stamp_spc();
-          uart_send_pstring(PSTR("eth: link down\r\n"));
-        }
+      if(!plip_online) {
+        enc28j60_stop();
+  
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("eth: link down\r\n"));
+        state = ETH_STATE_LINK_DOWN;
       }  
       break;
   }

@@ -52,19 +52,13 @@ static const param_t PROGMEM default_param = {
   
   .tx_retries = 0,
   .filter_plip = 1,
-  .filter_eth = 1,
-  // use same mac as plipbox.device!
-  .mac_addr = { 0x1a, 0x11, 0xaf, 0xa0, 0x47, 0x11 }
+  .filter_eth = 1
 };
 
 // dump all params
 void param_dump(void)
 {
   // options
-  uart_send_pstring(PSTR("m: mac address   "));
-  net_dump_mac(param.mac_addr);
-  uart_send_crlf();
-  
   uart_send_pstring(PSTR("tr: tx retries   "));
   uart_send_hex_byte(param.tx_retries);
   uart_send_crlf();

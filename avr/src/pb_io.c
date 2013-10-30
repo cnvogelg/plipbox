@@ -43,6 +43,11 @@
 
 static u16 offset;
 
+// SANA driver parameters sent in magic packet
+u08 sana_online;
+u08 sana_mac[6];
+u08 sana_version[2];
+
 // ----- send callbacks -----
 
 static void rx_begin(u16 *pkt_size)
@@ -178,6 +183,44 @@ static void send(void)
   enc28j60_packet_tx_send(rx_pkt_size);
 }
 
+static void handle_magic_online(void)
+{
+  net_copy_mac(eth_get_src_mac(rx_pkt_buf), sana_mac);
+  const u08 *ver = eth_get_tgt_mac(rx_pkt_buf);
+  sana_version[0] = ver[0];
+  sana_version[1] = ver[1];
+  
+  uart_send_prefix_pbp();
+  uart_send_pstring(PSTR("online: mac="));
+  net_dump_mac(sana_mac);
+  uart_send_pstring(PSTR(" ver="));
+  uart_send_hex_byte(sana_version[0]);
+  uart_send('.');
+  uart_send_hex_byte(sana_version[1]);
+  uart_send_crlf();
+  
+  /* does versions match? */
+  if((sana_version[0] == VERSION_MAJ) && (sana_version[1] == VERSION_MIN)) {  
+    sana_online = 1;
+  } else {
+    uart_send_pstring(PSTR("VERSION MISMATCH! please update firmware."));
+    uart_send_crlf();
+    sana_online = 0;
+  }
+}
+
+static void handle_magic_offline(void)
+{
+  uart_send_prefix_pbp();
+  uart_send_pstring(PSTR("offline"));
+  uart_send_crlf();
+  
+  sana_online = 0;
+}
+
+#define MAGIC_ONLINE 0xffff
+#define MAGIC_OFFLINE 0xfffe
+
 static void handle_pb_send(u08 eth_online)
 {
   u08 dump_it = param.dump_dirs & DUMP_DIR_PLIP_RX;  
@@ -192,26 +235,39 @@ static void handle_pb_send(u08 eth_online)
     uart_send_crlf();
   }
 
-  // filter packet
+  // flag if packet will be sent via ethernet
   u08 send_it = 0;
-  if(param.filter_plip) {
-    if(type == ETH_TYPE_IPV4) {
+  
+  // ----- magic packets from SANA driver? -----
+  // magic online packet?
+  if(type == MAGIC_ONLINE) {
+    handle_magic_online();
+  }
+  // magic offline packet?
+  else if(type == MAGIC_OFFLINE) {
+    handle_magic_offline();
+  }
+  else {
+    // ----- packet filtering? -----
+    if(param.filter_plip) {
+      if(type == ETH_TYPE_IPV4) {
+        send_it = 1;
+      }
+      // handle ARP packet
+      else if(type == ETH_TYPE_ARP) {
+        send_it = filter_arp_pkt();
+      }
+      // unknown packet type
+      else {
+        uart_send_prefix_pbp();
+        uart_send_pstring(PSTR("type? "));
+        uart_send_hex_word(type);
+        uart_send_crlf();
+        send_it = 0;
+      }
+    } else {
       send_it = 1;
     }
-    // handle ARP packet
-    else if(type == ETH_TYPE_ARP) {
-      send_it = filter_arp_pkt();
-    }
-    // unknown packet type
-    else {
-      uart_send_prefix_pbp();
-      uart_send_pstring(PSTR("type? "));
-      uart_send_hex_word(type);
-      uart_send_crlf();
-      send_it = 0;
-    }
-  } else {
-    send_it = 1;
   }
   
   // send to ethernet
