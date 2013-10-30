@@ -50,7 +50,6 @@ static const param_t PROGMEM default_param = {
   .dump_proto = 0,
   .dump_plip = 0,
   
-  .tx_retries = 0,
   .filter_plip = 1,
   .filter_eth = 1
 };
@@ -59,10 +58,6 @@ static const param_t PROGMEM default_param = {
 void param_dump(void)
 {
   // options
-  uart_send_pstring(PSTR("tr: tx retries   "));
-  uart_send_hex_byte(param.tx_retries);
-  uart_send_crlf();
-  
   uart_send_pstring(PSTR("fe: filter ETH   "));
   uart_send_hex_byte(param.filter_eth);
   uart_send_crlf();

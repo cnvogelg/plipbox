@@ -99,13 +99,6 @@ COMMAND(cmd_param_toggle)
       default: return CMD_PARSE_ERROR;
     }
   }
-  else if(group == 't') {
-    if(type == 'r') {
-      val = &param.tx_retries;
-    } else {
-      return CMD_PARSE_ERROR;
-    }
-  }
   else {
     return CMD_PARSE_ERROR;
   }
@@ -147,7 +140,6 @@ COMMAND(cmd_help)
     "sd       dump statistics\r\n"
     "sr       reset statistics\r\n"
     "\r\n"
-    "tr <num> number of PLIP tx retries\r\n"
     "fp [on]  enable filtering of PLIP packets\r\n"
     "fe [on]  enable filtering of ETH packets\r\n"
     "\r\n"
@@ -173,7 +165,6 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("sd"), cmd_stats_dump },
   { CMD_NAME("sr"), cmd_stats_reset },
   // options
-  { CMD_NAME("tr"), cmd_param_toggle },
   { CMD_NAME("fp"), cmd_param_toggle },
   { CMD_NAME("fe"), cmd_param_toggle },
   // dump commands

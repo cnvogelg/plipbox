@@ -35,7 +35,6 @@
 #define DUMP_DIR_ETH_TX   8
 
 typedef struct {
-  u08 tx_retries;
   u08 filter_eth;
   u08 filter_plip;
 
