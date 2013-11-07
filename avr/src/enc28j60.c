@@ -229,23 +229,24 @@
 // Buffer boundaries applied to internal 8K ram
 // the entire available packet buffer space is allocated
 
-#define RXSTART_INIT        0x0000  // start of RX buffer, room for 2 packets
+// rx packet layout
+// 6 byte heaader
+// 1518 
+// sum: 1524
+
+#define RXSTART_INIT        0x0000  // start of RX buffer, room for 4 packets
 #define RXSTOP_INIT         0x19FF  // end of RX buffer
                             
 #define TXSTART_INIT        0x1A00  // start of TX buffer, room for 1 packet
 #define TXSTOP_INIT         0x1FFF  // end of TX buffer
                             
-#define SCRATCH_START       0x1200  // start of scratch area
-#define SCRATCH_LIMIT       0x2000  // past end of area, i.e. 3.5 Kb 
-#define SCRATCH_PAGE_SHIFT  6       // addressing is in pages of 64 bytes
-#define SCRATCH_PAGE_SIZE   (1 << SCRATCH_PAGE_SHIFT)
-
 // max frame length which the conroller will accept:
 // (note: maximum ethernet frame length would be 1518)
 #define MAX_FRAMELEN      1518        
 
 static uint8_t Enc28j60Bank;
 static int gNextPacketPtr;
+static u08 is_full_duplex;
 
 static uint8_t readOp (uint8_t op, uint8_t address) {
     spi_enable_eth();
@@ -292,14 +293,6 @@ void enc28j60_packet_rx_blk(u08 *data, u16 size)
     *data++ = spi_in();
   }
   spi_disable_eth();
-}
-
-static void writeBuf(uint16_t len, const uint8_t* data) {
-    spi_enable_eth();
-    spi_out(ENC28J60_WRITE_BUF_MEM);
-    while (len--)
-        spi_out(*data++);
-    spi_disable_eth();
 }
 
 inline static void writeBufBegin(void)
@@ -363,8 +356,10 @@ static void writePhy (uint8_t address, uint16_t data) {
         ;
 }
 
-uint8_t enc28j60_init () {
+uint8_t enc28j60_init (u08 full_duplex) {
     spi_disable_eth();
+    
+    is_full_duplex = full_duplex;
     
     // soft reset cpu
     writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
@@ -394,19 +389,32 @@ uint8_t enc28j60_init () {
     writeReg(EPMM0, 0x303f);
     writeReg(EPMCS, 0xf7f9);
     
-    // MAC init
+    // MAC init (with flow control)
     writeRegByte(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
     writeRegByte(MACON2, 0x00);
-    writeOp(ENC28J60_BIT_FIELD_SET, MACON3,
-                        MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN);
+    u08 mac3val = MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN;
+    if(full_duplex) {
+      mac3val |= MACON3_FULDPX;
+    }
+    writeOp(ENC28J60_BIT_FIELD_SET, MACON3, mac3val);
     
-    
-    writeReg(MAIPG, 0x0C12);
-    writeRegByte(MABBIPG, 0x12);
+    if(full_duplex) {
+      writeRegByte(MABBIPG, 0x15);      
+      writeReg(MAIPG, 0x0012);
+    } else {
+      writeRegByte(MABBIPG, 0x12);
+      writeReg(MAIPG, 0x0C12);
+    }
     writeReg(MAMXFL, MAX_FRAMELEN);
 
     // PHY init
     writePhy(PHCON2, PHCON2_HDLDIS);
+    if(full_duplex) {
+      writePhy(PHCON1, PHCON1_PDPXMD);
+    }
+    
+    // prepare flow control
+    writeReg(EPAUS, 20 * 100); // 100ms
     
     // return rev
     uint8_t rev = readRegByte(EREVID);
@@ -438,9 +446,32 @@ void enc28j60_stop(void)
     writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);    
 }
 
+void enc28j60_flow_control( u08 on )
+{ 
+    u08 val;
+    if(is_full_duplex) {
+      val = on ? 2 : 3;
+    } else {
+      val = on ? 1 : 0;
+    }
+    writeRegByte(EFLOCON, val);
+}
+
 uint8_t enc28j60_is_link_up( void ) 
 {
     return (readPhyByte(PHSTAT2) >> 2) & 1;
+}
+
+u08 enc28j60_get_status( void )
+{
+  u08 val = readRegByte(EIR);
+  if(val & EIR_TXERIF) {
+    writeOp(ENC28J60_BIT_FIELD_CLR, EIR, EIR_TXERIF);
+  }
+  if(val & EIR_RXERIF) {
+    writeOp(ENC28J60_BIT_FIELD_CLR, EIR, EIR_RXERIF);    
+  }
+  return val & 3;
 }
 
 void enc28j60_packet_tx(const u08 *data, u16 size)
@@ -531,32 +562,6 @@ u16 enc28j60_packet_rx_begin(void)
 void enc28j60_packet_rx_end(void)
 {
     next_pkt();
-}
-
-void enc28j60_copyout (uint8_t page, const uint8_t* data) {
-    uint16_t destPos = SCRATCH_START + (page << SCRATCH_PAGE_SHIFT);
-    if (destPos < SCRATCH_START || destPos > SCRATCH_LIMIT - SCRATCH_PAGE_SIZE)
-        return;
-    writeReg(EWRPT, destPos);
-    writeBuf(SCRATCH_PAGE_SIZE, data);
-}
-
-void enc28j60_copyin (uint8_t page, uint8_t* data) {
-    uint16_t destPos = SCRATCH_START + (page << SCRATCH_PAGE_SHIFT);
-    if (destPos < SCRATCH_START || destPos > SCRATCH_LIMIT - SCRATCH_PAGE_SIZE)
-        return;
-    writeReg(ERDPT, destPos);
-    readBuf(SCRATCH_PAGE_SIZE, data);
-}
-
-uint8_t enc28j60_peekin (uint8_t page, uint8_t off) {
-    uint8_t result = 0;
-    uint16_t destPos = SCRATCH_START + (page << SCRATCH_PAGE_SHIFT) + off;
-    if (SCRATCH_START <= destPos && destPos < SCRATCH_LIMIT) {
-        writeReg(ERDPT, destPos);
-        readBuf(1, &result);
-    }
-    return result;
 }
 
 // Contributed by Alex M. Based on code from: http://blog.derouineau.fr

@@ -18,7 +18,7 @@
 #include "global.h"
 #include "spi.h"
 
-extern uint8_t enc28j60_init( void );
+extern uint8_t enc28j60_init( u08 full_duplex );
 
 extern void enc28j60_start(const uint8_t* macaddr);
 extern void enc28j60_stop( void );
@@ -32,6 +32,10 @@ extern void enc28j60_power_down( void );
 extern void enc28j60_power_up( void );
 
 extern uint8_t enc28j60_do_BIST ( void );
+
+extern void enc28j60_flow_control( u08 on );
+
+extern u08 enc28j60_get_status( void );
 
 /* splitted send/receive */
 extern u16  enc28j60_packet_rx(u08 *data, u16 max_size);

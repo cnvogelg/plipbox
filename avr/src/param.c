@@ -51,13 +51,18 @@ static const param_t PROGMEM default_param = {
   .dump_plip = 0,
   
   .filter_plip = 1,
-  .filter_eth = 1
+  .filter_eth = 1,
+  .flow_ctl = 1
 };
 
 // dump all params
 void param_dump(void)
 {
   // options
+  uart_send_pstring(PSTR("fc: ETH flow ctl "));
+  uart_send_hex_byte(param.flow_ctl);
+  uart_send_crlf();
+
   uart_send_pstring(PSTR("fe: filter ETH   "));
   uart_send_hex_byte(param.filter_eth);
   uart_send_crlf();

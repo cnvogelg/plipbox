@@ -33,10 +33,13 @@
 #define DUMP_DIR_ETH_RX   2
 #define DUMP_DIR_PLIP_TX  4
 #define DUMP_DIR_ETH_TX   8
+#define DUMP_FLOW_CTL     16
+#define DUMP_ERRORS       32
 
 typedef struct {
   u08 filter_eth;
   u08 filter_plip;
+  u08 flow_ctl;
 
   u08 dump_dirs;
   u08 dump_eth;

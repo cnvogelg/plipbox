@@ -94,6 +94,7 @@ COMMAND(cmd_param_toggle)
   }
   else if(group == 'f') {
     switch(type) {
+      case 'c': val = &param.flow_ctl; break;
       case 'e': val = &param.filter_eth; break;
       case 'p': val = &param.filter_plip; break;
       default: return CMD_PARSE_ERROR;
@@ -140,6 +141,7 @@ COMMAND(cmd_help)
     "sd       dump statistics\r\n"
     "sr       reset statistics\r\n"
     "\r\n"
+    "fc [on]  enable flow control for ETH packets\r\n"
     "fp [on]  enable filtering of PLIP packets\r\n"
     "fe [on]  enable filtering of ETH packets\r\n"
     "\r\n"
@@ -165,6 +167,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("sd"), cmd_stats_dump },
   { CMD_NAME("sr"), cmd_stats_reset },
   // options
+  { CMD_NAME("fc"), cmd_param_toggle },
   { CMD_NAME("fp"), cmd_param_toggle },
   { CMD_NAME("fe"), cmd_param_toggle },
   // dump commands
