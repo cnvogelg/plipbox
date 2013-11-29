@@ -40,6 +40,7 @@ typedef struct {
   u08 filter_eth;
   u08 filter_plip;
   u08 flow_ctl;
+  u08 full_duplex;
 
   u08 dump_dirs;
   u08 dump_eth;

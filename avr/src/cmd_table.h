@@ -32,6 +32,7 @@
 
 #define CMD_OK            0x00
 #define CMD_QUIT          0x01
+#define CMD_RESET         0x02
 #define CMD_WRONG_ARGC    0x10
 #define CMD_PARSE_ERROR   0x11
 

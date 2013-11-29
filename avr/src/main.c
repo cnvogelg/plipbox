@@ -55,7 +55,7 @@ static void init_hw(void)
   spi_init();
 }
 
-int main (void)
+void loop(void)
 {
   init_hw();
   
@@ -72,18 +72,22 @@ int main (void)
   pb_io_init();
   
   // setup ethernet
-  u08 rev = enc28j60_init(0);
+  u08 fd = param.full_duplex;
+  u08 rev = enc28j60_init(fd);
   if(rev == 0) {
     uart_send_pstring(PSTR("enc28j60: ERROR SETTING UP!!\r\n"));
     while(1) {}
   } else {
-    uart_send_pstring(PSTR("enc28j60: rev="));
+    uart_send_pstring(PSTR("enc28j60: rev "));
     uart_send_hex_byte(rev);
+    uart_send_pstring(fd ? PSTR(" full ") : PSTR(" half "));
+    uart_send_pstring(PSTR("duplex"));
     uart_send_crlf();
   }
   
   // main loop
-  while(1) {
+  u08 stay = 1;
+  while(stay) {
     u08 pb_state = pb_state_worker();
     u08 pb_online = (pb_state == PB_STATE_LINK_UP);
     u08 eth_state = eth_state_worker(pb_online);
@@ -92,8 +96,14 @@ int main (void)
     eth_io_worker(eth_state, pb_online);
     pb_io_worker(pb_state, eth_online);
     
-    cmd_worker();
+    stay = cmd_worker();
   }
+}
 
+int main(void)
+{
+  while(1) {
+    loop();
+  }
   return 0;
 } 

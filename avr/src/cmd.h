@@ -29,6 +29,6 @@
 
 #include "global.h"
 
-extern void cmd_worker(void);
+extern u08 cmd_worker(void);
 
 #endif

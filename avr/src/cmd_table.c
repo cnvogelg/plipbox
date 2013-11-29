@@ -37,6 +37,11 @@ COMMAND(cmd_quit)
   return CMD_QUIT;
 }
 
+COMMAND(cmd_device_reset)
+{
+  return CMD_RESET;
+}
+
 COMMAND(cmd_version)
 {
   uart_send_pstring(PSTR(VERSION " " BUILD_DATE "\r\n"));
@@ -94,6 +99,7 @@ COMMAND(cmd_param_toggle)
   }
   else if(group == 'f') {
     switch(type) {
+      case 'd': val = &param.full_duplex; break;
       case 'c': val = &param.flow_ctl; break;
       case 'e': val = &param.filter_eth; break;
       case 'p': val = &param.filter_plip; break;
@@ -134,6 +140,7 @@ COMMAND(cmd_help)
 {
   uart_send_pstring(PSTR(
     "q        quit command mode\r\n"
+    "r        soft reset device\r\n"
     "v        print plipbox version\r\n"
     "p        print parameters\r\n"
     "ps       save parameters to EEPROM\r\n"
@@ -141,6 +148,7 @@ COMMAND(cmd_help)
     "sd       dump statistics\r\n"
     "sr       reset statistics\r\n"
     "\r\n"
+    "fd [on]  enable full duplex mode\r\n"
     "fc [on]  enable flow control for ETH packets\r\n"
     "fp [on]  enable filtering of PLIP packets\r\n"
     "fe [on]  enable filtering of ETH packets\r\n"
@@ -158,6 +166,7 @@ COMMAND(cmd_help)
 
 cmd_table_t cmd_table[] = {
   { CMD_NAME("q"), cmd_quit },
+  { CMD_NAME("r"), cmd_device_reset },
   { CMD_NAME("v"), cmd_version },
   { CMD_NAME("p"), cmd_param_dump },
   { CMD_NAME("ps"), cmd_param_save },
@@ -167,6 +176,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("sd"), cmd_stats_dump },
   { CMD_NAME("sr"), cmd_stats_reset },
   // options
+  { CMD_NAME("fd"), cmd_param_toggle },
   { CMD_NAME("fc"), cmd_param_toggle },
   { CMD_NAME("fp"), cmd_param_toggle },
   { CMD_NAME("fe"), cmd_param_toggle },

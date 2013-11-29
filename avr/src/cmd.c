@@ -99,7 +99,7 @@ static u08 parse_args(u08 len)
   return argc;
 }
 
-static void cmd_loop(void)
+static u08 cmd_loop(void)
 {
   uart_send_pstring(PSTR("command mode. enter '?' for help.\r\n"));
   u08 num_chars = 1;
@@ -142,7 +142,12 @@ static void cmd_loop(void)
           uart_send_spc();
           u08 type = status & CMD_MASK;
           if(type == CMD_MASK_OK) {
-            uart_send_pstring(PSTR("OK\r\n"));
+            if(status == CMD_RESET) {
+              uart_send_pstring(PSTR("RESET\r\n"));
+              return 0;
+            } else {
+              uart_send_pstring(PSTR("OK\r\n"));
+            }
           } else if(type == CMD_MASK_SYNTAX) {
             uart_send_pstring(PSTR("SYNTAX\r\n")); 
           } else if(type == CMD_MASK_ERROR) {
@@ -157,16 +162,20 @@ static void cmd_loop(void)
     }
   }
   uart_send_pstring(PSTR("bye\r\n"));
+  return 1;
 }
 
-void cmd_worker(void)
+u08 cmd_worker(void)
 {
   // small hack to enter commands
   if(uart_read_data_available()) {
     u08 cmd = uart_read();
     if(cmd == '\n') {
       // enter command loop
-      cmd_loop();
+      u08 stay = cmd_loop();
+      if(!stay) {
+        return 0;
+      }
     } else {
       // search command
       cmdkey_table_t *ptr = cmdkey_table;
@@ -183,5 +192,6 @@ void cmd_worker(void)
         found->func();
       }
     }
-  }  
+  }
+  return 1;
 }
