@@ -223,6 +223,7 @@ static void handle_magic_offline(void)
 #define MAGIC_ONLINE 0xffff
 #define MAGIC_OFFLINE 0xfffe
 
+// packet arrived from Amiga. now sent via Ethernet
 static void handle_pb_send(u08 eth_online)
 {
   u08 dump_it = param.dump_dirs & DUMP_DIR_PLIP_RX;  
@@ -274,20 +275,19 @@ static void handle_pb_send(u08 eth_online)
   
   // send to ethernet
   if(send_it) {
-    stats.rx_cnt ++;
-    stats.rx_bytes += rx_pkt_size;
-    
     if(eth_online) {
+      stats.tx_cnt ++;
+      stats.tx_bytes += rx_pkt_size;    
       send();
     } else {
       // no ethernet online -> we have to drop packet
       uart_send_prefix_eth();
       uart_send_pstring(PSTR("Offline -> DROP!"));
       uart_send_crlf();
-      stats.rx_drop ++;
+      stats.tx_drop ++;
     }      
   } else {
-    stats.rx_filter ++;
+    stats.tx_filter ++;
   }    
 }
 
@@ -307,11 +307,11 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
     return;
   }
   else if(status == PBPROTO_STATUS_OK) {
-    // io is ok
+    // dump ok command if requested
     if(param.dump_plip) {
       dump_pb_cmd(cmd, status, size, end - start, start - req_time);
     }
-    // log command
+    // log ok command
     if(param.log_all) {
       log_add(start, end-start, cmd, status, size);
     }

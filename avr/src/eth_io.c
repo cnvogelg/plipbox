@@ -44,6 +44,7 @@
 #include "param.h"
 #include "pb_proto.h"
 #include "pb_io.h"
+#include "stats.h"
 
 void eth_io_init(void)
 {
@@ -192,6 +193,9 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
       
       // if it does pass filter then send it via plip
       if(send_it) {
+        stats.rx_cnt ++;
+        stats.rx_bytes += len;
+        
         // finish dump line first
         if(dump_flag) {
           uart_send_crlf();
@@ -215,12 +219,16 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
         return;
         
       } else {
+        stats.rx_filter ++;
+        
         if(dump_flag) {
           uart_send_pstring(PSTR("Filter -> DROP")),
           uart_send_crlf();
         }
       }
     } else {
+      stats.rx_drop ++;
+      
       if(dump_flag) {
         uart_send_pstring(PSTR("Offline -> DROP"));
         uart_send_crlf();

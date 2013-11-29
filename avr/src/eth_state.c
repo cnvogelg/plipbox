@@ -98,10 +98,10 @@ u08 eth_state_worker(u08 plip_online)
         // check status
         u08 status = enc28j60_get_status();
         if(status != 0) {
-          if(status & 1) {
+          if(status & ENC28J60_RX_ERR) {
             stats.rx_err ++;
           }
-          if(status & 2) {
+          if(status & ENC28J60_TX_ERR) {
             stats.tx_err ++;
           }
           if(param.dump_dirs & DUMP_ERRORS) {

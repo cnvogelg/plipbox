@@ -35,6 +35,9 @@ extern uint8_t enc28j60_do_BIST ( void );
 
 extern void enc28j60_flow_control( u08 on );
 
+#define ENC28J60_TX_ERR  2
+#define ENC28J60_RX_ERR  1
+
 extern u08 enc28j60_get_status( void );
 
 /* splitted send/receive */

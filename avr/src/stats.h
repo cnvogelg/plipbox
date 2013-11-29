@@ -30,23 +30,22 @@
 #include "global.h"
 
 /*
-  rx: PLIP rx, SLIP tx
-  tx: PLIP tx, SLIP rx
+  rx = received from plipbox via ETH
+  tx = sent from plipbox via ETH
 */
 
 typedef struct {
   u16 rx_cnt;
-  u16 tx_cnt;
   u32 rx_bytes;
+  u16 rx_err;
+  u16 rx_filter;
+  u16 rx_drop;
+
+  u16 tx_cnt;
   u32 tx_bytes;
   u16 tx_err;
-  u16 rx_err;
-  u08 last_tx_err;
-  u08 last_rx_err;
-  u16 rx_drop;
-  u16 tx_drop;
-  u16 rx_filter;
   u16 tx_filter;
+  u16 tx_drop;
 } stats_t;
 
 extern stats_t stats;
