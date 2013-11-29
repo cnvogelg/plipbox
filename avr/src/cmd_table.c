@@ -31,6 +31,7 @@
 #include "net/net.h"
 #include "param.h"
 #include "stats.h"
+#include "log.h"
 
 COMMAND(cmd_quit)
 {
@@ -142,6 +143,18 @@ COMMAND(cmd_stats_reset)
   return CMD_OK;
 }
 
+COMMAND(cmd_log_dump)
+{
+  log_dump();
+  return CMD_OK;
+}
+
+COMMAND(cmd_log_reset)
+{
+  log_reset();
+  return CMD_OK;
+}
+
 COMMAND(cmd_help)
 {
   uart_send_pstring(PSTR(
@@ -198,6 +211,8 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("dy"), cmd_param_toggle },
   // log
   { CMD_NAME("la"), cmd_param_toggle },
+  { CMD_NAME("ld"), cmd_log_dump },
+  { CMD_NAME("lr"), cmd_log_reset },
   // help
   { CMD_NAME("?"), cmd_help },
   { 0,0 } // last entry

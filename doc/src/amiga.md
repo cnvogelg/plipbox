@@ -17,7 +17,7 @@ The following network stacks have been successfully tested with plipbox:
 * AmiTCP 3.0b2
 * Genesis (OS3.9)
 * MiamiDX (from [Classic Workbench][cwb])
-* [Roadshow 1.9][rs] 
+* [Roadshow 1.11][rs] 
 
 [rs]: http://roadshow.apc-tcp.de/index-de.php
 [cwb]: http://classicwb.abime.net
@@ -109,6 +109,10 @@ The following network stacks have been successfully tested with plipbox:
   server IPs (if you don't use dynamic DNS via DHCP)
   - Do not forget to save your settings with Amiga+S or `Menu: Settings -> Save`
   - Now you can go online with your new interface `plipbox`
+  - If you use multiple plipbox devices in a single network then you have to
+  set a unique MAC address for each one. Select `Hardware Tab` and double
+  click your `plipbox` entry. Now select `SANA-II Parameters` and enter a
+  new MAC address in the `Hardware address` field.
 
 ### 2.5 Roadshow
 
@@ -117,6 +121,7 @@ The following network stacks have been successfully tested with plipbox:
   Simply copy a template from `Storage/NetInterface` and modify this one:
   
         copy sys:Storage/NetInterfaces/cnet devs:NetInterfaces/plipbox
+
   - Now adjust the following values in the file (use either static or DHCP section!):
 
         device=plipbox.device
@@ -135,6 +140,17 @@ The following network stacks have been successfully tested with plipbox:
         > addnetinterface devs:netinterfaces/plipbox
         > ... use network ...
         > netshutdown
+
+  - To make sure that the plipbox device goes offline if you shut down the net
+  you have to add the following options to your interface configuration file:
+  
+        downgoesoffline=yes
+        
+  - If you use multiple plipbox devices in a single network then you have to 
+  assign them unique MAC addresses. You can set the MAC address of your plipbox
+  with the following option in your configuration file:
+  
+        hardwareaddress=1a:11:a1:a0:00:01
 
 3. Build plipbox.device from Source
 -----------------------------------

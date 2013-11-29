@@ -132,7 +132,7 @@ section 1.1). For the serial port select the following parameters:
 If everything went well you will see the startup message of the plipbox 
 firmware:
 
-        Welcome to plipbox 0.3 20130519
+        Welcome to plipbox <version> <date>
         by lallafa (http://www.lallafa.de/blog)
 
 You see all important parameters of your device and their current values.
@@ -165,6 +165,7 @@ A command is always finished by pressing Return.
 #### Common Commands
 
   - **q**: Leave command mode
+  - **r**: Soft reset device and restart it
   - **v**: Show plipbox firmware version
   - **p**: Show parameters
   - **ps**: Save parameters to EEPROM
@@ -173,15 +174,15 @@ A command is always finished by pressing Return.
 
 #### Configuration
 
-  - **m <mac>**: Set MAC Address of the Ethernet Adapter. You must ensure that
-    the plipbox.device in your Amiga configuration uses exactly the same MAC.
-    Otherwise plipbox will not work. By default a generic MAC is pre-defined.
-    This is fine if you have a single plipbox on your local network. If you use
-    multiple plipboxes then they must have different MACs.
-  
-  - **tr <n>**: Set the number of retries a packet received via Ethernet is
-    resent to the Amiga if the arbitration on the PLIP was lost. The default
-    is 0 i.e. packet is dropped.
+  - **fd <n>**: Toggle between Ethernet full and half duplex mode. If fd is
+    set to one then full duplex mode is enabled. Note: the duplex mode can
+    only be switched after a reset of the device. So set your desired value
+    with this command then save the parameters with **ps** and reset the
+    device with **r**. 
+
+  - **fc <n>**: Toggle the use of Ethernet flow control to limit the rate
+    of incoming Ethernet packets. If the parameter is set to one then flow
+    control is enabled.
 
   - **fe <n>**: Toggle filtering of incoming packets on Ethernet port. If the
     filter is enabled then IP multicast and unknown broadcast packets are
@@ -201,6 +202,21 @@ A command is always finished by pressing Return.
     
   - **sr**: Reset the statistics counters.
 
+#### Error Log
+
+  - **ld**: Dump the error log. If an error occurs during the transfer of
+    an Amiga plipbox command then an entry is added to the error log. The
+    error log stores the time stamp when the error happened, the duration
+    of the command, the command byte, the result code and the size of the
+    command. Have a look at the source to interpret the values. Up to 16
+    error values are stored in the log. Then the oldest ones are removed.
+    
+  - **lr**: Reset the error log and remove all former entries.
+
+  - **la <n>**: This parameter allows to toggle the logging of all commands.
+    In contrast to normal operation that only logs the commands that failed
+    by enabling this parameter all commands are logged in the error log.
+
 #### Diagnosis
 
 plipbox offers a rich set of diagnosis (or debug) commands that let you watch
@@ -215,6 +231,8 @@ decode their contents (to some degree).
           2: eth(rx)
           4: plip(tx)
           8: eth(tx)
+          16: eth flow control
+          32: eth errors
     
     Just add the values if multiple channels are to be selected. Value `0f`
     enables all channels.
@@ -233,17 +251,16 @@ decode their contents (to some degree).
     TCP and UDP packets is also decoded. This includes source/destination port.
     
   - **dl**: Give details on the PLIP transfer
-  
-  - **dy**: Measure latency between incoming ethernet packets and outgoing 
-    PLIP packets and vice versa. 
 
 ### 2.4 plipbox Key Commands
 
 If you are in *active mode* (not command mode) then you can press some command
 keys to trigger actions on the device:
 
-  - **d**: Dump the current statistics. Similar to **sd** command.
-  - **r**: Reset statistics counters. Similar to **sr** command.
+  - **s**: Dump the current statistics. Similar to **sd** command.
+  - **S**: Reset statistics counters. Similar to **sr** command.
+  - **l**: Dump the error log. Similar to **ld** command.
+  - **L**: Reset the error log. Similar to **lr** command.
 
 EOF
 
