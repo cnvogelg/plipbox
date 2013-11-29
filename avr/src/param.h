@@ -48,6 +48,8 @@ typedef struct {
   u08 dump_arp;
   u08 dump_proto;
   u08 dump_plip;
+  
+  u08 log_all;
 } param_t;
   
 extern param_t param;  

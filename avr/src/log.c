@@ -30,45 +30,73 @@
 
 #define LOG_SIZE  16
 
-static u08 codes[LOG_SIZE];
+typedef struct {
+  u32 time_stamp;
+  u32 duration;
+  u08 cmd;
+  u08 result;
+  u16 size;
+} log_entry_t;
+
+static log_entry_t entries[LOG_SIZE];
 static u08 num;
 static u08 pos;
 static u16 total;
 
-void log_init(void)
+void log_reset(void)
 {
   num = 0;
   pos = 0;
   total = 0;
 }
 
-void log_add(u08 code)
+void log_add(u32 time_stamp, u32 duration, u08 cmd, u08 result, u16 size)
 {
   total++;
+  log_entry_t *e;
   if(num == LOG_SIZE) {
-    codes[pos] = code;
+    e = &entries[pos];
     pos ++;
     if(pos == LOG_SIZE) {
       pos = 0;
     }
   } else {
-    codes[pos] = code;
+    e = &entries[pos];
     pos++;
     num++;
   }
+  
+  e->time_stamp = time_stamp;
+  e->duration = duration;
+  e->cmd = cmd;
+  e->result = result;
+  e->size = size;
 }
 
 void log_dump(void)
 {
-  uart_send_string("log: ");
-  uart_send_hex_word_crlf(total);
+  // header
+  uart_send_string("log: ts, delta, cmd, result, size  #");
+  uart_send_hex_word(total);
+  uart_send_crlf();
+  
   int off = pos;
   for(int i=0;i<num;i++) {
-    uart_send_hex_byte_crlf(codes[off]);
     if(off == 0) {
-      off = LOG_SIZE -1 ;
+      off = num - 1;
     } else {
       off--;
     }
+    log_entry_t *e = &entries[off];
+
+    // show entry
+    uart_send_time_stamp_spc_ext(e->time_stamp);
+    uart_send_time_stamp_spc_ext(e->duration);
+    uart_send_hex_byte(e->cmd);    
+    uart_send_spc();
+    uart_send_hex_byte(e->result);
+    uart_send_spc();
+    uart_send_hex_word(e->size);
+    uart_send_crlf();
   }
 }

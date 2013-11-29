@@ -127,7 +127,7 @@ SRC += net/net.c net/arp.c
 SRC += eth_io.c eth_state.c dump.c
 SRC += pb_io.c pb_state.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
-SRC += main.c stats.c
+SRC += main.c stats.c log.c
 
 # output format
 FORMAT = ihex

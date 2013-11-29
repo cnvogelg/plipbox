@@ -106,6 +106,12 @@ COMMAND(cmd_param_toggle)
       default: return CMD_PARSE_ERROR;
     }
   }
+  else if(group == 'l') {
+    switch(type) {
+      case 'a': val = &param.log_all; break;
+      default: return CMD_PARSE_ERROR;
+    }
+  }
   else {
     return CMD_PARSE_ERROR;
   }
@@ -160,6 +166,8 @@ COMMAND(cmd_help)
     "da [on]  toggle dump ARP contents\r\n"
     "dp [on]  toggle dump TCP/UDP contents\r\n"
     "dl [on]  toggle dump PLIP info\r\n"
+    "\r\n"
+    "la [on]  log all PLIP commands\r\n"
   ));
   return CMD_OK;
 }
@@ -188,6 +196,8 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("dp"), cmd_param_toggle },
   { CMD_NAME("dl"), cmd_param_toggle },
   { CMD_NAME("dy"), cmd_param_toggle },
+  // log
+  { CMD_NAME("la"), cmd_param_toggle },
   // help
   { CMD_NAME("?"), cmd_help },
   { 0,0 } // last entry

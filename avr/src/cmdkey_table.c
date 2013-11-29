@@ -26,17 +26,8 @@
 
 #include "cmdkey_table.h"
 
-#include "uartutil.h"
-#include "timer.h"
-   
-#include "net/net.h"
-#include "net/udp.h"
-#include "net/eth.h"
-
-#include "pkt_buf.h"
-#include "enc28j60.h"
-
 #include "stats.h"
+#include "log.h"
 
 COMMAND_KEY(cmd_dump_stats)
 {
@@ -48,8 +39,20 @@ COMMAND_KEY(cmd_reset_stats)
   stats_reset();
 }
 
+COMMAND_KEY(cmd_dump_log)
+{
+  log_dump();
+}
+
+COMMAND_KEY(cmd_reset_log)
+{
+  log_reset();
+}
+
 cmdkey_table_t cmdkey_table[] = {
-  { 'd', cmd_dump_stats },
-  { 'r', cmd_reset_stats },
+  { 's', cmd_dump_stats },
+  { 'S', cmd_reset_stats },
+  { 'l', cmd_dump_log },
+  { 'L', cmd_reset_log },
   { 0,0 }
 };

@@ -53,7 +53,9 @@ static const param_t PROGMEM default_param = {
   .filter_plip = 1,
   .filter_eth = 1,
   .flow_ctl = 1,
-  .full_duplex = 0
+  .full_duplex = 0,
+  
+  .log_all = 0
 };
 
 // dump all params
@@ -101,6 +103,13 @@ void param_dump(void)
 
   uart_send_pstring(PSTR("dl: dump plip    "));
   uart_send_hex_byte(param.dump_plip);
+  uart_send_crlf();
+  
+  // log
+  uart_send_crlf();
+  
+  uart_send_pstring(PSTR("la: log all cmds "));
+  uart_send_hex_byte(param.log_all);
   uart_send_crlf();
 }
 

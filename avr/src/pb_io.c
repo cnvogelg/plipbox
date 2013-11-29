@@ -40,6 +40,7 @@
 #include "dump.h"
 #include "timer.h"
 #include "stats.h"
+#include "log.h"
 
 static u16 offset;
 
@@ -190,6 +191,7 @@ static void handle_magic_online(void)
   sana_version[0] = ver[0];
   sana_version[1] = ver[1];
   
+  // always show online state
   uart_send_prefix_pbp();
   uart_send_pstring(PSTR("online: mac="));
   net_dump_mac(sana_mac);
@@ -293,7 +295,7 @@ extern u32 req_time;
 
 void pb_io_worker(u08 plip_state, u08 eth_online)
 {
-  // call protocol handler
+  // call protocol handler (low level transmit)
   u08 cmd;
   u16 size;
   u32 start = time_stamp;
@@ -309,6 +311,10 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
     if(param.dump_plip) {
       dump_pb_cmd(cmd, status, size, end - start, start - req_time);
     }
+    // log command
+    if(param.log_all) {
+      log_add(start, end-start, cmd, status, size);
+    }
     
     // do we have a packet received?
     if(cmd == PBPROTO_CMD_SEND) {
@@ -316,7 +322,13 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
     }
   }
   else {
+    u32 delta = end - start;
+    u32 latency = start - req_time;
+    
     // dump error
-    dump_pb_cmd(cmd, status, size, end - start, start - req_time);
+    dump_pb_cmd(cmd, status, size, delta, latency);
+    
+    // store error in log
+    log_add(start, delta, cmd, status, size);
   }
 }
