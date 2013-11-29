@@ -36,3 +36,18 @@ version 0.4 (01.6.2013)
 - added schematic and board design for plipbox nano base board
 - added new firmware -nano for new plipbox nano pinout
 - Amiga driver unchanged and stays at 0.3
+
+version 0.5 (30.11.2013)
+------------------------
+
+- plipbox device now automatically receives its MAC address from driver
+- you can change your MAC address with SANA-II command in software
+  (if your TCP/IP stack supports it, e.g. Miami DX or Roadshow)
+- plipbox device maps online/offline state to Ethernet module and
+  disables it if devie is offline
+- parallel line protocol completely rewritten to use a client server model
+- added optional Ethernet full duplex support
+- added optional Ethernet flow control
+- improved device statistics
+- added error log
+
