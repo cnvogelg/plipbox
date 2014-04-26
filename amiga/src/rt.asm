@@ -14,20 +14,6 @@
     INCLUDE "dos/dos.i"
     ENDC
 
-
-VERSION         EQU        0
-REVISION        EQU        5
-DATE    MACRO
-              dc.b        '31.10.2013'
-      ENDM
-VERS    MACRO
-              dc.b        'plipbox 0.5'
-      ENDM
-VSTRING MACRO
-              dc.b        'plipbox 0.5 (31.10.2013)',13,10,0
-      ENDM
-
-
     xref  _DevInit
 
     xref  _DevOpen
@@ -47,7 +33,7 @@ romtag:
     dc.l  romtag
     dc.l  endskip
     dc.b  RTF_AUTOINIT
-    dc.b  VERSION
+    dc.b  DEVICE_VERSION
     dc.b  NT_DEVICE
     dc.b  0               ; priority
     dc.l  devname
@@ -55,10 +41,18 @@ romtag:
     dc.l  inittable
 
 devname:
-    dc.b "plipbox.device",0
+    dc.b DEVICE_NAME
+    dc.b ".device",0
     dc.b  0,'$VER: '
 devid:
-    VSTRING
+    dc.b DEVICE_NAME
+    dc.b " "
+    dc.b DEVICE_VERSION
+    dc.b "."
+    dc.b DEVICE_REVISION
+    dc.b " ("
+    dc.b DEVICE_DATE
+    dc.b ")",13,10,0
 
     cnop 0,2
 
@@ -79,8 +73,8 @@ datatable:
     INITBYTE LN_TYPE,NT_DEVICE
     INITLONG LN_NAME,devname
     INITBYTE LIB_FLAGS,LIBF_SUMUSED!LIBF_CHANGED
-    INITWORD LIB_VERSION,VERSION
-    INITWORD LIB_REVISION,REVISION
+    INITWORD LIB_VERSION,DEVICE_VERSION
+    INITWORD LIB_REVISION,DEVICE_REVISION
     INITLONG LIB_IDSTRING,devid
     dc.w  0
 
