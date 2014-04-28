@@ -145,8 +145,9 @@ GLOBAL void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
 
 GLOBAL void hw_config_dump(struct PLIPBase *pb)
 {
+#if DEBUG & 1
   struct HWBase *hwb = &pb->pb_HWBase;
-
+#endif
   d(("timeOut %ld\n", hwb->hwb_TimeOut));
 }
 
