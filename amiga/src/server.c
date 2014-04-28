@@ -110,28 +110,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 }
 /*E*/
 
-#define VERSION_MAX     0
-#define VERSION_MIN     5
-#define MAGIC_ONLINE    0xffff
-#define MAGIC_OFFLINE   0xfffe
-
-/* magic packet to tell plipbox firmware we go online and our MAC */
-PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
-{
-   BOOL rc;
-   struct HWFrame *frame = pb->pb_Frame;
-   
-   frame->hwf_Size = HW_ETH_HDR_SIZE;
-   memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
-   memset(frame->hwf_DstAddr, 0, HW_ADDRFIELDSIZE);
-   frame->hwf_DstAddr[0] = VERSION_MAX;
-   frame->hwf_DstAddr[1] = VERSION_MIN;
-   frame->hwf_Type = magic;
-   
-   rc = hw_send_frame(pb, frame) ? TRUE : FALSE;
-   return rc;
-}
-
 /*F*/ PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
    BOOL rc = TRUE;
@@ -147,17 +125,12 @@ PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
       }
       else
       {
-         if(send_magic_pkt(pb, MAGIC_ONLINE)) {   
-            struct HWBase *hwb = &pb->pb_HWBase;
-            
-            GetSysTime(&pb->pb_DevStats.LastStart);
-            pb->pb_Flags &= ~PLIPF_OFFLINE;
-            DoEvent(pb, S2EVENT_ONLINE);
-            d(("i'm now online!\n"));
-         } else {
-            d(("hello pkt failed!\n"));
-            rc = FALSE;
-         }
+         struct HWBase *hwb = &pb->pb_HWBase;
+         
+         GetSysTime(&pb->pb_DevStats.LastStart);
+         pb->pb_Flags &= ~PLIPF_OFFLINE;
+         DoEvent(pb, S2EVENT_ONLINE);
+         d(("i'm now online!\n"));
       }
    }
 
@@ -168,8 +141,6 @@ PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
 {
    if (!(pb->pb_Flags & PLIPF_OFFLINE))
    {
-      send_magic_pkt(pb, MAGIC_OFFLINE);
-      
       hw_detach(pb);
 
       pb->pb_Flags |= PLIPF_OFFLINE;

@@ -103,6 +103,26 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBa
 #define SETREQUEST(b)   ciab.ciapra |= HS_REQ_MASK
 #define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQ_MASK
 
+#define MAGIC_ONLINE    0xffff
+#define MAGIC_OFFLINE   0xfffe
+
+/* magic packet to tell plipbox firmware we go online and our MAC */
+PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
+{
+   BOOL rc;
+   struct HWFrame *frame = pb->pb_Frame;
+   
+   frame->hwf_Size = HW_ETH_HDR_SIZE;
+   memcpy(frame->hwf_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
+   memset(frame->hwf_DstAddr, 0, HW_ADDRFIELDSIZE);
+   frame->hwf_DstAddr[0] = DEVICE_VERSION;
+   frame->hwf_DstAddr[1] = DEVICE_REVISION;
+   frame->hwf_Type = magic;
+   
+   rc = hw_send_frame(pb, frame) ? TRUE : FALSE;
+   return rc;
+}
+
 GLOBAL BOOL hw_init(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
@@ -254,6 +274,9 @@ GLOBAL BOOL hw_attach(struct PLIPBase *pb)
                   CLEARREQUEST(pb);                /* setup handshake lines */
                   CLEARINT;                         /* clear this interrupt */
                   ENABLEINT;                            /* allow interrupts */
+
+                  /* send magic */
+                  rc = send_magic_pkt(pb, MAGIC_ONLINE);
                }
 
             }
@@ -279,6 +302,9 @@ GLOBAL VOID hw_detach(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    
+   /* send magic */
+   send_magic_pkt(pb, MAGIC_OFFLINE);
+
    if (hwb->hwb_AllocFlags & 4)
    {
       PAREXIT;
