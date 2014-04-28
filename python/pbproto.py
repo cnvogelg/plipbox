@@ -33,14 +33,14 @@ class PBProto:
     
     def send(self, buf):
         """Ask Amiga to receive a frame from me"""
+        # simply trigger ack
+        self.vpar.trigger_ack()
         # is a collision?
         if self.recv_buf != None:
             self._log("collision! already a recv buf set.")
             return False
         # prepare buffer 
         self.recv_buf = buf
-        # simply trigger ack
-        self.vpar.trigger_ack()
         return True
     
     def recv(self):
