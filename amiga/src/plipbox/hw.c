@@ -123,6 +123,33 @@ PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
    return rc;
 }
 
+#define PLIP_DEFTIMEOUT          (500*1000)
+#define PLIP_MINTIMEOUT          500
+#define PLIP_MAXTIMEOUT          999999
+
+GLOBAL void hw_config_init(struct PLIPBase *pb)
+{
+  struct HWBase *hwb = &pb->pb_HWBase;
+
+  hwb->hwb_TimeOut = PLIP_DEFTIMEOUT; 
+}
+
+GLOBAL void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
+{
+  struct HWBase *hwb = &pb->pb_HWBase;
+  
+  if (args->timeout)
+    hwb->hwb_TimeOut =
+        BOUNDS(*args->timeout, PLIP_MINTIMEOUT, PLIP_MAXTIMEOUT);
+}
+
+GLOBAL void hw_config_dump(struct PLIPBase *pb)
+{
+  struct HWBase *hwb = &pb->pb_HWBase;
+
+  d(("timeOut %ld\n", hwb->hwb_TimeOut));
+}
+
 GLOBAL BOOL hw_init(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
@@ -132,7 +159,7 @@ GLOBAL BOOL hw_init(struct PLIPBase *pb)
    /* clone sys base, process */
    hwb->hwb_SysBase = pb->pb_SysBase;
    hwb->hwb_Server = pb->pb_Server;
-   hwb->hwb_MaxMTU = (UWORD)pb->pb_MTU;
+   hwb->hwb_MaxMTU = HW_ETH_MTU;
    d2(("sysbase=%08lx, server=%08lx, hwb=%08lx, MTU=%d\n",
       hwb->hwb_SysBase, hwb->hwb_Server, hwb, hwb->hwb_MaxMTU));
    
@@ -349,7 +376,7 @@ GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
    
    /* start new timeout timer */
    hwb->hwb_TimeoutReq.tr_time.tv_secs = 0;
-   hwb->hwb_TimeoutReq.tr_time.tv_micro = pb->pb_Timeout;
+   hwb->hwb_TimeoutReq.tr_time.tv_micro = hwb->hwb_TimeOut;
    hwb->hwb_TimeoutSet = 0;
    SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
 
@@ -386,7 +413,7 @@ GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
     
    /* start new timeout timer */
    hwb->hwb_TimeoutReq.tr_time.tv_secs    = 0;
-   hwb->hwb_TimeoutReq.tr_time.tv_micro   = pb->pb_Timeout;
+   hwb->hwb_TimeoutReq.tr_time.tv_micro   = hwb->hwb_TimeOut;
    hwb->hwb_TimeoutSet = 0;
    SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
 

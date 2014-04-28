@@ -4,6 +4,9 @@
 
 /* ----- base structure for hardware ----- */
 
+/* reported BPS (bits! per second) for this device */
+#define HW_BPS (60 * 1024 * 8) /* 50 KiB/s */
+
 struct HWBase
 {
    /* used in asm module */
@@ -27,6 +30,9 @@ struct HWBase
    struct timerequest          hwb_TimeoutReq,       /* for timeout handling */
                                hwb_CollReq;        /* for collision handling */
    ULONG                       hwb_AllocFlags;
+
+   /* config options */
+   ULONG                       hwb_TimeOut;
 };
 
 #define HWB_RECV_PENDING           0
@@ -39,5 +45,17 @@ struct HWBase
 #define CIAABase     hwb->hwb_CIAABase
 #define CiaBase      hwb->hwb_CIAABase
 #define TimerBase    hwb->hwb_TimerBase
+
+/* ----- config ----- */
+
+#define CONFIGFILE "ENV:SANA2/plipbox.config"
+#define TEMPLATE "TIMEOUT/K/N"
+
+/* structure to be filled by ReadArgs template */ 
+struct TemplateConfig
+{
+   struct CommonConfig common;
+   ULONG *timeout;
+};
 
 #endif

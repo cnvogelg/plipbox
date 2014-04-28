@@ -48,10 +48,6 @@
    */
 typedef enum { AW_OK, AW_BUFFER_ERROR, AW_ERROR } AW_RESULT;
 
-   /* return val, cut to min or max if exceeding range */
-#define BOUNDS(val, min, max) ((val) <= (max) ? ((val) >= (min) ? (val) :\
-                                                         (min)) : (max))
-
 /*E*/
 /*F*/ /* imports */
    /* external functions */
@@ -525,57 +521,36 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    return base;
 }
 /*E*/
+
+#define PLIP_MINPRIORITY         -128
+#define PLIP_MAXPRIORITY         127
+
 /*F*/ PRIVATE VOID readargs(BASEPTR)
 {
    struct RDArgs *rda;
-   struct PLIPConfig args = { 0 };
-   BPTR plipvar, oldinput;
+   struct TemplateConfig args = { 0 };
+   BPTR cfginput, oldinput;
 
    d(("entered\n"));
 
-   if (plipvar = Open(CONFIGFILE, MODE_OLDFILE))
+   hw_config_init(pb);
+
+   if (cfginput = Open(CONFIGFILE, MODE_OLDFILE))
    {
-      oldinput = SelectInput(plipvar);
-      
-      rda = ReadArgs(TEMPLATE , (LONG *)&args, NULL);
-      
+      oldinput = SelectInput(cfginput);      
+      rda = ReadArgs(COMMON_TEMPLATE TEMPLATE, (LONG *)&args, NULL);
       if(rda)
       {
-         if (args.timeout)
-            pb->pb_Timeout =
-                  BOUNDS(*args.timeout, PLIP_MINTIMEOUT, PLIP_MAXTIMEOUT);
-
-         if (args.priority)
+         /* common options */
+         if (args.common.priority)
             SetTaskPri((struct Task*)pb->pb_Server,
-                  BOUNDS(*args.priority, PLIP_MINPRIORITY, PLIP_MAXPRIORITY));
+                  BOUNDS(*args.common.priority, PLIP_MINPRIORITY, PLIP_MAXPRIORITY));
 
-         if (args.mtu)
-            pb->pb_MTU = BOUNDS(*args.mtu, PLIP_MINMTU, PLIP_MAXMTU);
-
-         if (args.bps)
-            pb->pb_ReportBPS = BOUNDS(*args.bps, PLIP_MINBPS, PLIP_MAXBPS);
-
-         if (args.retries)
-            pb->pb_Retries =
-                     BOUNDS(*args.retries, PLIP_MINRETRIES, PLIP_MAXRETRIES);
-
-         if (args.collisiondelay)
-            pb->pb_CollisionDelay =
-               BOUNDS(*args.collisiondelay, PLIP_MINCOLLISIONDELAY,
-                                            PLIP_MAXCOLLISIONDELAY);
-         else
-            pb->pb_CollisionDelay = PLIP_DEFDELAY + (pb->pb_Unit ?
-                                                  PLIP_DELAYDIFF : 0);
-
-         if (args.arbitrationdelay)
-            pb->pb_ArbitrationDelay =
-               BOUNDS(*args.collisiondelay, PLIP_MINARBITRATIONDELAY,
-                                            PLIP_MAXARBITRATIONDELAY);
-         else
-            pb->pb_ArbitrationDelay = PLIP_DEFARBITRATIONDELAY;
-
-         if (args.nospecialstats)
+         if (args.common.nospecialstats)
             pb->pb_ExtFlags |= PLIPEF_NOSPECIALSTATS;
+
+         /* special config */
+         hw_config_update(pb, &args);
 
          FreeArgs(rda);
       }
@@ -583,12 +558,11 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       Close(SelectInput(oldinput));
    }
 
-   d(("timeout %ld, pri %ld, mtu %ld, bps %ld, retries %ld, flags %08lx, delay %ld\n",
-      pb->pb_Timeout, (LONG)pb->pb_Server->pr_Task.tc_Node.ln_Pri, pb->pb_MTU, pb->pb_ReportBPS, pb->pb_Retries,
-      pb->pb_Flags, pb->pb_CollisionDelay));
+   /* dump default config options */
+   d(("pri %ld, flags %08lx\n", (LONG)pb->pb_Server->pr_Task.tc_Node.ln_Pri, pb->pb_Flags));
+   hw_config_dump(pb);
 
    d(("left\n"));
-
 }
 /*E*/
 /*F*/ PRIVATE BOOL init(BASEPTR)
@@ -602,10 +576,10 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       /* init hardware */
       if(hw_init(pb)) {         
          d(("allocating 0x%lx/%ld bytes frame buffer\n",
-                  sizeof(struct HWFrame)+pb->pb_MTU,
-                  sizeof(struct HWFrame)+pb->pb_MTU));
+                  sizeof(struct HWFrame)+HW_ETH_MTU,
+                  sizeof(struct HWFrame)+HW_ETH_MTU));
          if ((pb->pb_Frame = AllocVec((ULONG)sizeof(struct HWFrame) +
-                                       pb->pb_MTU, MEMF_CLEAR|MEMF_ANY)))
+                                       HW_ETH_MTU, MEMF_CLEAR|MEMF_ANY)))
          {
             rc = TRUE;
          }
