@@ -34,7 +34,7 @@ AS          = $(RUN) sc:c/sc
 
 # SAS C flags
 LIBS        = LIB lib:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
-CINCLUDES   = INCDIR="include:" INCDIR="netinclude:"
+CINCLUDES   = INCDIR="include:" INCDIR="netinclude:" INCDIR="$(DEVICE_NAME)"
 ASMINCLUDES = $(CINCLUDES) INCDIR="$(AMI_OBJ_DIR)/$(BUILD_DIR)"
 CPUSUFFIX   = 000
 CPUCCOPT    = CPU=68$(CPUSUFFIX)
@@ -67,13 +67,17 @@ LDFLAGS_RELEASE  = NOICONS SC SD ND $(LIBS) TO
 BUILD_DIR = build_$(BUILD_TYPE)_$(CPUSUFFIX)
 BUILD_PATH = $(OBJ_DIR)/$(BUILD_DIR)
 
-# source files
-CSRC=device.c hw.c server.c track.c
-ASRC=rt.asm hwpar.asm
+# generic source files
+CSRC=device.c server.c track.c
+ASRC=rt.asm
+
+# driver specific source files
+CSRC_$(DRIVER_NAME) = hw.c
+ASRC_$(DRIVER_NAME) = hwpar.asm
 
 # object files
-OBJS:=$(patsubst %.c,$(BUILD_PATH)/%.o,$(CSRC))
-OBJS+=$(patsubst %.asm,$(BUILD_PATH)/%.o,$(ASRC))
+OBJS:=$(patsubst %.c,$(BUILD_PATH)/%.o,$(CSRC) $(CSRC_$(DRIVER_NAME)))
+OBJS+=$(patsubst %.asm,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
 
 # output device
 OUTPUT = $(BIN_DIR)/$(DEVICE_FILE)
@@ -82,6 +86,9 @@ OUTPUT = $(BIN_DIR)/$(DEVICE_FILE)
 LIBSIZE_TOOL = $(BUILD_PATH)/libsize
 LIBSIZE_INC = $(BUILD_PATH)/libsize.i
 LIBSIZE_OBJ = $(BUILD_PATH)/libsize.o
+
+# add driver directory
+VPATH = .:$(DEVICE_NAME)
 
 # --- rules ---
 
