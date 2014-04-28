@@ -14,6 +14,8 @@
     INCLUDE "dos/dos.i"
     ENDC
 
+    include "libsize.i"
+
     xref  _DevInit
 
     xref  _DevOpen
@@ -57,7 +59,7 @@ devid:
     cnop 0,2
 
 inittable:
-    dc.l  700   ; hack!! - use libsize tool to recalc!
+    dc.l  libsize
     dc.l  functable,datatable,_DevInit
 
 functable:

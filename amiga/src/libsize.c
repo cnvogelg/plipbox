@@ -3,6 +3,6 @@
 
 int main(int argc, char **argv)
 {
-   printf("%d\n", sizeof(struct PLIPBase));
+   printf("libsize equ %d\n", sizeof(struct PLIPBase));
    return 0;
 }

@@ -33,9 +33,9 @@ CC          = $(RUN) sc:c/sc
 AS          = $(RUN) sc:c/sc
 
 # SAS C flags
-LIBS        = LIB LIB:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
+LIBS        = LIB lib:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
 CINCLUDES   = INCDIR="include:" INCDIR="netinclude:"
-ASMINCLUDES = $(CINCLUDES)
+ASMINCLUDES = $(CINCLUDES) INCDIR="$(AMI_OBJ_DIR)/$(BUILD_DIR)"
 CPUSUFFIX   = 000
 CPUCCOPT    = CPU=68$(CPUSUFFIX)
 BUILD_TYPE  = DEBUG
@@ -78,6 +78,11 @@ OBJS+=$(patsubst %.asm,$(BUILD_PATH)/%.o,$(ASRC))
 # output device
 OUTPUT = $(BIN_DIR)/$(DEVICE_FILE)
 
+# tool to calculate lib size
+LIBSIZE_TOOL = $(BUILD_PATH)/libsize
+LIBSIZE_INC = $(BUILD_PATH)/libsize.i
+LIBSIZE_OBJ = $(BUILD_PATH)/libsize.o
+
 # --- rules ---
 
 all: dirs $(OUTPUT)
@@ -91,7 +96,7 @@ dist: dirs
 	$(MAKE) BUILD_TYPE=RELEASE CPUSUFFIX=040
 
 clean: clean_obj
-	rm -f $(OUTPUT)
+	rm -f $(OUTPUT) $(LIBSIZE_INC) $(LIBSIZE_TOOL)
 
 clean_obj:
 	rm -f $(OBJS)
@@ -119,3 +124,18 @@ $(BIN_DIR):
 
 $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
+
+# --- libsize tool ---
+gen: $(LIBSIZE_INC)
+$(LIBSIZE_INC): $(LIBSIZE_TOOL)
+	$(RUN) $(LIBSIZE_TOOL) > $(LIBSIZE_INC)
+
+# build libsize tool
+libsize: $(LIBSIZE_TOOL)
+
+$(LIBSIZE_TOOL): $(LIBSIZE_OBJ)
+	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
+
+# --- dependencies ---
+rt.asm: $(LIBSIZE_INC)
+$(LIBSIZE_INC): hw.h global.h
