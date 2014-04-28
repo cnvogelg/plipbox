@@ -59,7 +59,8 @@ CFLAGS_RELEASE = $(CFLAGS_COMMON) \
                  OPTSCHEDULE STRINGMERGE STRUCTUREEQUIVALENCE
 
 # assembler
-ASMFLAGS = $(ASMINCLUDES) VERBOSE $(COMMON_DEFINES)
+ASMFLAGS = $(ASMINCLUDES) VERBOSE
+DEVINFO_INC = $(BUILD_PATH)/devinfo.i
 
 # linker
 LDFLAGS_DEBUG    = NOICONS SC  $(LIBS) TO
@@ -78,8 +79,8 @@ CSRC_$(DRIVER_NAME) = hw.c
 ASRC_$(DRIVER_NAME) = hwpar.asm
 
 # object files
-OBJS:=$(patsubst %.c,$(BUILD_PATH)/%.o,$(CSRC) $(CSRC_$(DRIVER_NAME)))
-OBJS+=$(patsubst %.asm,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
+OBJS:=$(patsubst %.asm,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
+OBJS+=$(patsubst %.c,$(BUILD_PATH)/%.o,$(CSRC) $(CSRC_$(DRIVER_NAME)))
 
 # output device
 OUTPUT = $(BIN_DIR)/$(DEVICE_FILE)
@@ -105,7 +106,7 @@ dist: dirs
 	$(MAKE) BUILD_TYPE=RELEASE CPUSUFFIX=040
 
 clean: clean_obj
-	rm -f $(OUTPUT) $(LIBSIZE_INC) $(LIBSIZE_TOOL)
+	rm -f $(OUTPUT) $(LIBSIZE_INC) $(LIBSIZE_TOOL) $(DEVINFO_INC)
 
 clean_obj:
 	rm -f $(OBJS)
@@ -134,10 +135,28 @@ $(BIN_DIR):
 $(BUILD_PATH):
 	mkdir -p $(BUILD_PATH)
 
+# --- devinfo.i ---
+$(DEVINFO_INC):
+	@echo "DEVICE_NAME  MACRO" > $(DEVINFO_INC)
+	@echo "  dc.b '$(DEVICE_NAME)'" >> $(DEVINFO_INC)
+	@echo "	 ENDM" >> $(DEVINFO_INC)
+	@echo "DEVICE_DATE  MACRO" >> $(DEVINFO_INC)
+	@echo "  dc.b '$(DEVICE_DATE)'" >> $(DEVINFO_INC)
+	@echo "	 ENDM" >> $(DEVINFO_INC)
+	@echo "DEVICE_VER  MACRO" >> $(DEVINFO_INC)
+	@echo "  dc.b '$(DEVICE_VERSION).$(DEVICE_REVISION)'" >> $(DEVINFO_INC)
+	@echo "	 ENDM" >> $(DEVINFO_INC)
+	@echo "DEVICE_VERSION equ $(DEVICE_VERSION)" >> $(DEVINFO_INC)
+	@echo "DEVICE_REVISION equ $(DEVICE_REVISION)" >> $(DEVINFO_INC)
+
 # --- libsize tool ---
-gen: $(LIBSIZE_INC)
+gen: $(LIBSIZE_INC) $(DEVINFO_INC)
+	@cat $(LIBSIZE_INC)
+	@cat $(DEVINFO_INC)
+
 $(LIBSIZE_INC): $(LIBSIZE_TOOL)
 	$(RUN) $(LIBSIZE_TOOL) > $(LIBSIZE_INC)
+	@cat $(LIBSIZE_INC)
 
 # build libsize tool
 libsize: $(LIBSIZE_TOOL)
@@ -146,5 +165,5 @@ $(LIBSIZE_TOOL): $(LIBSIZE_OBJ)
 	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
 
 # --- dependencies ---
-rt.asm: $(LIBSIZE_INC)
-$(LIBSIZE_INC): hw.h global.h
+rt.asm: $(LIBSIZE_INC) $(DEVINFO_INC)
+$(LIBSIZE_INC): hw.h global.h hwbase.h

@@ -15,6 +15,7 @@
     ENDC
 
     include "libsize.i"
+    include "devinfo.i"
 
     xref  _DevInit
 
@@ -43,17 +44,15 @@ romtag:
     dc.l  inittable
 
 devname:
-    dc.b DEVICE_NAME
+    DEVICE_NAME
     dc.b ".device",0
     dc.b  0,'$VER: '
 devid:
-    dc.b DEVICE_NAME
+    DEVICE_NAME
     dc.b " "
-    dc.b DEVICE_VERSION
-    dc.b "."
-    dc.b DEVICE_REVISION
+    DEVICE_VER
     dc.b " ("
-    dc.b DEVICE_DATE
+    DEVICE_DATE
     dc.b ")",13,10,0
 
     cnop 0,2
