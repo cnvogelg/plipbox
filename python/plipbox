@@ -14,6 +14,9 @@ import pbproto
 import tap
 import bridge
 
+MAGIC_ONLINE = 0xffff
+MAGIC_OFFLINE = 0xffff
+
 # default param
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
 
@@ -24,7 +27,8 @@ parser.add_argument('-e', '--eth-if', default="en1", help="ethernet interface na
 parser.add_argument('-t', '--tap-if', default="tap0", help="tap interface name")
 parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
-parser.add_argument('-d', '--debug', action='store_true', default=False, help="debug code")
+parser.add_argument('-P', '--show-proto', action='store_true', default=False, help="show protocol")
+parser.add_argument('-V', '--show-vpar', action='store_true', default=False, help="show vpar")
 parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
 args = parser.parse_args()
 
@@ -105,23 +109,30 @@ def check_pkt(pkt, raw_buf, args):
     return True
 
 def handle_tap(tap, pb, t, args):
+  global online
   # read packet
   raw_buf = tap.read(2048)
   # decode frame
   eth_frame = EthFrame()
   eth_frame.decode(raw_buf)
   # send packet to plipbox
-  if not args.rx:
+  if not args.rx and online:
     # check if packet is passed
     keep = args.eth_pass or check_pkt(eth_frame, raw_buf, args)
     if keep:
-      log("%12.6f tap->PAR: [%4d] " % (t, len(raw_buf)), eth_frame)
       # submit to par send
       pb.send(raw_buf)
+      tag = " ok "
       return pb.must_handle()
+    else:
+      tag = "FILT"
+  else:
+    tag = "OFF "
+  log("%12.6f tap->PAR: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
   return False
 
 def handle_par(pb, tap, t, args):
+  global online
   # rx: get block
   pkt = None
   cmd = 0
@@ -144,14 +155,25 @@ def handle_par(pb, tap, t, args):
     eth_frame = EthFrame()
     eth_frame.decode(raw_buf)
     n = len(raw_buf)
-    log("%12.6f PAR->tap: [%4d] " % (t,len(raw_buf)), eth_frame, end=' ')
-    # send to tap
-    if not args.rx:
-      try:
-        tap.write(raw_buf)
-        log()
-      except OSError as e:
-        log(e)
+    # check for magic packets
+    if eth_frame.eth_type == MAGIC_ONLINE:
+      log("magic: online")
+      tag = "M:ON"
+      online = True
+    elif eth_frame.eth_type == MAGIC_OFFLINE:
+      log("magic: offline")
+      tag = "M:OF"
+      online = False
+    elif not args.rx and online:
+        try:
+          tag = " ok "
+          tap.write(raw_buf)
+        except OSError as e:
+          log(e)
+          tag = "ERR!"
+    else:
+      tag = "OFF "
+    log("%12.6f PAR->tap: [%4d] [%s]" % (t,len(raw_buf), tag), eth_frame)
 
 # ----- main loop -----
 print("Welcome to plipbox!")
@@ -163,9 +185,9 @@ sp = sopty.SoPTY(vpar_link)
 sp_fd = sp.get_fd()
 
 log("vpar")
-vpar = vpar.VPar(sp,verbose=args.debug)
+vpar = vpar.VPar(sp,verbose=args.show_vpar)
 log("plipbox")
-pb = pbproto.PBProto(vpar,debug=args.debug)
+pb = pbproto.PBProto(vpar,debug=args.show_proto)
 
 # setup tap and bridge
 tap_name = args.tap_if
@@ -201,6 +223,7 @@ try:
       log("start plipbox protocol")
       pb.start()
       do_sync = False
+      online = False
 
     # io multiplex
     r = select([tap_fd,sp_fd],[],[])
