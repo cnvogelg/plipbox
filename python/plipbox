@@ -11,11 +11,10 @@ import struct
 import sopty
 import vpar
 import pbproto
-import tap
-import bridge
+import veth
 
 MAGIC_ONLINE = 0xffff
-MAGIC_OFFLINE = 0xffff
+MAGIC_OFFLINE = 0xfffe
 
 # default param
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
@@ -23,8 +22,11 @@ plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
 # parse args
 parser = argparse.ArgumentParser()
 parser.add_argument('-r', '--rx', action='store_true', default=False, help="only receive")
+
 parser.add_argument('-e', '--eth-if', default="en1", help="ethernet interface name")
 parser.add_argument('-t', '--tap-if', default="tap0", help="tap interface name")
+parser.add_argument('-b', '--bridge-if', default="bridge0", help="bridge interface name")
+
 parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
 parser.add_argument('-P', '--show-proto', action='store_true', default=False, help="show protocol")
@@ -108,10 +110,10 @@ def check_pkt(pkt, raw_buf, args):
   else:
     return True
 
-def handle_tap(tap, pb, t, args):
+def handle_eth(veth, pb, t, args):
   global online
   # read packet
-  raw_buf = tap.read(2048)
+  raw_buf = veth.rx_pkt()
   # decode frame
   eth_frame = EthFrame()
   eth_frame.decode(raw_buf)
@@ -128,10 +130,10 @@ def handle_tap(tap, pb, t, args):
       tag = "FILT"
   else:
     tag = "OFF "
-  log("%12.6f tap->PAR: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
+  log("%12.6f eth: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
   return False
 
-def handle_par(pb, tap, t, args):
+def handle_par(pb, veth, t, args):
   global online
   # rx: get block
   pkt = None
@@ -167,13 +169,27 @@ def handle_par(pb, tap, t, args):
     elif not args.rx and online:
         try:
           tag = " ok "
-          tap.write(raw_buf)
+          veth.tx_pkt(raw_buf)
         except OSError as e:
           log(e)
           tag = "ERR!"
     else:
       tag = "OFF "
-    log("%12.6f PAR->tap: [%4d] [%s]" % (t,len(raw_buf), tag), eth_frame)
+    log("%12.6f PAR: [%4d] [%s]" % (t,len(raw_buf), tag), eth_frame)
+
+def setup_veth(args):
+  # setup virtual ethernet
+  ifs = (args.eth_if, args.tap_if, args.bridge_if)
+  v = veth.VEth(*ifs)
+  if not v.pre_check_ifs():
+    print("veth: interface problem!",*ifs)
+    sys.exit(1)
+  try:
+    v.open()
+  except Exception as e:
+    print("veth: error opening:",e)
+    sys.exit(2)
+  return v
 
 # ----- main loop -----
 print("Welcome to plipbox!")
@@ -189,26 +205,8 @@ vpar = vpar.VPar(sp,verbose=args.show_vpar)
 log("plipbox")
 pb = pbproto.PBProto(vpar,debug=args.show_proto)
 
-# setup tap and bridge
-tap_name = args.tap_if
-eth_name = args.eth_if
-tap = tap.Tap(tap_name)
-
-# check interfaces
-if tap.has_interface(tap_name):
-  print("tap",tap_name,"interface already exists!")
-  sys.exit(1)
-if not tap.has_interface(eth_name):
-  print("ethernet",eth_name,"interface not found! use -e to set one.")
-  sys.exit(1)
-
-log("opening tap:",tap_name)
-tap.open()
-tap_fd = tap.get_fd()
-
-log("setup bridge:",tap_name, eth_name)
-bridge = bridge.Bridge(tap_name, eth_name)
-bridge.up()
+veth = setup_veth(args)
+tap_fd = veth.tap.get_fd()
 
 timeout = 0.1
 do_sync = True
@@ -229,14 +227,14 @@ try:
     r = select([tap_fd,sp_fd],[],[])
     t = time.time() - start
     
-    # got packet from tap?
+    # got packet from virtual ethernet?
     need_handle = False
     if tap_fd in r[0]:
-      need_handle = handle_tap(tap, pb, t, args)
+      need_handle = handle_eth(veth, pb, t, args)
     
     # got packet from parallel?
     if sp_fd in r[0] or need_handle:
-      handle_par(pb, tap, t, args)
+      handle_par(pb, veth, t, args)
     
     # check emulator flags in vpar
     if vpar.check_init_flag():
@@ -250,8 +248,7 @@ except KeyboardInterrupt:
   print
 finally:
   log("shutting down")
-  bridge.down()
-  tap.close()
+  veth.close()
   vpar.close()
   sp.close()
   log("done")
