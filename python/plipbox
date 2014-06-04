@@ -8,10 +8,8 @@ import argparse
 from select import select
 import struct
 
-import sopty
-import vpar
-import pbproto
 import veth
+import pbvpar
 
 MAGIC_ONLINE = 0xffff
 MAGIC_OFFLINE = 0xfffe
@@ -29,8 +27,7 @@ parser.add_argument('-b', '--bridge-if', default="bridge0", help="bridge interfa
 
 parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
-parser.add_argument('-P', '--show-proto', action='store_true', default=False, help="show protocol")
-parser.add_argument('-V', '--show-vpar', action='store_true', default=False, help="show vpar")
+parser.add_argument('-d', '--debug', type=int, default=0, help="debug flags: 1=low level, 2=protocol")
 parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
 args = parser.parse_args()
 
@@ -65,18 +62,6 @@ class EthFrame:
     s = self.decode_mac(self.src_mac)
     return "[%04d:0x%04x,%s->%s]" % (self.size, self.eth_type,s,t)
     
-def calc_speed(delta, size):
-  if delta > 0:
-    kibs = size / (delta * 1024)
-  else:
-    kibs = 0
-  return "%6.3f KiB/s" % kibs
-
-def get_speed_bar(delta, n):
-  return "%s   %12.6f s" % (
-    calc_speed(delta, n), delta
-  )
-
 def check_bootp_bcast(raw_buf):
   eth_off = 14
   # check IP proto
@@ -123,9 +108,9 @@ def handle_eth(veth, pb, t, args):
     keep = args.eth_pass or check_pkt(eth_frame, raw_buf, args)
     if keep:
       # submit to par send
-      pb.send(raw_buf)
+      must_handle = pb.tx_pkt(raw_buf, t)
       tag = " ok "
-      return pb.must_handle()
+      return must_handle
     else:
       tag = "FILT"
   else:
@@ -133,25 +118,10 @@ def handle_eth(veth, pb, t, args):
   log("%12.6f eth: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
   return False
 
-def handle_par(pb, veth, t, args):
+def handle_pb(pb, veth, t, args):
   global online
-  # rx: get block
-  pkt = None
-  cmd = 0
-  try:
-    # handle par command
-    s = time.time()
-    cmd,n = pb.handle()
-    e = time.time()
-    d = e - s
-    log("%12.6f *CMD%02x* :" % (t,cmd), get_speed_bar(d,n))
-  except pbproto.PBProtoError as ex:
-    e = time.time()
-    d = e - s
-    log("%12.6f *CMD%02x* : ERROR %s. delta=%5.3f" % (t, cmd, ex, d))
-  
   # was a buffer received?
-  raw_buf = pb.recv()
+  raw_buf = pb.rx_pkt(t)
   if raw_buf != None:
     # decode frame
     eth_frame = EthFrame()
@@ -191,38 +161,38 @@ def setup_veth(args):
     sys.exit(2)
   return v
 
+def setup_pbvpar(args):
+  global log
+  pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug, log=log)
+  try:
+    pb.open()
+  except Exception as e:
+    print("pb: error opening:",e)
+    sys.exit(3)
+  return pb
+
 # ----- main loop -----
 print("Welcome to plipbox!")
 
-# setup vpar and plipbox protocol
-vpar_link = args.vpar_link
-log("opening pty:",vpar_link)
-sp = sopty.SoPTY(vpar_link)
-sp_fd = sp.get_fd()
+# setup plipbox
+pb = setup_pbvpar(args)
+sp_fd = pb.sp._fd
 
-log("vpar")
-vpar = vpar.VPar(sp,verbose=args.show_vpar)
-log("plipbox")
-pb = pbproto.PBProto(vpar,debug=args.show_proto)
-
+# setup virtual ethernet
 veth = setup_veth(args)
 tap_fd = veth.tap.get_fd()
 
-timeout = 0.1
-do_sync = True
+online = False
 start = time.time()
 try:
   log("enter main loop")
   while True:
-    # need a vpar re-sync 
-    if do_sync:
-      log("sync vpar with emu")
-      vpar.request_state()
-      log("start plipbox protocol")
-      pb.start()
-      do_sync = False
+    status = pb.check_status()
+    if status is False:
+      break
+    elif status is True:
       online = False
-
+ 
     # io multiplex
     r = select([tap_fd,sp_fd],[],[])
     t = time.time() - start
@@ -234,21 +204,12 @@ try:
     
     # got packet from parallel?
     if sp_fd in r[0] or need_handle:
-      handle_par(pb, veth, t, args)
-    
-    # check emulator flags in vpar
-    if vpar.check_init_flag():
-      log("emu restarted")
-      do_sync = True
-    if vpar.check_exit_flag():
-      log("emu exit")
-      break
+      handle_pb(pb, veth, t, args)
       
 except KeyboardInterrupt:
   print
 finally:
   log("shutting down")
   veth.close()
-  vpar.close()
-  sp.close()
+  pb.close()
   log("done")
