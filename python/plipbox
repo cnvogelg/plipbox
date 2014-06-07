@@ -6,13 +6,10 @@ import sys, os
 import time
 import argparse
 from select import select
-import struct
 
 import veth
 import pbvpar
-
-MAGIC_ONLINE = 0xffff
-MAGIC_OFFLINE = 0xfffe
+from ethframe import EthFrame
 
 # default param
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
@@ -38,65 +35,8 @@ def log(*v,**kv):
   if args.verbose:
     print(*v,**kv)
 
-class EthFrame:
-  def __init__(self):
-    self.tgt_mac = None
-    self.src_mac = None
-    self.eth_type = None
-    self.size = 0
-  
-  def decode(self, raw_pkt):
-    self.tgt_mac = struct.unpack("BBBBBB",raw_pkt[0:6])
-    self.src_mac = struct.unpack("BBBBBB",raw_pkt[6:12])
-    self.eth_type = struct.unpack("!H",raw_pkt[12:14])[0]
-    self.size = len(raw_pkt) - 14
-
-  def decode_mac(self, mac):
-    res = []
-    for a in mac:
-      res.append("%02x" % a)
-    return ":".join(res)
-
-  def __str__(self):
-    t = self.decode_mac(self.tgt_mac)
-    s = self.decode_mac(self.src_mac)
-    return "[%04d:0x%04x,%s->%s]" % (self.size, self.eth_type,s,t)
-    
-def check_bootp_bcast(raw_buf):
-  eth_off = 14
-  # check IP proto
-  proto = ord(raw_buf[eth_off+9])
-  if proto != 17: # must be UDP
-    return False
-  # check tgt ip
-  off = eth_off + 16 # eth hdr + ip: tgt
-  tgt_ip = struct.unpack("BBBB",raw_buf[off:off+4])
-  if tgt_ip != (255,255,255,255):
-    return False
-  # check udp port
-  udp_off = eth_off + (ord(raw_buf[eth_off]) & 0xf) * 4
-  src_port = struct.unpack("!H",raw_buf[udp_off:udp_off+2])[0] 
-  tgt_port = struct.unpack("!H",raw_buf[udp_off+2:udp_off+4])[0]
-  bootp = (67, 68)
-  return src_port in bootp and tgt_port in bootp
-  
-def check_pkt(pkt, raw_buf, args):
-  global plipbox_mac
-  bcast = (0xff,0xff,0xff,0xff,0xff,0xff)
-  if pkt.tgt_mac == bcast:
-    if pkt.eth_type == 0x806: # ARP
-      return True
-    elif pkt.eth_type == 0x800: # IPv4
-      return check_bootp_bcast(raw_buf)
-    else:
-      return False
-  elif pkt.tgt_mac != plipbox_mac:
-    return False
-  else:
-    return True
-
 def handle_eth(veth, pb, t, args):
-  global online
+  global online, plipbox_mac
   # read packet
   raw_buf = veth.rx_pkt()
   # decode frame
@@ -105,7 +45,7 @@ def handle_eth(veth, pb, t, args):
   # send packet to plipbox
   if not args.rx and online:
     # check if packet is passed
-    keep = args.eth_pass or check_pkt(eth_frame, raw_buf, args)
+    keep = args.eth_pass or eth_frame.is_for_me(plipbox_mac)
     if keep:
       # submit to par send
       must_handle = pb.tx_pkt(raw_buf, t)
@@ -128,11 +68,11 @@ def handle_pb(pb, veth, t, args):
     eth_frame.decode(raw_buf)
     n = len(raw_buf)
     # check for magic packets
-    if eth_frame.eth_type == MAGIC_ONLINE:
+    if eth_frame.is_magic_online():
       log("magic: online")
       tag = "M:ON"
       online = True
-    elif eth_frame.eth_type == MAGIC_OFFLINE:
+    elif eth_frame.is_magic_offline():
       log("magic: offline")
       tag = "M:OF"
       online = False
