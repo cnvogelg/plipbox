@@ -3,6 +3,7 @@ import time
 import pbproto
 import sopty
 import vpar
+import threading
 
 
 class PBVPar:
@@ -21,28 +22,43 @@ class PBVPar:
             log = _dummy
         self._log = log
         self._do_sync = True
+        self._is_open = False
+        self._tx_pkt = None
+        self._lock = threading.Lock()
 
     def open(self):
         self.sp.open()
+        self._is_open = True
 
     def close(self):
+        self._is_open = False
         self.sp.close()
 
     def tx_pkt(self, buf):
-        self.pb.send(buf)
+        """tx triggered from ethernet reader thread"""
+        if not self._is_open:
+            return False
+        # syncronize vpar access
+        with self._lock:
+            return self.pb.send(buf)
 
     def rx_pkt(self, timeout=None):
-        # first check if the emu is attached
-        if not self.vpar.can_write(timeout):
-            return None
-        # check state
-        if not self._check_status(timeout):
-            return None
-        # handle command
-        if not self._handle_cmd(timeout):
-            return None
-        # was a receive?
-        return self.pb.recv()
+        # is open?
+        if not self._is_open:
+            return False
+        # synchronize vpar access
+        with self._lock:
+            # first check if the emu is attached
+            if not self.vpar.can_write(timeout):
+                return None
+            # check state
+            if not self._check_status(timeout):
+                return None
+            # handle command
+            if not self._handle_cmd(timeout):
+                return None
+            # was a receive?
+            return self.pb.recv()
 
     def _check_status(self, timeout=None):
         """return False if no state update"""
