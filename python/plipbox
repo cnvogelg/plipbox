@@ -5,11 +5,139 @@ from __future__ import print_function
 import sys, os
 import time
 import argparse
-from select import select
+import threading
 
 import veth
 import pbvpar
 from ethframe import EthFrame
+
+# ---------- ethernet ------------------------------------------------------
+
+class EthernetReader:
+
+  def __init__(self, args, log):
+    # setup virtual ethernet
+    ifs = (args.eth_if, args.tap_if, args.bridge_if)
+    v = veth.VEth(*ifs)
+    if not v.pre_check_ifs():
+      print("veth: interface problem!",*ifs)
+      sys.exit(1)
+    try:
+      v.open()
+    except Exception as e:
+      print("veth: error opening:",e)
+      sys.exit(2)
+    self.eth = v
+    self.args = args
+    self.log = log
+
+  def tx_pkt(self, raw_buf):
+    self.eth.tx_pkt(raw_buf)
+
+  def set_env(self, pb, leave_event, online_event, pb_mac):
+    self.pb = pb
+    self.leave_event = leave_event
+    self.online_event = online_event
+    self.pb_mac = pb_mac
+
+  def run(self):
+    try:
+      self.log("starting ethernet reader")
+      timeout = 0.5
+      while not self.leave_event.is_set():
+        # read packet
+        raw_buf = self.eth.rx_pkt(timeout=timeout)
+        if raw_buf is not None:
+          # decode frame
+          eth_frame = EthFrame()
+          eth_frame.decode(raw_buf)
+          # send packet to plipbox
+          if not args.rx and online_event.is_set():
+            # check if packet is passed
+            keep = args.eth_pass or eth_frame.is_for_me(plipbox_mac)
+            if keep:
+              # submit to par send
+              self.pb.tx_pkt(raw_buf)
+              tag = " ok "
+            else:
+              tag = "FILT"
+          else:
+            tag = "OFF "
+          t = time.time()
+          self.log("%12.6f eth: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
+    except KeyboardInterrupt:
+      self.log("BREAK [eth]")
+      self.leave_event.set()
+    finally:
+      self.log("closing ethernet reader")
+      self.eth.close()
+      self.log("ethernet done")
+
+# ---------- plipbox -------------------------------------------------------
+
+class PlipboxReader:
+
+  def __init__(self, args, log):
+    pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug, log=log)
+    try:
+      pb.open()
+    except Exception as e:
+      print("pb: error opening:",e)
+      sys.exit(3)
+    self.pb = pb
+    self.args = args
+    self.log = log
+
+  def tx_pkt(self, raw_buf):
+    self.pb.tx_pkt(raw_buf)
+
+  def set_env(self, eth, leave_event, online_event):
+    self.eth = eth
+    self.leave_event = leave_event
+    self.online_event = online_event
+
+  def run(self):
+    try:
+      self.log("starting plipbox reader")
+      timeout = 0.5
+      while not self.leave_event.is_set():
+        # was a buffer received?
+        raw_buf = self.pb.rx_pkt(timeout)
+        if raw_buf is not None:
+          # decode frame
+          eth_frame = EthFrame()
+          eth_frame.decode(raw_buf)
+          n = len(raw_buf)
+          # check for magic packets
+          if eth_frame.is_magic_online():
+            log("magic: online")
+            tag = "M:ON"
+            self.online_event.set()
+          elif eth_frame.is_magic_offline():
+            log("magic: offline")
+            tag = "M:OF"
+            self.online_event.clear()
+          elif not args.rx and self.online_event.is_set():
+            try:
+              tag = " ok "
+              self.eth.tx_pkt(raw_buf)
+            except OSError as e:
+              self.log(e)
+              tag = "ERR!"
+          else:
+            tag = "OFF "
+          t = time.time()
+          self.log("%12.6f PAR: [%4d] [%s]" % (t,len(raw_buf), tag), eth_frame)
+    except KeyboardInterrupt:
+      self.log("BREAK [pb]")
+      self.leave_event.set()
+    finally:
+      self.log("closing plipbox")
+      self.pb.close()
+      self.log("plipbox done")
+
+# ---------- main -----------------------------------------------------------
+print("Welcome to plipbox!")
 
 # default param
 plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
@@ -28,128 +156,43 @@ parser.add_argument('-d', '--debug', type=int, default=0, help="debug flags: 1=l
 parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
 args = parser.parse_args()
 
-# ----- eth frame decoding -----
-
 def log(*v,**kv):
   global args
   if args.verbose:
     print(*v,**kv)
 
-def handle_eth(veth, pb, t, args):
-  global online, plipbox_mac
-  # read packet
-  raw_buf = veth.rx_pkt()
-  # decode frame
-  eth_frame = EthFrame()
-  eth_frame.decode(raw_buf)
-  # send packet to plipbox
-  if not args.rx and online:
-    # check if packet is passed
-    keep = args.eth_pass or eth_frame.is_for_me(plipbox_mac)
-    if keep:
-      # submit to par send
-      must_handle = pb.tx_pkt(raw_buf, t)
-      tag = " ok "
-      return must_handle
-    else:
-      tag = "FILT"
-  else:
-    tag = "OFF "
-  log("%12.6f eth: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
-  return False
+# setup plipbox and ethernet
+pb = PlipboxReader(args, log)
+eth = EthernetReader(args, log)
 
-def handle_pb(pb, veth, t, args):
-  global online
-  # was a buffer received?
-  raw_buf = pb.rx_pkt(t)
-  if raw_buf != None:
-    # decode frame
-    eth_frame = EthFrame()
-    eth_frame.decode(raw_buf)
-    n = len(raw_buf)
-    # check for magic packets
-    if eth_frame.is_magic_online():
-      log("magic: online")
-      tag = "M:ON"
-      online = True
-    elif eth_frame.is_magic_offline():
-      log("magic: offline")
-      tag = "M:OF"
-      online = False
-    elif not args.rx and online:
-        try:
-          tag = " ok "
-          veth.tx_pkt(raw_buf)
-        except OSError as e:
-          log(e)
-          tag = "ERR!"
-    else:
-      tag = "OFF "
-    log("%12.6f PAR: [%4d] [%s]" % (t,len(raw_buf), tag), eth_frame)
+# setup shared env
+leave_event = threading.Event()
+online_event = threading.Event()
+pb.set_env(eth, leave_event, online_event)
+eth.set_env(pb, leave_event, online_event, plipbox_mac)
 
-def setup_veth(args):
-  # setup virtual ethernet
-  ifs = (args.eth_if, args.tap_if, args.bridge_if)
-  v = veth.VEth(*ifs)
-  if not v.pre_check_ifs():
-    print("veth: interface problem!",*ifs)
-    sys.exit(1)
-  try:
-    v.open()
-  except Exception as e:
-    print("veth: error opening:",e)
-    sys.exit(2)
-  return v
+# start reader threads
+eth_thread = threading.Thread(target=eth.run)
+pb_thread = threading.Thread(target=pb.run)
+if eth_thread is not None:
+  eth_thread.start()
+if pb_thread is not None:
+  pb_thread.start()
 
-def setup_pbvpar(args):
-  global log
-  pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug, log=log)
-  try:
-    pb.open()
-  except Exception as e:
-    print("pb: error opening:",e)
-    sys.exit(3)
-  return pb
-
-# ----- main loop -----
-print("Welcome to plipbox!")
-
-# setup plipbox
-pb = setup_pbvpar(args)
-sp_fd = pb.sp._fd
-
-# setup virtual ethernet
-veth = setup_veth(args)
-tap_fd = veth.tap.get_fd()
-
-online = False
-start = time.time()
+# main thread waiting for leave event to be set
 try:
   log("enter main loop")
   while True:
-    status = pb.check_status()
-    if status is False:
-      break
-    elif status is True:
-      online = False
- 
-    # io multiplex
-    r = select([tap_fd,sp_fd],[],[])
-    t = time.time() - start
-    
-    # got packet from virtual ethernet?
-    need_handle = False
-    if tap_fd in r[0]:
-      need_handle = handle_eth(veth, pb, t, args)
-    
-    # got packet from parallel?
-    if sp_fd in r[0] or need_handle:
-      handle_pb(pb, veth, t, args)
-      
+    leave_event.wait(0.5)
 except KeyboardInterrupt:
-  print
-finally:
-  log("shutting down")
-  veth.close()
-  pb.close()
-  log("done")
+  log("BREAK [main]")
+  leave_event.set()
+
+# shut down
+if eth_thread is not None:
+  log("joining ethernet")
+  eth_thread.join()
+if pb_thread is not None:
+  log("joining plipbox")
+  pb_thread.join()
+log("done")

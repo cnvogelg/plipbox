@@ -10,6 +10,7 @@ class SoPTY:
         self._file_name = file_name
         self._slave_name = None
         self._fd = None
+        self._fd_slave = None
 
     def open(self):
         (master, slave) = pty.openpty()
@@ -41,6 +42,8 @@ class SoPTY:
             os.close(self._fd)
             os.close(self._fd_slave)
             os.unlink(self._file_name)
+            self._fd = None
+            self._fd_slave = None
         except OSError:
             pass
 

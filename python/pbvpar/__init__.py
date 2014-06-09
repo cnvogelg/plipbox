@@ -28,46 +28,63 @@ class PBVPar:
     def close(self):
         self.sp.close()
 
-    def check_status(self):
-        """return True after reset, False for quit, None otherwise"""
+    def tx_pkt(self, buf):
+        self.pb.send(buf)
+
+    def rx_pkt(self, timeout=None):
+        # first check if the emu is attached
+        if not self.vpar.can_write(timeout):
+            return None
+        # check state
+        if not self._check_status(timeout):
+            return None
+        # handle command
+        if not self._handle_cmd(timeout):
+            return None
+        # was a receive?
+        return self.pb.recv()
+
+    def _check_status(self, timeout=None):
+        """return False if no state update"""
         # need a vpar re-sync
         if self._do_sync:
-            self._log("sync vpar with emu")
-            self.vpar.request_state()
+            ok = self.vpar.request_state(timeout)
+            if not ok:
+                return False
             self._log("start plipbox protocol")
             self.pb.start()
             self._do_sync = False
-            return True
 
         # check emulator flags in vpar
         if self.vpar.check_init_flag():
             self._log("emu restarted")
             self._do_sync = True
         if self.vpar.check_exit_flag():
-            self._log("emu exit")
-            return False
+            self._log("emu exited")
+            self._do_sync = True
 
-    def tx_pkt(self, buf, timestamp=0):
-        self.pb.send(buf)
-        return self.pb.must_handle()
+        return True
 
-    def rx_pkt(self, timestamp=0):
+    def _handle_cmd(self, timeout=None):
         cmd = 0
         try:
             # handle par command
             s = time.time()
-            cmd, n = self.pb.handle()
+            res = self.pb.handle(timeout)
+            if res is None:
+                return False
+            cmd, n = res
             e = time.time()
             d = e - s
             self._log("%12.6f *CMD%02x* :" %
-                      (timestamp, cmd), self._get_speed_bar(d, n))
+                      (s, cmd), self._get_speed_bar(d, n))
+            return True
         except pbproto.PBProtoError as ex:
             e = time.time()
             d = e - s
             self._log("%12.6f *CMD%02x* : ERROR %s. delta=%5.3f" %
-                      (timestamp, cmd, ex, d))
-        # was a receive?
-        return self.pb.recv()
+                      (s, cmd, ex, d))
+            return False
 
     def _calc_speed(self, delta, size):
         if delta > 0:

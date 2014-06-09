@@ -36,11 +36,11 @@ class VEth:
         self.bridge.up()
 
     def close(self):
-        self.bridge.down()
         self.tap.close()
+        self.bridge.down()
 
-    def rx_pkt(self, size=2048):
-        return self.tap.read(size)
+    def rx_pkt(self, size=2048, timeout=None):
+        return self.tap.read(size, timeout)
 
     def tx_pkt(self, buf):
         self.tap.write(buf)

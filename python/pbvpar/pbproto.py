@@ -56,12 +56,14 @@ class PBProto:
         # we need to react if the Amiga has triggered SEL = 1
         return self.vpar.peek_control() & self.SEL == self.SEL
 
-    def handle(self):
+    def handle(self, timeout=None):
         """wait for an incoming command"""
         self._log("handle_cmd")
         # --- begin command
         # wait SEL == 1
-        self._wait_select(1)
+        ok = self._wait_select(1, throw=False)
+        if not ok:
+            return None
         ts = time.time()
         # read <CMD>
         cmd = self.vpar.peek_data()
@@ -145,7 +147,7 @@ class PBProto:
         self._log("--- incoming recv ---")
         return size
 
-    def _wait_select(self, value, timeout=1, ctx="", start=0):
+    def _wait_select(self, value, timeout=1, ctx="", start=0, throw=True):
         """wait for SELECT signal"""
         t = time.time()
         begin = t
@@ -166,10 +168,11 @@ class PBProto:
             t = time.time()
         self._log("wait_select: value=%d -> %s (%g delay)"
                   % (value, found, t - begin))
-        if not found:
+        if not found and throw:
             delta = t - start
             raise PBProtoError("%s: no select. delta=%5.3f timeout=%d" %
                               (ctx, delta, timeout))
+        return found
 
     def _wait_req(self, expect, timeout=1, ctx="", start=0):
         """wait for toggle on POUT signal"""

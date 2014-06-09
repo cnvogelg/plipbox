@@ -33,7 +33,17 @@ class VPar:
             self.par_file.read(1)
 
     def _has_data(self, timeout=0):
-        ready = select.select([self.par_file._fd], [], [], timeout)[0]
+        fd = self.par_file._fd
+        if fd is None:
+            return False
+        ready = select.select([fd], [], [], timeout)[0]
+        return len(ready) > 0
+
+    def can_write(self, timeout=0):
+        fd = self.par_file._fd
+        if fd is None:
+            return False
+        ready = select.select([], [fd], [], timeout)[1]
         return len(ready) > 0
 
     def _decode_ctl(self, ctl, only=False):
@@ -97,14 +107,22 @@ class VPar:
             return False
 
     def _write(self, data, timeout=None):
+        """return True=write+read ok, False=write or read failed"""
+        # check if we can write
+        if not self.can_write(timeout):
+            return False
         self.par_file.write(data)
         # wait for reply from emu. skip updates
         num = 0
-        while self._read(timeout, "R%d" % num):
+        while True:
+            ok = self._read(timeout, "R%d" % num)
+            if not ok:
+                return False
             # make sure it has reply flag set
             if self.check_reply_flag():
                 break
             num += 1
+        return True
 
     def poll_state(self, timeout=0):
         """check if a state update is available on I/O channel

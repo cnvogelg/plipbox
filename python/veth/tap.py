@@ -3,6 +3,7 @@ import sys
 import fcntl
 import struct
 import subprocess
+import select
 
 
 class Tap:
@@ -48,7 +49,11 @@ class Tap:
             cmd = [self._sudo, self._tunctl, '-d', self.base_name]
             self._run(cmd)
 
-    def read(self, size):
+    def read(self, size, timeout=None):
+        if timeout is not None:
+            ready = select.select([self._fd], [], [], timeout)[0]
+            if len(ready) == 0:
+                return None
         return os.read(self._fd, size)
 
     def write(self, buf):
