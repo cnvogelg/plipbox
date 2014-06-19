@@ -6,6 +6,7 @@ import sys, os
 import time
 import argparse
 import threading
+import traceback
 
 import veth
 import pbvpar
@@ -68,6 +69,9 @@ class EthernetReader:
     except KeyboardInterrupt:
       self.log("BREAK [eth]")
       self.leave_event.set()
+    except Exception as e:
+      self.log("Unexpected error:", e)
+      traceback.print_exc()
     finally:
       self.log("closing ethernet reader")
       self.eth.close()
@@ -78,7 +82,7 @@ class EthernetReader:
 class PlipboxReader:
 
   def __init__(self, args, log):
-    pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug, log=log)
+    pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug)
     try:
       pb.open()
     except Exception as e:
@@ -110,11 +114,11 @@ class PlipboxReader:
           n = len(raw_buf)
           # check for magic packets
           if eth_frame.is_magic_online():
-            log("magic: online")
+            log("magic: online", True)
             tag = "M:ON"
             self.online_event.set()
           elif eth_frame.is_magic_offline():
-            log("magic: offline")
+            log("magic: offline", True)
             tag = "M:OF"
             self.online_event.clear()
           elif not args.rx and self.online_event.is_set():
@@ -131,6 +135,9 @@ class PlipboxReader:
     except KeyboardInterrupt:
       self.log("BREAK [pb]")
       self.leave_event.set()
+    except Exception as e:
+      self.log("Unexpected error:", e)
+      traceback.print_exc()
     finally:
       self.log("closing plipbox")
       self.pb.close()
@@ -156,14 +163,14 @@ parser.add_argument('-d', '--debug', type=int, default=0, help="debug flags: 1=l
 parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
 args = parser.parse_args()
 
-def log(*v,**kv):
+def log(*v,**kw):
   global args
-  if args.verbose:
-    print(*v,**kv)
+  if args.verbose or 'force' in kw:
+    print(*v)
 
 # setup plipbox and ethernet
-pb = PlipboxReader(args, log)
 eth = EthernetReader(args, log)
+pb = PlipboxReader(args, log)
 
 # setup shared env
 leave_event = threading.Event()

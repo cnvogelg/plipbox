@@ -33,6 +33,13 @@ class PBProto:
         # clear ACK
         self._set_rak(0)
 
+    def can_send(self):
+        return self.recv_buf is None
+
+    def request_send(self):
+        # simply trigger ack
+        self.vpar.trigger_ack()
+
     def send(self, buf):
         """Ask Amiga to receive a frame from me"""
         # simply trigger ack
@@ -72,9 +79,9 @@ class PBProto:
         # --- dispatch command
         self._log("got cmd: %02x" % cmd)
         if cmd == self.CMD_SEND:
-            size = self._cmd_send()
+            size = self._cmd_send(ts)
         elif cmd == self.CMD_RECV:
-            size = self._cmd_recv()
+            size = self._cmd_recv(ts)
         else:
             size = 0
             self._log("UNKNOWN COMMAND!")
@@ -87,15 +94,15 @@ class PBProto:
         self._log("cmd time: delta=%.4f" % (te - ts))
         return cmd, size
 
-    def _cmd_send(self):
+    def _cmd_send(self, ts):
         """Amiga sends a buffer"""
         self._log("+++ incoming send +++")
         # get size HI
-        self._wait_req(1)
+        self._wait_req(1, ctx="get_size_hi", start=ts)
         hi = self.vpar.peek_data()
         self._set_rak(0)
         # get size LO
-        self._wait_req(0)
+        self._wait_req(0, ctx="get_size_lo", start=ts)
         lo = self.vpar.peek_data()
         self._set_rak(1)
         size = hi * 256 + lo
@@ -105,7 +112,7 @@ class PBProto:
         data = ""
         for i in xrange(size):
             self._log("rx #%04d/%04d" % (i, size))
-            self._wait_req(not toggle)
+            self._wait_req(not toggle, ctx="get_data_#%d" % i, start=ts)
             d = self.vpar.peek_data()
             data += chr(d)
             self._set_rak(toggle)
@@ -114,7 +121,7 @@ class PBProto:
         self._log("--- incoming send ---")
         return size
 
-    def _cmd_recv(self):
+    def _cmd_recv(self, ts):
         """Amiga wants to receive a buffer"""
         self._log("+++ incoming recv +++")
         data = self.recv_buf
@@ -126,17 +133,17 @@ class PBProto:
         hi = size / 256
         lo = size % 256
         # send size HI
-        self._wait_req(1)
+        self._wait_req(1, ctx="put_size_hi", start=ts)
         self.vpar.set_data(hi)
         self._set_rak(0)
         # send size LO
-        self._wait_req(0)
+        self._wait_req(0, ctx="put_size_lo", start=ts)
         self.vpar.set_data(lo)
         self._set_rak(1)
         # send data
         toggle = False
         for i in xrange(size):
-            self._wait_req(not toggle)
+            self._wait_req(not toggle, ctx="put_data_#%d" % i, start=ts)
             self._log("tx #%04d/%04d" % (i, size))
             d = ord(data[i])
             self.vpar.set_data(d)
@@ -166,7 +173,7 @@ class PBProto:
             rem = end - t
             self.vpar.poll_state(rem)
             t = time.time()
-        self._log("wait_select: value=%d -> %s (%g delay)"
+        self._log("wait_select: value=%d -> %s (%12.6f delay)"
                   % (value, found, t - begin))
         if not found and throw:
             delta = t - start
@@ -201,7 +208,7 @@ class PBProto:
             rem = end - t
             self.vpar.poll_state(rem)
             t = time.time()
-        self._log("wait_line_toggle: POUT: %s == %s (%g delay)"
+        self._log("wait_line_toggle: POUT: %s == %s (%12.6f delay)"
                   % (expect, found, t - begin))
         if not found:
             delta = t - start

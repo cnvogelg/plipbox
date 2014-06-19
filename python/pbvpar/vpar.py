@@ -29,22 +29,30 @@ class VPar:
 
     def drain(self):
         """slurp all incoming data"""
-        while self._has_data():
+        while self.can_read():
             self.par_file.read(1)
 
-    def _has_data(self, timeout=0):
+    def can_read(self, timeout=0):
+        """call select() on vpar fd to check if we can read"""
         fd = self.par_file._fd
         if fd is None:
             return False
-        ready = select.select([fd], [], [], timeout)[0]
-        return len(ready) > 0
+        try:
+            ready = select.select([fd], [], [], timeout)[0]
+            return len(ready) > 0
+        except select.error as e:
+            return False
 
     def can_write(self, timeout=0):
+        """call select() on vpar to check if we can write"""
         fd = self.par_file._fd
         if fd is None:
             return False
-        ready = select.select([], [fd], [], timeout)[1]
-        return len(ready) > 0
+        try:
+            ready = select.select([], [fd], [], timeout)[1]
+            return len(ready) > 0
+        except select.error as e:
+            return False
 
     def _decode_ctl(self, ctl, only=False):
         is_busy = (ctl & 1) == 1
@@ -84,7 +92,7 @@ class VPar:
 
     def _read(self, timeout=0, what="RX"):
         # poll port - if something is here read it first
-        if self._has_data(timeout):
+        if self.can_read(timeout):
             d = self.par_file.read(2)
             ctl = ord(d[0])
             dat = ord(d[1])

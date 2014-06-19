@@ -10,7 +10,6 @@ class SoPTY:
         self._file_name = file_name
         self._slave_name = None
         self._fd = None
-        self._fd_slave = None
 
     def open(self):
         (master, slave) = pty.openpty()
@@ -19,7 +18,6 @@ class SoPTY:
             os.unlink(self._file_name)
         os.symlink(self._slave_name, self._file_name)
         self._fd = master
-        self._fd_slave = slave
         self._clean_tty()
 
     def _clean_tty(self):
@@ -40,10 +38,8 @@ class SoPTY:
     def close(self):
         try:
             os.close(self._fd)
-            os.close(self._fd_slave)
             os.unlink(self._file_name)
             self._fd = None
-            self._fd_slave = None
         except OSError:
             pass
 
