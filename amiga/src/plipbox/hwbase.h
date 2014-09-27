@@ -32,7 +32,8 @@ struct HWBase
    ULONG                       hwb_AllocFlags;
 
    /* config options */
-   ULONG                       hwb_TimeOut;
+   ULONG                       hwb_TimeOutMicros;
+   ULONG                       hwb_TimeOutSecs;
 };
 
 #define HWB_RECV_PENDING           0
