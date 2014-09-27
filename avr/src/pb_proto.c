@@ -255,12 +255,12 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
       break;
   }
    
-  // reset RAK = 0
-  CLR_RAK();
-   
   // wait for SEL == 0
   wait_sel(0, PBPROTO_STAGE_END_SELECT);
   
+  // reset RAK = 0
+  CLR_RAK();
+   
   *ret_cmd = cmd;
   return result;
 }
