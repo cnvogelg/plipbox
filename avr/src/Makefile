@@ -101,13 +101,8 @@ endif
 
 # mainfile/project name
 PROJECT = plipbox
-VERSION_MAJ = 0
-VERSION_MIN = 6
-VERSION_EXTRA =
+include ../../version.mk
 BUILD_DATE = $(shell date '+%Y%m%d')
-
-# combine version
-VERSION=$(VERSION_MAJ).$(VERSION_MIN)$(VERSION_EXTRA)
 
 # basename of output
 BASENAME = $(PROJECT)-$(VERSION)-$(UART_BAUD)-$(BOARD)-$(MCU)
@@ -133,7 +128,7 @@ SRC += main.c stats.c log.c
 FORMAT = ihex
 
 # build directory
-BUILD = BUILD
+BUILD = ../BUILD
 OBJDIR = $(BUILD)/$(BASENAME)/obj
 DEPDIR = $(OBJDIR)
 OUTDIR = $(BUILD)

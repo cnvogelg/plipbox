@@ -23,7 +23,8 @@
 #  02111-1307  USA.
 #
 
-VERSION := 0.5
+include version.mk
+
 SUBDIRS := avr/src amiga/src doc/src
 DISTFILES := Makefile README.md ChangeLog.md COPYING contrib doc avr amiga hardware
 PROJECT := plipbox
@@ -32,6 +33,11 @@ REVSION := $(shell git log -1 --pretty=format:%h)
 DATE := $(shell date '+%Y%m%d')
 DIST_NAME := $(PROJECT)-$(VERSION)
 SNAP_NAME := $(PROJECT)-pre$(VERSION)-$(REVSION)-$(DATE)
+
+help:
+	@echo "clean   clean project"
+	@echo "dist    build release"
+	@echo "snap    build snapshot"
 
 clean:
 	@for a in $(SUBDIRS) ; do $(MAKE) -C $$a clean_dist ; done
