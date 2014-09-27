@@ -181,6 +181,8 @@ COMMAND(cmd_help)
     "dl [on]  toggle dump PLIP info\r\n"
     "\r\n"
     "la [on]  log all PLIP commands\r\n"
+    "ld       log dump\r\n"
+    "lr       log reset\r\n"
   ));
   return CMD_OK;
 }
