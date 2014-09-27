@@ -32,7 +32,7 @@
 #include "net/arp.h"
 
 #include "pkt_buf.h"
-#include "enc28j60.h"
+#include "pktio.h"
 #include "pb_proto.h"
 #include "uart.h"
 #include "uartutil.h"
@@ -55,7 +55,7 @@ static void rx_begin(u16 *pkt_size)
 {
   // start writing packet with eth header
   offset = 0;
-  enc28j60_packet_tx_begin_range(0);
+  pktio_tx_begin(*pkt_size);
 }
 
 static void rx_data(u08 *data)
@@ -66,14 +66,14 @@ static void rx_data(u08 *data)
     offset ++;
   }
   
-  // always copy to TX buffer of enc28j60
-  enc28j60_packet_tx_byte(*data);
+  // always copy to TX buffer of pktio
+  pktio_tx_byte(*data);
 }
 
 static void rx_end(u16 pkt_size)
 {
-  // end range in enc28j60 buffer
-  enc28j60_packet_tx_end_range();
+  // end range in pktio buffer
+  pktio_tx_end();
   rx_pkt_size = pkt_size;
 }
 
@@ -84,7 +84,7 @@ static void tx_begin(u16 *pkt_size)
   // report size of packet
   *pkt_size = tx_pkt_size;
   offset = 0;
-  enc28j60_packet_rx_byte_begin();
+  pktio_rx_data_begin();
 }
 
 static void tx_data(u08 *data)
@@ -93,7 +93,7 @@ static void tx_data(u08 *data)
   if(offset < PKT_BUF_SIZE) {
     *data = tx_pkt_buf[offset];
   } else {
-    *data = enc28j60_packet_rx_byte();    
+    *data = pktio_rx_byte();    
   }
   offset ++;
 }
@@ -102,8 +102,8 @@ static void tx_end(u16 pkt_size)
 {
   // reset size of packet
   tx_pkt_size = 0;
-  enc28j60_packet_rx_byte_end();
-  enc28j60_packet_rx_end();
+  pktio_rx_data_end();
+  pktio_rx_end();
 }
 
 // ----- function table -----
@@ -177,11 +177,8 @@ static void send(void)
     uart_send_crlf();
   }
 
-  // wait for tx is possible
-  enc28j60_packet_tx_prepare();
-
   // finally send ethernet packet
-  enc28j60_packet_tx_send(rx_pkt_size);
+  pktio_tx_send(rx_pkt_size);
 }
 
 static void handle_magic_online(void)
@@ -285,9 +282,11 @@ static void handle_pb_send(u08 eth_online)
       uart_send_pstring(PSTR("Offline -> DROP!"));
       uart_send_crlf();
       stats.tx_drop ++;
+      pktio_tx_reject();
     }      
   } else {
     stats.tx_filter ++;
+    pktio_tx_reject();
   }    
 }
 

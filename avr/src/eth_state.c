@@ -29,7 +29,7 @@
 #include "timer.h"
 #include "uartutil.h"
 #include "uart.h"
-#include "enc28j60.h"
+#include "pktio.h"
 #include "pb_io.h"
 #include "param.h"
 #include "stats.h"
@@ -42,11 +42,11 @@ u08 eth_state_worker(u08 plip_online)
   switch(state) {
     case ETH_STATE_LINK_DOWN:
       if(plip_online) {
-        enc28j60_start(sana_mac);
+        pktio_start(sana_mac);
         
         // restore flow control
         flow_control = 0;
-        enc28j60_flow_control(0);
+        pktio_flow_control(0);
         
         uart_send_time_stamp_spc();
         uart_send_pstring(PSTR("eth: link up\r\n"));
@@ -55,7 +55,7 @@ u08 eth_state_worker(u08 plip_online)
       break;
     case ETH_STATE_LINK_UP:
       if(!plip_online) {
-        enc28j60_stop();
+        pktio_stop();
   
         uart_send_time_stamp_spc();
         uart_send_pstring(PSTR("eth: link down\r\n"));
@@ -64,12 +64,12 @@ u08 eth_state_worker(u08 plip_online)
       else {
         if(param.flow_ctl) {
           // check flow control
-          u08 num = enc28j60_packet_rx_num_waiting();
+          u08 num = pktio_rx_num_waiting();
           // too many packets
           if(num >= 3) {
             if(!flow_control) {
               flow_control = 1;
-              enc28j60_flow_control(1);
+              pktio_flow_control(1);
 
               if(param.dump_dirs & DUMP_FLOW_CTL) {
                 uart_send_time_stamp_spc();
@@ -83,7 +83,7 @@ u08 eth_state_worker(u08 plip_online)
           else if(num <= 1) {
             if(flow_control) {
               flow_control = 0;
-              enc28j60_flow_control(0);
+              pktio_flow_control(0);
 
               if(param.dump_dirs & DUMP_FLOW_CTL) {
                 uart_send_time_stamp_spc();
@@ -96,12 +96,12 @@ u08 eth_state_worker(u08 plip_online)
         }
         
         // check status
-        u08 status = enc28j60_get_status();
+        u08 status = pktio_get_status();
         if(status != 0) {
-          if(status & ENC28J60_RX_ERR) {
+          if(status & PKTIO_RX_ERR) {
             stats.rx_err ++;
           }
-          if(status & ENC28J60_TX_ERR) {
+          if(status & PKTIO_TX_ERR) {
             stats.tx_err ++;
           }
           if(param.dump_dirs & DUMP_ERRORS) {

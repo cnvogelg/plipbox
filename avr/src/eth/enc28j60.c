@@ -274,13 +274,13 @@ static void readBuf(uint16_t len, uint8_t* data) {
     spi_disable_eth();
 }
 
-void enc28j60_packet_rx_byte_begin(void)
+void enc28j60_packet_rx_data_begin(void)
 {
   spi_enable_eth();
   spi_out(ENC28J60_READ_BUF_MEM);  
 }
 
-void enc28j60_packet_rx_byte_end(void)
+void enc28j60_packet_rx_data_end(void)
 {
   spi_disable_eth();
 }
@@ -357,6 +357,7 @@ static void writePhy (uint8_t address, uint16_t data) {
 }
 
 uint8_t enc28j60_init (u08 full_duplex) {
+    spi_init();
     spi_disable_eth();
     
     is_full_duplex = full_duplex;
@@ -474,16 +475,7 @@ u08 enc28j60_get_status( void )
   return val & 3;
 }
 
-void enc28j60_packet_tx(const u08 *data, u16 size)
-{
-  enc28j60_packet_tx_prepare();
-  enc28j60_packet_tx_begin_range(0);
-  enc28j60_packet_tx_blk(data, size);
-  enc28j60_packet_tx_end_range();
-  enc28j60_packet_tx_send(size);
-}
-
-void enc28j60_packet_tx_prepare(void) 
+static void tx_wait_ready(void) 
 {
     while (readOp(ENC28J60_READ_CTRL_REG, ECON1) & ECON1_TXRTS)
         if (readRegByte(EIR) & EIR_TXERIF) {
@@ -492,20 +484,30 @@ void enc28j60_packet_tx_prepare(void)
         }
 }
 
-void enc28j60_packet_tx_send(u16 len)
-{  
-    writeReg(ETXND, TXSTART_INIT+len);
-    writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
+void enc28j60_packet_tx(const u08 *data, u16 size)
+{
+  tx_wait_ready();
+  enc28j60_packet_tx_begin();
+  enc28j60_packet_tx_blk(data, size);
+  enc28j60_packet_tx_end();
+  enc28j60_packet_tx_send(size);
 }
 
-void enc28j60_packet_tx_begin_range(u16 offset)
+void enc28j60_packet_tx_send(u16 len)
+{  
+  tx_wait_ready();
+  writeReg(ETXND, TXSTART_INIT+len);
+  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
+}
+
+void enc28j60_packet_tx_begin(void)
 {
-  writeReg(EWRPT, TXSTART_INIT+offset);
+  writeReg(EWRPT, TXSTART_INIT);
   writeOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
   writeBufBegin();  
 }
 
-void enc28j60_packet_tx_end_range(void)
+void enc28j60_packet_tx_end(void)
 {
   writeBufEnd();
 }

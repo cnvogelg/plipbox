@@ -34,7 +34,7 @@
 #include "net/ip.h"
 #include "net/udp.h"
 
-#include "enc28j60.h"
+#include "pktio.h"
 #include "pkt_buf.h"
 #include "uartutil.h"
 #include "uart.h"
@@ -135,7 +135,7 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
   }
 
   // check for waiting packets
-  u08 num_pkts = enc28j60_packet_rx_num_waiting();
+  u08 num_pkts = pktio_rx_num_waiting();
   if(num_pkts == 0) {
     return;
   }
@@ -163,7 +163,7 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
   }
 
   // get next packet
-  u16 len = enc28j60_packet_rx_begin();
+  u16 len = pktio_rx_begin();
   if(len > 0) {    
     // try to fill packet buffer
     u16 mem_len = len;
@@ -172,7 +172,7 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
     }
     
     // pre-fetch via SPI into packet buffer (-> tx plip bufer)
-    enc28j60_packet_rx_blk(tx_pkt_buf, mem_len);
+    pktio_rx_blk(tx_pkt_buf, mem_len);
     
     // dump incoming packet
     if(dump_flag) {
@@ -236,6 +236,6 @@ void eth_io_worker(u08 eth_state, u08 plip_online)
     }
   
     // finish packet read
-    enc28j60_packet_rx_end();
+    pktio_rx_end();
   }
 }

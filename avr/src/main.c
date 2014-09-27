@@ -31,8 +31,6 @@
 #include "timer.h"
 #include "par_low.h"
 #include "param.h"
-#include "spi.h"
-#include "enc28j60.h"
 #include "cmd.h"
 
 #include "net/net.h"
@@ -40,6 +38,8 @@
 #include "eth_state.h"
 #include "pb_io.h"
 #include "pb_state.h"
+
+#include "pktio.h"
 
 static void init_hw(void)
 {
@@ -51,8 +51,6 @@ static void init_hw(void)
   uart_init();
   // setup par
   par_low_init();
-  // spi init
-  spi_init();
 }
 
 void loop(void)
@@ -70,15 +68,15 @@ void loop(void)
 
   eth_io_init();
   pb_io_init();
-  
-  // setup ethernet
+
+  // setup pktio
   u08 fd = param.full_duplex;
-  u08 rev = enc28j60_init(fd);
+  u08 rev = pktio_init(fd);
   if(rev == 0) {
-    uart_send_pstring(PSTR("enc28j60: ERROR SETTING UP!!\r\n"));
+    uart_send_pstring(PSTR(PKTIO_NAME ": ERROR SETTING UP!!\r\n"));
     while(1) {}
   } else {
-    uart_send_pstring(PSTR("enc28j60: rev "));
+    uart_send_pstring(PSTR(PKTIO_NAME ": rev "));
     uart_send_hex_byte(rev);
     uart_send_pstring(fd ? PSTR(" full ") : PSTR(" half "));
     uart_send_pstring(PSTR("duplex"));
@@ -97,6 +95,10 @@ void loop(void)
     pb_io_worker(pb_state, eth_online);
     
     stay = cmd_worker();
+
+#ifdef PKTIO_HAS_WORKER
+    pktio_worker();
+#endif
   }
 }
 

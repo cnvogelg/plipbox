@@ -40,6 +40,7 @@ DIST_BOARDS= arduino avrnetio nano
 # select board
 BOARD ?= nano
 DEBUG ?= 0
+NETIO ?= eth
 
 ifeq "$(BOARD)" "arduino"
 
@@ -111,24 +112,29 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 # dist dir
 DISTDIR = ../bin
 
+# setup src search
+VPATH = .:net:board:eth
+
 # source files
 BOARDFILE ?= $(BOARD).c
-SRC := board/$(BOARDFILE)
+SRC := $(BOARDFILE)
 SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c pb_proto.c
 SRC += pkt_buf.c param.c
-SRC += spi.c enc28j60.c 
-SRC += net/net.c net/arp.c
+SRC += net.c arp.c
 SRC += eth_io.c eth_state.c dump.c
 SRC += pb_io.c pb_state.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c stats.c log.c
+ifeq "$(NETIO)" "eth"
+SRC += spi.c enc28j60.c
+endif
 
 # output format
 FORMAT = ihex
 
 # build directory
-BUILD = ../BUILD
+BUILD = BUILD
 OBJDIR = $(BUILD)/$(BASENAME)/obj
 DEPDIR = $(OBJDIR)
 OUTDIR = $(BUILD)
@@ -145,11 +151,12 @@ CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
 CFLAGS += -mmcu=$(MCU) -I. 
 
-CFLAGS_LOCAL = -Wa,-adhlns=$(<:%.c=$(OBJDIR)/%.lst)
+CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
 CFLAGS_LOCAL += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(DEPDIR)/$(@F:.o=.d)
 CFLAGS_LOCAL += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
 CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
 CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
+CFLAGS_LOCAL += -DHAVE_NETIO_$(NETIO)
 CFLAGS_LOCAL += -DF_CPU=$(F_CPU)
 CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))
 ifeq "$(DEBUG)" "1"
@@ -196,8 +203,6 @@ help:
 dirs:
 	@if [ ! -d $(BUILD) ]; then mkdir -p $(BUILD); fi 
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi
-	@if [ ! -d $(OBJDIR)/net ]; then mkdir -p $(OBJDIR)/net; fi
-	@if [ ! -d $(OBJDIR)/board ]; then mkdir -p $(OBJDIR)/board; fi
 	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
 	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
 
@@ -217,8 +222,8 @@ lss: $(OUTPUT).lss
 
 size: size_code size_data
 
-size_code: $(OUTPUT).hex
-	@SIZE=`$(SIZE) -A --target=$(FORMAT) $(OUTPUT).hex | grep Total | awk '{ print $$2 }'` ; \
+size_code: $(OUTPUT).elf
+	@SIZE=`$(SIZE) -C $(OUTPUT).elf | grep Program | awk '{ print $$2 }'` ; \
 	if [ $$SIZE -gt $(MAX_SIZE) ] ; then \
 		echo "  $$SIZE >  $(MAX_SIZE) bytes: code TOO LARGE" ; exit 1 ; \
 	else \
@@ -226,13 +231,11 @@ size_code: $(OUTPUT).hex
 	fi
 
 size_data: $(OUTPUT).elf
-	@DATA=`$(SIZE) -A $(OUTPUT).elf | fgrep .data | awk '{ print $$2 }'` ; \
-	BSS=`$(SIZE) -A $(OUTPUT).elf | fgrep .bss | awk '{ print $$2 }'` ; \
-	SUM=$$(( $$DATA + $$BSS )) ; \
-	if [ $$SUM -gt $(MAX_SRAM) ] ; then \
-		echo "  $$SUM >  $(MAX_SRAM) bytes: sram TOO LARGE" ; exit 1 ; \
+	@SIZE=`$(SIZE) -C $(OUTPUT).elf | fgrep Data | awk '{ print $$2 }'` ; \
+	if [ $$SIZE -gt $(MAX_SRAM) ] ; then \
+		echo "  $$SIZE >  $(MAX_SRAM) bytes: sram TOO LARGE" ; exit 1 ; \
 	else \
-		echo "  $$SUM <= $(MAX_SRAM) bytes: sram ok" ; \
+		echo "  $$SIZE <= $(MAX_SRAM) bytes: sram ok" ; \
 	fi
 
 clean:

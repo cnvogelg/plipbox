@@ -44,18 +44,17 @@ extern u08 enc28j60_get_status( void );
 extern u16  enc28j60_packet_rx(u08 *data, u16 max_size);
 extern u08  enc28j60_packet_rx_num_waiting(void);
 extern u16  enc28j60_packet_rx_begin(void);
-extern void enc28j60_packet_rx_byte_begin(void);
+extern void enc28j60_packet_rx_data_begin(void);
 inline u08  enc28j60_packet_rx_byte(void) { return spi_in(); }
-extern void enc28j60_packet_rx_byte_end(void);
+extern void enc28j60_packet_rx_data_end(void);
 extern void enc28j60_packet_rx_blk(u08 *data, u16 size);
 extern void enc28j60_packet_rx_end(void);
 
 extern void enc28j60_packet_tx(const u08 *data, u16 size);
-extern void enc28j60_packet_tx_prepare(void);
-extern void enc28j60_packet_tx_begin_range(u16 offset);
+extern void enc28j60_packet_tx_begin(void);
 inline void enc28j60_packet_tx_byte(u08 data) { spi_out(data); }
 extern void enc28j60_packet_tx_blk(const u08 *data, u16 size);
-extern void enc28j60_packet_tx_end_range(void);
+extern void enc28j60_packet_tx_end(void);
 extern void enc28j60_packet_tx_send(u16 len);
 
 #endif
