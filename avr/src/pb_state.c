@@ -30,17 +30,38 @@
 #include "timer.h"
 #include "uartutil.h"
 
-static u08 state = PB_STATE_LINK_DOWN;
+static u08 state = PB_STATE_NO_DRIVER;
+
+static void check_line_ok(void)
+{
+  u08 val = pb_proto_get_line_status();
+  if((val == PBPROTO_LINE_OFF)||(val == PBPROTO_LINE_DISABLED)) {
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("pbp: no driver\r\n"));
+    state = PB_STATE_NO_DRIVER;
+  }
+}
 
 u08 pb_state_worker(void)
 {
   switch(state) {
+    case PB_STATE_NO_DRIVER:
+      {
+        u08 val = pb_proto_get_line_status();
+        if(val == PBPROTO_LINE_OK) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbp: driver detected\r\n"));
+          state = PB_STATE_LINK_DOWN;
+        }
+      }
+      break;
     case PB_STATE_LINK_DOWN:
       if(sana_online) {
         uart_send_time_stamp_spc();
         uart_send_pstring(PSTR("pbp: link up\r\n"));
         state = PB_STATE_LINK_UP;
       }
+      check_line_ok();
       break;
     case PB_STATE_LINK_UP:
       if(!sana_online) {
@@ -48,6 +69,7 @@ u08 pb_state_worker(void)
         uart_send_pstring(PSTR("pbp: link down\r\n"));
         state = PB_STATE_LINK_DOWN;
       }
+      check_line_ok();
       break;
   }
   return state;

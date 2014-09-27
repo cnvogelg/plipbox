@@ -29,8 +29,9 @@
 
 #include "global.h"
 
-#define PB_STATE_LINK_DOWN    0
-#define PB_STATE_LINK_UP      1
+#define PB_STATE_NO_DRIVER    0
+#define PB_STATE_LINK_DOWN    1
+#define PB_STATE_LINK_UP      2
 
 // 64*10 ms
 #define PB_STATE_TIMER_MASK    0xffc0   
