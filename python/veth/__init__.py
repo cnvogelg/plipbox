@@ -15,7 +15,7 @@ class VEth:
         self.bridge_if = bridge_if
         self._ifconfig = '/sbin/ifconfig'
         self.tap = tap.Tap(tap_if)
-        self.bridge = bridge.Bridge(eth_if, tap_if, bridge_if)
+        self.bridge = bridge.Bridge(bridge_if)
 
     def _has_if(self, name):
         # call ifconfig with the interface name and check return value
@@ -28,16 +28,23 @@ class VEth:
         """validate if interfaces are free or available"""
         has_eth = self._has_if(self.eth_if)
         has_tap = self._has_if(self.tap_if)
-        has_bridge = self._has_if(self.bridge_if)
-        return has_eth and not has_tap and not has_bridge
+        return has_eth and not has_tap
 
     def open(self):
+        # setup tap
         self.tap.open()
+        # setup bridge
+        has_bridge = self._has_if(self.bridge_if)
+        if not has_bridge:
+            self.bridge.create()
+            self.bridge.add_if(self.eth_if)
+        self.bridge.add_if(self.tap_if)
         self.bridge.up()
 
     def close(self):
-        self.tap.close()
         self.bridge.down()
+        self.tap.close()
+        #self.bridge.destroy()
 
     def rx_pkt(self, size=2048, timeout=None):
         return self.tap.read(size, timeout)
