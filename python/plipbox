@@ -155,7 +155,7 @@ parser.add_argument('-r', '--rx', action='store_true', default=False, help="only
 
 parser.add_argument('-e', '--eth-if', default="en1", help="ethernet interface name")
 parser.add_argument('-t', '--tap-if', default="tap0", help="tap interface name")
-parser.add_argument('-b', '--bridge-if', default="bridge0", help="bridge interface name")
+parser.add_argument('-b', '--bridge-if', default="bridge1", help="bridge interface name")
 
 parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
