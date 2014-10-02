@@ -86,10 +86,10 @@ class PBProto:
             size = 0
             self._log("UNKNOWN COMMAND!")
         # --- end command
-        # set RAK = 0
-        self._set_rak(0)
         # wait SEL == 0
         self._wait_select(0)
+        # set RAK = 0
+        self._set_rak(0)
         te = time.time()
         self._log("cmd time: delta=%.4f" % (te - ts))
         return cmd, size
