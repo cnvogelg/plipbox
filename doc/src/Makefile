@@ -1,7 +1,7 @@
 # Makefile for documentation
 
 # i use py32-markdown2 from MacPorts
-MD_TOOL=markdown2-3.2
+MD_TOOL=markdown_py-3.4
 DST_DIR=../html
 SRC=amiga.md hardware.md firmware.md python.md intro.md
 DST=$(patsubst %.md,$(DST_DIR)/%.html,$(SRC))
