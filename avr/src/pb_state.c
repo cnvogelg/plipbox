@@ -69,7 +69,6 @@ u08 pb_state_worker(void)
         uart_send_pstring(PSTR("pbp: link down\r\n"));
         state = PB_STATE_LINK_DOWN;
       }
-      check_line_ok();
       break;
   }
   return state;
