@@ -44,7 +44,8 @@
 #define pktio_stop()            enc28j60_stop()
 #define pktio_get_status()      enc28j60_get_status()
 #define pktio_flow_control(x)   enc28j60_flow_control(x)
- 
+#define pktio_is_link_up()		enc28j60_is_link_up()
+
 /* rx */       
 #define pktio_rx_num_waiting()  enc28j60_packet_rx_num_waiting()
 #define pktio_rx_begin()        enc28j60_packet_rx_begin()

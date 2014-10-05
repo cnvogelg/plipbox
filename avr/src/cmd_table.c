@@ -32,6 +32,7 @@
 #include "param.h"
 #include "stats.h"
 #include "log.h"
+#include "eth_state.h"
 
 COMMAND(cmd_quit)
 {
@@ -131,6 +132,18 @@ COMMAND(cmd_param_toggle)
   return CMD_OK;
 }
 
+COMMAND(cmd_param_mac_addr)
+{
+  u08 mac[6];
+
+  if(net_parse_mac(argv[1], mac)) {
+    net_copy_mac(mac, param.mac_addr);
+    return CMD_OK;
+  } else {
+    return CMD_PARSE_ERROR;
+  }
+}
+
 COMMAND(cmd_stats_dump)
 {
   stats_dump();
@@ -155,17 +168,41 @@ COMMAND(cmd_log_reset)
   return CMD_OK;
 }
 
+COMMAND(cmd_ether_configure)
+{
+  eth_state_configure();
+  return CMD_OK;
+}
+
+COMMAND(cmd_ether_init)
+{
+  eth_state_init();
+  return CMD_OK;
+}
+
+COMMAND(cmd_ether_shutdown)
+{
+  eth_state_shutdown();
+  return CMD_OK;
+}
+
 COMMAND(cmd_help)
 {
   uart_send_pstring(PSTR(
     "q        quit command mode\r\n"
     "r        soft reset device\r\n"
     "v        print plipbox version\r\n"
+    "\r\n"
     "p        print parameters\r\n"
     "ps       save parameters to EEPROM\r\n"
     "pl       load parameters from EEPROM\r\n"
+    "\r\n"
     "sd       dump statistics\r\n"
     "sr       reset statistics\r\n"
+    "\r\n"
+    "ec       re-configure ethernet\r\n"
+    "ei       re-init ethernet\r\n"
+    "es       ethernet shutdown\r\n"
     "\r\n"
     "fd [on]  enable full duplex mode\r\n"
     "fc [on]  enable flow control for ETH packets\r\n"
@@ -191,6 +228,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("q"), cmd_quit },
   { CMD_NAME("r"), cmd_device_reset },
   { CMD_NAME("v"), cmd_version },
+  // param
   { CMD_NAME("p"), cmd_param_dump },
   { CMD_NAME("ps"), cmd_param_save },
   { CMD_NAME("pl"), cmd_param_load },
@@ -198,7 +236,12 @@ cmd_table_t cmd_table[] = {
   // stats
   { CMD_NAME("sd"), cmd_stats_dump },
   { CMD_NAME("sr"), cmd_stats_reset },
+  // ethernet
+  { CMD_NAME("ec"), cmd_ether_configure },
+  { CMD_NAME("ei"), cmd_ether_init },
+  { CMD_NAME("es"), cmd_ether_shutdown},
   // options
+  { CMD_NAME("m"), cmd_param_mac_addr },
   { CMD_NAME("fd"), cmd_param_toggle },
   { CMD_NAME("fc"), cmd_param_toggle },
   { CMD_NAME("fp"), cmd_param_toggle },

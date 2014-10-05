@@ -41,6 +41,7 @@
 #include "timer.h"
 #include "stats.h"
 #include "log.h"
+#include "eth_state.h"
 
 static u16 offset;
 
@@ -198,6 +199,13 @@ static void handle_magic_online(void)
   uart_send_hex_byte(sana_version[1]);
   uart_send_crlf();
   
+  /* neet to reconfigure eth? */
+  if(!net_compare_mac(sana_mac, param.mac_addr)) {
+    net_copy_mac(sana_mac, param.mac_addr);
+    param_save(); /* save changed mac to eeprom */
+    eth_state_configure(); /* configure eth to set new mac */
+  }
+
   /* does versions match? */
   if((sana_version[0] == VERSION_MAJ) && (sana_version[1] == VERSION_MIN)) {  
     sana_online = 1;

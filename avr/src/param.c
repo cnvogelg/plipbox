@@ -43,6 +43,8 @@ uint16_t eeprom_crc16 EEMEM;
 
 // default 
 static const param_t PROGMEM default_param = {
+  .mac_addr = { 0x1a,0x11,0xaf,0xa0,0x47,0x11},
+
   .dump_dirs = 0,
   .dump_eth = 0,
   .dump_ip = 0,
@@ -61,6 +63,13 @@ static const param_t PROGMEM default_param = {
 // dump all params
 void param_dump(void)
 {
+  // mac address
+  uart_send_pstring(PSTR("m: mac address   "));
+  net_dump_mac(param.mac_addr);
+  uart_send_crlf();
+
+  uart_send_crlf();
+
   // options
   uart_send_pstring(PSTR("fd: full duplex  "));
   uart_send_hex_byte(param.full_duplex);

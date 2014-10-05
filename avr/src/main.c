@@ -70,25 +70,14 @@ void loop(void)
   pb_io_init();
 
   // setup pktio
-  u08 fd = param.full_duplex;
-  u08 rev = pktio_init(fd);
-  if(rev == 0) {
-    uart_send_pstring(PSTR(PKTIO_NAME ": ERROR SETTING UP!!\r\n"));
-    while(1) {}
-  } else {
-    uart_send_pstring(PSTR(PKTIO_NAME ": rev "));
-    uart_send_hex_byte(rev);
-    uart_send_pstring(fd ? PSTR(" full ") : PSTR(" half "));
-    uart_send_pstring(PSTR("duplex"));
-    uart_send_crlf();
-  }
+  eth_state_init();
   
   // main loop
   u08 stay = 1;
   while(stay) {
     u08 pb_state = pb_state_worker();
     u08 pb_online = (pb_state == PB_STATE_LINK_UP);
-    u08 eth_state = eth_state_worker(pb_online);
+    u08 eth_state = eth_state_worker();
     u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
     
     eth_io_worker(eth_state, pb_online);

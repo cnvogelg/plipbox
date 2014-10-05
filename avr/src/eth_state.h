@@ -29,12 +29,20 @@
 
 #include "global.h"
 
-#define ETH_STATE_LINK_DOWN   0
-#define ETH_STATE_LINK_UP     1
+#define ETH_STATE_INIT        0
+#define ETH_STATE_CONFIGURE   1
+#define ETH_STATE_LINK_DOWN   2
+#define ETH_STATE_LINK_UP     3
+#define ETH_STATE_SHUTDOWN	  4
+#define ETH_STATE_OFF		  5
    
 // 64*10 ms
 #define ETH_STATE_TIMER_MASK    0xffc0   
 
-extern u08 eth_state_worker(u08 plip_online);
+extern void eth_state_init(void);
+extern void eth_state_configure(void);
+extern void eth_state_shutdown(void);
+
+extern u08 eth_state_worker(void);
    
 #endif

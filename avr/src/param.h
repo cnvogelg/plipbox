@@ -37,6 +37,8 @@
 #define DUMP_ERRORS       32
 
 typedef struct {
+  u08 mac_addr[6];
+
   u08 filter_eth;
   u08 filter_plip;
   u08 flow_ctl;
