@@ -11,6 +11,9 @@ class PacketDecoder:
     self.my_ip = None
     self.my_mac_name = "plipbox_mac_addr"
     self.my_ip_name = "plipbox_ip"
+    self.tcp_map = {}
+    self.tcp_num = {}
+    self.counter = 0
 
   def decode_raw_pkt(self, raw_pkt):
     # decode ethernet packet
@@ -25,10 +28,18 @@ class PacketDecoder:
       if isinstance(sub_pkt, TCP):
         src_port = sub_pkt.get_th_sport()
         tgt_port = sub_pkt.get_th_dport()
+        src_key = "%s:%d" % (src_ip, src_port)
+        tgt_key = "%s:%d" % (tgt_ip, tgt_port)
+        key = (src_key, tgt_key)
+        self._report_tcp(key, sub_pkt)
         t = "[TCP %s:%d -> %s:%d" % (src_ip, src_port, tgt_ip, tgt_port)
-        t += " win=%s seq=%s" % (sub_pkt.get_th_win(), sub_pkt.get_th_seq())
+        tid = self._get_tcp_id(key)
+        seq = self._map_tcp_seq(key, sub_pkt.get_th_seq())
+        t += " (%s) seq=%s" % (tid, seq)
         if sub_pkt.get_ACK():
-          t += " ack=%s " % sub_pkt.get_th_ack()
+          ack = self._map_tcp_ack(key, sub_pkt.get_th_ack())
+          t += " ack=%s" % ack
+        t += " {%d}" % sub_pkt.get_th_win()
         t += self._get_tcp_flags(sub_pkt) + "]"
         return t
       elif isinstance(sub_pkt, UDP):
@@ -67,6 +78,39 @@ class PacketDecoder:
       
     # unknown packet
     return None
+
+  def _report_tcp(self, tcp_key, tcp_pkt):
+    if tcp_pkt.get_SYN():
+      seq = tcp_pkt.get_th_seq()
+      self.tcp_map[tcp_key] = seq
+      if not tcp_pkt.get_ACK():
+        self.counter += 1
+        self.tcp_num[tcp_key] = self.counter
+
+  def _map_tcp_seq(self, tcp_key, seq):
+    if tcp_key in self.tcp_map:
+      seq_base = self.tcp_map[tcp_key]
+      return seq - seq_base
+    else:
+      return seq
+
+  def _map_tcp_ack(self, tcp_key, ack):
+    swap_key = (tcp_key[1], tcp_key[0])
+    if swap_key in self.tcp_map:
+      ack_base = self.tcp_map[swap_key]
+      return ack - ack_base
+    else:
+      return ack
+
+  def _get_tcp_id(self, tcp_key):
+    if tcp_key in self.tcp_num:
+      return "%di" % self.tcp_num[tcp_key]
+    else:
+      swap_key = (tcp_key[1], tcp_key[0])
+      if swap_key in self.tcp_num:
+        return "%do" % self.tcp_num[swap_key]
+      else:
+        return "??"
 
   def _map_mac_addr(self, mac_str):
     if mac_str == self.my_mac.__str__():
