@@ -10,13 +10,48 @@ import traceback
 
 import veth
 import pbvpar
-from ethframe import EthFrame
+from ethframe import EthFrame, MacAddress
+from pktdecode import PacketDecoder
+
+# ---------- common --------------------------------------------------------
+
+class Reader:
+
+  def __init__(self, name, args, log, ts_base, decoder=None):
+    self.name = name
+    self.args = args
+    self.log = log
+    self.decoder = decoder
+    self.ts_base = ts_base
+
+  def log_packet(self, eth_frame, raw_pkt, tag):
+    # nothing to do
+    if not args.verbose:
+      return
+    # filter all
+    if not args.all_packets and tag is not None:
+      return
+    # tag == None -> ok
+    if tag is None:
+      tag = " ok "
+    # get a timestamp
+    t = time.time() - ts_base
+    # try to decode packet
+    if self.decoder is not None:
+      info = self.decoder.decode_raw_pkt(raw_pkt)
+    else:
+      info = None
+    # if decoding fails use eth frame
+    if info is None:
+      info = eth_frame.__str__()
+    self.log("%12.6f %s: [%4d] [%s]" % (t, self.name, len(raw_pkt), tag), info)
 
 # ---------- ethernet ------------------------------------------------------
 
-class EthernetReader:
+class EthernetReader(Reader):
 
-  def __init__(self, args, log):
+  def __init__(self, args, log, ts_base, decoder):
+    Reader.__init__(self, "eth", args, log, ts_base, decoder)
     # setup virtual ethernet
     ifs = (args.eth_if, args.tap_if, args.bridge_if)
     v = veth.VEth(*ifs)
@@ -29,8 +64,6 @@ class EthernetReader:
       print("veth: error opening:",e)
       sys.exit(2)
     self.eth = v
-    self.args = args
-    self.log = log
 
   def tx_pkt(self, raw_buf):
     self.eth.tx_pkt(raw_buf)
@@ -59,13 +92,13 @@ class EthernetReader:
             if keep:
               # submit to par send
               self.pb.tx_pkt(raw_buf)
-              tag = " ok "
+              tag = None
             else:
               tag = "FILT"
           else:
             tag = "OFF "
-          t = time.time()
-          self.log("%12.6f eth: [%4d] [%s]" % (t, len(raw_buf), tag), eth_frame)
+          # decode packet
+          self.log_packet(eth_frame, raw_buf, tag)
     except KeyboardInterrupt:
       self.log("BREAK [eth]")
       self.leave_event.set()
@@ -79,9 +112,11 @@ class EthernetReader:
 
 # ---------- plipbox -------------------------------------------------------
 
-class PlipboxReader:
+class PlipboxReader(Reader):
 
-  def __init__(self, args, log):
+  def __init__(self, args, log, ts_base, decoder):
+    Reader.__init__(self, "PAR", args, log, ts_base, decoder)
+    # setup plipbox
     pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug)
     try:
       pb.open()
@@ -89,8 +124,6 @@ class PlipboxReader:
       print("pb: error opening:",e)
       sys.exit(3)
     self.pb = pb
-    self.args = args
-    self.log = log
 
   def tx_pkt(self, raw_buf):
     self.pb.tx_pkt(raw_buf)
@@ -114,8 +147,10 @@ class PlipboxReader:
           n = len(raw_buf)
           # check for magic packets
           if eth_frame.is_magic_online():
-            log("magic: online", True)
+            my_mac = eth_frame.src_mac
+            log("magic: online: ", my_mac, True)
             tag = "M:ON"
+            self.decoder.my_mac = my_mac
             self.online_event.set()
           elif eth_frame.is_magic_offline():
             log("magic: offline", True)
@@ -123,15 +158,15 @@ class PlipboxReader:
             self.online_event.clear()
           elif not args.rx and self.online_event.is_set():
             try:
-              tag = " ok "
+              tag = None
               self.eth.tx_pkt(raw_buf)
             except OSError as e:
               self.log(e)
               tag = "ERR!"
           else:
             tag = "OFF "
-          t = time.time()
-          self.log("%12.6f PAR: [%4d] [%s]" % (t,len(raw_buf), tag), eth_frame)
+          # decode packet
+          self.log_packet(eth_frame, raw_buf, tag)
     except KeyboardInterrupt:
       self.log("BREAK [pb]")
       self.leave_event.set()
@@ -147,7 +182,7 @@ class PlipboxReader:
 print("Welcome to plipbox!")
 
 # default param
-plipbox_mac = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
+plipbox_mac = MacAddress((0x1a,0x11,0xaf,0xa0,0x47,0x11))
 
 # parse args
 parser = argparse.ArgumentParser()
@@ -158,7 +193,8 @@ parser.add_argument('-t', '--tap-if', default="tap0", help="tap interface name")
 parser.add_argument('-b', '--bridge-if', default="bridge1", help="bridge interface name")
 
 parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
-parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose and dump packets")
+parser.add_argument('-a', '--all-packets', action='store_true', default=False, help="show all packets")
 parser.add_argument('-d', '--debug', type=int, default=0, help="debug flags: 1=low level, 2=protocol")
 parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
 args = parser.parse_args()
@@ -169,8 +205,10 @@ def log(*v,**kw):
     print(*v)
 
 # setup plipbox and ethernet
-eth = EthernetReader(args, log)
-pb = PlipboxReader(args, log)
+ts_base = time.time()
+decoder = PacketDecoder(plipbox_mac)
+eth = EthernetReader(args, log, ts_base, decoder)
+pb = PlipboxReader(args, log, ts_base, decoder)
 
 # setup shared env
 leave_event = threading.Event()

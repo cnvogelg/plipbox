@@ -1,8 +1,28 @@
 import struct
 
+class MacAddress:
+    bcast_mac = (0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
+
+    def __init__(self, mac):
+        self.mac = list(mac)
+
+    def __str__(self):
+        res = []
+        for a in self.mac:
+            res.append("%02x" % a)
+        return ":".join(res)
+
+    def __eq__(self, other):
+        return self.mac == other.mac
+
+    def __ne__(self, other):
+        return self.mac != other.mac
+
+    def is_broadcast(self):
+        return self.mac == self.bcast_mac
+
 
 class EthFrame:
-    bcast_mac = (0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
     MAGIC_ONLINE = 0xffff
     MAGIC_OFFLINE = 0xfffe
 
@@ -15,21 +35,14 @@ class EthFrame:
 
     def decode(self, raw_buf):
         self.raw_buf = raw_buf
-        self.tgt_mac = struct.unpack("BBBBBB", raw_buf[0:6])
-        self.src_mac = struct.unpack("BBBBBB", raw_buf[6:12])
+        self.tgt_mac = MacAddress(struct.unpack("BBBBBB", raw_buf[0:6]))
+        self.src_mac = MacAddress(struct.unpack("BBBBBB", raw_buf[6:12]))
         self.eth_type = struct.unpack("!H", raw_buf[12:14])[0]
         self.size = len(raw_buf) - 14
 
-    def _str_mac(self, mac):
-        res = []
-        for a in mac:
-            res.append("%02x" % a)
-        return ":".join(res)
-
     def __str__(self):
-        t = self._str_mac(self.tgt_mac)
-        s = self._str_mac(self.src_mac)
-        return "[%04d:0x%04x,%s->%s]" % (self.size, self.eth_type, s, t)
+        return "[eth %s -> %s 0x%04x]" % (self.src_mac, self.tgt_mac,
+                                         self.eth_type)
 
     def is_bootp_bcast(self):
         eth_off = 14
@@ -51,7 +64,7 @@ class EthFrame:
 
     def is_for_me(self, my_mac):
         # check broadcast packets
-        if self.tgt_mac == self.bcast_mac:
+        if self.tgt_mac.is_broadcast():
             if self.eth_type == 0x806:  # ARP
                 return True
             elif self.eth_type == 0x800:  # IPv4
