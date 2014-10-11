@@ -18,7 +18,7 @@
 #include "global.h"
 #include "spi.h"
 
-extern uint8_t enc28j60_init( u08 full_duplex );
+extern uint8_t enc28j60_init( u08 full_duplex, u08 loop_back );
 
 extern void enc28j60_start(const uint8_t* macaddr);
 extern void enc28j60_stop( void );

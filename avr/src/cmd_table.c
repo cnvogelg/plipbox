@@ -105,6 +105,7 @@ COMMAND(cmd_param_toggle)
       case 'c': val = &param.flow_ctl; break;
       case 'e': val = &param.filter_eth; break;
       case 'p': val = &param.filter_plip; break;
+      case 'l': val = &param.loop_back; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -205,6 +206,7 @@ COMMAND(cmd_help)
     "es       ethernet shutdown\r\n"
     "\r\n"
     "fd [on]  enable full duplex mode\r\n"
+    "fl [on]  enable loop back\r\n"
     "fc [on]  enable flow control for ETH packets\r\n"
     "fp [on]  enable filtering of PLIP packets\r\n"
     "fe [on]  enable filtering of ETH packets\r\n"
@@ -246,6 +248,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("fc"), cmd_param_toggle },
   { CMD_NAME("fp"), cmd_param_toggle },
   { CMD_NAME("fe"), cmd_param_toggle },
+  { CMD_NAME("fl"), cmd_param_toggle },
   // dump commands
   { CMD_NAME("dd"), cmd_param_toggle },
   { CMD_NAME("de"), cmd_param_toggle },

@@ -115,7 +115,8 @@ u08 eth_state_worker(void)
     case ETH_STATE_INIT:
     {
       u08 fd = param.full_duplex;
-      u08 rev = pktio_init(fd);
+      u08 lb = param.loop_back;
+      u08 rev = pktio_init(fd, lb);
 
       uart_send_time_stamp_spc();
       uart_send_pstring(PSTR("eth: init " PKTIO_NAME));
@@ -126,6 +127,9 @@ u08 eth_state_worker(void)
         uart_send_hex_byte(rev);
         uart_send_pstring(fd ? PSTR(" full ") : PSTR(" half "));
         uart_send_pstring(PSTR("duplex"));
+        if(lb) {
+          uart_send_pstring(PSTR(" loop back"));
+        }
         uart_send_crlf();
       }
       state = ETH_STATE_CONFIGURE;

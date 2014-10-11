@@ -356,7 +356,7 @@ static void writePhy (uint8_t address, uint16_t data) {
         ;
 }
 
-uint8_t enc28j60_init (u08 full_duplex) {
+uint8_t enc28j60_init (u08 full_duplex, u08 loop_back) {
     spi_init();
     spi_disable_eth();
     
@@ -409,7 +409,10 @@ uint8_t enc28j60_init (u08 full_duplex) {
     writeReg(MAMXFL, MAX_FRAMELEN);
 
     // PHY init
-    writePhy(PHCON2, PHCON2_HDLDIS);
+    // Note: loop_back only works with half duplex!
+    if(!loop_back) {
+      writePhy(PHCON2, PHCON2_HDLDIS);
+    }
     if(full_duplex) {
       writePhy(PHCON1, PHCON1_PDPXMD);
     }

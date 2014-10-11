@@ -56,6 +56,7 @@ static const param_t PROGMEM default_param = {
   .filter_eth = 1,
   .flow_ctl = 1,
   .full_duplex = 0,
+  .loop_back = 0,
   
   .log_all = 0
 };
@@ -73,6 +74,10 @@ void param_dump(void)
   // options
   uart_send_pstring(PSTR("fd: full duplex  "));
   uart_send_hex_byte(param.full_duplex);
+  uart_send_crlf();
+
+  uart_send_pstring(PSTR("fl: loop back    "));
+  uart_send_hex_byte(param.loop_back);
   uart_send_crlf();
 
   uart_send_pstring(PSTR("fc: ETH flow ctl "));

@@ -39,7 +39,7 @@
 #define PKTIO_TX_ERR            ENC28J60_TX_ERR
  
 /* main */
-#define pktio_init(x)           enc28j60_init(x)
+#define pktio_init(x,y)         enc28j60_init(x,y)
 #define pktio_start(x)          enc28j60_start(x)
 #define pktio_stop()            enc28j60_stop()
 #define pktio_get_status()      enc28j60_get_status()
