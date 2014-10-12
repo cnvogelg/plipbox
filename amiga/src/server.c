@@ -354,9 +354,21 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    {
       pb->pb_DevStats.PacketsReceived++;
 
+      pkttyp = frame->hwf_Type;
+
+      /* perform internal loop back of magic packets of type 0xfffd */
+#define INTERNAL_LOOP_BACK
+#ifdef INTERNAL_LOOP_BACK
+      if(pkttyp == 0xfffd) {
+         d(("loop back packet (size %ld)\n",frame->hwf_Size));
+         hw_send_frame(pb, frame);
+         return;
+      }
+#endif
+
       datasize = frame->hwf_Size - HW_ETH_HDR_SIZE;
 
-      dotracktype(pb, pkttyp = frame->hwf_Type, 0, 1, 0, datasize, 0);
+      dotracktype(pb, pkttyp, 0, 1, 0, datasize, 0);
 
       d(("packet %08lx, size %ld received\n",pkttyp,datasize));
 
