@@ -82,11 +82,14 @@ void loop(void)
     u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
     
     eth_io_worker(eth_state, pb_online);
-    pb_io_worker(pb_state, eth_online);
     
     // test mode handling
     if(pb_test_state(eth_state, pb_state)) {
       pb_test_worker();
+    } 
+    // regular pb io
+    else {
+      pb_io_worker(pb_state, eth_online);
     }
 
     stay = cmd_worker();

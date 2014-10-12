@@ -234,7 +234,7 @@ u08 pb_test_state(u08 eth_state, u08 pb_state)
       break;
     case TEST_STATE_ENTER:
       // wait for ethernet off, but required pb link
-      if((eth_state == ETH_STATE_OFF) && (pb_state == PB_STATE_LINK_UP)) {
+      if(eth_state == ETH_STATE_OFF) {
         // setup handlers for pb testing
         pb_proto_init(&funcs);
 
@@ -270,5 +270,19 @@ u08 pb_test_state(u08 eth_state, u08 pb_state)
 
 void pb_test_worker(void)
 {
-
+  // call protocol handler (low level transmit)
+  u08 cmd;
+  u16 size;
+  u08 status = pb_proto_handle(&cmd, &size);
+  
+  // nothing done... return
+  if(status == PBPROTO_STATUS_IDLE) {
+    return;
+  }
+  // pb proto ok
+  else if(status == PBPROTO_STATUS_OK) {
+  }
+  // pb proto failed
+  else {
+  }
 }
