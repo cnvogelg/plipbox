@@ -58,8 +58,25 @@ static const param_t PROGMEM default_param = {
   .full_duplex = 0,
   .loop_back = 0,
   
-  .log_all = 0
+  .log_all = 0,
+
+  .test_plen = 1518,
+  .test_ptype = 0xfffd
 };
+
+static void dump_byte(PGM_P str, const u08 val)
+{
+  uart_send_pstring(str);
+  uart_send_hex_byte(val);
+  uart_send_crlf();  
+}
+
+static void dump_word(PGM_P str, const u16 val)
+{
+  uart_send_pstring(str);
+  uart_send_hex_word(val);
+  uart_send_crlf();    
+}
 
 // dump all params
 void param_dump(void)
@@ -69,62 +86,31 @@ void param_dump(void)
   net_dump_mac(param.mac_addr);
   uart_send_crlf();
 
-  uart_send_crlf();
-
   // options
-  uart_send_pstring(PSTR("fd: full duplex  "));
-  uart_send_hex_byte(param.full_duplex);
   uart_send_crlf();
-
-  uart_send_pstring(PSTR("fl: loop back    "));
-  uart_send_hex_byte(param.loop_back);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("fc: ETH flow ctl "));
-  uart_send_hex_byte(param.flow_ctl);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("fe: filter ETH   "));
-  uart_send_hex_byte(param.filter_eth);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("fp: filter PLIP  "));
-  uart_send_hex_byte(param.filter_plip);
-  uart_send_crlf();
+  dump_byte(PSTR("fd: full duplex  "), param.full_duplex);
+  dump_byte(PSTR("fl: loop back    "), param.loop_back);
+  dump_byte(PSTR("fc: ETH flow ctl "), param.flow_ctl);
+  dump_byte(PSTR("fe: filter ETH   "), param.filter_eth);
+  dump_byte(PSTR("fp: filter PLIP  "), param.filter_plip);
   
   // diagnosis
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("dd: dump dirs    "));
-  uart_send_hex_byte(param.dump_dirs);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("de: dump ETH     "));
-  uart_send_hex_byte(param.dump_eth);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("di: dump IP      "));
-  uart_send_hex_byte(param.dump_ip);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("da: dump ARP     "));
-  uart_send_hex_byte(param.dump_arp);
-  uart_send_crlf();
-  
-  uart_send_pstring(PSTR("dp: dump proto   "));
-  uart_send_hex_byte(param.dump_proto);
-  uart_send_crlf();
-
-  uart_send_pstring(PSTR("dl: dump plip    "));
-  uart_send_hex_byte(param.dump_plip);
-  uart_send_crlf();
+  uart_send_crlf();  
+  dump_byte(PSTR("dd: dump dirs    "), param.dump_dirs);
+  dump_byte(PSTR("de: dump ETH     "), param.dump_eth);
+  dump_byte(PSTR("di: dump IP      "), param.dump_ip);
+  dump_byte(PSTR("da: dump ARP     "), param.dump_arp);
+  dump_byte(PSTR("dp: dump proto   "), param.dump_proto);
+  dump_byte(PSTR("dl: dump plip    "), param.dump_plip);
   
   // log
+  uart_send_crlf();  
+  dump_byte(PSTR("la: log all cmds "), param.log_all);
+
+  // test
   uart_send_crlf();
-  
-  uart_send_pstring(PSTR("la: log all cmds "));
-  uart_send_hex_byte(param.log_all);
-  uart_send_crlf();
+  dump_word(PSTR("tl: packet len   "), param.test_plen);
+  dump_word(PSTR("tt: packet type  "), param.test_ptype);
 }
 
 // build check sum for parameter block

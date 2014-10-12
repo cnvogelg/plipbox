@@ -1,5 +1,5 @@
 /*
- * cmdkey_table.c - command key table
+ * pb_test.h: plipbox test mode
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,48 +24,15 @@
  *
  */
 
-#include "cmdkey_table.h"
+#ifndef PB_TEST_H
+#define PB_TEST_H
 
-#include "stats.h"
-#include "log.h"
-#include "pb_test.h"
+#include "global.h"
 
-COMMAND_KEY(cmd_dump_stats)
-{
-  stats_dump();
-}
+extern void pb_test_toggle_mode(void);
+extern void pb_test_send_packet(void);
 
-COMMAND_KEY(cmd_reset_stats)
-{
-  stats_reset();
-}
+extern u08  pb_test_state(u08 eth_state, u08 pb_state);
+extern void pb_test_worker(void);
 
-COMMAND_KEY(cmd_dump_log)
-{
-  log_dump();
-}
-
-COMMAND_KEY(cmd_reset_log)
-{
-  log_reset();
-}
-
-COMMAND_KEY(cmd_toggle_test_mode)
-{
-  pb_test_toggle_mode();
-}
-
-COMMAND_KEY(cmd_send_test_packet)
-{
-  pb_test_send_packet();
-}
-
-cmdkey_table_t cmdkey_table[] = {
-  { 's', cmd_dump_stats },
-  { 'S', cmd_reset_stats },
-  { 'l', cmd_dump_log },
-  { 'L', cmd_reset_log },
-  { 't', cmd_toggle_test_mode },
-  { 'p', cmd_send_test_packet },
-  { 0,0 }
-};
+#endif

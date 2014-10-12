@@ -123,7 +123,7 @@ SRC += par_low.c pb_proto.c
 SRC += pkt_buf.c param.c
 SRC += net.c arp.c
 SRC += eth_io.c eth_state.c dump.c
-SRC += pb_io.c pb_state.c
+SRC += pb_io.c pb_state.c pb_test.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c stats.c log.c
 ifeq "$(NETIO)" "eth"

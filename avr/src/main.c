@@ -38,6 +38,7 @@
 #include "eth_state.h"
 #include "pb_io.h"
 #include "pb_state.h"
+#include "pb_test.h"
 
 #include "pktio.h"
 
@@ -83,6 +84,11 @@ void loop(void)
     eth_io_worker(eth_state, pb_online);
     pb_io_worker(pb_state, eth_online);
     
+    // test mode handling
+    if(pb_test_state(eth_state, pb_state)) {
+      pb_test_worker();
+    }
+
     stay = cmd_worker();
 
 #ifdef PKTIO_HAS_WORKER

@@ -133,6 +133,36 @@ COMMAND(cmd_param_toggle)
   return CMD_OK;
 }
 
+COMMAND(cmd_param_word)
+{
+  u08 group = argv[0][0];
+  u08 type = argv[0][1];
+  u16 *val = 0;
+  
+  if(group == 't') {
+    switch(type) {
+      case 'l': val = &param.test_plen; break;
+      case 't': val = &param.test_ptype; break;
+      default: return CMD_PARSE_ERROR;
+    }
+  }
+  else {
+    return CMD_PARSE_ERROR;
+  }
+  
+  if(argc == 1) {
+    return CMD_PARSE_ERROR;
+  } else {
+    u16 new_val;
+    if(parse_word(argv[1],&new_val)) {
+      *val = new_val;
+    } else {
+      return CMD_PARSE_ERROR;
+    }
+  }
+  return CMD_OK;
+}
+
 COMMAND(cmd_param_mac_addr)
 {
   u08 mac[6];
@@ -222,6 +252,9 @@ COMMAND(cmd_help)
     "la [on]  log all PLIP commands\r\n"
     "ld       log dump\r\n"
     "lr       log reset\r\n"
+    "\r\n"
+    "tl       length of test packets\r\n"
+    "tt       eth type of test packets\r\n"
   ));
   return CMD_OK;
 }
@@ -261,6 +294,9 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("la"), cmd_param_toggle },
   { CMD_NAME("ld"), cmd_log_dump },
   { CMD_NAME("lr"), cmd_log_reset },
+  // test
+  { CMD_NAME("tl"), cmd_param_word },
+  { CMD_NAME("tt"), cmd_param_word },
   // help
   { CMD_NAME("?"), cmd_help },
   { 0,0 } // last entry
