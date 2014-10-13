@@ -48,6 +48,38 @@ static u16 errors;
 static u08 toggle_request;
 static u08 state = TEST_STATE_OFF;
 
+// ----- Helpers -----
+
+static void send_prefix(u08 is_tx)
+{
+  PGM_P str = is_tx ? PSTR("[TX] ") : PSTR("[RX] ");
+  uart_send_time_stamp_spc();
+  uart_send_pstring(str);
+}
+
+static void dump_result(u08 is_tx)
+{
+  send_prefix(is_tx);
+
+  // if everything is ok then print only rate
+  if(errors == 0) {
+    uart_send_rate(count, start_ts);
+  }
+  // errors occurred
+  else {
+    uart_send_pstring(PSTR("ERROR "));
+    uart_send_hex_word(errors);
+    uart_send_spc();
+    uart_send_hex_word(count);
+    uart_send_spc();
+    uart_send_delta(start_ts);
+  }
+  if(is_tx) {
+    uart_send_spc();
+    uart_send_delta(trigger_ts);
+  }
+  uart_send_crlf();
+}
 
 // ----- RX Calls -----
 
@@ -104,15 +136,14 @@ static void rx_data(u08 *data)
 static void rx_end(u16 pkt_size)
 {
   u32 end_ts = time_stamp;
-  u32 delta = end_ts - start_ts;
+  start_ts = end_ts - start_ts;
 
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[RX] "));
-  uart_send_time_stamp_spc_ext(delta);
-  uart_send_hex_word(pkt_size);
-  uart_send_spc();
-  uart_send_hex_word(errors);
-  uart_send_crlf();
+  // record error if transfer was aborted
+  if(pkt_size != param.test_plen) {
+    errors += 1;
+  }
+
+  dump_result(0);
 }
 
 // ----- TX Calls -----
@@ -155,14 +186,14 @@ static void tx_data(u08 *data)
 static void tx_end(u16 pkt_size)
 {
   u32 end_ts = time_stamp;
-  u32 delta = end_ts - start_ts;
+  start_ts = end_ts - start_ts;
 
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[TX] "));
-  uart_send_time_stamp_spc_ext(delta);
-  uart_send_time_stamp_spc_ext(trigger_ts);
-  uart_send_hex_word(pkt_size);
-  uart_send_crlf();  
+  // record error if transfer was aborted
+  if(pkt_size != param.test_plen) {
+    errors += 1;
+  }
+
+  dump_result(1);
 }
 
 // ----- function table -----
@@ -177,11 +208,24 @@ static pb_proto_funcs_t funcs = {
   .recv_end = tx_end
 };
 
-// ----- API -----
 
-void pb_test_toggle_mode(void)
+void pb_test_worker(void)
 {
-  toggle_request = 1;
+  // call protocol handler (low level transmit)
+  u08 cmd;
+  u16 size;
+  u08 status = pb_proto_handle(&cmd, &size);
+  
+  // nothing done... return
+  if(status == PBPROTO_STATUS_IDLE) {
+    return;
+  }
+  // pb proto ok
+  else if(status == PBPROTO_STATUS_OK) {
+  }
+  // pb proto failed
+  else {
+  }
 }
 
 void pb_test_send_packet(void)
@@ -192,6 +236,13 @@ void pb_test_send_packet(void)
 
   trigger_ts = time_stamp;
   pb_proto_request_recv();
+}
+
+// ----- Test Mode Handling -----
+
+void pb_test_toggle_mode(void)
+{
+  toggle_request = 1;
 }
 
 static void dump_state(void)
@@ -266,23 +317,4 @@ u08 pb_test_state(u08 eth_state, u08 pb_state)
       }
   }
   return state == TEST_STATE_ACTIVE;
-}
-
-void pb_test_worker(void)
-{
-  // call protocol handler (low level transmit)
-  u08 cmd;
-  u16 size;
-  u08 status = pb_proto_handle(&cmd, &size);
-  
-  // nothing done... return
-  if(status == PBPROTO_STATUS_IDLE) {
-    return;
-  }
-  // pb proto ok
-  else if(status == PBPROTO_STATUS_OK) {
-  }
-  // pb proto failed
-  else {
-  }
 }

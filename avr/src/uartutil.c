@@ -83,6 +83,36 @@ void uart_send_time_stamp_spc_ext(u32 ts)
   uart_send_data(buf,12);
 }
 
+void uart_send_rate(u16 bytes, u32 time)
+{
+  // time is in 100us
+  // rate is KB/s with 2 decimals
+  u32 rate = 1000 * (u32)bytes / time;
+  dword_to_dec(rate, buf, 6, 2);
+  uart_send_data(buf,7);
+  uart_send_pstring(PSTR(" KB/s"));
+}
+
+void uart_send_delta(u32 delta)
+{
+  // huge -> show upper hex
+  if(delta > 0xffff) {
+    buf[0] = '!';
+    word_to_hex((u16)(delta >> 16), buf+1);
+  }
+  // for too large numbers use hex
+  else if(delta > 9999) {
+    buf[0] = '>';
+    word_to_hex(delta, buf+1);
+  } 
+  // for smaller numbers use decimal
+  else {
+    buf[0] = '+';
+    dword_to_dec(delta, buf+1, 4, 4);
+  }
+  uart_send_data(buf,5);
+}
+
 void uart_send_hex_byte(u08 data)
 {
   byte_to_hex(data,buf);
