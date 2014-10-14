@@ -42,6 +42,7 @@
 #include "stats.h"
 #include "log.h"
 #include "eth_state.h"
+#include "util.h"
 
 static u16 offset;
 
@@ -314,18 +315,32 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
     return 0; // was passive
   }
   else if(status == PBPROTO_STATUS_OK) {
+    u32 delta = end - start;
+
     // dump ok command if requested
     if(param.dump_plip) {
-      dump_pb_cmd(cmd, status, size, end - start, start - req_time);
+      dump_pb_cmd(cmd, status, size, delta, start - req_time);
     }
     // log ok command
     if(param.log_all) {
-      log_add(start, end-start, cmd, status, size);
+      log_add(start, delta, cmd, status, size);
     }
     
     // do we have a packet received?
     if(cmd == PBPROTO_CMD_SEND) {
       handle_pb_send(eth_online);
+    }
+
+    // update rate
+    u16 rate = calc_rate_kbs(size, delta);
+    if(cmd == PBPROTO_CMD_SEND) {
+      if(rate > stats.tx_max_rate) {
+        stats.tx_max_rate = rate;
+      }
+    } else {
+      if(rate > stats.rx_max_rate) {
+        stats.rx_max_rate = rate;
+      }
     }
   }
   else {
