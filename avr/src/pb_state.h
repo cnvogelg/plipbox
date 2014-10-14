@@ -36,6 +36,6 @@
 // 64*10 ms
 #define PB_STATE_TIMER_MASK    0xffc0   
 
-extern u08 pb_state_worker(void);
+extern u08 pb_state_worker(u32 last_active);
    
 #endif

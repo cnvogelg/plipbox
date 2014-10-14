@@ -46,6 +46,7 @@ static u16 count;
 static u16 errors;
 
 static u08 toggle_request;
+static u08 auto_mode;
 static u08 state = TEST_STATE_OFF;
 
 // ----- Helpers -----
@@ -209,7 +210,7 @@ static pb_proto_funcs_t funcs = {
 };
 
 
-void pb_test_worker(void)
+u08 pb_test_worker(void)
 {
   // call protocol handler (low level transmit)
   u08 cmd;
@@ -218,14 +219,21 @@ void pb_test_worker(void)
   
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
-    return;
+    return 0; // inactive
   }
   // pb proto ok
   else if(status == PBPROTO_STATUS_OK) {
+
+
+    // re-trigger auto?
+    if((cmd == PBPROTO_CMD_SEND) && auto_mode) {
+      pb_test_send_packet();
+    }
   }
   // pb proto failed
   else {
   }
+  return 1; // active
 }
 
 void pb_test_send_packet(void)
@@ -236,6 +244,29 @@ void pb_test_send_packet(void)
 
   trigger_ts = time_stamp;
   pb_proto_request_recv();
+}
+
+void pb_test_toggle_auto(void)
+{
+  if(state != TEST_STATE_ACTIVE) {
+    return;
+  }
+
+  auto_mode = !auto_mode;
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[AUTO] "));
+  if(auto_mode) {
+    uart_send_pstring(PSTR("on"));
+  } else {
+    uart_send_pstring(PSTR("off"));
+  }
+  uart_send_crlf();
+
+  if(auto_mode) {
+    // send first packet
+    pb_test_send_packet();
+  }
 }
 
 // ----- Test Mode Handling -----

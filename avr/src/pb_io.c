@@ -300,7 +300,7 @@ static void handle_pb_send(u08 eth_online)
 
 extern u32 req_time;
 
-void pb_io_worker(u08 plip_state, u08 eth_online)
+u08 pb_io_worker(u08 plip_state, u08 eth_online)
 {
   // call protocol handler (low level transmit)
   u08 cmd;
@@ -311,7 +311,7 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
   
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
-    return;
+    return 0; // was passive
   }
   else if(status == PBPROTO_STATUS_OK) {
     // dump ok command if requested
@@ -338,4 +338,5 @@ void pb_io_worker(u08 plip_state, u08 eth_online)
     // store error in log
     log_add(start, delta, cmd, status, size);
   }
+  return 1; // was active
 }

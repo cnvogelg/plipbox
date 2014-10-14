@@ -32,8 +32,14 @@
 
 static u08 state = PB_STATE_NO_DRIVER;
 
-static void check_line_ok(void)
+static void check_line_ok(u32 last_active)
 {
+  // wait at least 500ms = 5000 * 100us of idle time after last transfer
+  u32 delta = time_stamp - last_active;
+  if(delta < 5000) {
+    return;
+  }
+
   u08 val = pb_proto_get_line_status();
   if((val == PBPROTO_LINE_OFF)||(val == PBPROTO_LINE_DISABLED)) {
     uart_send_time_stamp_spc();
@@ -42,7 +48,7 @@ static void check_line_ok(void)
   }
 }
 
-u08 pb_state_worker(void)
+u08 pb_state_worker(u32 last_active)
 {
   switch(state) {
     case PB_STATE_NO_DRIVER:
@@ -61,7 +67,7 @@ u08 pb_state_worker(void)
         uart_send_pstring(PSTR("pbp: link up\r\n"));
         state = PB_STATE_LINK_UP;
       }
-      check_line_ok();
+      check_line_ok(last_active);
       break;
     case PB_STATE_LINK_UP:
       if(!sana_online) {
@@ -69,6 +75,7 @@ u08 pb_state_worker(void)
         uart_send_pstring(PSTR("pbp: link down\r\n"));
         state = PB_STATE_LINK_DOWN;
       }
+      check_line_ok(last_active);
       break;
   }
   return state;

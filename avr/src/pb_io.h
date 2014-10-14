@@ -29,7 +29,7 @@
 #include "global.h"
 
 extern void pb_io_init(void);
-extern void pb_io_worker(u08 plip_state, u08 eth_online);
+extern u08 pb_io_worker(u08 plip_state, u08 eth_online);
 
 // SANA info reported by driver
 extern u08 sana_online;

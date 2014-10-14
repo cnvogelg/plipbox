@@ -75,8 +75,9 @@ void loop(void)
   
   // main loop
   u08 stay = 1;
+  u32 last_active = 0;
   while(stay) {
-    u08 pb_state = pb_state_worker();
+    u08 pb_state = pb_state_worker(last_active);
     u08 pb_online = (pb_state == PB_STATE_LINK_UP);
     u08 eth_state = eth_state_worker();
     u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
@@ -84,12 +85,18 @@ void loop(void)
     eth_io_worker(eth_state, pb_online);
     
     // test mode handling
+    u08 busy;
     if(pb_test_state(eth_state, pb_state)) {
-      pb_test_worker();
+      busy = pb_test_worker();
     } 
     // regular pb io
     else {
-      pb_io_worker(pb_state, eth_online);
+      busy = pb_io_worker(pb_state, eth_online);
+    }
+
+    // store time stamp of last active
+    if(busy) {
+      last_active = time_stamp;
     }
 
     stay = cmd_worker();
