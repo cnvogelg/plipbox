@@ -30,6 +30,7 @@
 
 extern void pb_io_init(void);
 extern u08 pb_io_worker(u08 plip_state, u08 eth_online);
+extern void pb_io_send_magic(u16 type, u08 extra_size);
 
 // SANA info reported by driver
 extern u08 sana_online;

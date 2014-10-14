@@ -45,6 +45,7 @@
 #include "util.h"
 
 static u16 offset;
+static u08 send_magic;
 
 // SANA driver parameters sent in magic packet
 u08 sana_online;
@@ -86,7 +87,10 @@ static void tx_begin(u16 *pkt_size)
   // report size of packet
   *pkt_size = tx_pkt_size;
   offset = 0;
-  pktio_rx_data_begin();
+
+  if(!send_magic) {
+    pktio_rx_data_begin();
+  }
 }
 
 static void tx_data(u08 *data)
@@ -104,8 +108,13 @@ static void tx_end(u16 pkt_size)
 {
   // reset size of packet
   tx_pkt_size = 0;
-  pktio_rx_data_end();
-  pktio_rx_end();
+
+  if(send_magic) {
+    send_magic = 0;
+  } else {
+    pktio_rx_data_end();
+    pktio_rx_end();
+  }
 }
 
 // ----- function table -----
@@ -297,6 +306,30 @@ static void handle_pb_send(u08 eth_online)
     stats.tx_filter ++;
     pktio_tx_reject();
   }    
+}
+
+void pb_io_send_magic(u16 type, u08 extra_size)
+{
+  // set tx packet size so no ethernet frames are written in packet buffer
+  tx_pkt_size = 14 + extra_size;
+  send_magic = 1;
+
+  // fill ethernet header
+  u08 *ptr = tx_pkt_buf;
+  net_copy_bcast_mac(ptr);
+  ptr += 6;
+  net_copy_mac(param.mac_addr, ptr);
+  ptr += 6;
+  net_put_word(ptr, type);
+
+  // now request receive from Amiga
+  pb_proto_request_recv();
+
+  // report
+  uart_send_prefix_pbp();
+  uart_send_pstring(PSTR("send magic "));
+  uart_send_hex_word(type);
+  uart_send_crlf();
 }
 
 extern u32 req_time;
