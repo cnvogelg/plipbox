@@ -83,12 +83,9 @@ void uart_send_time_stamp_spc_ext(u32 ts)
   uart_send_data(buf,12);
 }
 
-void uart_send_rate(u16 bytes, u32 time)
+void uart_send_rate_kbs(u16 kbs)
 {
-  // time is in 100us
-  // rate is KB/s with 2 decimals
-  u32 rate = 1000 * (u32)bytes / time;
-  dword_to_dec(rate, buf, 6, 2);
+  dword_to_dec(kbs, buf, 6, 2);
   uart_send_data(buf,7);
   uart_send_pstring(PSTR(" KB/s"));
 }

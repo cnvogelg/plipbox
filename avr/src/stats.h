@@ -40,12 +40,14 @@ typedef struct {
   u16 rx_err;
   u16 rx_filter;
   u16 rx_drop;
+  u16 rx_max_rate;
 
   u16 tx_cnt;
   u32 tx_bytes;
   u16 tx_err;
   u16 tx_filter;
   u16 tx_drop;
+  u16 tx_max_rate;
 } stats_t;
 
 extern stats_t stats;

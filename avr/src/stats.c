@@ -37,18 +37,20 @@ void stats_reset(void)
   stats.rx_err = 0;
   stats.rx_drop = 0;
   stats.rx_filter = 0;
+  stats.rx_max_rate = 0;
 
   stats.tx_cnt = 0;
   stats.tx_bytes = 0;
   stats.tx_err = 0;
   stats.tx_drop = 0;
   stats.tx_filter = 0;
+  stats.tx_max_rate = 0;
 }
 
 void stats_dump(void)
 {
   // ----- header -----
-  uart_send_pstring(PSTR("   cnt  bytes    err  drop filt\r\n"));
+  uart_send_pstring(PSTR("   cnt  bytes    err  drop filt rate\r\n"));
   
   // ----- rx -----
   uart_send_pstring(PSTR("rx "));
@@ -61,6 +63,8 @@ void stats_dump(void)
   uart_send_hex_word(stats.rx_drop);
   uart_send_spc();
   uart_send_hex_word(stats.rx_filter);
+  uart_send_spc();
+  uart_send_rate_kbs(stats.rx_max_rate);
   uart_send_crlf();
 
   // ----- tx -----
@@ -74,5 +78,7 @@ void stats_dump(void)
   uart_send_hex_word(stats.tx_drop);
   uart_send_spc();
   uart_send_hex_word(stats.tx_filter);
+  uart_send_spc();
+  uart_send_rate_kbs(stats.tx_max_rate);
   uart_send_crlf();
 }

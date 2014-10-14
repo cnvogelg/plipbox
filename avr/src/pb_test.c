@@ -34,13 +34,14 @@
 #include "pb_proto.h"
 #include "param.h"
 #include "timer.h"
+#include "util.h"
+#include "stats.h"
 
 #define TEST_STATE_OFF    0
 #define TEST_STATE_ENTER  1
 #define TEST_STATE_ACTIVE 2
 #define TEST_STATE_LEAVE  3
 
-static u32 start_ts;
 static u32 trigger_ts;
 static u16 count;
 static u16 errors;
@@ -58,13 +59,13 @@ static void send_prefix(u08 is_tx)
   uart_send_pstring(str);
 }
 
-static void dump_result(u08 is_tx)
+static void dump_result(u08 is_tx, u32 delta, u16 rate)
 {
   send_prefix(is_tx);
 
   // if everything is ok then print only rate
   if(errors == 0) {
-    uart_send_rate(count, start_ts);
+    uart_send_rate_kbs(rate);
   }
   // errors occurred
   else {
@@ -73,7 +74,7 @@ static void dump_result(u08 is_tx)
     uart_send_spc();
     uart_send_hex_word(count);
     uart_send_spc();
-    uart_send_delta(start_ts);
+    uart_send_delta(delta);
   }
   if(is_tx) {
     uart_send_spc();
@@ -86,7 +87,6 @@ static void dump_result(u08 is_tx)
 
 static void rx_begin(u16 *pkt_size)
 {
-  start_ts = time_stamp;
   errors = 0;
   count = 0;
 
@@ -136,23 +136,18 @@ static void rx_data(u08 *data)
 
 static void rx_end(u16 pkt_size)
 {
-  u32 end_ts = time_stamp;
-  start_ts = end_ts - start_ts;
-
   // record error if transfer was aborted
   if(pkt_size != param.test_plen) {
     errors += 1;
   }
-
-  dump_result(0);
 }
 
 // ----- TX Calls -----
 
 static void tx_begin(u16 *pkt_size)
 {
-  start_ts = time_stamp;
-  trigger_ts = start_ts - trigger_ts;
+  // calc delta of tx trigger
+  trigger_ts = time_stamp - trigger_ts;
   *pkt_size = param.test_plen;
   count = 0;
 }
@@ -186,15 +181,10 @@ static void tx_data(u08 *data)
 
 static void tx_end(u16 pkt_size)
 {
-  u32 end_ts = time_stamp;
-  start_ts = end_ts - start_ts;
-
   // record error if transfer was aborted
   if(pkt_size != param.test_plen) {
     errors += 1;
   }
-
-  dump_result(1);
 }
 
 // ----- function table -----
@@ -215,24 +205,53 @@ u08 pb_test_worker(void)
   // call protocol handler (low level transmit)
   u08 cmd;
   u16 size;
+  u32 start = time_stamp;
   u08 status = pb_proto_handle(&cmd, &size);
-  
+  u32 delta = time_stamp - start;
+  u16 rate = calc_rate_kbs(count, delta);
+  u08 is_tx = (cmd == PBPROTO_CMD_SEND);
+
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
     return 0; // inactive
   }
   // pb proto ok
   else if(status == PBPROTO_STATUS_OK) {
-
-
-    // re-trigger auto?
-    if((cmd == PBPROTO_CMD_SEND) && auto_mode) {
-      pb_test_send_packet();
+    if(auto_mode) {
+      if(is_tx) {
+        stats.tx_cnt++;
+        stats.tx_bytes+=count;
+        if(stats.tx_max_rate < rate) {
+          stats.tx_max_rate = rate;
+        }
+        // next iteration after 
+        pb_test_send_packet();
+      } else {
+        stats.rx_cnt++;
+        stats.rx_bytes+=count;
+        if(stats.rx_max_rate < rate) {
+          stats.rx_max_rate = rate;
+        }
+      }
+    } else {
+      // in interactive mode show result
+      dump_result(is_tx, delta, rate);
     }
   }
-  // pb proto failed
+  // pb proto failed with an error
   else {
+    // add internal error
+    errors++;
+    dump_result(is_tx, delta, rate);
+    if(auto_mode) {
+      if(is_tx) {
+        stats.tx_err++;
+      } else {
+        stats.rx_err++;
+      }
+    }
   }
+
   return 1; // active
 }
 
@@ -266,6 +285,8 @@ void pb_test_toggle_auto(void)
   if(auto_mode) {
     // send first packet
     pb_test_send_packet();
+    // clear stats
+    stats_reset();
   }
 }
 

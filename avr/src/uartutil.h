@@ -44,7 +44,7 @@ void uart_send_spc(void);
 void uart_send_time_stamp_spc(void);
 void uart_send_time_stamp_spc_ext(u32 ts);
 // send rate in KB/s
-void uart_send_rate(u16 bytes, u32 time);
+void uart_send_rate_kbs(u16 kbs);
 // send a delta in decimal
 void uart_send_delta(u32 delta);
 
