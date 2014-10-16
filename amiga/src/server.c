@@ -123,6 +123,9 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
       {
          struct HWBase *hwb = &pb->pb_HWBase;
          
+         /* send magic */
+         hw_send_magic_pkt(pb, HW_MAGIC_ONLINE);
+
          GetSysTime(&pb->pb_DevStats.LastStart);
          pb->pb_Flags &= ~PLIPF_OFFLINE;
          DoEvent(pb, S2EVENT_ONLINE);
@@ -137,6 +140,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 {
    if (!(pb->pb_Flags & PLIPF_OFFLINE))
    {
+      hw_send_magic_pkt(pb, HW_MAGIC_OFFLINE);
+
       hw_detach(pb);
 
       pb->pb_Flags |= PLIPF_OFFLINE;
@@ -357,14 +362,18 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       pkttyp = frame->hwf_Type;
 
       /* perform internal loop back of magic packets of type 0xfffd */
-#define INTERNAL_LOOP_BACK
-#ifdef INTERNAL_LOOP_BACK
-      if(pkttyp == 0xfffd) {
+      if(pkttyp == HW_MAGIC_LOOPBACK) {
          d(("loop back packet (size %ld)\n",frame->hwf_Size));
          hw_send_frame(pb, frame);
          return;
       }
-#endif
+
+      /* plipbox requests online magic (again) */
+      if(pkttyp == HW_MAGIC_ONLINE) {
+         d(("request online magic"));
+         hw_send_magic_pkt(pb, HW_MAGIC_ONLINE);
+         return;
+      }
 
       datasize = frame->hwf_Size - HW_ETH_HDR_SIZE;
 

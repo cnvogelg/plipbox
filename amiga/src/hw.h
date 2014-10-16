@@ -4,6 +4,11 @@
 
 /* ----- hardware frame structure ----- */
 
+	/* magic packet types */
+#define HW_MAGIC_ONLINE    0xffff
+#define HW_MAGIC_OFFLINE   0xfffe
+#define HW_MAGIC_LOOPBACK  0xfffd
+
    /* transport ethernet addresses */
 #define HW_ADDRFIELDSIZE         6
 
@@ -33,20 +38,21 @@ struct CommonConfig {
 struct PLIPBase;
 
 /* hw API */
-GLOBAL BOOL hw_init(struct PLIPBase *pb);
-GLOBAL VOID hw_cleanup(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb);
+GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
 
-GLOBAL BOOL hw_attach(struct PLIPBase *pb);
-GLOBAL VOID hw_detach(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb);
+GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb);
 
-GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
+GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
+GLOBAL REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic);
 
-GLOBAL ULONG hw_recv_sigmask(struct PLIPBase *pb);
-GLOBAL BOOL hw_recv_pending(struct PLIPBase *pb);
-GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
+GLOBAL REGARGS ULONG hw_recv_sigmask(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
 
-GLOBAL void hw_config_init(struct PLIPBase *pb);
-GLOBAL void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *cfg);
-GLOBAL void hw_config_dump(struct PLIPBase *pb);
+GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb);
+GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *cfg);
+GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb);
 
 #endif

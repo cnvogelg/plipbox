@@ -103,13 +103,11 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBa
 #define SETREQUEST(b)   ciab.ciapra |= HS_REQ_MASK
 #define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQ_MASK
 
-#define MAGIC_ONLINE    0xffff
-#define MAGIC_OFFLINE   0xfffe
-
 /* magic packet to tell plipbox firmware we go online and our MAC */
-PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
+GLOBAL REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic)
 {
    BOOL rc;
+
    struct HWFrame *frame = pb->pb_Frame;
    
    frame->hwf_Size = HW_ETH_HDR_SIZE;
@@ -127,7 +125,7 @@ PRIVATE REGARGS BOOL send_magic_pkt(BASEPTR, USHORT magic)
 #define PLIP_MINTIMEOUT          500
 #define PLIP_MAXTIMEOUT          (10000*1000)
 
-GLOBAL void hw_config_init(struct PLIPBase *pb)
+GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb)
 {
   struct HWBase *hwb = &pb->pb_HWBase;
 
@@ -135,7 +133,7 @@ GLOBAL void hw_config_init(struct PLIPBase *pb)
   hwb->hwb_TimeOutMicros = PLIP_DEFTIMEOUT % 1000000L; 
 }
 
-GLOBAL void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
+GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
 {
   struct HWBase *hwb = &pb->pb_HWBase;
   
@@ -146,7 +144,7 @@ GLOBAL void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
   }
 }
 
-GLOBAL void hw_config_dump(struct PLIPBase *pb)
+GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
 {
 #if DEBUG & 1
   struct HWBase *hwb = &pb->pb_HWBase;
@@ -154,7 +152,7 @@ GLOBAL void hw_config_dump(struct PLIPBase *pb)
   d(("timeOut %ld\n", hwb->hwb_TimeOut));
 }
 
-GLOBAL BOOL hw_init(struct PLIPBase *pb)
+GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    
@@ -220,7 +218,7 @@ GLOBAL BOOL hw_init(struct PLIPBase *pb)
     return rc;              
 }
 
-GLOBAL VOID hw_cleanup(struct PLIPBase *pb)
+GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    
@@ -250,7 +248,7 @@ GLOBAL VOID hw_cleanup(struct PLIPBase *pb)
 /*
  * hwattach - setup hardware if device gets online
  */
-GLOBAL BOOL hw_attach(struct PLIPBase *pb)
+GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    BOOL rc = FALSE;
@@ -305,9 +303,6 @@ GLOBAL BOOL hw_attach(struct PLIPBase *pb)
                   CLEARREQUEST(pb);                /* setup handshake lines */
                   CLEARINT;                         /* clear this interrupt */
                   ENABLEINT;                            /* allow interrupts */
-
-                  /* send magic */
-                  rc = send_magic_pkt(pb, MAGIC_ONLINE);
                }
 
             }
@@ -329,13 +324,10 @@ GLOBAL BOOL hw_attach(struct PLIPBase *pb)
 /*
  * shutdown hardware if device gets offline
  */
-GLOBAL VOID hw_detach(struct PLIPBase *pb)
+GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    
-   /* send magic */
-   send_magic_pkt(pb, MAGIC_OFFLINE);
-
    if (hwb->hwb_AllocFlags & 4)
    {
       PAREXIT;
@@ -370,7 +362,7 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBa
    return sigmask;            /* re-enable the signal */
 }
 
-GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
+GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    BOOL rc;
@@ -395,7 +387,7 @@ GLOBAL BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
    return rc;
 }
 
-GLOBAL BOOL hw_recv_pending(struct PLIPBase *pb)
+GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    if ((hwb->hwb_Flags & HWF_RECV_PENDING) == HWF_RECV_PENDING) 
@@ -407,7 +399,7 @@ GLOBAL BOOL hw_recv_pending(struct PLIPBase *pb)
    }
 }
 
-GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
+GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    BOOL rc;
@@ -432,7 +424,7 @@ GLOBAL BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
    return rc;
 }
 
-GLOBAL ULONG hw_recv_sigmask(struct PLIPBase *pb)
+GLOBAL REGARGS ULONG hw_recv_sigmask(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    return hwb->hwb_IntSigMask | hwb->hwb_CollSigMask;
