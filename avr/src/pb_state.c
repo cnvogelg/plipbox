@@ -30,53 +30,95 @@
 #include "timer.h"
 #include "uartutil.h"
 
-static u08 state = PB_STATE_NO_DRIVER;
+static u08 state = PB_STATE_DETECT_DRIVER;
+static u08 retries;
 
-static void check_line_ok(u32 last_active)
-{
-  // wait at least 500ms = 5000 * 100us of idle time after last transfer
-  u32 delta = time_stamp - last_active;
-  if(delta < 5000) {
-    return;
-  }
-
-  u08 val = pb_proto_get_line_status();
-  if((val == PBPROTO_LINE_OFF)||(val == PBPROTO_LINE_DISABLED)) {
-    uart_send_time_stamp_spc();
-    uart_send_pstring(PSTR("pbp: no driver\r\n"));
-    state = PB_STATE_NO_DRIVER;
-  }
-}
-
-u08 pb_state_worker(u32 last_active)
+u08 pb_state_worker(u08 last_io_state)
 {
   switch(state) {
-    case PB_STATE_NO_DRIVER:
+
+    /* check if device is online by watching the parallel port */
+    case PB_STATE_DETECT_DRIVER:
       {
         u08 val = pb_proto_get_line_status();
         if(val == PBPROTO_LINE_OK) {
           uart_send_time_stamp_spc();
-          uart_send_pstring(PSTR("pbp: driver detected\r\n"));
-          state = PB_STATE_LINK_DOWN;
+          uart_send_pstring(PSTR("pbs: device detected\r\n"));
+          state = PB_STATE_SEEK_ONLINE;
+          timer_10ms = 0;
+          retries = 5;
         }
       }
       break;
-    case PB_STATE_LINK_DOWN:
-      if(sana_online) {
-        uart_send_time_stamp_spc();
-        uart_send_pstring(PSTR("pbp: link up\r\n"));
-        state = PB_STATE_LINK_UP;
+
+    /* we have a driver and wait for magic packet from device */
+    case PB_STATE_SEEK_ONLINE:
+      {
+        /* if some error happened then fall back to driver check */
+        if(last_io_state == PB_IO_ERROR) {
+          retries--;
+          if(retries == 0) {
+            uart_send_time_stamp_spc();
+            uart_send_pstring(PSTR("pbs: error\r\n"));
+            state = PB_STATE_DETECT_DRIVER;
+          }
+        }
+
+        /* if magic packet was sent then we are online */
+        if(sana_online) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbs: device online\r\n"));
+          state = PB_STATE_ONLINE;
+        }
+
+        /* request magic after a delay of 1s */
+        if(timer_10ms > 100) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbs: request magic\r\n"));
+          pb_io_send_magic(PB_IO_MAGIC_ONLINE, 0);
+          timer_10ms = 0;
+        }
       }
-      check_line_ok(last_active);
       break;
-    case PB_STATE_LINK_UP:
-      if(!sana_online) {
-        uart_send_time_stamp_spc();
-        uart_send_pstring(PSTR("pbp: link down\r\n"));
-        state = PB_STATE_LINK_DOWN;
+
+    /* we got a valid magic packet and assume that the driver is operational */
+    case PB_STATE_ONLINE:
+      {
+        /* if some error happened then fall back to seek */
+        if(last_io_state == PB_IO_ERROR) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbs: error\r\n"));
+          state = PB_STATE_DETECT_DRIVER;
+        }
+
+        /* if a magic offline was received then driver was shut down regularly */
+        if(!sana_online) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbs: device offline\r\n"));
+          state = PB_STATE_OFFLINE;          
+        }
       }
-      check_line_ok(last_active);
       break;
+
+    /* driver went away. wait for its return */
+    case PB_STATE_OFFLINE:
+      {
+        /* if some error happened then fall back to seek */
+        if(last_io_state == PB_IO_ERROR) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbs: error\r\n"));
+          state = PB_STATE_DETECT_DRIVER;
+        }
+
+        /* driver came back */
+        if(sana_online) {
+          uart_send_time_stamp_spc();
+          uart_send_pstring(PSTR("pbs: device online\r\n"));
+          state = PB_STATE_ONLINE;          
+        }
+      }
+      break;
+
   }
   return state;
 }

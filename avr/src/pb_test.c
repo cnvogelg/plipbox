@@ -213,7 +213,7 @@ u08 pb_test_worker(void)
 
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
-    return 0; // inactive
+    return PB_TEST_IDLE; // inactive
   }
   // pb proto ok
   else if(status == PBPROTO_STATUS_OK) {
@@ -237,6 +237,7 @@ u08 pb_test_worker(void)
       // in interactive mode show result
       dump_result(is_tx, delta, rate);
     }
+    return PB_TEST_OK;
   }
   // pb proto failed with an error
   else {
@@ -250,9 +251,8 @@ u08 pb_test_worker(void)
         stats.rx_err++;
       }
     }
+    return PB_TEST_ERROR;
   }
-
-  return 1; // active
 }
 
 void pb_test_send_packet(void)

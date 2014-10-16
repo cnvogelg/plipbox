@@ -29,6 +29,10 @@
 
 #include "global.h"
 
+#define PB_TEST_IDLE	0
+#define PB_TEST_OK      1
+#define PB_TEST_ERROR   2
+
 extern void pb_test_toggle_mode(void);
 extern void pb_test_toggle_auto(void);
 extern void pb_test_send_packet(void);

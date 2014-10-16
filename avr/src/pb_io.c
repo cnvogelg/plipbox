@@ -43,6 +43,7 @@
 #include "log.h"
 #include "eth_state.h"
 #include "util.h"
+#include "pb_io.h"
 
 static u16 offset;
 static u08 send_magic;
@@ -345,7 +346,7 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
   
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
-    return 0; // was passive
+    return PB_IO_IDLE; // was passive
   }
   else if(status == PBPROTO_STATUS_OK) {
     u32 delta = end - start;
@@ -375,6 +376,7 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
         stats.rx_max_rate = rate;
       }
     }
+    return PB_IO_OK;
   }
   else {
     u32 delta = end - start;
@@ -385,6 +387,7 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
     
     // store error in log
     log_add(start, delta, cmd, status, size);
+
+    return PB_IO_ERROR;
   }
-  return 1; // was active
 }

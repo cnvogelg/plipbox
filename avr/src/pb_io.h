@@ -28,6 +28,12 @@
 
 #include "global.h"
 
+#define PB_IO_IDLE		0
+#define PB_IO_OK        1
+#define PB_IO_ERROR     2
+
+#define PB_IO_MAGIC_ONLINE 0xffff
+
 extern void pb_io_init(void);
 extern u08 pb_io_worker(u08 plip_state, u08 eth_online);
 extern void pb_io_send_magic(u16 type, u08 extra_size);

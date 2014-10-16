@@ -29,13 +29,14 @@
 
 #include "global.h"
 
-#define PB_STATE_NO_DRIVER    0
-#define PB_STATE_LINK_DOWN    1
-#define PB_STATE_LINK_UP      2
+#define PB_STATE_DETECT_DRIVER    0
+#define PB_STATE_SEEK_ONLINE      1
+#define PB_STATE_ONLINE           2
+#define PB_STATE_OFFLINE          3
 
 // 64*10 ms
 #define PB_STATE_TIMER_MASK    0xffc0   
 
-extern u08 pb_state_worker(u32 last_active);
+extern u08 pb_state_worker(u08 last_io_state);
    
 #endif
