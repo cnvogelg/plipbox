@@ -50,23 +50,18 @@ class Reader:
 
 class EthernetReader(Reader):
 
-  def __init__(self, args, log, ts_base, decoder):
+  def __init__(self, eth_io, args, log, ts_base, decoder):
     Reader.__init__(self, "eth", args, log, ts_base, decoder)
     # setup virtual ethernet
-    ifs = (args.eth_if, args.tap_if, args.bridge_if)
-    v = veth.VEth(*ifs)
-    if not v.pre_check_ifs():
-      print("veth: interface problem!",*ifs)
-      sys.exit(1)
     try:
-      v.open()
+      eth_io.open()
     except Exception as e:
       print("veth: error opening:",e)
-      sys.exit(2)
-    self.eth = v
+      sys.exit(1)
+    self.eth_io = eth_io
 
   def tx_pkt(self, raw_buf):
-    self.eth.tx_pkt(raw_buf)
+    self.eth_io.tx_pkt(raw_buf)
 
   def set_env(self, pb, leave_event, online_event, pb_mac):
     self.pb = pb
@@ -80,7 +75,7 @@ class EthernetReader(Reader):
       timeout = 0.5
       while not self.leave_event.is_set():
         # read packet
-        raw_buf = self.eth.rx_pkt(timeout=timeout)
+        raw_buf = self.eth_io.rx_pkt(timeout=timeout)
         if raw_buf is not None:
           # decode frame
           eth_frame = EthFrame()
@@ -107,26 +102,25 @@ class EthernetReader(Reader):
       traceback.print_exc()
     finally:
       self.log("closing ethernet reader")
-      self.eth.close()
+      self.eth_io.close()
       self.log("ethernet done")
 
 # ---------- plipbox -------------------------------------------------------
 
 class PlipboxReader(Reader):
 
-  def __init__(self, args, log, ts_base, decoder):
+  def __init__(self, pb_io, args, log, ts_base, decoder):
     Reader.__init__(self, "PAR", args, log, ts_base, decoder)
     # setup plipbox
-    pb = pbvpar.PBVPar(args.vpar_link, debug=args.debug)
     try:
-      pb.open()
+      pb_io.open()
     except Exception as e:
       print("pb: error opening:",e)
       sys.exit(3)
-    self.pb = pb
+    self.pb_io = pb_io
 
   def tx_pkt(self, raw_buf):
-    self.pb.tx_pkt(raw_buf)
+    self.pb_io.tx_pkt(raw_buf)
 
   def set_env(self, eth, leave_event, online_event):
     self.eth = eth
@@ -139,7 +133,7 @@ class PlipboxReader(Reader):
       timeout = 0.5
       while not self.leave_event.is_set():
         # was a buffer received?
-        raw_buf = self.pb.rx_pkt(timeout)
+        raw_buf = self.pb_io.rx_pkt(timeout)
         if raw_buf is not None:
           # decode frame
           eth_frame = EthFrame()
@@ -175,7 +169,7 @@ class PlipboxReader(Reader):
       traceback.print_exc()
     finally:
       self.log("closing plipbox")
-      self.pb.close()
+      self.pb_io.close()
       self.log("plipbox done")
 
 # ---------- main -----------------------------------------------------------
@@ -207,8 +201,16 @@ def log(*v,**kw):
 # setup plipbox and ethernet
 ts_base = time.time()
 decoder = PacketDecoder(plipbox_mac)
-eth = EthernetReader(args, log, ts_base, decoder)
-pb = PlipboxReader(args, log, ts_base, decoder)
+
+# setup io modules
+ifs = (args.eth_if, args.tap_if, args.bridge_if)
+print(ifs)
+eth_io = veth.VEth(*ifs)
+pb_io = pbvpar.PBVPar(args.vpar_link, debug=args.debug)
+
+# setup reader
+eth = EthernetReader(eth_io, args, log, ts_base, decoder)
+pb = PlipboxReader(pb_io, args, log, ts_base, decoder)
 
 # setup shared env
 leave_event = threading.Event()
@@ -241,3 +243,5 @@ if pb_thread is not None:
   log("joining plipbox")
   pb_thread.join()
 log("done")
+print("exit plipbox")
+
