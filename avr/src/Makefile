@@ -214,7 +214,7 @@ hdr:
 
 elf: $(OUTPUT).elf $(OUTPUT).lss $(OUTPUT).sym
 	@echo "  --- resulting elf ---"
-	$(HIDE)$(SIZE) $(OUTPUT).elf
+	$(HIDE)$(SIZE) $(OUTPUT).elf -C --mcu=$(MCU)
 
 hex: $(OUTPUT).hex
 
