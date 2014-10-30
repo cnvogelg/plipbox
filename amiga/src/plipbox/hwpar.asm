@@ -102,10 +102,7 @@ hww_WaitRak1:
          tst.b    hwb_TimeoutSet(a2)
          beq.s    hww_WaitRak1
          bra.s    hww_ExitError
-hww_RakOk1:
-         ; save value for wait loop
-         move.b   d0,d7
-         
+hww_RakOk1:         
          ; --- init handshake 
          ; [OUT]
          SETCIAOUTPUT a5
@@ -117,36 +114,55 @@ hww_RakOk1:
          SETSELECT a5
          
          ; --- (size +) data loop         
-         ; packet size
+         ; packet size (in bytes)
          move.w   (a4),d6
-         addq.w   #1,d6    ; add size itself (word) - 1 (dbra)
-         
-         ; Wait RAK == 1, 0, 1, ...
-hww_WaitRak2:
+         btst     #0,d6
+         beq.s    hww_even
+         addq.w   #1,d6
+hww_even:
+         ; convert to words
+         ; (includes size field for dbra)
+         lsr.w    #1,d6
+
+         ; -- even byte 0,2,4,...
+         ; Wait RAK == 1
+hww_WaitRak2a:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
          btst     d4,d0                               ; RAK toggled?
-         bne.s    hww_RakOk2
+         bne.s    hww_RakOk2a
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hww_WaitRak2
+         beq.s    hww_WaitRak2a
          bra.s    hww_ExitError
-hww_RakOk2:
-         eor.b    d0,d7                               ; store current RAK
-
+hww_RakOk2a:
          ; Set <Size|Data_n>
          move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
          ; Toggle REQ
-         bchg     d3,(a5)                             ; set REQ toggle
+         bset     d3,(a5)                             ; set REQ=1
+
+         ; -- odd byte 1,3,5,...
+         ; Wait RAK == 0
+hww_WaitRak2b:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         beq.s    hww_RakOk2b
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    hww_WaitRak2b
+         bra.s    hww_ExitError
+hww_RakOk2b:
+         ; Set <Size|Data_n>
+         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bclr     d3,(a5)                             ; set REQ=0
 
          ; loop for all packet bytes
-         dbra     d6,hww_WaitRak2
+         dbra     d6,hww_WaitRak2a
 
          ; --- shutdown
-         ; final Wait RAK == 0 (odd size), 1 (even size)
+         ; final Wait RAK == 1
 hww_WaitRak3:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
          btst     d4,d0                               ; RAK toggled?
          bne.s    hww_RakOk3
          ; check for timeout
@@ -161,9 +177,6 @@ hww_ExitError:
          ; --- exit ---
          ; [IN]
          SETCIAINPUT a5
-
-         ; REQ = 0
-         bclr      d3,(a5)
 
          ; SEL = 0
          CLRSELECT a5
@@ -203,7 +216,7 @@ hwr_WaitRak1:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    hwr_WaitRak1
-         bra.s    hwr_ExitError
+         bra      hwr_ExitError
 hwr_RakOk1:
    
          ; --- init handshake 
@@ -260,9 +273,6 @@ hwr_WaitRak4:
          beq.s    hwr_WaitRak4
          bra.s    hwr_ExitError
 hwr_RakOk4:
-         ; save value for wait loop
-         move.b   d0,d7
-         
          ; Read <Size_Lo>
          move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
          ; Set REQ = 1
@@ -276,28 +286,49 @@ hwr_RakOk4:
          cmp.w    hwb_MaxMTU(a2),d6                   ; buffer too large
          bhi.s    hwr_ExitError
 
-         subq.w   #1,d6                               ; correct for dbra loop size
+         ; convert to words
+         ; (-1 for dbra)
+         btst     #0,d6
+         bne.s    hwr_odd
+         subq.w   #1,d6
+hwr_odd:
+         lsr.w    #1,d6
          
          ; --- main packet data loop ---
          ; wait for incoming RAK on data byte
-hwr_WaitRak5:
+
+         ; -- even bytes: 0,2,4,...
+         ; Wait RAK == 0
+hwr_WaitRak5a:
          move.b   (a5),d0                             ; ciab+ciapra
-         eor.b    d7,d0
          btst     d4,d0                               ; RAK toggled?
-         bne.s    hwr_RakOk5
+         beq.s    hwr_RakOk5a
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak5
+         beq.s    hwr_WaitRak5a
          bra.s    hwr_ExitError
-hwr_RakOk5:
-         eor.b    d0,d7
- 
+hwr_RakOk5a: 
          ; Read <DATA_n>
          move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port byte
-         bchg     d3,(a5)                             ; toggle REQ
+         bclr     d3,(a5)                             ; toggle REQ
+
+         ; -- odd bytes: 1,3,5,...
+         ; Wait RAK == 1
+hwr_WaitRak5b:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    hwr_RakOk5b
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    hwr_WaitRak5b
+         bra.s    hwr_ExitError
+hwr_RakOk5b: 
+         ; Read <DATA_n>
+         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port byte
+         bset    d3,(a5)                              ; toggle REQ
 
          ; loop for all packet bytes
-         dbra     d6,hwr_WaitRak5
+         dbra     d6,hwr_WaitRak5a
 
 hwr_ExitOk:
          moveq    #TRUE,d5

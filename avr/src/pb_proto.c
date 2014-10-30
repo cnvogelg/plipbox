@@ -132,29 +132,44 @@ static u08 cmd_send(u16 *ret_size)
    
   // report size at begin of frame
   funcs->send_begin(&size);
+
+  // round to even and convert to words
+  u16 words = size;
+  if(words & 1) {
+    words++;
+  }
+  words >>= 1;
   
   // --- data loop ---
-  u08 toggle = 1;
   u16 i;
-  for(i = 0; i < size; i++) {
-    status = wait_req(toggle, PBPROTO_STAGE_DATA);
+  u08 data;
+  u16 got = 0;
+  for(i = 0; i < words; i++) {
+    // -- even byte: 0,2,4,...
+    status = wait_req(1, PBPROTO_STAGE_DATA);
     if(status != PBPROTO_STATUS_OK) {
       break;
     }
-    u08 data = par_low_data_in();
+    data = par_low_data_in();
     funcs->send_data(&data);
-    if(toggle) {
-      CLR_RAK();
-    } else {
-      SET_RAK();
+    CLR_RAK();
+    got++;
+
+    // -- odd byte: 1,3,5,...
+    status = wait_req(0, PBPROTO_STAGE_DATA);
+    if(status != PBPROTO_STATUS_OK) {
+      break;
     }
-    toggle = !toggle;
+    data = par_low_data_in();
+    funcs->send_data(&data);
+    SET_RAK();
+    got++;
   }
-  *ret_size = i;
   
   // report end of frame
   funcs->send_end(size);
   
+  *ret_size = got;
   return status;
 }
 
@@ -189,27 +204,41 @@ static u08 cmd_recv(u16 *ret_size)
   par_low_data_out(lo);
   SET_RAK();
   
+  // get number of words
+  u16 words = size;
+  if(words & 1) {
+    words++;
+  }
+  words >>= 1;
+
   // --- data ---
-  u08 toggle = 1;
-  for(u16 i = 0; i < size; i++) {
-    status = wait_req(toggle, PBPROTO_STAGE_DATA);
+  u16 got = 0;
+  for(u16 i = 0; i < words; i++) {
+    // even bytes 0,2,4,...
+    status = wait_req(1, PBPROTO_STAGE_DATA);
     if(status != PBPROTO_STATUS_OK) {
       break;
     }
     u08 data;
     funcs->recv_data(&data);
     par_low_data_out(data);
-    if(toggle) {
-      CLR_RAK();
-    } else {
-      SET_RAK();
+    CLR_RAK();
+    got++;
+
+    // odd bytes 1,3,5,...
+    status = wait_req(0, PBPROTO_STAGE_DATA);
+    if(status != PBPROTO_STATUS_OK) {
+      break;
     }
-    toggle = !toggle;
+    funcs->recv_data(&data);
+    par_low_data_out(data);
+    SET_RAK();
+    got++;
   }
   
   // final wait
   if(status == PBPROTO_STATUS_OK) {
-    status = wait_req(toggle, PBPROTO_STAGE_LAST_DATA);
+    status = wait_req(1, PBPROTO_STAGE_LAST_DATA);
   }
   
   // [IN]
@@ -217,6 +246,7 @@ static u08 cmd_recv(u16 *ret_size)
   
   funcs->recv_end(size);
   
+  *ret_size = got;
   return status;
 }
 

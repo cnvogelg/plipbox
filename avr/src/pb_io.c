@@ -46,6 +46,7 @@
 #include "pb_io.h"
 
 static u16 offset;
+static u16 size;
 static u08 send_magic;
 
 // SANA driver parameters sent in magic packet
@@ -60,6 +61,7 @@ static void rx_begin(u16 *pkt_size)
   // start writing packet with eth header
   offset = 0;
   pktio_tx_begin(*pkt_size);
+  size = *pkt_size;
 }
 
 static void rx_data(u08 *data)
@@ -67,11 +69,14 @@ static void rx_data(u08 *data)
   // clone packet to our packet buffer
   if(offset < PKT_BUF_SIZE) {
     rx_pkt_buf[offset] = *data;
-    offset ++;
   }
   
-  // always copy to TX buffer of pktio
-  pktio_tx_byte(*data);
+  if(offset < size) {
+    // always copy to TX buffer of pktio
+    pktio_tx_byte(*data);
+  }
+
+  offset ++;
 }
 
 static void rx_end(u16 pkt_size)
@@ -88,6 +93,7 @@ static void tx_begin(u16 *pkt_size)
   // report size of packet
   *pkt_size = tx_pkt_size;
   offset = 0;
+  size = tx_pkt_size;
 
   if(!send_magic) {
     pktio_rx_data_begin();
@@ -99,8 +105,10 @@ static void tx_data(u08 *data)
   // clone packet to our packet buffer
   if(offset < PKT_BUF_SIZE) {
     *data = tx_pkt_buf[offset];
-  } else {
+  } else if(offset < size) {
     *data = pktio_rx_byte();    
+  } else {
+    *data = 0;
   }
   offset ++;
 }
