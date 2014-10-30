@@ -160,6 +160,10 @@ class PBProto:
         begin = t
         end = t + timeout
         found = False
+        if value:
+            value = 1
+        else:
+            value = 0
         #self._log("wait_select: value=%d" % value)
         while t < end:
             s = self.vpar.peek_control() & self.SEL
@@ -173,8 +177,8 @@ class PBProto:
             rem = end - t
             self.vpar.poll_state(rem)
             t = time.time()
-        self._log("wait_select: value=%d -> %s (%12.6f delay)"
-                  % (value, found, t - begin))
+        self._log("wait_sel: %d (%12.6f delay)"
+                  % (value, t - begin))
         if not found and throw:
             delta = t - start
             raise PBProtoError("%s: no select. delta=%5.3f timeout=%d" %
@@ -189,6 +193,10 @@ class PBProto:
         end = t + timeout
         found = False
         #self._log("wait_line_toggle: POUT == %s" % expect)
+        if expect:
+            expect = 1
+        else:
+            expect = 0
         while t < end:
             s = self.vpar.peek_control()
             if expect and ((s & vpar.POUT_MASK) == vpar.POUT_MASK):
@@ -208,8 +216,8 @@ class PBProto:
             rem = end - t
             self.vpar.poll_state(rem)
             t = time.time()
-        self._log("wait_line_toggle: POUT: %s == %s (%12.6f delay)"
-                  % (expect, found, t - begin))
+        self._log("wait_tog: %s (%12.6f delay)"
+                  % (expect, t - begin))
         if not found:
             delta = t - start
             raise PBProtoError("%s: missing line toggle."

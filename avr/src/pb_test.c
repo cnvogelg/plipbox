@@ -48,20 +48,16 @@ static u16 errors;
 
 static u08 toggle_request;
 static u08 auto_mode;
+static u08 silent_mode;
 static u08 state = TEST_STATE_OFF;
 
 // ----- Helpers -----
 
-static void send_prefix(u08 is_tx)
+static void dump_result(u08 is_tx, u32 delta, u16 rate)
 {
   PGM_P str = is_tx ? PSTR("[TX] ") : PSTR("[RX] ");
   uart_send_time_stamp_spc();
   uart_send_pstring(str);
-}
-
-static void dump_result(u08 is_tx, u32 delta, u16 rate)
-{
-  send_prefix(is_tx);
 
   // if everything is ok then print only rate
   if(errors == 0) {
@@ -217,26 +213,37 @@ u08 pb_test_worker(void)
   }
   // pb proto ok
   else if(status == PBPROTO_STATUS_OK) {
-    if(auto_mode) {
-      if(is_tx) {
-        stats.tx_cnt++;
-        stats.tx_bytes+=count;
-        if(stats.tx_max_rate < rate) {
-          stats.tx_max_rate = rate;
-        }
-        // next iteration after 
-        pb_test_send_packet();
-      } else {
-        stats.rx_cnt++;
-        stats.rx_bytes+=count;
-        if(stats.rx_max_rate < rate) {
-          stats.rx_max_rate = rate;
-        }
+    // account data
+    if(is_tx) {
+      stats.tx_cnt++;
+      stats.tx_bytes+=count;
+      if(stats.tx_max_rate < rate) {
+        stats.tx_max_rate = rate;
       }
     } else {
+      stats.rx_cnt++;
+      stats.rx_bytes+=count;
+      if(stats.rx_max_rate < rate) {
+        stats.rx_max_rate = rate;
+      }
+    }
+
+    // dump result?
+    if(!silent_mode) {
       // in interactive mode show result
       dump_result(is_tx, delta, rate);
     }
+
+    // next iteration?
+    if(is_tx) {
+      if(auto_mode) {
+        // next iteration after 
+        pb_test_send_packet(1);
+      } else {
+        silent_mode = 0;
+      }
+    }
+
     return PB_TEST_OK;
   }
   // pb proto failed with an error
@@ -244,23 +251,24 @@ u08 pb_test_worker(void)
     // add internal error
     errors++;
     dump_result(is_tx, delta, rate);
-    if(auto_mode) {
-      if(is_tx) {
-        stats.tx_err++;
-      } else {
-        stats.rx_err++;
-      }
+    // account data
+    if(is_tx) {
+      stats.tx_err++;
+    } else {
+      stats.rx_err++;
     }
+
     return PB_TEST_ERROR;
   }
 }
 
-void pb_test_send_packet(void)
+void pb_test_send_packet(u08 silent)
 {
   if(state != TEST_STATE_ACTIVE) {
     return;
   }
 
+  silent_mode = silent;
   trigger_ts = time_stamp;
   pb_proto_request_recv();
 }
@@ -284,7 +292,7 @@ void pb_test_toggle_auto(void)
 
   if(auto_mode) {
     // send first packet
-    pb_test_send_packet();
+    pb_test_send_packet(1);
     // clear stats
     stats_reset();
   }

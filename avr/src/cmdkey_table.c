@@ -58,7 +58,12 @@ COMMAND_KEY(cmd_toggle_test_mode)
 
 COMMAND_KEY(cmd_send_test_packet)
 {
-  pb_test_send_packet();
+  pb_test_send_packet(0);
+}
+
+COMMAND_KEY(cmd_send_test_packet_silent)
+{
+  pb_test_send_packet(1);
 }
 
 COMMAND_KEY(cmd_toggle_auto_mode)
@@ -78,6 +83,7 @@ cmdkey_table_t cmdkey_table[] = {
   { 'L', cmd_reset_log },
   { 't', cmd_toggle_test_mode },
   { 'p', cmd_send_test_packet },
+  { 'P', cmd_send_test_packet_silent },
   { 'a', cmd_toggle_auto_mode },
   { 'm', cmd_send_magic },
   { 0,0 }

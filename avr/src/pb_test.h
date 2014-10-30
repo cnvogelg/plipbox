@@ -35,7 +35,7 @@
 
 extern void pb_test_toggle_mode(void);
 extern void pb_test_toggle_auto(void);
-extern void pb_test_send_packet(void);
+extern void pb_test_send_packet(u08 silent);
 
 extern u08  pb_test_state(u08 eth_state, u08 pb_state);
 extern u08  pb_test_worker(void);

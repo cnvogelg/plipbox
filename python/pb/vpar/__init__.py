@@ -24,6 +24,7 @@ class PBVPar:
         debug_vpar = ((debug & 1) == 1)
         debug_pb = ((debug & 2) == 2)
         self.debug = ((debug & 4) == 4)
+        self.debug_io = ((debug & 8) == 8)
         self.sp = sopty.SoPTY(vpar_link)
         self.vpar = vpar.VPar(self.sp, debug=debug_vpar)
         self.pb = pbproto.PBProto(self.vpar, debug=debug_pb)
@@ -168,14 +169,14 @@ class PBVPar:
             name = "%02x" % cmd
             if cmd in self.cmd_names:
                 name = self.cmd_names[cmd]
-            self._log("%12.6f %s : %s" %
-                      (s, name, self._get_speed_bar(d, n)))
+            self._log("%s : %s" %
+                      (name, self._get_speed_bar(d, n)), io=True)
             return True
         except pbproto.PBProtoError as ex:
             e = time.time()
             d = e - s
             self._log("%12.6f %02x : ERROR %s" %
-                      (s, cmd, ex))
+                      (d, cmd, ex), io=True)
             return False
 
     def _calc_speed(self, delta, size):
@@ -188,8 +189,10 @@ class PBVPar:
     def _get_speed_bar(self, delta, n):
         return "%s   %12.6f s [%d]" % (self._calc_speed(delta, n), delta, n)
 
-    def _log(self, msg):
-        if not self.debug:
+    def _log(self, msg, io=False):
+        if not io and not self.debug:
+            return
+        if io and not self.debug_io:
             return
         ts = time.time()
         sec = int(ts)
