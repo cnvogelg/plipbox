@@ -33,6 +33,12 @@
 static u08 state = PB_STATE_DETECT_DRIVER;
 static u08 retries;
 
+void pb_state_init(void)
+{
+  state = PB_STATE_DETECT_DRIVER;
+  sana_online = 0;
+}
+
 u08 pb_state_worker(u08 last_io_state)
 {
   switch(state) {
@@ -60,7 +66,7 @@ u08 pb_state_worker(u08 last_io_state)
           if(retries == 0) {
             uart_send_time_stamp_spc();
             uart_send_pstring(PSTR("pbs: error\r\n"));
-            state = PB_STATE_DETECT_DRIVER;
+            state = PB_STATE_OFFLINE;
           }
         }
 
@@ -77,7 +83,11 @@ u08 pb_state_worker(u08 last_io_state)
           uart_send_pstring(PSTR("pbs: request magic\r\n"));
           pb_io_send_magic(PB_IO_MAGIC_ONLINE, 0);
           timer_10ms = 0;
-        }
+          retries--;
+          if(retries == 0) {
+            state = PB_STATE_OFFLINE;
+          }
+        } 
       }
       break;
 

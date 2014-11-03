@@ -33,6 +33,7 @@
 #include "stats.h"
 #include "log.h"
 #include "eth_state.h"
+#include "pb_state.h"
 
 COMMAND(cmd_quit)
 {
@@ -217,6 +218,12 @@ COMMAND(cmd_ether_shutdown)
   return CMD_OK;
 }
 
+COMMAND(cmd_plipbox_init)
+{
+  pb_state_init();
+  return CMD_OK;
+}
+
 COMMAND(cmd_help)
 {
   uart_send_pstring(PSTR(
@@ -234,6 +241,7 @@ COMMAND(cmd_help)
     "ec       re-configure ethernet\r\n"
     "ei       re-init ethernet\r\n"
     "es       ethernet shutdown\r\n"
+    "pi       re-init plipbox\r\n"
     "\r\n"
     "fd [on]  enable full duplex mode\r\n"
     "fl [on]  enable loop back\r\n"
@@ -275,6 +283,7 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("ec"), cmd_ether_configure },
   { CMD_NAME("ei"), cmd_ether_init },
   { CMD_NAME("es"), cmd_ether_shutdown},
+  { CMD_NAME("pi"), cmd_plipbox_init },
   // options
   { CMD_NAME("m"), cmd_param_mac_addr },
   { CMD_NAME("fd"), cmd_param_toggle },

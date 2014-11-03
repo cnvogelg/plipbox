@@ -38,5 +38,6 @@
 #define PB_STATE_TIMER_MASK    0xffc0   
 
 extern u08 pb_state_worker(u08 last_io_state);
+extern void pb_state_init(void);
    
 #endif
