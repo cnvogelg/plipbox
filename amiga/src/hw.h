@@ -13,7 +13,7 @@
 #define HW_ADDRFIELDSIZE         6
 
 #define HW_ETH_HDR_SIZE          14       /* ethernet header: dst, src, type */
-#define HW_ETH_MTU               1518
+#define HW_ETH_MTU               1500
 
 struct HWFrame {
    USHORT   hwf_Size;
@@ -25,11 +25,13 @@ struct HWFrame {
 };
 
 /* ----- config stuff ----- */
-#define COMMON_TEMPLATE "NOSPECIALSTATS/S,PRIORITY=PRI/K/N,"
+#define COMMON_TEMPLATE "NOSPECIALSTATS/S,PRIORITY=PRI/K/N,BPS/K/N,MTU/K/N,"
 
 struct CommonConfig {
    ULONG  nospecialstats;
    LONG  *priority;
+   ULONG *bps;
+   ULONG *mtu;
 };
 
 /* fetch device specific device base */

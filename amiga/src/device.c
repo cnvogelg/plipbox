@@ -129,6 +129,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 
       /* init some default values */
    pb->pb_Flags = PLIPF_OFFLINE;
+   pb->pb_BPS = HW_BPS;
+   pb->pb_MTU = HW_ETH_MTU;
 
       /* initialise the lists */
    NewList((struct List*)&pb->pb_ReadList);
@@ -521,9 +523,9 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
               /* fall through */
       case CMD_WRITE:
               /* determine max valid size */
-         mtu = HW_ETH_MTU;
-         if(!(ios2->ios2_Req.io_Flags & SANA2IOF_RAW)) {
-            mtu -= HW_ETH_HDR_SIZE;
+         mtu = pb->pb_MTU;
+         if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
+            mtu += HW_ETH_HDR_SIZE;
          }
          if(ios2->ios2_DataLength > mtu)
          {
@@ -572,8 +574,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          devquery->DeviceLevel = 0;           /* "this spec defines level 0" */
          
          if (devquery->SizeAvailable >= 18) devquery->AddrFieldSize = HW_ADDRFIELDSIZE * 8; /* Bits! */
-         if (devquery->SizeAvailable >= 22) devquery->MTU           = HW_ETH_MTU;
-         if (devquery->SizeAvailable >= 26) devquery->BPS           = HW_BPS;
+         if (devquery->SizeAvailable >= 22) devquery->MTU           = pb->pb_MTU;
+         if (devquery->SizeAvailable >= 26) devquery->BPS           = pb->pb_BPS;
          if (devquery->SizeAvailable >= 30) devquery->HardwareType  = S2WireType_Ethernet;
          
          devquery->SizeSupplied = min((int)devquery->SizeAvailable, 30);

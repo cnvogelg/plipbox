@@ -29,6 +29,7 @@ PLIP_ADDRFIELDSIZE  equ 6
 
 HWF_CMD_SEND     equ     $11
 HWF_CMD_RECV     equ     $22
+HWF_CMD_SEND_BURST equ   $33
 
 PKTFRAMESIZE_1   equ     4
 PKTFRAMESIZE_2   equ     2
@@ -51,7 +52,7 @@ SYNCWORD_NOCRC   equ     ((SYNCBYTE_HEAD<<8)|SYNCBYTE_NOCRC)
      APTR   hwb_CIAABase
      APTR   hwb_Server
      ULONG  hwb_IntSigMask
-     UWORD  hwb_MaxMTU
+     UWORD  hwb_MaxFrameSize
      UBYTE  hwb_TimeoutSet
      UBYTE  hwb_Flags
    LABEL HWBase_SIZE

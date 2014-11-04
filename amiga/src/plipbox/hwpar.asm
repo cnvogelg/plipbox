@@ -16,6 +16,7 @@
       xdef    _interrupt
       xdef    _hwsend
       xdef    _hwrecv
+      xdef    _hwburstsend
 
 
 ciaa     equ     $bfe001
@@ -279,11 +280,11 @@ hwr_RakOk4:
          bset     d3,(a5)                             ; REQ toggle
 
          ; --- check size
-         ; now fetch full size word and check for max MTU
+         ; now fetch full size word and check for max frame size
          move.w   -2(a3),d6                           ; = length
          tst.w    d6
          beq.s    hwr_ExitOk                          ; empty size? ok
-         cmp.w    hwb_MaxMTU(a2),d6                   ; buffer too large
+         cmp.w    hwb_MaxFrameSize(a2),d6             ; buffer too large
          bhi.s    hwr_ExitError
 
          ; convert to words
@@ -350,6 +351,156 @@ hwr_ExitError:
          CLRSELECT a5
 
          move.l   d5,d0                               ; return value
+         movem.l  (sp)+,d2-d7/a2-a6
+         rts
+
+;----------------------------------------------------------------------------
+;
+; NAME
+;     hwburstsend() - low level send routine in burst mode
+;
+; SYNOPSIS
+;     void hwburstsend(struct HWBase *, struct HWFrame *, WORD burstSize)
+;                      A0               A1                D0
+;
+; FUNCTION
+;     This functions sends a HW frame with the plipbox protocol via
+;     the parallel port and uses the fast burst protocol
+;     burstBytes = 2 * (burstSize+1)
+_hwburstsend:
+         movem.l  d2-d7/a2-a6,-(sp)
+         move.l   a0,a2                               ; a2 = HWBase
+         move.l   a1,a4                               ; a4 = Frame
+         move.w   d0,d5                               ; d5 = burstSize in words - 1
+         moveq    #FALSE,d2                           ; d2 = return value
+         moveq    #HS_REQ_BIT,d3                      ; d3 = HS_REQ
+         moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
+         lea      BaseAX,a5                           ; a5 = CIA HW base
+
+         ; --- prepare
+         ; Wait RAK == 0
+bww_WaitRak1:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0
+         beq.s    bww_RakOk1
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak1
+         bra      bww_ExitError
+bww_RakOk1:         
+         ; --- init handshake 
+         ; [OUT]
+         SETCIAOUTPUT a5
+         
+         ; Set <CMD_SEND_BURST>
+         move.b   #HWF_CMD_SEND_BURST,ciaa+ciaprb-BaseAX(a5)
+         
+         ; Set SEL = 1 -> Trigger Plipbox
+         SETSELECT a5
+
+         ; --- send size (without burst)
+         ; Wait RAK == 1
+bww_WaitRak2a:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    bww_RakOk2a
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak2a
+         bra.s    bww_ExitError
+bww_RakOk2a:
+         ; Set <size> hi byte
+         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bset     d3,(a5)                             ; set REQ=1
+
+         ; Wait RAK == 0
+bww_WaitRak2b:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         beq.s    bww_RakOk2b
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak2b
+         bra.s    bww_ExitError
+bww_RakOk2b:
+         ; Set <size> lo byte
+         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bclr     d3,(a5)                             ; set REQ=0
+
+         ; --- size calc for burst
+         ; packet size (in bytes)
+         ; rounded to words (size = 1 -> 2)
+         move.w   (a4),d6
+         btst     #0,d6
+         bne.s    bww_odd
+         subq.w   #1,d6
+bww_odd:
+         ; convert to words
+         lsr.w    #1,d6
+
+         ; ---- burst chunk loop
+bww_BurstChunk:
+         ; setup size of even burst chunk: d7 = words-1 per chunk
+         move.w   d5,d7    ; get burst size
+         cmp.w    d6,d7    ; compare with remaining size
+         blt.s    bww_bce_ok
+         move.w   d6,d7
+bww_bce_ok:
+         sub.w    d7,d6    ; update total size
+
+         ; Wait RAK == 1
+bww_WaitRak3a:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    bww_RakOk3a
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak3a
+         bra.s    bww_ExitError
+bww_RakOk3a:
+         
+         ; --- burst loop
+bww_BurstLoop:
+         ; set even data 0,2,4,...
+         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bset     d3,(a5)                             ; set REQ=1
+         
+         ; set odd data 1,3,5,...
+         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bclr     d3,(a5)                             ; set REQ=1
+
+         dbra     d7,bww_BurstLoop
+
+         ; done?
+         tst.w    d6
+         bne.s    bww_BurstChunk
+
+         ; --- wait final RAK
+         ; final Wait RAK == 1
+bww_WaitRak4:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    bww_ExitOk
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak4
+         bra.s    bww_ExitError
+
+         ; --- exit
+bww_ExitOk:       
+         moveq    #TRUE,d2                            ; rc = TRUE
+bww_ExitError:
+         ; [IN]
+         SETCIAINPUT a5
+
+         ; SEL = 0
+         CLRSELECT a5
+
+         move.l   d2,d0                               ; return rc
          movem.l  (sp)+,d2-d7/a2-a6
          rts
 

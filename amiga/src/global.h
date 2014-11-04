@@ -133,6 +133,8 @@ struct PLIPBase
    UBYTE                       pb_DefAddr[HW_ADDRFIELDSIZE];
    struct HWBase               pb_HWBase;
    struct HWFrame        *     pb_Frame;
+   ULONG                       pb_BPS;
+   ULONG                       pb_MTU;
 };
 
 #ifdef __SASC

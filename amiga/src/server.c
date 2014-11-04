@@ -558,10 +558,13 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 
    if (cfginput = Open(CONFIGFILE, MODE_OLDFILE))
    {
+      d(("opened cfg\n"));
       oldinput = SelectInput(cfginput);      
       rda = ReadArgs(COMMON_TEMPLATE TEMPLATE, (LONG *)&args, NULL);
       if(rda)
       {
+         d(("got args\n"));
+
          /* common options */
          if (args.common.priority)
             SetTaskPri((struct Task*)pb->pb_Server,
@@ -569,6 +572,12 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 
          if (args.common.nospecialstats)
             pb->pb_ExtFlags |= PLIPEF_NOSPECIALSTATS;
+
+         if(args.common.mtu)
+            pb->pb_MTU = *args.common.mtu;
+
+         if(args.common.bps)
+            pb->pb_BPS = *args.common.bps;
 
          /* special config */
          hw_config_update(pb, &args);
@@ -595,12 +604,10 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    if ((pb->pb_ServerPort = CreateMsgPort()))
    {  
       /* init hardware */
-      if(hw_init(pb)) {         
-         d(("allocating 0x%lx/%ld bytes frame buffer\n",
-                  sizeof(struct HWFrame)+HW_ETH_MTU,
-                  sizeof(struct HWFrame)+HW_ETH_MTU));
-         if ((pb->pb_Frame = AllocVec((ULONG)sizeof(struct HWFrame) +
-                                       HW_ETH_MTU, MEMF_CLEAR|MEMF_ANY)))
+      if(hw_init(pb)) {
+         ULONG size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
+         d(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));
+         if ((pb->pb_Frame = AllocVec(size, MEMF_CLEAR|MEMF_ANY)))
          {
             rc = TRUE;
          }

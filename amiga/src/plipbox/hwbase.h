@@ -14,7 +14,7 @@ struct HWBase
    struct Library          *   hwb_CIAABase;
    struct Process          *   hwb_Server;
    ULONG                       hwb_IntSigMask;
-   UWORD                       hwb_MaxMTU;
+   UWORD                       hwb_MaxFrameSize;
    volatile UBYTE              hwb_TimeoutSet;/* if != 0, a timeout occurred */
    volatile UBYTE              hwb_Flags;
    /* NOT used in asm */
@@ -34,6 +34,7 @@ struct HWBase
    /* config options */
    ULONG                       hwb_TimeOutMicros;
    ULONG                       hwb_TimeOutSecs;
+   UWORD                       hwb_BurstSize;    /* in words -1 */
 };
 
 #define HWB_RECV_PENDING           0
@@ -50,13 +51,14 @@ struct HWBase
 /* ----- config ----- */
 
 #define CONFIGFILE "ENV:SANA2/plipbox.config"
-#define TEMPLATE "TIMEOUT/K/N"
+#define TEMPLATE "TIMEOUT/K/N,BURST/K/N"
 
 /* structure to be filled by ReadArgs template */ 
 struct TemplateConfig
 {
    struct CommonConfig common;
    ULONG *timeout;
+   ULONG *burst;
 };
 
 #endif

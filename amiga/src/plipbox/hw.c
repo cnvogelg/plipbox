@@ -78,6 +78,8 @@ GLOBAL VOID ASM interrupt(REG(a1) struct HWB *hwb);
 GLOBAL USHORT ASM CRC16(REG(a0) UBYTE *, REG(d0) SHORT);
 GLOBAL BOOL ASM hwsend(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
 GLOBAL BOOL ASM hwrecv(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
+GLOBAL BOOL ASM hwburstsend(REG(a0) struct HWBase *, REG(a1) struct HWFrame *, REG(d0) WORD burstSize);
+
    /* amiga.lib provides for these symbols */
 GLOBAL FAR volatile struct CIA ciaa,ciab;
 
@@ -130,7 +132,8 @@ GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb)
   struct HWBase *hwb = &pb->pb_HWBase;
 
   hwb->hwb_TimeOutSecs = PLIP_DEFTIMEOUT / 1000000L;
-  hwb->hwb_TimeOutMicros = PLIP_DEFTIMEOUT % 1000000L; 
+  hwb->hwb_TimeOutMicros = PLIP_DEFTIMEOUT % 1000000L;
+  hwb->hwb_BurstSize = 0;
 }
 
 GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
@@ -142,6 +145,16 @@ GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig 
     hwb->hwb_TimeOutMicros = to % 1000000L;
     hwb->hwb_TimeOutSecs = to / 1000000L;
   }
+
+  /* set burst size */
+  if(args->burst) {
+    UWORD bs = (UWORD)(*args->burst >> 1);
+    d(("orig burst %ld\n", (ULONG)bs));
+    if(bs > 0) {
+      bs--;
+    }
+    hwb->hwb_BurstSize = bs;
+  }
 }
 
 GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
@@ -149,7 +162,8 @@ GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
 #if DEBUG & 1
   struct HWBase *hwb = &pb->pb_HWBase;
 #endif
-  d(("timeOut %ld\n", hwb->hwb_TimeOut));
+  d(("timeOut %ld.%ld\n", hwb->hwb_TimeOutSecs, hwb->hwb_TimeOutMicros));
+  d(("burstSize %ld\n", (ULONG)hwb->hwb_BurstSize));
 }
 
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
@@ -161,9 +175,9 @@ GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
    /* clone sys base, process */
    hwb->hwb_SysBase = pb->pb_SysBase;
    hwb->hwb_Server = pb->pb_Server;
-   hwb->hwb_MaxMTU = HW_ETH_MTU;
-   d2(("sysbase=%08lx, server=%08lx, hwb=%08lx, MTU=%d\n",
-      hwb->hwb_SysBase, hwb->hwb_Server, hwb, hwb->hwb_MaxMTU));
+   hwb->hwb_MaxFrameSize = (UWORD)pb->pb_MTU + HW_ETH_HDR_SIZE;
+   d2(("sysbase=%08lx, server=%08lx, hwb=%08lx, maxFrameSize=%ld\n",
+      hwb->hwb_SysBase, hwb->hwb_Server, hwb, (ULONG)hwb->hwb_MaxFrameSize));
    
    if ((hwb->hwb_IntSig = AllocSignal(-1)) != -1)
    {
@@ -366,6 +380,7 @@ GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    BOOL rc;
+   UWORD burstSize = hwb->hwb_BurstSize;
 
    /* wait until I/O block is safe to be reused */
    while(!hwb->hwb_TimeoutSet) Delay(1L);
@@ -377,8 +392,13 @@ GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
    SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
 
    /* hw send */
-   d8(("+tx\n"));
-   rc = hwsend(hwb, frame);
+   if(burstSize > 0) {
+     d8(("+txb\n"));
+     rc = hwburstsend(hwb, frame, burstSize);
+   } else {
+     d8(("+tx\n"));
+     rc = hwsend(hwb, frame);
+   }
    d8(("-tx: %s\n", rc ? "ok":"ERR"));
       
    /* stop timeout timer */ 
