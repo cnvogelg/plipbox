@@ -60,7 +60,7 @@ static const param_t PROGMEM default_param = {
   
   .log_all = 0,
 
-  .test_plen = 1518,
+  .test_plen = 1514,
   .test_ptype = 0xfffd
 };
 

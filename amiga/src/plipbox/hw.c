@@ -123,7 +123,7 @@ GLOBAL REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic)
    return rc;
 }
 
-#define PLIP_DEFTIMEOUT          (5000*1000)
+#define PLIP_DEFTIMEOUT          (500*1000)
 #define PLIP_MINTIMEOUT          500
 #define PLIP_MAXTIMEOUT          (10000*1000)
 

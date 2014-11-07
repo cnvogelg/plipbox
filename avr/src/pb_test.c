@@ -36,6 +36,7 @@
 #include "timer.h"
 #include "util.h"
 #include "stats.h"
+#include "dump.h"
 
 #define TEST_STATE_OFF    0
 #define TEST_STATE_ENTER  1
@@ -145,7 +146,9 @@ static void tx_begin(u16 *pkt_size)
   // calc delta of tx trigger
   trigger_ts = time_stamp - trigger_ts;
   *pkt_size = param.test_plen;
+ 
   count = 0;
+  errors = 0;
 }
 
 static void tx_data(u08 *data)
@@ -205,7 +208,7 @@ u08 pb_test_worker(void)
   u08 status = pb_proto_handle(&cmd, &size);
   u32 delta = time_stamp - start;
   u16 rate = calc_rate_kbs(count, delta);
-  u08 is_tx = (cmd == PBPROTO_CMD_SEND);
+  u08 is_tx = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
 
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
@@ -250,6 +253,10 @@ u08 pb_test_worker(void)
   else {
     // add internal error
     errors++;
+
+    // dump error
+    dump_pb_cmd(cmd, status, size, delta, 0);
+
     dump_result(is_tx, delta, rate);
     // account data
     if(is_tx) {

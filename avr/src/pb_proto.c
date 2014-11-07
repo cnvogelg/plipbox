@@ -24,9 +24,13 @@
  *
  */
 
+#include <avr/interrupt.h>
+
 #include "pb_proto.h"
 #include "par_low.h"
 #include "timer.h"
+
+#include "uartutil.h"
 
 // define symbolic names for protocol
 #define SET_RAK         par_low_set_busy_hi
@@ -250,6 +254,130 @@ static u08 cmd_recv(u16 *ret_size)
   return status;
 }
 
+// ---------- BURST ----------
+
+#define MAX_BURST_BYTES   768
+#define MAX_BURST_WORDS   (MAX_BURST_BYTES / 2)
+
+static u08 buffer[MAX_BURST_BYTES];
+
+static u08 cmd_send_burst(u16 *ret_size)
+{
+  u08 hi, lo, bhi, blo;
+  u08 status;
+   
+  // --- size hi ---
+  status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  hi = par_low_data_in();
+  CLR_RAK();
+   
+  // --- size lo ---
+  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  lo = par_low_data_in();
+  SET_RAK();
+   
+  // --- burst hi ---
+  status = wait_req(1, PBPROTO_STAGE_BURST_HI);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  bhi = par_low_data_in();
+  CLR_RAK();
+
+  // --- burst lo ---
+  status = wait_req(0, PBPROTO_STAGE_BURST_LO);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  blo = par_low_data_in();
+  // delay SET_RAK until burst begin...
+
+  u16 size = hi << 8 | lo;
+  u16 burst_size = bhi << 8 | blo; // size in words -1 !
+  burst_size++; // now in words
+
+  // check burst size
+  if(burst_size >= MAX_BURST_WORDS) {
+    return PBPROTO_STATUS_BURST_TOO_LARGE;
+  }
+   
+  // round to even and convert to words
+  u16 words = size;
+  if(words & 1) {
+    words++;
+  }
+  words >>= 1;
+
+  funcs->send_begin(&size);
+
+  // ----- burst chunk loop -----
+  u16 i;
+  u08 result = PBPROTO_STATUS_OK;
+  u16 got_words = 0;
+  while(words > 0) {
+
+    // calc size of burst
+    u16 bs = burst_size;
+    if(bs > words) {
+      bs = words;
+    }
+    words -= bs;
+    u08 *ptr = buffer;
+
+    // ----- burst loop -----
+    // BEGIN TIME CRITICAL
+    cli();
+    SET_RAK(); // trigger start of burst
+    for(i=0;i<bs;i++) {
+      // wait REQ == 1
+      while(!GET_REQ()) {
+        if(!GET_SELECT()) goto burst_exit;
+      }
+      *(ptr++) = par_low_data_in();
+      
+      // wait REQ == 0
+      while(GET_REQ()) {
+        if(!GET_SELECT()) goto burst_exit;
+      }
+      *(ptr++) = par_low_data_in();
+    }
+burst_exit:
+    CLR_RAK();
+    sei();
+    // END TIME CRITICAL
+  
+    got_words += i;
+
+    // error?
+    if(i<bs) {
+      result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
+      break;
+    }
+ 
+    // push to eth
+    // TODO: use new data_block func
+    ptr = buffer;
+    for(i=0;i<bs;i++) {
+      funcs->send_data(ptr++);
+      funcs->send_data(ptr++);
+    }
+  }
+
+  // final ACK 
+  SET_RAK();
+
+  funcs->send_end(size);
+
+  *ret_size = got_words << 1;
+  return result;  
+}
+
 u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
 {
   u08 result;
@@ -279,6 +407,9 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
       break;
     case PBPROTO_CMD_SEND:
       result = cmd_send(ret_size);
+      break;
+    case PBPROTO_CMD_SEND_BURST:
+      result = cmd_send_burst(ret_size);
       break;
     default:
       result = PBPROTO_STATUS_INVALID_CMD;

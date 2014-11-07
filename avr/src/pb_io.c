@@ -369,7 +369,7 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
     }
     
     // do we have a packet received?
-    if(cmd == PBPROTO_CMD_SEND) {
+    if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
       handle_pb_send(eth_online);
     }
 

@@ -98,7 +98,7 @@ u08 pb_state_worker(u08 last_io_state)
         if(last_io_state == PB_IO_ERROR) {
           uart_send_time_stamp_spc();
           uart_send_pstring(PSTR("pbs: error\r\n"));
-          state = PB_STATE_DETECT_DRIVER;
+          state = PB_STATE_OFFLINE;
         }
 
         /* if a magic offline was received then driver was shut down regularly */
@@ -117,7 +117,6 @@ u08 pb_state_worker(u08 last_io_state)
         if(last_io_state == PB_IO_ERROR) {
           uart_send_time_stamp_spc();
           uart_send_pstring(PSTR("pbs: error\r\n"));
-          state = PB_STATE_DETECT_DRIVER;
         }
 
         /* driver came back */

@@ -407,7 +407,7 @@ bww_WaitRak2a:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bww_WaitRak2a
-         bra.s    bww_ExitError
+         bra      bww_ExitError
 bww_RakOk2a:
          ; Set <size> hi byte
          move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
@@ -422,10 +422,43 @@ bww_WaitRak2b:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bww_WaitRak2b
-         bra.s    bww_ExitError
+         bra      bww_ExitError
 bww_RakOk2b:
          ; Set <size> lo byte
          move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bclr     d3,(a5)                             ; set REQ=0
+
+         ; --- send burst size 
+         move.w   d5,d6
+         lsl.w    #8,d6 ; prepare burst hi
+         ; Wait RAK == 1
+bww_WaitRak2c:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         bne.s    bww_RakOk2c
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak2c
+         bra.s    bww_ExitError
+bww_RakOk2c:
+         ; Set <burst_words> hi byte
+         move.b   d6,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         ; Toggle REQ
+         bset     d3,(a5)                             ; set REQ=1
+
+         ; Wait RAK == 0
+bww_WaitRak2d:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         beq.s    bww_RakOk2d
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak2d
+         bra.s    bww_ExitError
+bww_RakOk2d:
+         ; Set <burst_words> lo byte
+         move.b   d5,ciaa+ciaprb-BaseAX(a5)        ; write data to port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
@@ -450,7 +483,7 @@ bww_BurstChunk:
 bww_bce_ok:
          sub.w    d7,d6    ; update total size
 
-         ; Wait RAK == 1
+         ; Wait RAK == 1 (sync before burst)
 bww_WaitRak3a:
          move.b   (a5),d0                             ; ciab+ciapra
          btst     d4,d0                               ; RAK toggled?
@@ -474,6 +507,17 @@ bww_BurstLoop:
          bclr     d3,(a5)                             ; set REQ=1
 
          dbra     d7,bww_BurstLoop
+
+         ; Wait RAK == 0 (sync after burst)
+bww_WaitRak3b:
+         move.b   (a5),d0                             ; ciab+ciapra
+         btst     d4,d0                               ; RAK toggled?
+         beq.s    bww_RakOk3b
+         ; check for timeout
+         tst.b    hwb_TimeoutSet(a2)
+         beq.s    bww_WaitRak3b
+         bra.s    bww_ExitError
+bww_RakOk3b:
 
          ; done?
          tst.w    d6
