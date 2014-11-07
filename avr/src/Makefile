@@ -143,7 +143,7 @@ OUTDIR = $(BUILD)
 OBJ = $(patsubst %.c,$(OBJDIR)/%.o,$(SRC))
 
 # compiler switches
-CFLAGS = -g -std=gnu99
+CFLAGS = -g -std=gnu99 -fno-common
 CFLAGS += -Os
 #CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 #CFLAGS += -fno-inline
@@ -165,7 +165,7 @@ endif
 
 # linker switches
 LDFLAGS = -Wl,-Map=$(OUTPUT).map,--cref
-LDFLAGS = -lm -lc
+LDFLAGS += -lm -lc
 
 # Define programs and commands.
 SHELL = sh
