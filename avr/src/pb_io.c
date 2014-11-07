@@ -40,7 +40,6 @@
 #include "dump.h"
 #include "timer.h"
 #include "stats.h"
-#include "log.h"
 #include "eth_state.h"
 #include "util.h"
 #include "pb_io.h"
@@ -363,10 +362,6 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
     if(param.dump_plip) {
       dump_pb_cmd(cmd, status, size, delta, start - req_time);
     }
-    // log ok command
-    if(param.log_all) {
-      log_add(start, delta, cmd, status, size);
-    }
     
     // do we have a packet received?
     if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
@@ -392,9 +387,6 @@ u08 pb_io_worker(u08 plip_state, u08 eth_online)
     
     // dump error
     dump_pb_cmd(cmd, status, size, delta, latency);
-    
-    // store error in log
-    log_add(start, delta, cmd, status, size);
 
     return PB_IO_ERROR;
   }

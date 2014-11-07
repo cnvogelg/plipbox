@@ -125,7 +125,7 @@ SRC += net.c arp.c
 SRC += eth_io.c eth_state.c dump.c
 SRC += pb_io.c pb_state.c pb_test.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
-SRC += main.c stats.c log.c
+SRC += main.c stats.c
 ifeq "$(NETIO)" "eth"
 SRC += spi.c enc28j60.c
 endif

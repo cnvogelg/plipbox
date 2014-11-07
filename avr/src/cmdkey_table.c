@@ -27,7 +27,6 @@
 #include "cmdkey_table.h"
 
 #include "stats.h"
-#include "log.h"
 #include "pb_test.h"
 #include "pb_io.h"
 
@@ -39,16 +38,6 @@ COMMAND_KEY(cmd_dump_stats)
 COMMAND_KEY(cmd_reset_stats)
 {
   stats_reset();
-}
-
-COMMAND_KEY(cmd_dump_log)
-{
-  log_dump();
-}
-
-COMMAND_KEY(cmd_reset_log)
-{
-  log_reset();
 }
 
 COMMAND_KEY(cmd_toggle_test_mode)
@@ -79,8 +68,6 @@ COMMAND_KEY(cmd_send_magic)
 cmdkey_table_t cmdkey_table[] = {
   { 's', cmd_dump_stats },
   { 'S', cmd_reset_stats },
-  { 'l', cmd_dump_log },
-  { 'L', cmd_reset_log },
   { 't', cmd_toggle_test_mode },
   { 'p', cmd_send_test_packet },
   { 'P', cmd_send_test_packet_silent },

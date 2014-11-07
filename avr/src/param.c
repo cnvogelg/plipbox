@@ -58,8 +58,6 @@ static const param_t PROGMEM default_param = {
   .full_duplex = 0,
   .loop_back = 0,
   
-  .log_all = 0,
-
   .test_plen = 1514,
   .test_ptype = 0xfffd
 };
@@ -103,10 +101,6 @@ void param_dump(void)
   dump_byte(PSTR("dp: dump proto   "), param.dump_proto);
   dump_byte(PSTR("dl: dump plip    "), param.dump_plip);
   
-  // log
-  uart_send_crlf();  
-  dump_byte(PSTR("la: log all cmds "), param.log_all);
-
   // test
   uart_send_crlf();
   dump_word(PSTR("tl: packet len   "), param.test_plen);

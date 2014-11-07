@@ -52,8 +52,6 @@ typedef struct {
   u08 dump_proto;
   u08 dump_plip;
   
-  u08 log_all;
-
   u16 test_plen;
   u16 test_ptype;
 } param_t;

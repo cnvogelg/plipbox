@@ -31,7 +31,6 @@
 #include "net/net.h"
 #include "param.h"
 #include "stats.h"
-#include "log.h"
 #include "eth_state.h"
 #include "pb_state.h"
 
@@ -110,12 +109,6 @@ COMMAND(cmd_param_toggle)
       default: return CMD_PARSE_ERROR;
     }
   }
-  else if(group == 'l') {
-    switch(type) {
-      case 'a': val = &param.log_all; break;
-      default: return CMD_PARSE_ERROR;
-    }
-  }
   else {
     return CMD_PARSE_ERROR;
   }
@@ -188,18 +181,6 @@ COMMAND(cmd_stats_reset)
   return CMD_OK;
 }
 
-COMMAND(cmd_log_dump)
-{
-  log_dump();
-  return CMD_OK;
-}
-
-COMMAND(cmd_log_reset)
-{
-  log_reset();
-  return CMD_OK;
-}
-
 COMMAND(cmd_ether_configure)
 {
   eth_state_configure();
@@ -257,10 +238,6 @@ COMMAND(cmd_help)
     "dp [on]  toggle dump TCP/UDP contents\r\n"
     "dl [on]  toggle dump PLIP info\r\n"
     "\r\n"
-    "la [on]  log all PLIP commands\r\n"
-    "ld       log dump\r\n"
-    "lr       log reset\r\n"
-    "\r\n"
     "tl       length of test packets\r\n"
     "tt       eth type of test packets\r\n"
   ));
@@ -299,10 +276,6 @@ cmd_table_t cmd_table[] = {
   { CMD_NAME("dp"), cmd_param_toggle },
   { CMD_NAME("dl"), cmd_param_toggle },
   { CMD_NAME("dy"), cmd_param_toggle },
-  // log
-  { CMD_NAME("la"), cmd_param_toggle },
-  { CMD_NAME("ld"), cmd_log_dump },
-  { CMD_NAME("lr"), cmd_log_reset },
   // test
   { CMD_NAME("tl"), cmd_param_word },
   { CMD_NAME("tt"), cmd_param_word },
