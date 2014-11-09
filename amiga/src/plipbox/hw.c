@@ -79,6 +79,7 @@ GLOBAL USHORT ASM CRC16(REG(a0) UBYTE *, REG(d0) SHORT);
 GLOBAL BOOL ASM hwsend(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
 GLOBAL BOOL ASM hwrecv(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
 GLOBAL BOOL ASM hwburstsend(REG(a0) struct HWBase *, REG(a1) struct HWFrame *, REG(d0) WORD burstSize);
+GLOBAL BOOL ASM hwburstrecv(REG(a0) struct HWBase *, REG(a1) struct HWFrame *, REG(d0) WORD burstSize);
 
    /* amiga.lib provides for these symbols */
 GLOBAL FAR volatile struct CIA ciaa,ciab;
@@ -423,6 +424,7 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    BOOL rc;
+   UWORD burstSize = hwb->hwb_BurstSize;
 
    /* wait until I/O block is safe to be reused */
    while(!hwb->hwb_TimeoutSet) Delay(1L);
@@ -434,8 +436,13 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
    SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
 
    /* hw recv */
-   d8(("+rx\n"));
-   rc = hwrecv(hwb, frame);
+   if(burstSize > 0) {
+     d8(("+rxb\n"));
+     rc = hwburstrecv(hwb, frame, burstSize);
+   } else { 
+     d8(("+rx\n"));
+     rc = hwrecv(hwb, frame);
+   }
    d8(("+rx: %s\n", rc ? "ok":"ERR"));
     
    /* stop timeout timer */

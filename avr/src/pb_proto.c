@@ -266,36 +266,36 @@ static u08 cmd_send_burst(u16 *ret_size)
   u08 hi, lo, bhi, blo;
   u08 status;
    
-  // --- size hi ---
-  status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  hi = par_low_data_in();
-  CLR_RAK();
-   
-  // --- size lo ---
-  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  lo = par_low_data_in();
-  SET_RAK();
-   
-  // --- burst hi ---
+  // --- burst size hi ---
   status = wait_req(1, PBPROTO_STAGE_BURST_HI);
   if(status != PBPROTO_STATUS_OK) {
     return status;
   }
   bhi = par_low_data_in();
   CLR_RAK();
-
-  // --- burst lo ---
+   
+  // --- burst size lo ---
   status = wait_req(0, PBPROTO_STAGE_BURST_LO);
   if(status != PBPROTO_STATUS_OK) {
     return status;
   }
   blo = par_low_data_in();
+  SET_RAK();
+   
+  // --- packet size hi ---
+  status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  hi = par_low_data_in();
+  CLR_RAK();
+
+  // --- packet size lo ---
+  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  lo = par_low_data_in();
   // delay SET_RAK until burst begin...
 
   u16 size = hi << 8 | lo;
@@ -337,17 +337,17 @@ static u08 cmd_send_burst(u16 *ret_size)
     for(i=0;i<bs;i++) {
       // wait REQ == 1
       while(!GET_REQ()) {
-        if(!GET_SELECT()) goto burst_exit;
+        if(!GET_SELECT()) goto send_burst_exit;
       }
       *(ptr++) = par_low_data_in();
       
       // wait REQ == 0
       while(GET_REQ()) {
-        if(!GET_SELECT()) goto burst_exit;
+        if(!GET_SELECT()) goto send_burst_exit;
       }
       *(ptr++) = par_low_data_in();
     }
-burst_exit:
+send_burst_exit:
     CLR_RAK();
     sei();
     // END TIME CRITICAL
@@ -373,6 +373,142 @@ burst_exit:
   SET_RAK();
 
   funcs->send_end(size);
+
+  *ret_size = got_words << 1;
+  return result;  
+}
+
+static u08 cmd_recv_burst(u16 *ret_size)
+{
+  u08 hi, lo, bhi, blo;
+  u08 status;
+   
+  // ask for size
+  u16 size;
+  funcs->recv_begin(&size);
+
+  hi = (u08)(size >> 8);
+  lo = (u08)(size & 0xff);
+
+  // --- get burst size hi ---
+  status = wait_req(1, PBPROTO_STAGE_BURST_HI);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  bhi = par_low_data_in();
+  CLR_RAK();
+   
+  // --- get burst size lo ---
+  status = wait_req(0, PBPROTO_STAGE_BURST_LO);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  blo = par_low_data_in();
+  SET_RAK();
+   
+  // --- set packet size hi
+  status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  par_low_data_set_output();
+  par_low_data_out(hi);
+  CLR_RAK();
+
+  // --- set packet size lo ---
+  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+  par_low_data_out(lo);
+  SET_RAK();
+
+  // --- burst ready? ---
+  status = wait_req(1, PBPROTO_STAGE_DATA);
+  if(status != PBPROTO_STATUS_OK) {
+    return status;
+  }
+
+  // calc burst size
+  u16 burst_size = bhi << 8 | blo; // size in words -1 !
+  burst_size++; // now in words
+
+  // check burst size
+  if(burst_size >= MAX_BURST_WORDS) {
+    return PBPROTO_STATUS_BURST_TOO_LARGE;
+  }
+   
+  // round to even and convert to words
+  u16 words = size;
+  if(words & 1) {
+    words++;
+  }
+  words >>= 1;
+
+  uart_send_hex_word(burst_size);
+  uart_send_crlf();
+  uart_send_hex_word(words);
+  uart_send_crlf();
+
+  // ----- burst chunk loop -----
+  u16 i;
+  u08 result = PBPROTO_STATUS_OK;
+  u16 got_words = 0;
+  while(words > 0) {
+
+    // calc size of burst
+    u16 bs = burst_size;
+    if(bs > words) {
+      bs = words;
+    }
+    words -= bs;
+    u08 *ptr = buffer;
+
+    // fill buffer
+    for(i=0;i<bs;i++) {
+      funcs->recv_data(ptr++);
+      funcs->recv_data(ptr++);
+    }
+    ptr = buffer;
+
+    // ----- burst loop -----
+    // BEGIN TIME CRITICAL
+    cli();
+    CLR_RAK(); // trigger start of burst
+    for(i=0;i<bs;i++) {
+      par_low_data_out(*(ptr++));
+      // wait REQ == 0
+      while(GET_REQ()) {
+        if(!GET_SELECT()) goto recv_burst_exit;
+      }
+
+      par_low_data_out(*(ptr++));      
+      // wait REQ == 1
+      while(!GET_REQ()) {
+        if(!GET_SELECT()) goto recv_burst_exit;
+      }
+    }
+recv_burst_exit:
+    SET_RAK();
+    sei();
+    // END TIME CRITICAL
+  
+    got_words += i;
+
+    // error?
+    if(i<bs) {
+      result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
+      break;
+    }
+  }
+
+  // final ACK 
+  CLR_RAK();
+
+  // [IN]
+  par_low_data_set_input();
+
+  funcs->recv_end(size);
 
   *ret_size = got_words << 1;
   return result;  
@@ -410,6 +546,9 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
       break;
     case PBPROTO_CMD_SEND_BURST:
       result = cmd_send_burst(ret_size);
+      break;
+    case PBPROTO_CMD_RECV_BURST:
+      result = cmd_recv_burst(ret_size);
       break;
     default:
       result = PBPROTO_STATUS_INVALID_CMD;

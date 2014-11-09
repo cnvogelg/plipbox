@@ -30,6 +30,7 @@ PLIP_ADDRFIELDSIZE  equ 6
 HWF_CMD_SEND     equ     $11
 HWF_CMD_RECV     equ     $22
 HWF_CMD_SEND_BURST equ   $33
+HWF_CMD_RECV_BURST equ   $44
 
 PKTFRAMESIZE_1   equ     4
 PKTFRAMESIZE_2   equ     2

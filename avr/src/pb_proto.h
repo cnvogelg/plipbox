@@ -45,11 +45,13 @@
 #define PBPROTO_STAGE_LAST_DATA          0x50
 #define PBPROTO_STAGE_BURST_LO           0x60
 #define PBPROTO_STAGE_BURST_HI           0x70
+#define PBPROTO_STAGE_INPUT              0x80
 
 // commands
 #define PBPROTO_CMD_SEND       0x11   // amiga wants to send a packet
 #define PBPROTO_CMD_RECV       0x22   // amiga wants to receive a packet
 #define PBPROTO_CMD_SEND_BURST 0x33
+#define PBPROTO_CMD_RECV_BURST 0x44
 
 // line status
 #define PBPROTO_LINE_OFF       0x0
