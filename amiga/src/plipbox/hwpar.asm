@@ -719,20 +719,17 @@ bwr_WaitRak3a:
          bra.s    bwr_ExitError
 bwr_RakOk3a:
          
-         ; sync point
-         bclr     d3,(a5)                             ; set REQ=0
-
          ; --- burst loop
 bwr_BurstLoop:
-         ; get even data 0,2,4,...
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
-         ; Toggle REQ
-         bset     d3,(a5)                             ; set REQ=1
-         
-         ; get odd data 1,3,5,...
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
+         ; get even data 0,2,4,...
+         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
+         
+         ; Toggle REQ
+         bset     d3,(a5)                             ; set REQ=1
+         ; get odd data 1,3,5,...
+         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
 
          dbra     d7,bwr_BurstLoop
 

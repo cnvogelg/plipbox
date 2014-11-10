@@ -25,6 +25,7 @@
  */
 
 #include <avr/interrupt.h>
+#include <util/delay_basic.h>
 
 #include "pb_proto.h"
 #include "par_low.h"
@@ -460,32 +461,29 @@ static u08 cmd_recv_burst(u16 *ret_size)
     }
     ptr = buffer;
 
+#define DELAY _delay_loop_1(2);
+
     // ----- burst loop -----
     // BEGIN TIME CRITICAL
     cli();
     // prepare first byte
     CLR_RAK(); // trigger start of burst
-    par_low_data_out(*(ptr++));
-    // wait for sync point
-    while(GET_REQ()) {
-      if(!GET_SELECT()) goto recv_burst_exit;
-    }
     // loop
     while(bs>0) {
 
-      SET_RAK();
+      DELAY
       par_low_data_out(*(ptr++));      
-
-      // wait REQ == 1
-      while(!GET_REQ()) {
-        if(!GET_SELECT()) goto recv_burst_exit;
-      }
-
-      CLR_RAK();
-      par_low_data_out(*(ptr++));
 
       // wait REQ == 0
       while(GET_REQ()) {
+        if(!GET_SELECT()) goto recv_burst_exit;
+      }
+
+      DELAY
+      par_low_data_out(*(ptr++));
+
+      // wait REQ == 1
+      while(!GET_REQ()) {
         if(!GET_SELECT()) goto recv_burst_exit;
       }
 
