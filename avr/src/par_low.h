@@ -189,10 +189,8 @@ extern void par_low_data_set_input(void);
 #ifdef HAVE_arduino
 inline void par_low_data_out(u08 d)
 {
-  PAR_DATA_LO_PORT &= ~PAR_DATA_LO_MASK;
-  PAR_DATA_LO_PORT |= d & PAR_DATA_LO_MASK;
-  PAR_DATA_HI_PORT &= ~PAR_DATA_HI_MASK;
-  PAR_DATA_HI_PORT |= d & PAR_DATA_HI_MASK;
+  PAR_DATA_LO_PORT = (d & PAR_DATA_LO_MASK) | (PAR_DATA_LO_PIN & ~PAR_DATA_LO_MASK);
+  PAR_DATA_HI_PORT = (d & PAR_DATA_HI_MASK) | (PAR_DATA_HI_PIN & ~PAR_DATA_HI_MASK);
 }
 
 inline u08 par_low_data_in(void)

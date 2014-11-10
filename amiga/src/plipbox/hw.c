@@ -149,11 +149,8 @@ GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig 
 
   /* set burst size */
   if(args->burst) {
-    UWORD bs = (UWORD)(*args->burst >> 1);
+    UWORD bs = (UWORD)((*args->burst+1) >> 1);
     d(("orig burst %ld\n", (ULONG)bs));
-    if(bs > 0) {
-      bs--;
-    }
     hwb->hwb_BurstSize = bs;
   }
 }

@@ -299,8 +299,7 @@ static u08 cmd_send_burst(u16 *ret_size)
   // delay SET_RAK until burst begin...
 
   u16 size = hi << 8 | lo;
-  u16 burst_size = bhi << 8 | blo; // size in words -1 !
-  burst_size++; // now in words
+  u16 burst_size = bhi << 8 | blo; // size in words
 
   // check burst size
   if(burst_size >= MAX_BURST_WORDS) {
@@ -430,8 +429,7 @@ static u08 cmd_recv_burst(u16 *ret_size)
   }
 
   // calc burst size
-  u16 burst_size = bhi << 8 | blo; // size in words -1 !
-  burst_size++; // now in words
+  u16 burst_size = bhi << 8 | blo; // size in words
 
   // check burst size
   if(burst_size >= MAX_BURST_WORDS) {
@@ -439,16 +437,7 @@ static u08 cmd_recv_burst(u16 *ret_size)
   }
    
   // round to even and convert to words
-  u16 words = size;
-  if(words & 1) {
-    words++;
-  }
-  words >>= 1;
-
-  uart_send_hex_word(burst_size);
-  uart_send_crlf();
-  uart_send_hex_word(words);
-  uart_send_crlf();
+  u16 words = (size + 1) >> 1;
 
   // ----- burst chunk loop -----
   u16 i;
@@ -474,19 +463,33 @@ static u08 cmd_recv_burst(u16 *ret_size)
     // ----- burst loop -----
     // BEGIN TIME CRITICAL
     cli();
+    // prepare first byte
     CLR_RAK(); // trigger start of burst
-    for(i=0;i<bs;i++) {
+    par_low_data_out(*(ptr++));
+    // wait for sync point
+    while(GET_REQ()) {
+      if(!GET_SELECT()) goto recv_burst_exit;
+    }
+    // loop
+    while(bs>0) {
+
+      SET_RAK();
+      par_low_data_out(*(ptr++));      
+
+      // wait REQ == 1
+      while(!GET_REQ()) {
+        if(!GET_SELECT()) goto recv_burst_exit;
+      }
+
+      CLR_RAK();
       par_low_data_out(*(ptr++));
+
       // wait REQ == 0
       while(GET_REQ()) {
         if(!GET_SELECT()) goto recv_burst_exit;
       }
 
-      par_low_data_out(*(ptr++));      
-      // wait REQ == 1
-      while(!GET_REQ()) {
-        if(!GET_SELECT()) goto recv_burst_exit;
-      }
+      bs--;      
     }
 recv_burst_exit:
     SET_RAK();
@@ -502,7 +505,7 @@ recv_burst_exit:
     }
   }
 
-  // final ACK 
+  // final ACK
   CLR_RAK();
 
   // [IN]

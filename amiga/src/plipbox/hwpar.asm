@@ -367,27 +367,26 @@ hwr_ExitError:
 ; FUNCTION
 ;     This functions sends a HW frame with the plipbox protocol via
 ;     the parallel port and uses the fast burst protocol
-;     burstBytes = 2 * (burstSize+1)
+;     burstSize in words
 _hwburstsend:
          movem.l  d2-d7/a2-a6,-(sp)
          move.l   a0,a2                               ; a2 = HWBase
          move.l   a1,a3                               ; a3 = Frame
-         move.w   d0,d5                               ; d5 = burstSize in words - 1
+         move.w   d0,d5                               ; d5 = burstSize in words
          moveq    #FALSE,d2                           ; d2 = return value
          moveq    #HS_REQ_BIT,d3                      ; d3 = HS_REQ
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
          lea      BaseAX,a5                           ; a5 = CIA HW base
 
+         ; d1 = burst size -1
+         move.w   d0,d1
+         subq.w   #1,d1
+
          ; --- size calc for burst
-         ; packet size (in bytes)
-         ; rounded to words (size = 1 -> 2)
+         ; packet size (in bytes) rounded to words (d6)
          move.w   (a3),d6
-         btst     #0,d6
-         bne.s    bww_odd
-         subq.w   #1,d6
-bww_odd:
-         ; convert to words
-         lsr.w    #1,d6                               ; d6 = packet size in words - 1
+         addq.w   #1,d6
+         lsr.w    #1,d6                               ; d6 = packet size in words
 
          ; --- prepare
          ; Wait RAK == 0
@@ -477,13 +476,18 @@ bww_RakOk2d:
          ; ---- burst chunk loop
 bww_BurstChunk:
          ; setup size of even burst chunk: d7 = words-1 per chunk
-         move.w   d5,d7    ; get burst size
-         cmp.w    d6,d7    ; compare with remaining size
+         cmp.w    d6,d5    ; compare remaining size with burst size
          blt.s    bww_bce_ok
+         ; last loop - use remaining size for loop
          move.w   d6,d7
+         subq.w   #1,d7 ; correct for dbra
+         moveq    #0,d6 ; update remaining size
+         bra.s    bww_WaitRak3a
 bww_bce_ok:
-         sub.w    d7,d6    ; update total size
-
+         ; full lopp - use burst size for loop
+         move.w   d1,d7
+         sub.w    d5,d6 ; update remaining size
+         
          ; Wait RAK == 1 (sync before burst)
 bww_WaitRak3a:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -561,16 +565,20 @@ bww_ExitError:
 ; FUNCTION
 ;     This functions receives a HW frame with the plipbox protocol via
 ;     the parallel port and uses the fast burst protocol
-;     burstBytes = 2 * (burstSize+1)
+;     burstSize = words
 _hwburstrecv:
          movem.l  d2-d7/a2-a6,-(sp)
          move.l   a0,a2                               ; a2 = HWBase
          move.l   a1,a3                               ; a3 = Frame
-         move.w   d0,d5                               ; d5 = burstSize in words - 1
+         move.w   d0,d5                               ; d5 = burstSize in words
          moveq    #FALSE,d2                           ; d2 = return value
          moveq    #HS_REQ_BIT,d3                      ; d3 = HS_REQ
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
          lea      BaseAX,a5                           ; a5 = CIA HW base
+
+         ; d1 = burst size -1
+         move.w   d0,d1
+         subq.w   #1,d1
 
          ; --- prepare
          ; Wait RAK == 0
@@ -682,23 +690,23 @@ bwr_RakOk2e:
          cmp.w    hwb_MaxFrameSize(a2),d6             ; buffer too large
          bhi.s    bwr_ExitError
 
-         ; convert to words
-         ; (-1 for dbra)
-         btst     #0,d6
-         bne.s    bwr_odd
-         subq.w   #1,d6
-bwr_odd:
+         ; convert packet size (d6) to words (and round up if necessary)
+         addq.w   #1,d6
          lsr.w    #1,d6
          
          ; ---- burst chunk loop
 bwr_BurstChunk:
-         ; setup size of even burst chunk: d7 = words-1 per chunk
-         move.w   d5,d7    ; get burst size
-         cmp.w    d6,d7    ; compare with remaining size
+         ; setup size of burst chunk: d7 = words-1 per chunk
+         cmp.w    d6,d5    ; compare with remaining size
          blt.s    bwr_bce_ok
-         move.w   d6,d7
+         ; last loop
+         move.w   d6,d7    ; use remaining size for final loop
+         subq.w   #1,d7 
+         moveq    #0,d6    ; size done
+         bra.s    bwr_WaitRak3a
 bwr_bce_ok:
-         sub.w    d7,d6    ; update total size
+         move.w   d1,d7    ; use burst size - 1
+         sub.w    d5,d6    ; update size
 
          ; Wait RAK == 0 (sync before burst)
 bwr_WaitRak3a:
@@ -711,17 +719,20 @@ bwr_WaitRak3a:
          bra.s    bwr_ExitError
 bwr_RakOk3a:
          
+         ; sync point
+         bclr     d3,(a5)                             ; set REQ=0
+
          ; --- burst loop
 bwr_BurstLoop:
          ; get even data 0,2,4,...
          move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
          ; Toggle REQ
-         bclr     d3,(a5)                             ; set REQ=1
+         bset     d3,(a5)                             ; set REQ=1
          
          ; get odd data 1,3,5,...
          move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
          ; Toggle REQ
-         bset     d3,(a5)                             ; set REQ=1
+         bclr     d3,(a5)                             ; set REQ=0
 
          dbra     d7,bwr_BurstLoop
 
