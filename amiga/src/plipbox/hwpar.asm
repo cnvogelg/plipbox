@@ -473,6 +473,9 @@ bww_RakOk2d:
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
+         ; disable all irq
+         JSRLIB   Disable
+
          ; ---- burst chunk loop
 bww_BurstChunk:
          ; setup size of even burst chunk: d7 = words-1 per chunk
@@ -543,6 +546,10 @@ bww_WaitRak4:
 bww_ExitOk:       
          moveq    #TRUE,d2                            ; rc = TRUE
 bww_ExitError:
+
+         ; enable all irq
+         JSRLIB   Enable
+
          ; [IN]
          SETCIAINPUT a5
 
@@ -659,7 +666,7 @@ bwr_WaitRak2d:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bwr_WaitRak2d
-         bra.s    bwr_ExitError
+         bra      bwr_ExitError
 bwr_RakOk2d:
          
          ; Read <Size_Hi>
@@ -693,6 +700,9 @@ bwr_RakOk2e:
          ; convert packet size (d6) to words (and round up if necessary)
          addq.w   #1,d6
          lsr.w    #1,d6
+
+         ; disable all irq
+         JSRLIB   Disable
          
          ; ---- burst chunk loop
 bwr_BurstChunk:
@@ -763,6 +773,10 @@ bwr_WaitRak4:
 bwr_ExitOk:       
          moveq    #TRUE,d2                            ; rc = TRUE
 bwr_ExitError:
+
+         ; enable all irq
+         JSRLIB   Enable
+
          ; reset signal
          moveq    #0,d0
          move.l   hwb_IntSigMask(a1),d1

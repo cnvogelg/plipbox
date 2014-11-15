@@ -90,6 +90,7 @@ static void rx_begin(u16 *pkt_size)
   // check packet size
   if(*pkt_size != param.test_plen) {
     errors = 1;
+    uart_send_pstring(PSTR("ERR: size\r\n"));
   }
 }
 
@@ -99,6 +100,7 @@ static void rx_data(u08 *data)
   if(count < 6) {
     if(*data != 0xff) {
       errors++;
+      uart_send_pstring(PSTR("ERR: dst mac\r\n"));
     }
   }
   // check src mac
@@ -106,6 +108,7 @@ static void rx_data(u08 *data)
     u08 mac_byte = param.mac_addr[count-6];
     if(*data != mac_byte) {
       errors++;
+      uart_send_pstring(PSTR("ERR: src mac\r\n"));
     }
   }
   // check type
@@ -113,12 +116,14 @@ static void rx_data(u08 *data)
     u08 ptype_hi = (u08)(param.test_ptype >> 8);
     if(*data != ptype_hi) {
       errors++;
+      uart_send_pstring(PSTR("ERR: type hi\r\n"));
     }
   }
   else if(count == 13) {
     u08 ptype_lo = (u08)(param.test_ptype & 0xff);
     if(*data != ptype_lo) {
       errors++;
+      uart_send_pstring(PSTR("ERR: type lo\r\n"));
     }    
   }
   // data 
@@ -126,6 +131,9 @@ static void rx_data(u08 *data)
     u08 val = (u08)((count - 14) & 0xff);
     if(*data != val) {
       errors++;
+      uart_send_pstring(PSTR("ERR: data\r\n"));
+      uart_send_hex_word(count);
+      uart_send_crlf();
     }
   }
   count++;
@@ -214,8 +222,14 @@ u08 pb_test_worker(void)
   if(status == PBPROTO_STATUS_IDLE) {
     return PB_TEST_IDLE; // inactive
   }
-  // pb proto ok
-  else if(status == PBPROTO_STATUS_OK) {
+
+  // pb proto not ok -> error!
+  if(status != PBPROTO_STATUS_OK) {
+    errors++;
+  }
+
+  // no errors?
+  if(errors == 0) {
     // account data
     if(is_tx) {
       stats.tx_cnt++;
@@ -251,9 +265,6 @@ u08 pb_test_worker(void)
   }
   // pb proto failed with an error
   else {
-    // add internal error
-    errors++;
-
     // dump error
     dump_pb_cmd(cmd, status, size, delta, 0);
 
@@ -263,6 +274,11 @@ u08 pb_test_worker(void)
       stats.tx_err++;
     } else {
       stats.rx_err++;
+    }
+
+    // disable auto mode
+    if(auto_mode) {
+      pb_test_toggle_auto();
     }
 
     return PB_TEST_ERROR;

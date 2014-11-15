@@ -378,6 +378,17 @@ send_burst_exit:
   return result;  
 }
 
+// delay loop for recv
+#if (F_CPU == 16000000)
+
+// at least 2us
+// 3 cycles per call
+#define DELAY _delay_loop_1(6);
+
+#else
+#error Delay loop not defined for F_CPU
+#endif
+
 static u08 cmd_recv_burst(u16 *ret_size)
 {
   u08 hi, lo, bhi, blo;
@@ -460,8 +471,6 @@ static u08 cmd_recv_burst(u16 *ret_size)
       funcs->recv_data(ptr++);
     }
     ptr = buffer;
-
-#define DELAY _delay_loop_1(2);
 
     // ----- burst loop -----
     // BEGIN TIME CRITICAL
