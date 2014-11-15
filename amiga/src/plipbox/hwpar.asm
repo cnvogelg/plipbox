@@ -411,7 +411,7 @@ bww_RakOk1:
 
          ; --- send burst size 
          move.w   d5,d7
-         lsl.w    #8,d7 ; prepare burst hi
+         lsr.w    #8,d7 ; prepare burst hi
          ; Wait RAK == 1
 bww_WaitRak2a:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -610,7 +610,7 @@ bwr_RakOk1:
 
          ; --- send burst size 
          move.w   d5,d7
-         lsl.w    #8,d7 ; prepare burst hi
+         lsr.w    #8,d7 ; prepare burst hi
          ; Wait RAK == 1
 bwr_WaitRak2a:
          move.b   (a5),d0                             ; ciab+ciapra

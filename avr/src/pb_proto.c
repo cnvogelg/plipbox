@@ -303,7 +303,7 @@ static u08 cmd_send_burst(u16 *ret_size)
   u16 burst_size = bhi << 8 | blo; // size in words
 
   // check burst size
-  if(burst_size >= MAX_BURST_WORDS) {
+  if(burst_size > MAX_BURST_WORDS) {
     return PBPROTO_STATUS_BURST_TOO_LARGE;
   }
    
@@ -444,7 +444,7 @@ static u08 cmd_recv_burst(u16 *ret_size)
   u16 burst_size = bhi << 8 | blo; // size in words
 
   // check burst size
-  if(burst_size >= MAX_BURST_WORDS) {
+  if(burst_size > MAX_BURST_WORDS) {
     return PBPROTO_STATUS_BURST_TOO_LARGE;
   }
    
