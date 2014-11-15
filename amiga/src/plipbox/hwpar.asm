@@ -378,6 +378,10 @@ _hwburstsend:
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
          lea      BaseAX,a5                           ; a5 = CIA HW base
 
+         ; a4 = data reg of CIA
+         move.l   a5,a4
+         add.l    #(ciaa+ciaprb-BaseAX),a4
+
          ; d1 = burst size -1
          move.w   d0,d1
          subq.w   #1,d1
@@ -404,7 +408,7 @@ bww_RakOk1:
          SETCIAOUTPUT a5
          
          ; Set <CMD_SEND_BURST>
-         move.b   #HWF_CMD_SEND_BURST,ciaa+ciaprb-BaseAX(a5)
+         move.b   #HWF_CMD_SEND_BURST,(a4)
          
          ; Set SEL = 1 -> Trigger Plipbox
          SETSELECT a5
@@ -423,7 +427,7 @@ bww_WaitRak2a:
          bra      bww_ExitError
 bww_RakOk2a:
          ; Set <burst_words> hi byte
-         move.b   d7,ciaa+ciaprb-BaseAX(a5)           ; write data to port
+         move.b   d7,(a4)                             ; write data to port
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
 
@@ -438,7 +442,7 @@ bww_WaitRak2b:
          bra      bww_ExitError
 bww_RakOk2b:
          ; Set <burst_words> lo byte
-         move.b   d5,ciaa+ciaprb-BaseAX(a5)           ; write data to port
+         move.b   d5,(a4)                             ; write data to port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
@@ -454,7 +458,7 @@ bww_WaitRak2c:
          bra.s    bww_ExitError
 bww_RakOk2c:
          ; Set <size> hi byte
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
 
@@ -469,7 +473,7 @@ bww_WaitRak2d:
          bra.s    bww_ExitError
 bww_RakOk2d:
          ; Set <size> lo byte
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
@@ -505,12 +509,12 @@ bww_RakOk3a:
          ; --- burst loop
 bww_BurstLoop:
          ; set even data 0,2,4,...
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
          
          ; set odd data 1,3,5,...
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
+         move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=1
 
@@ -583,6 +587,10 @@ _hwburstrecv:
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
          lea      BaseAX,a5                           ; a5 = CIA HW base
 
+         ; a4 = data reg of CIA
+         move.l   a5,a4
+         add.l    #(ciaa+ciaprb-BaseAX),a4
+
          ; d1 = burst size -1
          move.w   d0,d1
          subq.w   #1,d1
@@ -603,7 +611,7 @@ bwr_RakOk1:
          SETCIAOUTPUT a5
          
          ; Set <CMD_RECV_BURST>
-         move.b   #HWF_CMD_RECV_BURST,ciaa+ciaprb-BaseAX(a5)
+         move.b   #HWF_CMD_RECV_BURST,(a4)
          
          ; Set SEL = 1 -> Trigger Plipbox
          SETSELECT a5
@@ -622,7 +630,7 @@ bwr_WaitRak2a:
          bra      bwr_ExitError
 bwr_RakOk2a:
          ; Set <burst_words> hi byte
-         move.b   d7,ciaa+ciaprb-BaseAX(a5)           ; write data to port
+         move.b   d7,(a4)                             ; write data to port
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
 
@@ -637,7 +645,7 @@ bwr_WaitRak2b:
          bra      bwr_ExitError
 bwr_RakOk2b:
          ; Set <burst_words> lo byte
-         move.b   d5,ciaa+ciaprb-BaseAX(a5)           ; write data to port
+         move.b   d5,(a4)                             ; write data to port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
@@ -670,7 +678,7 @@ bwr_WaitRak2d:
 bwr_RakOk2d:
          
          ; Read <Size_Hi>
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port
+         move.b   (a4),(a3)+                          ; read par port
          ; Set REQ = 0
          bclr     d3,(a5)                             ; REQ toggle
          
@@ -685,7 +693,7 @@ bwr_WaitRak2e:
          bra.s    bwr_ExitError
 bwr_RakOk2e:
          ; Read <Size_Lo>
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
+         move.b   (a4),(a3)+                          ; READCIABYTE
          ; Set REQ = 1
          bset     d3,(a5)                             ; REQ toggle
 
@@ -734,12 +742,12 @@ bwr_BurstLoop:
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
          ; get even data 0,2,4,...
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
+         move.b   (a4),(a3)+                          ; read data from port
          
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
          ; get odd data 1,3,5,...
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read data from port
+         move.b   (a4),(a3)+                          ; read data from port
 
          dbra     d7,bwr_BurstLoop
 
