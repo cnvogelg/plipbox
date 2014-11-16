@@ -348,9 +348,20 @@ static u08 cmd_send_burst(u16 *ret_size)
       *(ptr++) = par_low_data_in();
     }
 send_burst_exit:
-    CLR_RAK();
     sei();
     // END TIME CRITICAL
+
+    // wait REQ == 1
+    while(!GET_REQ()) {
+      if(!GET_SELECT()) goto send_burst_exit;
+    }
+
+    CLR_RAK();
+
+    // wait REQ == 0
+    while(GET_REQ()) {
+      if(!GET_SELECT()) goto send_burst_exit;
+    }
   
     got_words += i;
 
@@ -499,9 +510,20 @@ static u08 cmd_recv_burst(u16 *ret_size)
       bs--;      
     }
 recv_burst_exit:
-    SET_RAK();
     sei();
     // END TIME CRITICAL
+
+    // final wait REQ == 0
+    while(GET_REQ()) {
+      if(!GET_SELECT()) goto recv_burst_exit;
+    }
+
+    SET_RAK();
+      
+    // final wait REQ == 1
+    while(!GET_REQ()) {
+      if(!GET_SELECT()) goto recv_burst_exit;
+    }
   
     got_words += i;
 

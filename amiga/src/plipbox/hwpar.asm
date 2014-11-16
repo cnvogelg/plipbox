@@ -477,9 +477,6 @@ bww_RakOk2d:
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
-         ; disable all irq
-         JSRLIB   Disable
-
          ; ---- burst chunk loop
 bww_BurstChunk:
          ; setup size of even burst chunk: d7 = words-1 per chunk
@@ -505,6 +502,9 @@ bww_WaitRak3a:
          beq.s    bww_WaitRak3a
          bra.s    bww_ExitError
 bww_RakOk3a:
+
+         ; disable all irq
+         JSRLIB   Disable
          
          ; --- burst loop
 bww_BurstLoop:
@@ -520,6 +520,11 @@ bww_BurstLoop:
 
          dbra     d7,bww_BurstLoop
 
+         ; enable all irq
+         JSRLIB   Enable
+
+         bset     d3,(a5)                             ; set REQ=1
+
          ; Wait RAK == 0 (sync after burst)
 bww_WaitRak3b:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -530,6 +535,8 @@ bww_WaitRak3b:
          beq.s    bww_WaitRak3b
          bra.s    bww_ExitError
 bww_RakOk3b:
+
+         bclr     d3,(a5)                             ; set REQ=0
 
          ; done?
          tst.w    d6
@@ -551,11 +558,10 @@ bww_ExitOk:
          moveq    #TRUE,d2                            ; rc = TRUE
 bww_ExitError:
 
-         ; enable all irq
-         JSRLIB   Enable
-
          ; [IN]
          SETCIAINPUT a5
+
+         bclr     d3,(a5)                             ; set REQ=0
 
          ; SEL = 0
          CLRSELECT a5
@@ -709,9 +715,6 @@ bwr_RakOk2e:
          addq.w   #1,d6
          lsr.w    #1,d6
 
-         ; disable all irq
-         JSRLIB   Disable
-         
          ; ---- burst chunk loop
 bwr_BurstChunk:
          ; setup size of burst chunk: d7 = words-1 per chunk
@@ -736,7 +739,10 @@ bwr_WaitRak3a:
          beq.s    bwr_WaitRak3a
          bra.s    bwr_ExitError
 bwr_RakOk3a:
-         
+
+         ; disable all irq
+         JSRLIB   Disable
+                  
          ; --- burst loop
 bwr_BurstLoop:
          ; Toggle REQ
@@ -751,6 +757,11 @@ bwr_BurstLoop:
 
          dbra     d7,bwr_BurstLoop
 
+         ; enable all irq
+         JSRLIB   Enable
+
+         bclr     d3,(a5)                             ; set REQ=0
+
          ; Wait RAK == 1 (sync after burst)
 bwr_WaitRak3b:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -761,6 +772,8 @@ bwr_WaitRak3b:
          beq.s    bwr_WaitRak3b
          bra.s    bwr_ExitError
 bwr_RakOk3b:
+
+         bset     d3,(a5)                             ; set REQ=1
 
          ; done?
          tst.w    d6
@@ -781,9 +794,6 @@ bwr_WaitRak4:
 bwr_ExitOk:       
          moveq    #TRUE,d2                            ; rc = TRUE
 bwr_ExitError:
-
-         ; enable all irq
-         JSRLIB   Enable
 
          ; reset signal
          moveq    #0,d0
