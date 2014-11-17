@@ -183,25 +183,25 @@ COMMAND(cmd_stats_reset)
 
 COMMAND(cmd_ether_configure)
 {
-  eth_state_configure();
+  //eth_state_configure();
   return CMD_OK;
 }
 
 COMMAND(cmd_ether_init)
 {
-  eth_state_init();
+  //eth_state_init();
   return CMD_OK;
 }
 
 COMMAND(cmd_ether_shutdown)
 {
-  eth_state_shutdown();
+  //eth_state_shutdown();
   return CMD_OK;
 }
 
 COMMAND(cmd_plipbox_init)
 {
-  pb_state_init();
+  //pb_state_init();
   return CMD_OK;
 }
 

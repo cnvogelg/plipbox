@@ -28,51 +28,29 @@
 
 #include "uartutil.h"
 #include "uart.h"
-#include "eth_state.h"
-#include "pb_state.h"
-#include "pb_io.h"
 #include "pb_proto.h"
 #include "param.h"
 #include "timer.h"
 #include "util.h"
 #include "stats.h"
 #include "dump.h"
-
-#define TEST_STATE_OFF    0
-#define TEST_STATE_ENTER  1
-#define TEST_STATE_ACTIVE 2
-#define TEST_STATE_LEAVE  3
+#include "net/net.h"
+#include "pkt_buf.h"
 
 static u32 trigger_ts;
-static u16 count;
-static u16 errors;
 
 static u08 toggle_request;
 static u08 auto_mode;
 static u08 silent_mode;
-static u08 state = TEST_STATE_OFF;
 
 // ----- Helpers -----
 
-static void dump_result(u08 is_tx, u32 delta, u16 rate)
+static void dump_result(u08 is_tx, u16 rate)
 {
   PGM_P str = is_tx ? PSTR("[TX] ") : PSTR("[RX] ");
   uart_send_time_stamp_spc();
   uart_send_pstring(str);
-
-  // if everything is ok then print only rate
-  if(errors == 0) {
-    uart_send_rate_kbs(rate);
-  }
-  // errors occurred
-  else {
-    uart_send_pstring(PSTR("ERROR "));
-    uart_send_hex_word(errors);
-    uart_send_spc();
-    uart_send_hex_word(count);
-    uart_send_spc();
-    uart_send_delta(delta);
-  }
+  uart_send_rate_kbs(rate);
   if(is_tx) {
     uart_send_spc();
     uart_send_delta(trigger_ts);
@@ -80,166 +58,152 @@ static void dump_result(u08 is_tx, u32 delta, u16 rate)
   uart_send_crlf();
 }
 
-// ----- RX Calls -----
+// ----- Packet Callbacks -----
 
-static void rx_begin(u16 *pkt_size)
+static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 {
-  errors = 0;
-  count = 0;
+  // convert trigger ts to delta
+  trigger_ts = time_stamp - trigger_ts;
+
+  *size = param.test_plen;
+  if(*size > max_size) {
+    return PBPROTO_STATUS_PACKET_TOO_LARGE;
+  }
+
+  net_copy_mac(net_bcast_mac, buf);
+  net_copy_mac(param.mac_addr, buf+6);
+
+  u08 ptype_hi = (u08)(param.test_ptype >> 8);
+  u08 ptype_lo = (u08)(param.test_ptype & 0xff);
+  buf[12] = ptype_hi;
+  buf[13] = ptype_lo;
+
+  u08 *ptr = buf + 14;
+  u16 num = *size - 14;
+  u08 val = 0;
+  while(num > 0) {
+    *ptr = val;
+    ptr++;
+    val++;
+    num--;
+  }
+
+  return PBPROTO_STATUS_OK;  
+}
+
+static u08 proc_pkt(const u08 *buf, u16 size)
+{
+  u16 errors = 0;
 
   // check packet size
-  if(*pkt_size != param.test_plen) {
+  if(size != param.test_plen) {
     errors = 1;
     uart_send_pstring(PSTR("ERR: size\r\n"));
   }
-}
 
-static void rx_data(u08 *data)
-{
-  // check dst mac
-  if(count < 6) {
-    if(*data != 0xff) {
-      errors++;
-      uart_send_pstring(PSTR("ERR: dst mac\r\n"));
-    }
+  // +0: check dst mac
+  if(!net_compare_mac(buf, net_bcast_mac)) {
+    errors++;
+    uart_send_pstring(PSTR("ERR: dst mac\r\n"));
   }
-  // check src mac
-  else if(count < 12) {
-    u08 mac_byte = param.mac_addr[count-6];
-    if(*data != mac_byte) {
-      errors++;
-      uart_send_pstring(PSTR("ERR: src mac\r\n"));
-    }
+  // +6: check src mac
+  if(!net_compare_mac(buf+6, param.mac_addr)) {
+    errors++;
+    uart_send_pstring(PSTR("ERR: src mac\r\n"));
   }
-  // check type
-  else if(count == 12) {
-    u08 ptype_hi = (u08)(param.test_ptype >> 8);
-    if(*data != ptype_hi) {
-      errors++;
-      uart_send_pstring(PSTR("ERR: type hi\r\n"));
-    }
+  // +12,+13: pkt type
+  u08 ptype_hi = (u08)(param.test_ptype >> 8);
+  u08 ptype_lo = (u08)(param.test_ptype & 0xff);
+  if((buf[12] != ptype_hi) || (buf[13] != ptype_lo)) {
+    errors++;
+    uart_send_pstring(PSTR("ERR: pkt type\r\n"));
   }
-  else if(count == 13) {
-    u08 ptype_lo = (u08)(param.test_ptype & 0xff);
-    if(*data != ptype_lo) {
-      errors++;
-      uart_send_pstring(PSTR("ERR: type lo\r\n"));
-    }    
-  }
-  // data 
-  else {
-    u08 val = (u08)((count - 14) & 0xff);
-    if(*data != val) {
-      errors++;
-      uart_send_pstring(PSTR("ERR: data\r\n"));
-      uart_send_hex_word(count);
+
+  // +14: data
+  const u08 *ptr = buf + 14;
+  u16 num = size - 14;
+  u08 val = 0;
+  while(num > 0) {
+    if(*ptr != val) {
+      uart_send_pstring(PSTR("ERR: data @"));
+      uart_send_hex_word(num);
       uart_send_crlf();
     }
+    val++;
+    ptr++;
+    num--;
   }
-  count++;
-}
 
-static void rx_end(u16 pkt_size)
-{
-  // record error if transfer was aborted
-  if(pkt_size != param.test_plen) {
-    errors += 1;
+#if 0
+  for(int i=0;i<16;i++) {
+    uart_send_hex_byte(buf[i]);
+    uart_send_spc();
   }
-}
+  uart_send_crlf();
+#endif
 
-// ----- TX Calls -----
-
-static void tx_begin(u16 *pkt_size)
-{
-  // calc delta of tx trigger
-  trigger_ts = time_stamp - trigger_ts;
-  *pkt_size = param.test_plen;
- 
-  count = 0;
-  errors = 0;
-}
-
-static void tx_data(u08 *data)
-{
-  // dst mac
-  if(count < 6) {
-    *data = 0xff; // broadcast
-  }
-  // src mac
-  else if(count < 12) {
-    u08 mac_byte = param.mac_addr[count-6];
-    *data = mac_byte; // my mac
-  }
-  // type
-  else if(count == 12) {
-    u08 ptype_hi = (u08)(param.test_ptype >> 8);
-    *data = ptype_hi;
-  }
-  else if(count == 13) {
-    u08 ptype_lo = (u08)(param.test_ptype & 0xff);
-    *data = ptype_lo;
-  }
-  // data
-  else {
-    *data = (u08)((count - 14) & 0xff);
-  }
-  count ++;
-}
-
-static void tx_end(u16 pkt_size)
-{
-  // record error if transfer was aborted
-  if(pkt_size != param.test_plen) {
-    errors += 1;
+  if(errors > 0) {
+    uart_send_pstring(PSTR("TOTAL ERRORS "));
+    uart_send_hex_word(errors);
+    uart_send_crlf();
+    return PBPROTO_STATUS_ERROR;
+  } else {
+    return PBPROTO_STATUS_OK;
   }
 }
 
 // ----- function table -----
 
 static pb_proto_funcs_t funcs = {
-  .send_begin = rx_begin,
-  .send_data = rx_data,
-  .send_end = rx_end,
-  
-  .recv_begin = tx_begin,
-  .recv_data = tx_data,
-  .recv_end = tx_end
+  .fill_pkt = fill_pkt,
+  .proc_pkt = proc_pkt
 };
 
+void pb_test_begin(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[TEST] on\r\n"));
 
-u08 pb_test_worker(void)
+  // setup handlers for pb testing
+  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
+  auto_mode = 0;
+  toggle_request = 0;
+  silent_mode = 0;
+}
+
+void pb_test_end(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[TEST] off\r\n"));  
+}
+
+void pb_test_worker(void)
 {
   // call protocol handler (low level transmit)
   u08 cmd;
   u16 size;
-  u32 start = time_stamp;
-  u08 status = pb_proto_handle(&cmd, &size);
-  u32 delta = time_stamp - start;
-  u16 rate = calc_rate_kbs(count, delta);
+  u16 delta;
+  u08 status = pb_proto_handle(&cmd, &size, &delta);
+  u16 rate = timer_hw_calc_rate_kbs(size, delta);
   u08 is_tx = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
 
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
-    return PB_TEST_IDLE; // inactive
+    return; // inactive
   }
 
-  // pb proto not ok -> error!
-  if(status != PBPROTO_STATUS_OK) {
-    errors++;
-  }
-
-  // no errors?
-  if(errors == 0) {
+  // ok!
+  if(status == PBPROTO_STATUS_OK) {
     // account data
     if(is_tx) {
       stats.tx_cnt++;
-      stats.tx_bytes+=count;
+      stats.tx_bytes+=size;
       if(stats.tx_max_rate < rate) {
         stats.tx_max_rate = rate;
       }
     } else {
       stats.rx_cnt++;
-      stats.rx_bytes+=count;
+      stats.rx_bytes+=size;
       if(stats.rx_max_rate < rate) {
         stats.rx_max_rate = rate;
       }
@@ -248,7 +212,7 @@ u08 pb_test_worker(void)
     // dump result?
     if(!silent_mode) {
       // in interactive mode show result
-      dump_result(is_tx, delta, rate);
+      dump_result(is_tx, rate);
     }
 
     // next iteration?
@@ -260,15 +224,13 @@ u08 pb_test_worker(void)
         silent_mode = 0;
       }
     }
-
-    return PB_TEST_OK;
   }
   // pb proto failed with an error
   else {
     // dump error
     dump_pb_cmd(cmd, status, size, delta, 0);
 
-    dump_result(is_tx, delta, rate);
+    dump_result(is_tx, rate);
     // account data
     if(is_tx) {
       stats.tx_err++;
@@ -280,17 +242,11 @@ u08 pb_test_worker(void)
     if(auto_mode) {
       pb_test_toggle_auto();
     }
-
-    return PB_TEST_ERROR;
   }
 }
 
 void pb_test_send_packet(u08 silent)
 {
-  if(state != TEST_STATE_ACTIVE) {
-    return;
-  }
-
   silent_mode = silent;
   trigger_ts = time_stamp;
   pb_proto_request_recv();
@@ -298,10 +254,6 @@ void pb_test_send_packet(u08 silent)
 
 void pb_test_toggle_auto(void)
 {
-  if(state != TEST_STATE_ACTIVE) {
-    return;
-  }
-
   auto_mode = !auto_mode;
 
   uart_send_time_stamp_spc();
@@ -319,85 +271,4 @@ void pb_test_toggle_auto(void)
     // clear stats
     stats_reset();
   }
-}
-
-// ----- Test Mode Handling -----
-
-void pb_test_toggle_mode(void)
-{
-  toggle_request = 1;
-}
-
-static void dump_state(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[TEST] "));
-  
-  PGM_P str = 0;
-  switch(state) {
-    case TEST_STATE_OFF:
-      str = PSTR("off");
-      break;
-    case TEST_STATE_ENTER:
-      str = PSTR("enter");
-      break;
-    case TEST_STATE_ACTIVE:
-      str = PSTR("active");
-      break;
-    case TEST_STATE_LEAVE:
-      str = PSTR("leave");
-      break;
-  }
-
-  uart_send_pstring(str);
-  uart_send_crlf();
-}
-
-u08 pb_test_state(u08 eth_state, u08 pb_state)
-{
-  switch(state) {
-    case TEST_STATE_OFF:
-      if(toggle_request) {
-        // disable ethernet
-        eth_state_shutdown();
-
-        state = TEST_STATE_ENTER;
-        dump_state();
-        toggle_request = 0;
-      }
-      break;
-    case TEST_STATE_ENTER:
-      // wait for ethernet off, but required pb link
-      if(eth_state == ETH_STATE_OFF) {
-        // setup handlers for pb testing
-        pb_proto_init(&funcs);
-
-        state = TEST_STATE_ACTIVE;
-        dump_state();
-      }
-      // skip to active if abort was toggled
-      if(toggle_request) {
-        state = TEST_STATE_ACTIVE;
-      }
-      break;
-    case TEST_STATE_ACTIVE:
-      if(toggle_request) {
-        // enable ethernet
-        eth_state_init();
-        // restore plibbox io handler
-        pb_io_init();
-
-        state = TEST_STATE_LEAVE;
-        dump_state();
-        toggle_request = 0;
-      }
-      break;
-    case TEST_STATE_LEAVE:
-      // wait for ethernet on again
-      if((eth_state == ETH_STATE_LINK_DOWN)||(eth_state == ETH_STATE_LINK_UP)) {
-        state = TEST_STATE_OFF;
-        dump_state();
-      }
-  }
-  return state == TEST_STATE_ACTIVE;
 }

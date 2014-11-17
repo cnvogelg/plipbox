@@ -29,6 +29,8 @@
 
 #include "global.h"
 
+#include <avr/io.h>
+
 // init timers
 void timer_init(void);
 
@@ -48,6 +50,14 @@ extern void timer_delay_10ms(u16 timeout);
 
 // busy wait with 100us timer
 extern void timer_delay_100us(u16 timeout);
+
+// ----- hardware timer -----
+
+// 16 bit hw timer with 4us resolution
+inline void timer_hw_reset(void) { TCNT1 = 0; }
+inline u16  timer_hw_get(void) { return TCNT1; }
+extern u16 timer_hw_calc_rate_kbs(u16 bytes, u16 delta);
+
   
 #endif
 

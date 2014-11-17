@@ -42,7 +42,7 @@ COMMAND_KEY(cmd_reset_stats)
 
 COMMAND_KEY(cmd_toggle_test_mode)
 {
-  pb_test_toggle_mode();
+  //pb_test_toggle_mode();
 }
 
 COMMAND_KEY(cmd_send_test_packet)
@@ -62,7 +62,7 @@ COMMAND_KEY(cmd_toggle_auto_mode)
 
 COMMAND_KEY(cmd_send_magic)
 {
-  pb_io_send_magic(0xffff, 0);
+  //pb_io_send_magic(0xffff, 0);
 }
 
 cmdkey_table_t cmdkey_table[] = {

@@ -35,7 +35,8 @@
 #define PBPROTO_STATUS_TIMEOUT           2
 #define PBPROTO_STATUS_LOST_SELECT       3
 #define PBPROTO_STATUS_INVALID_CMD       4
-#define PBPROTO_STATUS_BURST_TOO_LARGE   5
+#define PBPROTO_STATUS_PACKET_TOO_LARGE  5
+#define PBPROTO_STATUS_ERROR             6
 
 // protocol stages for error reprots
 #define PBPROTO_STAGE_END_SELECT         0x10
@@ -59,18 +60,12 @@
 #define PBPROTO_LINE_OK        0x1
 
 // callbacks
-typedef void (*pb_proto_begin_func)(u16 *size);
-typedef void (*pb_proto_data_func)(u08 *data);
-typedef void (*pb_proto_end_func)(u16 size);
+typedef u08 (*pb_proto_fill_func)(u08 *buf,u16 max_size,u16 *size);
+typedef u08 (*pb_proto_proc_func)(const u08 *buf, u16 size);
 
 typedef struct {
-  pb_proto_begin_func    send_begin; // size is given by amiga
-  pb_proto_data_func     send_data;
-  pb_proto_end_func      send_end;
-  
-  pb_proto_begin_func    recv_begin; // size must be given by plipbox
-  pb_proto_data_func     recv_data;
-  pb_proto_end_func      recv_end;
+    pb_proto_fill_func      fill_pkt; // for RECV command
+    pb_proto_proc_func      proc_pkt; // for SEND command
 } pb_proto_funcs_t;
 
 // ----- Parameter -----
@@ -79,9 +74,9 @@ extern u16 pb_proto_rx_timeout; // timeout for next byte in 100us
 
 // ----- API -----
 
-extern void pb_proto_init(pb_proto_funcs_t *f);
+extern void pb_proto_init(pb_proto_funcs_t *f, u08 *buf, u16 buf_size);
 extern u08  pb_proto_get_line_status(void);
-extern u08  pb_proto_handle(u08 *cmd, u16 *size);
+extern u08  pb_proto_handle(u08 *cmd, u16 *size, u16 *ret_delta);
 extern void pb_proto_request_recv(void);
 
 #endif

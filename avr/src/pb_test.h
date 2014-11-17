@@ -29,15 +29,11 @@
 
 #include "global.h"
 
-#define PB_TEST_IDLE	0
-#define PB_TEST_OK      1
-#define PB_TEST_ERROR   2
+extern void pb_test_begin(void);
+extern void pb_test_worker(void);
+extern void pb_test_end(void);
 
-extern void pb_test_toggle_mode(void);
 extern void pb_test_toggle_auto(void);
 extern void pb_test_send_packet(u08 silent);
-
-extern u08  pb_test_state(u08 eth_state, u08 pb_state);
-extern u08  pb_test_worker(void);
 
 #endif

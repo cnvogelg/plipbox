@@ -26,7 +26,6 @@
 
 #include "global.h"
 
-#include <avr/io.h>
 #include <avr/interrupt.h>
 
 void timer_init(void)
@@ -70,39 +69,18 @@ void timer_init(void)
 #endif
 
   // ----- TIMER1 (16bit) -----
-  // 10ms counter
+  // prescale 64 
+  // 16 MHz -> 250 KHz = 4 us timer
   
   // set to CTC on OCR1A with prescale 8
   TCCR1A = 0x00;
-  TCCR1B = _BV(WGM12) | _BV(CS11); // CTC + prescale 8
+  TCCR1B = _BV(CS10) | _BV(CS11); // prescale 64
 #ifdef TCCR1C
   TCCR1C = 0x00;
-#endif
-
-  // t_tick = prescale / F_CPPU = 8 / F_CPU
-  // how many ticks n until 100 us are reached?
-  //
-  // t_tick * n = 10 ms
-  //
-  // -> n = 10 * F_CPU / ( prescaler * 1000 )
-  // -> compare val m = n -1
-
-#define TIMER1_COMPARE_VAL  ((10 * F_CPU) / (8 * 1000)) - 1
-#ifdef OCR1A
-  OCR1A = TIMER1_COMPARE_VAL;
-#else
-  OCR1 = TIMER1_COMPARE_VAL;
 #endif
   
   // reset timer
   TCNT1 = 0;
-
-#ifdef TIMSK1
-  // generate interrupt for OCIE1A
-  TIMSK1 = _BV(OCIE1A);
-#else
-  TIMSK |= _BV(OCIE1A);
-#endif
 
   sei();
 }
@@ -111,6 +89,7 @@ void timer_init(void)
 volatile u16 timer_100us = 0;
 volatile u16 timer_10ms = 0;
 volatile u32 time_stamp = 0;
+static u16 count;
 
 // timer2 compare A handler
 #ifdef TIMER2_COMPA_vect
@@ -121,16 +100,31 @@ ISR(TIMER2_COMP_vect)
 {
   timer_100us++;
   time_stamp++;
-}
-
-// timer1 compare A handler
-ISR(TIMER1_COMPA_vect)
-{
-  timer_10ms++;
-}
+  count++;
+  if(count == 1000) {
+    count = 0;
+    timer_10ms++;
+  }
+} 
 
 void timer_delay_10ms(u16 timeout)
 { timer_10ms=0; while(timer_10ms<timeout); }
 
 void timer_delay_100us(u16 timeout)
 { timer_100us=0; while(timer_100us<timeout); }
+
+// hw timer
+
+u16 timer_hw_calc_rate_kbs(u16 bytes, u16 delta)
+{
+  if(delta != 0) {
+    u32 nom = 1000 * (u32)bytes * 100;
+    u32 denom = (u32)delta * 4; 
+    u32 rate = nom / denom;
+    return (u16)rate;
+  } else {
+    return 0;
+  }
+}
+
+

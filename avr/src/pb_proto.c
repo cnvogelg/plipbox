@@ -41,14 +41,18 @@
 
 // recv funcs
 static pb_proto_funcs_t    *funcs;
+static u08 *pb_buf;
+static u16 pb_buf_size;
 
 u16 pb_proto_timeout = 5000; // = 500ms in 100us ticks
 
 // ----- Init -----
 
-void pb_proto_init(pb_proto_funcs_t *f)
+void pb_proto_init(pb_proto_funcs_t *f, u08 *buf, u16 buf_size)
 {
   funcs = f;
+  pb_buf = buf;
+  pb_buf_size = buf_size;
 
   // init signals
   par_low_data_set_input();
@@ -117,7 +121,7 @@ static u08 cmd_send(u16 *ret_size)
   u08 hi, lo;
   u08 status;
    
-  // --- size hi ---
+  // --- get size hi ---
   status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
   if(status != PBPROTO_STATUS_OK) {
     return status;
@@ -125,7 +129,7 @@ static u08 cmd_send(u16 *ret_size)
   hi = par_low_data_in();
   CLR_RAK();
    
-  // --- size lo ---
+  // --- get size lo ---
   status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
   if(status != PBPROTO_STATUS_OK) {
     return status;
@@ -134,10 +138,12 @@ static u08 cmd_send(u16 *ret_size)
   SET_RAK();
    
   u16 size = hi << 8 | lo;
-   
-  // report size at begin of frame
-  funcs->send_begin(&size);
 
+  // check size
+  if(size > pb_buf_size) {
+    return PBPROTO_STATUS_PACKET_TOO_LARGE;
+  }
+  
   // round to even and convert to words
   u16 words = size;
   if(words & 1) {
@@ -147,16 +153,15 @@ static u08 cmd_send(u16 *ret_size)
   
   // --- data loop ---
   u16 i;
-  u08 data;
   u16 got = 0;
+  u08 *ptr = pb_buf;
   for(i = 0; i < words; i++) {
     // -- even byte: 0,2,4,...
     status = wait_req(1, PBPROTO_STAGE_DATA);
     if(status != PBPROTO_STATUS_OK) {
       break;
     }
-    data = par_low_data_in();
-    funcs->send_data(&data);
+    *(ptr++) = par_low_data_in();
     CLR_RAK();
     got++;
 
@@ -165,29 +170,19 @@ static u08 cmd_send(u16 *ret_size)
     if(status != PBPROTO_STATUS_OK) {
       break;
     }
-    data = par_low_data_in();
-    funcs->send_data(&data);
+    *(ptr++) = par_low_data_in();
     SET_RAK();
     got++;
   }
-  
-  // report end of frame
-  funcs->send_end(size);
   
   *ret_size = got;
   return status;
 }
 
 // amiga wants to receive a packet
-static u08 cmd_recv(u16 *ret_size)
+static u08 cmd_recv(u16 size, u16 *ret_size)
 {
-  u16 size;
-  
-  // ask for size
-  funcs->recv_begin(&size);
-  *ret_size = size;
-    
-  // --- size hi ----
+  // --- set size hi ----
   u08 status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
   if(status != PBPROTO_STATUS_OK) {
     return status;
@@ -200,7 +195,7 @@ static u08 cmd_recv(u16 *ret_size)
   par_low_data_out(hi);
   CLR_RAK();
   
-  // --- size lo ---
+  // --- set size lo ---
   status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
   if(status != PBPROTO_STATUS_OK) {
     return status;
@@ -218,15 +213,14 @@ static u08 cmd_recv(u16 *ret_size)
 
   // --- data ---
   u16 got = 0;
+  const u08 *ptr = pb_buf;
   for(u16 i = 0; i < words; i++) {
     // even bytes 0,2,4,...
     status = wait_req(1, PBPROTO_STAGE_DATA);
     if(status != PBPROTO_STATUS_OK) {
       break;
     }
-    u08 data;
-    funcs->recv_data(&data);
-    par_low_data_out(data);
+    par_low_data_out(*(ptr++));
     CLR_RAK();
     got++;
 
@@ -235,8 +229,7 @@ static u08 cmd_recv(u16 *ret_size)
     if(status != PBPROTO_STATUS_OK) {
       break;
     }
-    funcs->recv_data(&data);
-    par_low_data_out(data);
+    par_low_data_out(*(ptr++));
     SET_RAK();
     got++;
   }
@@ -249,18 +242,11 @@ static u08 cmd_recv(u16 *ret_size)
   // [IN]
   par_low_data_set_input();
   
-  funcs->recv_end(size);
-  
   *ret_size = got;
   return status;
 }
 
 // ---------- BURST ----------
-
-#define MAX_BURST_BYTES   768
-#define MAX_BURST_WORDS   (MAX_BURST_BYTES / 2)
-
-static u08 buffer[MAX_BURST_BYTES];
 
 static u08 cmd_send_burst(u16 *ret_size)
 {
@@ -302,11 +288,11 @@ static u08 cmd_send_burst(u16 *ret_size)
   u16 size = hi << 8 | lo;
   u16 burst_size = bhi << 8 | blo; // size in words
 
-  // check burst size
-  if(burst_size > MAX_BURST_WORDS) {
-    return PBPROTO_STATUS_BURST_TOO_LARGE;
+  // check size
+  if(size > pb_buf_size) {
+    return PBPROTO_STATUS_PACKET_TOO_LARGE;
   }
-   
+
   // round to even and convert to words
   u16 words = size;
   if(words & 1) {
@@ -314,12 +300,11 @@ static u08 cmd_send_burst(u16 *ret_size)
   }
   words >>= 1;
 
-  funcs->send_begin(&size);
-
   // ----- burst chunk loop -----
   u16 i;
   u08 result = PBPROTO_STATUS_OK;
   u16 got_words = 0;
+  u08 *ptr = pb_buf;
   while(words > 0) {
 
     // calc size of burst
@@ -328,7 +313,6 @@ static u08 cmd_send_burst(u16 *ret_size)
       bs = words;
     }
     words -= bs;
-    u08 *ptr = buffer;
 
     // ----- burst loop -----
     // BEGIN TIME CRITICAL
@@ -370,20 +354,10 @@ send_burst_exit:
       result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
       break;
     }
- 
-    // push to eth
-    // TODO: use new data_block func
-    ptr = buffer;
-    for(i=0;i<bs;i++) {
-      funcs->send_data(ptr++);
-      funcs->send_data(ptr++);
-    }
   }
 
   // final ACK 
   SET_RAK();
-
-  funcs->send_end(size);
 
   *ret_size = got_words << 1;
   return result;  
@@ -400,15 +374,11 @@ send_burst_exit:
 #error Delay loop not defined for F_CPU
 #endif
 
-static u08 cmd_recv_burst(u16 *ret_size)
+static u08 cmd_recv_burst(u16 size, u16 *ret_size)
 {
   u08 hi, lo, bhi, blo;
   u08 status;
    
-  // ask for size
-  u16 size;
-  funcs->recv_begin(&size);
-
   hi = (u08)(size >> 8);
   lo = (u08)(size & 0xff);
 
@@ -453,19 +423,14 @@ static u08 cmd_recv_burst(u16 *ret_size)
 
   // calc burst size
   u16 burst_size = bhi << 8 | blo; // size in words
-
-  // check burst size
-  if(burst_size > MAX_BURST_WORDS) {
-    return PBPROTO_STATUS_BURST_TOO_LARGE;
-  }
-   
   // round to even and convert to words
   u16 words = (size + 1) >> 1;
 
   // ----- burst chunk loop -----
-  u16 i;
+  u16 i=0;
   u08 result = PBPROTO_STATUS_OK;
   u16 got_words = 0;
+  u08 *ptr = pb_buf;
   while(words > 0) {
 
     // calc size of burst
@@ -474,14 +439,6 @@ static u08 cmd_recv_burst(u16 *ret_size)
       bs = words;
     }
     words -= bs;
-    u08 *ptr = buffer;
-
-    // fill buffer
-    for(i=0;i<bs;i++) {
-      funcs->recv_data(ptr++);
-      funcs->recv_data(ptr++);
-    }
-    ptr = buffer;
 
     // ----- burst loop -----
     // BEGIN TIME CRITICAL
@@ -489,7 +446,7 @@ static u08 cmd_recv_burst(u16 *ret_size)
     // prepare first byte
     CLR_RAK(); // trigger start of burst
     // loop
-    while(bs>0) {
+    for(i=0;i<bs;i++) {
 
       DELAY
       par_low_data_out(*(ptr++));      
@@ -507,7 +464,6 @@ static u08 cmd_recv_burst(u16 *ret_size)
         if(!GET_SELECT()) goto recv_burst_exit;
       }
 
-      bs--;      
     }
 recv_burst_exit:
     sei();
@@ -540,13 +496,11 @@ recv_burst_exit:
   // [IN]
   par_low_data_set_input();
 
-  funcs->recv_end(size);
-
   *ret_size = got_words << 1;
   return result;  
 }
 
-u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
+u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size, u16 *ret_delta)
 {
   u08 result;
    
@@ -566,21 +520,33 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
   // read command byte and execute it
   u08 cmd = par_low_data_in();
 
+  // fill buffer for recv command
+  u16 pkt_size;
+  if((cmd == PBPROTO_CMD_RECV) || (cmd == PBPROTO_CMD_RECV_BURST)) {
+    u08 res = funcs->fill_pkt(pb_buf, pb_buf_size, &pkt_size);
+    if(res != PBPROTO_STATUS_OK) {
+      return res;
+    }
+  }
+
+  // start timer
+  timer_hw_reset();
+
   // confirm cmd with RAK = 1
   SET_RAK();
 
   switch(cmd) {
     case PBPROTO_CMD_RECV:
-      result = cmd_recv(ret_size);
+      result = cmd_recv(pkt_size, ret_size);
       break;
     case PBPROTO_CMD_SEND:
       result = cmd_send(ret_size);
       break;
+    case PBPROTO_CMD_RECV_BURST:
+      result = cmd_recv_burst(pkt_size, ret_size);
+      break;
     case PBPROTO_CMD_SEND_BURST:
       result = cmd_send_burst(ret_size);
-      break;
-    case PBPROTO_CMD_RECV_BURST:
-      result = cmd_recv_burst(ret_size);
       break;
     default:
       result = PBPROTO_STATUS_INVALID_CMD;
@@ -592,7 +558,18 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size)
   
   // reset RAK = 0
   CLR_RAK();
-   
+
+  // read timer
+  u16 delta = timer_hw_get();
+
+  // process buffer for send command
+  if(result == PBPROTO_STATUS_OK) {
+    if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
+      result = funcs->proc_pkt(pb_buf, *ret_size);
+    }
+  } 
+     
+  *ret_delta = delta;
   *ret_cmd = cmd;
   return result;
 }

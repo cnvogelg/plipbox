@@ -42,6 +42,12 @@
 
 #include "pktio.h"
 
+#define RUN_MODE_NORMAL 0
+#define RUN_MODE_TEST 1
+
+static u08 run_mode = RUN_MODE_TEST;
+static u08 soft_reset = 0;
+
 static void init_hw(void)
 {
   // board init. e.g. switch off watchdog
@@ -54,8 +60,19 @@ static void init_hw(void)
   par_low_init();
 }
 
+static void test_loop(void)
+{
+  pb_test_begin();
+  while((run_mode == RUN_MODE_TEST)&&!soft_reset) {
+    soft_reset = !cmd_worker();
+    pb_test_worker();
+  }
+  pb_test_end();
+}
+
 void loop(void)
 {
+  soft_reset = 0;
   init_hw();
   
   // send welcome
@@ -67,37 +84,9 @@ void loop(void)
   param_dump();
   uart_send_crlf();
 
-  eth_io_init();
-  pb_io_init();
-
-  // setup pktio
-  eth_state_init();
-  
-  // main loop
-  u08 stay = 1;
-  u08 last_state = PB_IO_OK;
-  while(stay) {
-    u08 pb_state = pb_state_worker(last_state);
-    u08 pb_online = (pb_state == PB_STATE_ONLINE);
-    u08 eth_state = eth_state_worker();
-    u08 eth_online = (eth_state == ETH_STATE_LINK_UP);
-    
-    eth_io_worker(eth_state, pb_online);
-    
-    // test mode handling
-    if(pb_test_state(eth_state, pb_state)) {
-      last_state = pb_test_worker();
-    } 
-    // regular pb io
-    else {
-      last_state = pb_io_worker(pb_state, eth_online);
-    }
-
-    stay = cmd_worker();
-
-#ifdef PKTIO_HAS_WORKER
-    pktio_worker();
-#endif
+  // enter test mode
+  if(run_mode == RUN_MODE_TEST) {
+    test_loop();
   }
 }
 

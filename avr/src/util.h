@@ -56,8 +56,5 @@ extern u08 parse_dword(const u08 *str,u32 *value);
 // parse a decimal byte value
 extern u08 parse_byte_dec(const u08 *buf, u08 *out);
 
-// conversion to kbs value: fixed point with 2 decimals: KB/s
-extern u16 calc_rate_kbs(u16 bytes, u16 time_100us);
-
 #endif
 

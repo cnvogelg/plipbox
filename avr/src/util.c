@@ -165,13 +165,3 @@ u08 parse_byte_dec(const u08 *buf, u08 *out)
   }
   return digits;
 }
-
-u16 calc_rate_kbs(u16 bytes, u16 delta_100us)
-{
-    if(delta_100us != 0) {
-      u32 rate = 1000 * (u32)bytes / delta_100us;
-      return (u16)rate;
-    } else {
-      return 0;
-    }
-}
