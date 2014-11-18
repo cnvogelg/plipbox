@@ -1,5 +1,5 @@
 /*
- * pb_io.h: handle incoming plipbox packets
+ * bridge.h: bridge packets from plip to eth and back
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,23 +24,13 @@
  *
  */
 
-#ifndef PLIP_RX_H
+#ifndef BRIDGE_H
+#define BRIDGE_H
 
 #include "global.h"
 
-#define PB_IO_IDLE		0
-#define PB_IO_OK        1
-#define PB_IO_ERROR     2
-
-#define PB_IO_MAGIC_ONLINE 0xffff
-
-extern void pb_io_init(void);
-extern u08 pb_io_worker(u08 plip_state, u08 eth_online);
-extern void pb_io_send_magic(u16 type, u08 extra_size);
-
-// SANA info reported by driver
-extern u08 sana_online;
-extern u08 sana_mac[6];
-extern u08 sana_version[2];
+extern void bridge_init(void);
+extern void bridge_exit(void);
+extern void bridge_worker(void);
 
 #endif

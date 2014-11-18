@@ -33,19 +33,11 @@
 #include "param.h"
 #include "cmd.h"
 
-#include "net/net.h"
-#include "eth_io.h"
-#include "eth_state.h"
-#include "pb_io.h"
-#include "pb_state.h"
 #include "pb_test.h"
+#include "bridge.h"
+#include "main.h"
 
-#include "pktio.h"
-
-#define RUN_MODE_NORMAL 0
-#define RUN_MODE_TEST 1
-
-static u08 run_mode = RUN_MODE_TEST;
+u08 run_mode = RUN_MODE_BRIDGE;
 static u08 soft_reset = 0;
 
 static void init_hw(void)
@@ -63,11 +55,21 @@ static void init_hw(void)
 static void test_loop(void)
 {
   pb_test_begin();
-  while((run_mode == RUN_MODE_TEST)&&!soft_reset) {
+  while((run_mode == RUN_MODE_PB_TEST)&&!soft_reset) {
     soft_reset = !cmd_worker();
     pb_test_worker();
   }
   pb_test_end();
+}
+
+static void bridge_loop(void)
+{
+  bridge_init();
+  while((run_mode == RUN_MODE_BRIDGE)&&!soft_reset) {
+    soft_reset = !cmd_worker();
+    bridge_worker();
+  }
+  bridge_exit();
 }
 
 void loop(void)
@@ -84,9 +86,15 @@ void loop(void)
   param_dump();
   uart_send_crlf();
 
-  // enter test mode
-  if(run_mode == RUN_MODE_TEST) {
-    test_loop();
+  while(!soft_reset) {
+    switch(run_mode) {
+      case RUN_MODE_PB_TEST:
+        test_loop();
+        break;
+      case RUN_MODE_BRIDGE:
+        bridge_loop();
+        break;
+    }
   }
 }
 

@@ -206,25 +206,69 @@ extern void dump_line(const u08 *eth_buf, u16 size)
   }
 }
 
-void dump_pb_cmd(u08 cmd, u08 result, u16 size, u32 delta, u32 req_delta)
+void dump_pb_cmd(u08 cmd, u08 result, u16 size, u16 delta, u16 rate, u32 req_delta)
 {
   u08 buf[4];
   
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("io: "));
+
+  // show command
+  u08 is_tx = 0;
+  u08 is_valid = 1;
+  switch(cmd) {
+    case PBPROTO_CMD_SEND:
+    case PBPROTO_CMD_SEND_BURST:
+      is_tx = 1;
+      break;
+    case PBPROTO_CMD_RECV:
+    case PBPROTO_CMD_RECV_BURST:
+      is_tx = 0;
+      break;
+    default:
+      is_valid = 0;
+      break;
+  }
+
+  // invalid command
+  if(!is_valid) {
+    uart_send_pstring(PSTR("cmd="));
+    uart_send_hex_byte(cmd);
+    uart_send_pstring(PSTR("?? ERR:"));
+    uart_send_hex_byte(result);
+    uart_send_crlf();
+    return;
+  }
+
+  PGM_P str = is_tx ? PSTR("[TX:") : PSTR("[RX:");
+  uart_send_pstring(str);
   uart_send_hex_byte(cmd);
-  uart_send_spc();
-  uart_send_hex_byte(result);
-  uart_send_spc();
+
+  // result
+  if(result == PBPROTO_STATUS_OK) {
+    uart_send_pstring(PSTR("] ok"));
+  } else {
+    uart_send_pstring(PSTR("] ERR:"));
+    uart_send_hex_byte(result);
+  }
+
+  // packet size
+  uart_send_pstring(PSTR(" n="));
   dword_to_dec(size, buf, 4, 4);
   uart_send_data(buf,4);
-  uart_send_spc();
-  uart_send_time_stamp_spc_ext(delta);
-  
-  if(cmd == PBPROTO_CMD_RECV) {
-    uart_send_time_stamp_spc_ext(req_delta);
+
+  // packet delta
+  uart_send_pstring(PSTR(" d="));
+  dword_to_dec(delta, buf, 4, 4);  
+  uart_send_data(buf,4);
+
+  // speed
+  uart_send_pstring(PSTR(" v="));
+  uart_send_rate_kbs(rate);
+
+  // request delay
+  if(!is_tx) {
+    uart_send_pstring(PSTR("  +req="));
+    uart_send_delta(req_delta);
   }
-  
   uart_send_crlf();
 }
-

@@ -43,21 +43,6 @@ static u08 toggle_request;
 static u08 auto_mode;
 static u08 silent_mode;
 
-// ----- Helpers -----
-
-static void dump_result(u08 is_tx, u16 rate)
-{
-  PGM_P str = is_tx ? PSTR("[TX] ") : PSTR("[RX] ");
-  uart_send_time_stamp_spc();
-  uart_send_pstring(str);
-  uart_send_rate_kbs(rate);
-  if(is_tx) {
-    uart_send_spc();
-    uart_send_delta(trigger_ts);
-  }
-  uart_send_crlf();
-}
-
 // ----- Packet Callbacks -----
 
 static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
@@ -212,7 +197,7 @@ void pb_test_worker(void)
     // dump result?
     if(!silent_mode) {
       // in interactive mode show result
-      dump_result(is_tx, rate);
+      dump_pb_cmd(cmd, status, size, delta, rate, trigger_ts);
     }
 
     // next iteration?
@@ -228,9 +213,8 @@ void pb_test_worker(void)
   // pb proto failed with an error
   else {
     // dump error
-    dump_pb_cmd(cmd, status, size, delta, 0);
+    dump_pb_cmd(cmd, status, size, delta, rate, trigger_ts);
 
-    dump_result(is_tx, rate);
     // account data
     if(is_tx) {
       stats.tx_err++;

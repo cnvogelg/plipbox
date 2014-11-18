@@ -28,7 +28,7 @@
 
 #include "stats.h"
 #include "pb_test.h"
-#include "pb_io.h"
+#include "main.h"
 
 COMMAND_KEY(cmd_dump_stats)
 {
@@ -40,9 +40,14 @@ COMMAND_KEY(cmd_reset_stats)
   stats_reset();
 }
 
-COMMAND_KEY(cmd_toggle_test_mode)
+COMMAND_KEY(cmd_enter_pb_test_mode)
 {
-  //pb_test_toggle_mode();
+  run_mode = RUN_MODE_PB_TEST;
+}
+
+COMMAND_KEY(cmd_enter_bridge_mode)
+{
+  run_mode = RUN_MODE_BRIDGE;
 }
 
 COMMAND_KEY(cmd_send_test_packet)
@@ -68,7 +73,8 @@ COMMAND_KEY(cmd_send_magic)
 cmdkey_table_t cmdkey_table[] = {
   { 's', cmd_dump_stats },
   { 'S', cmd_reset_stats },
-  { 't', cmd_toggle_test_mode },
+  { 't', cmd_enter_pb_test_mode },
+  { 'b', cmd_enter_bridge_mode },
   { 'p', cmd_send_test_packet },
   { 'P', cmd_send_test_packet_silent },
   { 'a', cmd_toggle_auto_mode },

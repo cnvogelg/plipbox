@@ -521,7 +521,7 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size, u16 *ret_delta)
   u08 cmd = par_low_data_in();
 
   // fill buffer for recv command
-  u16 pkt_size;
+  u16 pkt_size = 0;
   if((cmd == PBPROTO_CMD_RECV) || (cmd == PBPROTO_CMD_RECV_BURST)) {
     u08 res = funcs->fill_pkt(pb_buf, pb_buf_size, &pkt_size);
     if(res != PBPROTO_STATUS_OK) {

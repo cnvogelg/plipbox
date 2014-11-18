@@ -489,7 +489,6 @@ static void tx_wait_ready(void)
 
 void enc28j60_packet_tx(const u08 *data, u16 size)
 {
-  tx_wait_ready();
   enc28j60_packet_tx_begin();
   enc28j60_packet_tx_blk(data, size);
   enc28j60_packet_tx_end();
@@ -528,10 +527,11 @@ u16 enc28j60_packet_rx(u08 *data, u16 max_size)
 {
   u16 size = enc28j60_packet_rx_begin();
   if(size > 0) {
-    if(size > max_size) {
-      size = max_size;
+    u16 get = size;
+    if(get > max_size) {
+      get = max_size;
     }
-    enc28j60_packet_rx_blk(data,size);
+    enc28j60_packet_rx_blk(data,get);
     enc28j60_packet_rx_end();
   }
   return size;

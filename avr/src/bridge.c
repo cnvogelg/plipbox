@@ -1,5 +1,5 @@
 /*
- * pb_io.c: handle incoming plipbox packets
+ * bridge.c: bridge packets from plip to eth and back
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -42,8 +42,14 @@
 #include "stats.h"
 #include "eth_state.h"
 #include "util.h"
-#include "pb_io.h"
+#include "bridge.h"
 
+static u08 pio_valid;
+static u08 req_pending;
+static u32 req_ts;
+static u32 req_delta;
+
+#if 0
 static u16 offset;
 static u16 size;
 static u08 send_magic;
@@ -53,96 +59,7 @@ u08 sana_online;
 u08 sana_mac[6];
 u08 sana_version[2];
 
-// ----- send callbacks -----
-
-static void rx_begin(u16 *pkt_size)
-{
-  // start writing packet with eth header
-  offset = 0;
-  pktio_tx_begin(*pkt_size);
-  size = *pkt_size;
-}
-
-static void rx_data(u08 *data)
-{
-  // clone packet to our packet buffer
-  if(offset < PKT_BUF_SIZE) {
-    rx_pkt_buf[offset] = *data;
-  }
-  
-  if(offset < size) {
-    // always copy to TX buffer of pktio
-    pktio_tx_byte(*data);
-  }
-
-  offset ++;
-}
-
-static void rx_end(u16 pkt_size)
-{
-  // end range in pktio buffer
-  pktio_tx_end();
-  rx_pkt_size = pkt_size;
-}
-
-// ----- recv callbacks -----
-
-static void tx_begin(u16 *pkt_size)
-{
-  // report size of packet
-  *pkt_size = tx_pkt_size;
-  offset = 0;
-  size = tx_pkt_size;
-
-  if(!send_magic) {
-    pktio_rx_data_begin();
-  }
-}
-
-static void tx_data(u08 *data)
-{
-  // clone packet to our packet buffer
-  if(offset < PKT_BUF_SIZE) {
-    *data = tx_pkt_buf[offset];
-  } else if(offset < size) {
-    *data = pktio_rx_byte();    
-  } else {
-    *data = 0;
-  }
-  offset ++;
-}
-
-static void tx_end(u16 pkt_size)
-{
-  // reset size of packet
-  tx_pkt_size = 0;
-
-  if(send_magic) {
-    send_magic = 0;
-  } else {
-    pktio_rx_data_end();
-    pktio_rx_end();
-  }
-}
-
-// ----- function table -----
-
-static pb_proto_funcs_t funcs = {
-  .send_begin = rx_begin,
-  .send_data = rx_data,
-  .send_end = rx_end,
-  
-  .recv_begin = tx_begin,
-  .recv_data = tx_data,
-  .recv_end = tx_end
-};
-
 // ----- functions -----
-
-void pb_io_init(void)
-{
-  pb_proto_init(&funcs);
-}
 
 static void uart_send_prefix_pbp(void)
 {
@@ -341,53 +258,184 @@ void pb_io_send_magic(u16 type, u08 extra_size)
 }
 
 extern u32 req_time;
+#endif
 
-u08 pb_io_worker(u08 plip_state, u08 eth_online)
+// ----- helper -----
+
+static void pio_reconfigure(void)
 {
+  // configure with current mac
+  if(pio_valid) {
+    pktio_stop();
+    const uint8_t *mac = param.mac_addr;
+    pktio_start(mac);
+
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("pio: configure mac="));
+    net_dump_mac(mac);      
+    uart_send_crlf();
+  }
+}
+
+static void pio_init(void)
+{
+  u08 fd = param.full_duplex;
+  u08 lb = param.loop_back;
+  u08 rev = pktio_init(fd, lb);
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("pio: init " PKTIO_NAME));
+  if(rev == 0) {
+    uart_send_pstring(PSTR(": ERROR SETTING UP!!\r\n"));
+    pio_valid = 0;
+  } else {
+    uart_send_pstring(PSTR(" rev "));
+    uart_send_hex_byte(rev);
+    uart_send_pstring(fd ? PSTR(" full ") : PSTR(" half "));
+    uart_send_pstring(PSTR("duplex"));
+    if(lb) {
+      uart_send_pstring(PSTR(" loop back"));
+    }
+    uart_send_crlf();
+    pio_valid = 1;
+  }
+  
+  pio_reconfigure();
+}
+
+static void pio_exit(void)
+{
+  if(pio_valid) {
+    pktio_stop();
+    pio_valid = 0;
+  }
+}
+
+// ----- packet callbacks -----
+
+static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
+{
+  // confirm request
+  req_delta = time_stamp - req_ts;
+  req_pending = 0;
+
+  // receive a packet
+  u16 got_size = pktio_rx_packet(buf, max_size);
+  *size = got_size;
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("fill: n="));
+  uart_send_hex_word(got_size);
+  uart_send_crlf();
+
+#if 0
+  if(got_size >= 14) {
+    dump_eth_pkt(buf,got_size);
+    uart_send_crlf();
+  }
+#endif
+
+  return PBPROTO_STATUS_OK;  
+}
+
+static u08 proc_pkt(const u08 *buf, u16 size)
+{
+  pktio_tx_packet(buf, size);
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("proc: n="));
+  uart_send_hex_word(size);
+  uart_send_crlf();  
+
+#if 0
+  dump_eth_pkt(buf,size);
+  uart_send_crlf();
+#endif
+
+  return PBPROTO_STATUS_OK;
+}
+
+// ----- function table -----
+
+static pb_proto_funcs_t funcs = {
+  .fill_pkt = fill_pkt,
+  .proc_pkt = proc_pkt
+};
+
+// ---------- API ----------
+
+void bridge_init(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
+
+  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
+
+  pio_init();
+}
+
+void bridge_exit(void)
+{
+  pio_exit();
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[BRIDGE] off\r\n"));
+}
+
+void bridge_worker(void)
+{
+  // check pio
+  if(!req_pending && (pktio_rx_num_waiting() > 0)) {
+    pb_proto_request_recv();
+    req_pending = 1;
+    req_ts = time_stamp;
+  }
+
   // call protocol handler (low level transmit)
   u08 cmd;
   u16 size;
-  u32 start = time_stamp;
-  u08 status = pb_proto_handle(&cmd, &size);
-  u32 end = time_stamp;
-  
+  u16 delta;
+  u08 status = pb_proto_handle(&cmd, &size, &delta);
+  u16 rate = timer_hw_calc_rate_kbs(size, delta);
+  u08 is_tx = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
+
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
-    return PB_IO_IDLE; // was passive
+    return; // inactive
   }
-  else if(status == PBPROTO_STATUS_OK) {
-    u32 delta = end - start;
 
-    // dump ok command if requested
-    if(param.dump_plip) {
-      dump_pb_cmd(cmd, status, size, delta, start - req_time);
-    }
-    
-    // do we have a packet received?
-    if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
-      handle_pb_send(eth_online);
-    }
-
-    // update rate
-    u16 rate = calc_rate_kbs(size, delta);
-    if(cmd == PBPROTO_CMD_SEND) {
-      if(rate > stats.tx_max_rate) {
+  // ok!
+  if(status == PBPROTO_STATUS_OK) {
+    // account data
+    if(is_tx) {
+      stats.tx_cnt++;
+      stats.tx_bytes+=size;
+      if(stats.tx_max_rate < rate) {
         stats.tx_max_rate = rate;
       }
     } else {
-      if(rate > stats.rx_max_rate) {
+      stats.rx_cnt++;
+      stats.rx_bytes+=size;
+      if(stats.rx_max_rate < rate) {
         stats.rx_max_rate = rate;
-      }
+      }  
     }
-    return PB_IO_OK;
-  }
-  else {
-    u32 delta = end - start;
-    u32 latency = start - req_time;
-    
-    // dump error
-    dump_pb_cmd(cmd, status, size, delta, latency);
 
-    return PB_IO_ERROR;
+    // always dump proto
+    if(param.dump_plip) {
+      dump_pb_cmd(cmd, status, size, delta, rate, req_delta);
+    }
+  }
+  // pb proto failed with an error
+  else {
+    // dump error
+    dump_pb_cmd(cmd, status, size, delta, rate, req_delta);
+
+    // account data
+    if(is_tx) {
+      stats.tx_err++;
+    } else {
+      stats.rx_err++;
+    }
   }
 }

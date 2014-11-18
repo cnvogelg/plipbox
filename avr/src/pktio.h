@@ -48,19 +48,10 @@
 
 /* rx */       
 #define pktio_rx_num_waiting()  enc28j60_packet_rx_num_waiting()
-#define pktio_rx_begin()        enc28j60_packet_rx_begin()
-#define pktio_rx_blk(d,s)       enc28j60_packet_rx_blk(d,s)
-#define pktio_rx_end()          enc28j60_packet_rx_end()
-#define pktio_rx_data_begin()   enc28j60_packet_rx_data_begin()
-#define pktio_rx_byte()         enc28j60_packet_rx_byte()
-#define pktio_rx_data_end()     enc28j60_packet_rx_data_end()
+#define pktio_rx_packet(x,y)    enc28j60_packet_rx(x,y)
 
 /* tx */
-#define pktio_tx_begin(x)       enc28j60_packet_tx_begin()
-#define pktio_tx_end()          enc28j60_packet_tx_end()
-#define pktio_tx_byte(b)        enc28j60_packet_tx_byte(b)
-#define pktio_tx_send(s)        enc28j60_packet_tx_send(s)
-#define pktio_tx_reject()
+#define pktio_tx_packet(x,y)    enc28j60_packet_tx(x,y) 
 
 #else /* HAVE_NETIO_eth */
 
