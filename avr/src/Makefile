@@ -39,7 +39,7 @@ DIST_BOARDS= arduino avrnetio nano
 
 # select board
 BOARD ?= nano
-DEBUG ?= 0
+DEBUG ?= 1
 NETIO ?= eth
 
 ifeq "$(BOARD)" "arduino"
@@ -77,6 +77,10 @@ LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
 # its a subclass of the Arduino board
 DEFINES += HAVE_arduino
 BOARDFILE = arduino.c
+ifeq "$(DEBUG)" "1"
+DEFINES += DEBUG
+endif
+
 
 else
 ifeq "$(BOARD)" "avrnetio"
@@ -159,9 +163,6 @@ CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
 CFLAGS_LOCAL += -DHAVE_NETIO_$(NETIO)
 CFLAGS_LOCAL += -DF_CPU=$(F_CPU)
 CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))
-ifeq "$(DEBUG)" "1"
-CFLAGS_LOCAL += -DDEBUG
-endif
 
 # linker switches
 LDFLAGS = -Wl,-Map=$(OUTPUT).map,--cref
@@ -238,6 +239,9 @@ size_data: $(OUTPUT).elf
 		echo "  $$SIZE <= $(MAX_SRAM) bytes: sram ok" ; \
 	fi
 
+size_symbols: $(OUTPUT).elf
+	@$(NM) --size-sort --print-size $(OUTPUT).elf | egrep ' [bBdD] '
+
 clean:
 	rm -rf $(BUILD)
 
@@ -250,7 +254,10 @@ build_all: clean
 	done
 	$(MAKE) build BOARD=arduino MCU=atmega328
 
-dist: build_all
+dist:
+	$(MAKE) DEBUG=0 dist_int
+
+dist_int: build_all
 	@rm -rf $(DISTDIR)
 	@mkdir -p $(DISTDIR)
 	@cp $(BUILD)/*.hex $(DISTDIR)

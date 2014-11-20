@@ -110,14 +110,16 @@ static u08 cmd_loop(void)
     // read line
     num_chars = enter_line();
     if(num_chars > 0) {
-#ifdef DEBUG
-      uart_send_hex_byte_crlf(num_chars);
+#ifdef DEBUG_CMD
+      uart_send_hex_byte(num_chars);
+      uart_send_crlf();
 #endif
       // parse line into args
       u08 argc = parse_args(num_chars);
       if(argc > 0) {
-#ifdef DEBUG
-        uart_send_hex_byte_crlf(argc);
+#ifdef DEBUG_CMD
+        uart_send_hex_byte(argc);
+        uart_send_crlf();
         for(u08 i=0;i<argc;i++) {
           uart_send_string((const char *)cmd_args[i]);
           uart_send_crlf();

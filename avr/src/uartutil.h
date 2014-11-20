@@ -55,5 +55,10 @@ void uart_send_hex_word(u16 data);
 // send a hex dword
 void uart_send_hex_dword(u32 data); 
 
+#ifdef DEBUG
+// send free stack
+void uart_send_free_stack(void);
+#endif
+
 #endif
 

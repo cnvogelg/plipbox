@@ -127,3 +127,13 @@ void uart_send_hex_dword(u32 data)
   dword_to_hex(data,buf);
   uart_send_data(buf,8);
 }
+
+#ifdef DEBUG
+void uart_send_free_stack(void)
+{
+  u16 free = stack_free();
+  uart_send_pstring(PSTR("free stack:"));
+  uart_send_hex_word(free);
+  uart_send_crlf();
+}
+#endif

@@ -86,6 +86,10 @@ void loop(void)
   param_dump();
   uart_send_crlf();
 
+#ifdef DEBUG
+  uart_send_free_stack();
+#endif
+
   while(!soft_reset) {
     switch(run_mode) {
       case RUN_MODE_PB_TEST:
