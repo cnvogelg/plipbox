@@ -126,10 +126,14 @@ static u08 cmd_loop(void)
         }
 #endif
         // find command
-        cmd_table_t *ptr = cmd_table;
-        cmd_table_t *found = 0;
-        while(ptr->name != 0) {
-          if(strcmp((const char *)cmd_args[0], ptr->name)==0) {
+        const cmd_table_t * ptr = cmd_table;
+        const cmd_table_t * found = 0;
+        while(1) {
+          const char * name = pgm_read_word(&ptr->name);
+          if(name == 0) {
+            break;
+          }
+          if(strcmp_P((const char *)cmd_args[0], name)==0) {
             found = ptr;
             break;
           }
@@ -138,7 +142,8 @@ static u08 cmd_loop(void)
         // got a command
         if(found != 0) {
           // execute command
-          status = found->func(argc, (const u08 **)&cmd_args);
+          cmd_table_func_t func = (cmd_table_func_t)pgm_read_word(&found->func);
+          status = func(argc, (const u08 **)&cmd_args);
           // show result
           uart_send_hex_byte(status);
           uart_send_spc();

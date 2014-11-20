@@ -244,42 +244,81 @@ COMMAND(cmd_help)
   return CMD_OK;
 }
 
-cmd_table_t cmd_table[] = {
-  { CMD_NAME("q"), cmd_quit },
-  { CMD_NAME("r"), cmd_device_reset },
-  { CMD_NAME("v"), cmd_version },
+// ----- Names -----
+CMD_NAME("q", cmd_quit);
+CMD_NAME("r", cmd_device_reset);
+CMD_NAME("v", cmd_version);
   // param
-  { CMD_NAME("p"), cmd_param_dump },
-  { CMD_NAME("ps"), cmd_param_save },
-  { CMD_NAME("pl"), cmd_param_load },
-  { CMD_NAME("pr"), cmd_param_reset },
+CMD_NAME("p", cmd_param_dump );
+CMD_NAME("ps", cmd_param_save );
+CMD_NAME("pl", cmd_param_load );
+CMD_NAME("pr", cmd_param_reset );
   // stats
-  { CMD_NAME("sd"), cmd_stats_dump },
-  { CMD_NAME("sr"), cmd_stats_reset },
+CMD_NAME("sd", cmd_stats_dump );
+CMD_NAME("sr", cmd_stats_reset );
   // ethernet
-  { CMD_NAME("ec"), cmd_ether_configure },
-  { CMD_NAME("ei"), cmd_ether_init },
-  { CMD_NAME("es"), cmd_ether_shutdown},
-  { CMD_NAME("pi"), cmd_plipbox_init },
+CMD_NAME("ec", cmd_ether_configure );
+CMD_NAME("ei", cmd_ether_init );
+CMD_NAME("es", cmd_ether_shutdown);
+CMD_NAME("pi", cmd_plipbox_init );
   // options
-  { CMD_NAME("m"), cmd_param_mac_addr },
-  { CMD_NAME("fd"), cmd_param_toggle },
-  { CMD_NAME("fc"), cmd_param_toggle },
-  { CMD_NAME("fp"), cmd_param_toggle },
-  { CMD_NAME("fe"), cmd_param_toggle },
-  { CMD_NAME("fl"), cmd_param_toggle },
+CMD_NAME("m", cmd_gen_m );
+CMD_NAME("fd", cmd_gen_fd );
+CMD_NAME("fc", cmd_gen_fc );
+CMD_NAME("fp", cmd_gen_fp );
+CMD_NAME("fe", cmd_gen_fe );
+CMD_NAME("fl", cmd_gen_fl );
   // dump commands
-  { CMD_NAME("dd"), cmd_param_toggle },
-  { CMD_NAME("de"), cmd_param_toggle },
-  { CMD_NAME("di"), cmd_param_toggle },
-  { CMD_NAME("da"), cmd_param_toggle },
-  { CMD_NAME("dp"), cmd_param_toggle },
-  { CMD_NAME("dl"), cmd_param_toggle },
-  { CMD_NAME("dy"), cmd_param_toggle },
+CMD_NAME("dd", cmd_gen_dd );
+CMD_NAME("de", cmd_gen_de );
+CMD_NAME("di", cmd_gen_di );
+CMD_NAME("da", cmd_gen_da );
+CMD_NAME("dp", cmd_gen_dp );
+CMD_NAME("dl", cmd_gen_dl );
+CMD_NAME("dy", cmd_gen_dy );
   // test
-  { CMD_NAME("tl"), cmd_param_word },
-  { CMD_NAME("tt"), cmd_param_word },
+CMD_NAME("tl", cmd_gen_tl );
+CMD_NAME("tt", cmd_gen_tt );
   // help
-  { CMD_NAME("?"), cmd_help },
+CMD_NAME("?", cmd_help );
+
+// ----- Entries -----
+const cmd_table_t PROGMEM cmd_table[] = {
+  CMD_ENTRY(cmd_quit),
+  CMD_ENTRY(cmd_device_reset),
+  CMD_ENTRY(cmd_version),
+  // param
+  CMD_ENTRY(cmd_param_dump),
+  CMD_ENTRY(cmd_param_save),
+  CMD_ENTRY(cmd_param_load),
+  CMD_ENTRY(cmd_param_reset),
+  // stats
+  CMD_ENTRY(cmd_stats_dump),
+  CMD_ENTRY(cmd_stats_reset),
+  // ethernet
+  CMD_ENTRY(cmd_ether_configure),
+  CMD_ENTRY(cmd_ether_init),
+  CMD_ENTRY(cmd_ether_shutdown),
+  CMD_ENTRY(cmd_plipbox_init),
+  // options
+  CMD_ENTRY_NAME(cmd_param_mac_addr, cmd_gen_m),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fd),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fc),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fp),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fe),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fl),
+  // dump commands
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dd),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_de),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_di),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_da),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dp),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dl),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dy),
+  // test
+  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tl),
+  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tt),
+  // help
+  CMD_ENTRY(cmd_help),
   { 0,0 } // last entry
 };

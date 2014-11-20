@@ -42,14 +42,18 @@
 #define CMD_MASK_ERROR    0x20
 
 #define COMMAND(x) static u08 x (u08 argc, const u08 **argv)
-#define CMD_NAME(x) (const PROGMEM char *)x
+#define CMD_NAME(y,x) static const char x ## _name[] PROGMEM = y
+#define CMD_ENTRY(x) { x ## _name, x }
+#define CMD_ENTRY_NAME(x,y) { y ## _name, x }
+
+typedef u08 (*cmd_table_func_t)(u08 argc, const u08 **argv);
 
 struct cmd_table_s {
-  PGM_P   name;
-  u08     (*func)(u08 argc, const u08 **argv);
+  const char * name;
+  cmd_table_func_t func;
 };
 typedef struct cmd_table_s cmd_table_t;
 
-extern cmd_table_t cmd_table[];
+extern const cmd_table_t PROGMEM cmd_table[];
 
 #endif
