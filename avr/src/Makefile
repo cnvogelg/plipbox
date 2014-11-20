@@ -117,7 +117,7 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:board:eth
+VPATH = .:net:board:eth:base
 
 # source files
 BOARDFILE ?= $(BOARD).c
@@ -153,7 +153,7 @@ CFLAGS += -Os
 #CFLAGS += -fno-inline
 CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
-CFLAGS += -mmcu=$(MCU) -I. 
+CFLAGS += -mmcu=$(MCU) -I. -Ibase
 
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
 CFLAGS_LOCAL += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(DEPDIR)/$(@F:.o=.d)
