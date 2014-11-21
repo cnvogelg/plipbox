@@ -185,10 +185,11 @@ u08 cmd_worker(void)
       }
     } else {
       // search command
-      cmdkey_table_t *ptr = cmdkey_table;
-      cmdkey_table_t *found = 0;
-      while(ptr->key != 0) {
-        if(ptr->key == cmd) {
+      const cmdkey_table_t *ptr = cmdkey_table;
+      const cmdkey_table_t *found = 0;
+      while(1) {
+        u08 key = pgm_read_byte(&ptr->key);
+        if(key == cmd) {
           found = ptr;
           break;
         }
@@ -196,7 +197,8 @@ u08 cmd_worker(void)
       }
       // got a command?
       if(found != 0) {
-        found->func();
+        cmdkey_func_t func = pgm_read_word(&found->func);
+        func();
       }
     }
   }

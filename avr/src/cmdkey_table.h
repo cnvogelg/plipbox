@@ -27,16 +27,19 @@
 #ifndef CMDKEY_TABLE_H
 #define CMDKEY_TABLE_H
 
+#include <avr/pgmspace.h>
 #include "global.h"
 
 #define COMMAND_KEY(x) static void x (void)
 
+typedef void (*cmdkey_func_t)(void);
+
 struct cmdkey_table_s {
   u08     key;
-  void    (*func)(void);
+  cmdkey_func_t func;
 };
 typedef struct cmdkey_table_s cmdkey_table_t;
 
-extern cmdkey_table_t cmdkey_table[];
+extern const cmdkey_table_t PROGMEM cmdkey_table[];
 
 #endif

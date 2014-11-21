@@ -70,7 +70,7 @@ COMMAND_KEY(cmd_send_magic)
   //pb_io_send_magic(0xffff, 0);
 }
 
-cmdkey_table_t cmdkey_table[] = {
+const cmdkey_table_t PROGMEM cmdkey_table[] = {
   { 's', cmd_dump_stats },
   { 'S', cmd_reset_stats },
   { 't', cmd_enter_pb_test_mode },
