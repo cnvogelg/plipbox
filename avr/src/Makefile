@@ -40,7 +40,7 @@ DIST_BOARDS= arduino avrnetio nano
 # select board
 BOARD ?= nano
 DEBUG ?= 1
-NETIO ?= eth
+DEV_ENC28J60 ?= 1
 
 ifeq "$(BOARD)" "arduino"
 
@@ -127,12 +127,14 @@ SRC += par_low.c pb_proto.c
 SRC += pkt_buf.c param.c
 SRC += net.c arp.c
 SRC += dump.c
+ifdef DEV_ENC28J60
+DEFINES += DEV_ENC28J60
+SRC += spi.c enc28j60.c
+endif
+SRC += pio.c
 SRC += pb_test.c bridge.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c stats.c
-ifeq "$(NETIO)" "eth"
-SRC += spi.c enc28j60.c
-endif
 
 # output format
 FORMAT = ihex
@@ -153,14 +155,13 @@ CFLAGS += -Os
 #CFLAGS += -fno-inline
 CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
-CFLAGS += -mmcu=$(MCU) -I. -Ibase
-
+CFLAGS += -mmcu=$(MCU) -I. -Ibase -Ieth
+ 
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
 CFLAGS_LOCAL += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(DEPDIR)/$(@F:.o=.d)
 CFLAGS_LOCAL += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
 CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
 CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
-CFLAGS_LOCAL += -DHAVE_NETIO_$(NETIO)
 CFLAGS_LOCAL += -DF_CPU=$(F_CPU)
 CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))
 

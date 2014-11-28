@@ -32,7 +32,7 @@
 #include "net/arp.h"
 
 #include "pkt_buf.h"
-#include "pktio.h"
+#include "pio.h"
 #include "pb_proto.h"
 #include "uart.h"
 #include "uartutil.h"
@@ -44,7 +44,6 @@
 #include "util.h"
 #include "bridge.h"
 
-static u08 pio_valid;
 static u08 req_pending;
 static u32 req_ts;
 static u32 req_delta;
@@ -260,57 +259,6 @@ void pb_io_send_magic(u16 type, u08 extra_size)
 extern u32 req_time;
 #endif
 
-// ----- helper -----
-
-static void pio_reconfigure(void)
-{
-  // configure with current mac
-  if(pio_valid) {
-    pktio_stop();
-    const uint8_t *mac = param.mac_addr;
-    pktio_start(mac);
-
-    uart_send_time_stamp_spc();
-    uart_send_pstring(PSTR("pio: configure mac="));
-    net_dump_mac(mac);      
-    uart_send_crlf();
-  }
-}
-
-static void pio_init(void)
-{
-  u08 fd = param.full_duplex;
-  u08 lb = param.loop_back;
-  u08 rev = pktio_init(fd, lb);
-
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("pio: init " PKTIO_NAME));
-  if(rev == 0) {
-    uart_send_pstring(PSTR(": ERROR SETTING UP!!\r\n"));
-    pio_valid = 0;
-  } else {
-    uart_send_pstring(PSTR(" rev "));
-    uart_send_hex_byte(rev);
-    uart_send_pstring(fd ? PSTR(" full ") : PSTR(" half "));
-    uart_send_pstring(PSTR("duplex"));
-    if(lb) {
-      uart_send_pstring(PSTR(" loop back"));
-    }
-    uart_send_crlf();
-    pio_valid = 1;
-  }
-  
-  pio_reconfigure();
-}
-
-static void pio_exit(void)
-{
-  if(pio_valid) {
-    pktio_stop();
-    pio_valid = 0;
-  }
-}
-
 // ----- packet callbacks -----
 
 static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
@@ -320,12 +268,11 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
   req_pending = 0;
 
   // receive a packet
-  u16 got_size = pktio_rx_packet(buf, max_size);
-  *size = got_size;
+  pio_recv(buf, max_size, size);
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("fill: n="));
-  uart_send_hex_word(got_size);
+  uart_send_hex_word(*size);
   uart_send_crlf();
 
 #if 0
@@ -340,7 +287,7 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 
 static u08 proc_pkt(const u08 *buf, u16 size)
 {
-  pktio_tx_packet(buf, size);
+  pio_send(buf, size);
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("proc: n="));
@@ -371,7 +318,7 @@ void bridge_init(void)
 
   pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
 
-  pio_init();
+  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
 }
 
 void bridge_exit(void)
@@ -385,7 +332,7 @@ void bridge_exit(void)
 void bridge_worker(void)
 {
   // check pio
-  if(!req_pending && (pktio_rx_num_waiting() > 0)) {
+  if(!req_pending && (pio_has_recv() > 0)) {
     pb_proto_request_recv();
     req_pending = 1;
     req_ts = time_stamp;

@@ -13,6 +13,8 @@
 #include <util/delay.h>
 
 #include "enc28j60.h"
+#include "spi.h"
+#include "pio.h"
 
 // ENC28J60 Control Registers
 // Control register definitions are a combination of address,
@@ -244,9 +246,10 @@
 // (note: maximum ethernet frame length would be 1518)
 #define MAX_FRAMELEN      1518        
 
-static uint8_t Enc28j60Bank;
-static int gNextPacketPtr;
+static u08 Enc28j60Bank;
+static u16 gNextPacketPtr;
 static u08 is_full_duplex;
+static u08 rev;
 
 static uint8_t readOp (uint8_t op, uint8_t address) {
     spi_enable_eth();
@@ -274,45 +277,6 @@ static void readBuf(uint16_t len, uint8_t* data) {
     spi_disable_eth();
 }
 
-void enc28j60_packet_rx_data_begin(void)
-{
-  spi_enable_eth();
-  spi_out(ENC28J60_READ_BUF_MEM);  
-}
-
-void enc28j60_packet_rx_data_end(void)
-{
-  spi_disable_eth();
-}
-
-void enc28j60_packet_rx_blk(u08 *data, u16 size)
-{
-  spi_enable_eth();
-  spi_out(ENC28J60_READ_BUF_MEM);
-  while(size--) {
-    *data++ = spi_in();
-  }
-  spi_disable_eth();
-}
-
-inline static void writeBufBegin(void)
-{
-  spi_enable_eth(),
-  spi_out(ENC28J60_WRITE_BUF_MEM);  
-}
-
-void enc28j60_packet_tx_blk(const u08 *data, u16 size)
-{
-  while(size--) {
-    spi_out(*data++);
-  }
-}
-
-inline static void writeBufEnd(void)
-{
-  spi_disable_eth();
-}
-
 static void SetBank (uint8_t address) {
     if ((address & BANK_MASK) != Enc28j60Bank) {
         writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_BSEL1|ECON1_BSEL0);
@@ -326,9 +290,11 @@ static uint8_t readRegByte (uint8_t address) {
     return readOp(ENC28J60_READ_CTRL_REG, address);
 }
 
+#if 0
 static uint16_t readReg(uint8_t address) {
 	return readRegByte(address) + (readRegByte(address+1) << 8);
 }
+#endif
 
 static void writeRegByte (uint8_t address, uint8_t data) {
     SetBank(address);
@@ -356,117 +322,161 @@ static void writePhy (uint8_t address, uint16_t data) {
         ;
 }
 
-uint8_t enc28j60_init (u08 full_duplex, u08 loop_back) {
-    spi_init();
-    spi_disable_eth();
-    
-    is_full_duplex = full_duplex;
-    
-    // soft reset cpu
-    writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
-    _delay_ms(2); // errata B7/2
-    
-    // wait or error
-    u16 count = 0;
-    while (!readOp(ENC28J60_READ_CTRL_REG, ESTAT) & ESTAT_CLKRDY) {
-      count ++;
-      if(count == 0xfff) {
-        return 0;
-      }
+// ---------- init ----------
+
+// Functions to enable/disable broadcast filter bits
+// With the bit set, broadcast packets are filtered.
+static inline void enc28j60_enable_broadcast ( void ) 
+{
+  writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/|ERXFCON_BCEN);
+}
+
+static inline void enc28j60_disable_broadcast ( void ) 
+{
+  writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
+}
+
+static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
+{
+  spi_init();
+  spi_disable_eth();
+  
+  is_full_duplex = (flags & PIO_INIT_FULL_DUPLEX) == PIO_INIT_FULL_DUPLEX;
+  u08 loop_back = (flags & PIO_INIT_LOOP_BACK) == PIO_INIT_LOOP_BACK;
+
+  // soft reset cpu
+  writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
+  _delay_ms(2); // errata B7/2
+  
+  // wait or error
+  u16 count = 0;
+  while (!readOp(ENC28J60_READ_CTRL_REG, ESTAT) & ESTAT_CLKRDY) {
+    count ++;
+    if(count == 0xfff) {
+      return PIO_NOT_FOUND;
     }
-    
-    // set packet pointers
-    gNextPacketPtr = RXSTART_INIT;
-    writeReg(ERXST, RXSTART_INIT);
-    writeReg(ERXRDPT, RXSTART_INIT);
-    writeReg(ERXND, RXSTOP_INIT);
-    writeReg(ETXST, TXSTART_INIT);
-    writeReg(ETXND, TXSTOP_INIT);
-    
-    // set packet filter
+  }
+  
+  // set packet pointers
+  gNextPacketPtr = RXSTART_INIT;
+  writeReg(ERXST, RXSTART_INIT);
+  writeReg(ERXRDPT, RXSTART_INIT);
+  writeReg(ERXND, RXSTOP_INIT);
+  writeReg(ETXST, TXSTART_INIT);
+  writeReg(ETXND, TXSTOP_INIT);
+  
+  // set packet filter
+  if(flags & PIO_INIT_BROAD_CAST) {
     enc28j60_enable_broadcast(); // change to add ERXFCON_BCEN recommended by epam
+  } else {
+    enc28j60_disable_broadcast(); // change to add ERXFCON_BCEN recommended by epam      
+  }
 
-    // BIST pattern generator?
-    writeReg(EPMM0, 0x303f);
-    writeReg(EPMCS, 0xf7f9);
-    
-    // MAC init (with flow control)
-    writeRegByte(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
-    writeRegByte(MACON2, 0x00);
-    u08 mac3val = MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN;
-    if(full_duplex) {
-      mac3val |= MACON3_FULDPX;
-    }
-    writeOp(ENC28J60_BIT_FIELD_SET, MACON3, mac3val);
-    
-    if(full_duplex) {
-      writeRegByte(MABBIPG, 0x15);      
-      writeReg(MAIPG, 0x0012);
-    } else {
-      writeRegByte(MABBIPG, 0x12);
-      writeReg(MAIPG, 0x0C12);
-    }
-    writeReg(MAMXFL, MAX_FRAMELEN);
+  // BIST pattern generator?
+  writeReg(EPMM0, 0x303f);
+  writeReg(EPMCS, 0xf7f9);
+  
+  // MAC init (with flow control)
+  writeRegByte(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
+  writeRegByte(MACON2, 0x00);
+  u08 mac3val = MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN;
+  if(is_full_duplex) {
+    mac3val |= MACON3_FULDPX;
+  }
+  writeOp(ENC28J60_BIT_FIELD_SET, MACON3, mac3val);
+  
+  if(is_full_duplex) {
+    writeRegByte(MABBIPG, 0x15);      
+    writeReg(MAIPG, 0x0012);
+  } else {
+    writeRegByte(MABBIPG, 0x12);
+    writeReg(MAIPG, 0x0C12);
+  }
+  writeReg(MAMXFL, MAX_FRAMELEN);
 
-    // PHY init
-    // Note: loop_back only works with half duplex!
-    if(!loop_back) {
-      writePhy(PHCON2, PHCON2_HDLDIS);
-    }
-    if(full_duplex) {
-      writePhy(PHCON1, PHCON1_PDPXMD);
-    }
-    
-    // prepare flow control
-    writeReg(EPAUS, 20 * 100); // 100ms
-    
-    // return rev
-    uint8_t rev = readRegByte(EREVID);
-    // microchip forgot to step the number on the silcon when they
-    // released the revision B7. 6 is now rev B7. We still have
-    // to see what they do when they release B8. At the moment
-    // there is no B8 out yet
-    if (rev > 5) ++rev;
-    return rev;
+  // PHY init
+  // Note: loop_back only works with half duplex!
+  if(!loop_back) {
+    writePhy(PHCON2, PHCON2_HDLDIS);
+  }
+  if(is_full_duplex) {
+    writePhy(PHCON1, PHCON1_PDPXMD);
+  }
+  
+  // prepare flow control
+  writeReg(EPAUS, 20 * 100); // 100ms
+  
+  // return rev
+  rev = readRegByte(EREVID);
+  // microchip forgot to step the number on the silcon when they
+  // released the revision B7. 6 is now rev B7. We still have
+  // to see what they do when they release B8. At the moment
+  // there is no B8 out yet
+  if (rev > 5) ++rev;
+
+  // set mac    
+  writeRegByte(MAADR5, macaddr[0]);
+  writeRegByte(MAADR4, macaddr[1]);
+  writeRegByte(MAADR3, macaddr[2]);
+  writeRegByte(MAADR2, macaddr[3]);
+  writeRegByte(MAADR1, macaddr[4]);
+  writeRegByte(MAADR0, macaddr[5]);
+  
+  SetBank(ECON1);
+  writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
+  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+
+  return PIO_OK;
 }
- 
-void enc28j60_start(const uint8_t* macaddr)
-{      
-    writeRegByte(MAADR5, macaddr[0]);
-    writeRegByte(MAADR4, macaddr[1]);
-    writeRegByte(MAADR3, macaddr[2]);
-    writeRegByte(MAADR2, macaddr[3]);
-    writeRegByte(MAADR1, macaddr[4]);
-    writeRegByte(MAADR0, macaddr[5]);
-    
-    SetBank(ECON1);
-    writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
-    writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
-}
 
-void enc28j60_stop(void)
+// ---------- exit ----------
+
+static void enc28j60_exit(void)
 {
-    SetBank(ECON1);
-    writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);    
+  SetBank(ECON1);
+  writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);    
 }
 
-void enc28j60_flow_control( u08 on )
+// ---------- control ----------
+
+static u08 enc28j60_control(u08 control_id, u08 value)
 { 
-    u08 val;
-    if(is_full_duplex) {
-      val = on ? 2 : 3;
-    } else {
-      val = on ? 1 : 0;
-    }
-    writeRegByte(EFLOCON, val);
+  switch(control_id) {
+    case PIO_CONTROL_FLOW:
+      {
+        u08 flag;
+        if(is_full_duplex) {
+          flag = value ? 2 : 3;
+        } else {
+          flag = value ? 1 : 0;
+        }
+        writeRegByte(EFLOCON, flag);
+        return PIO_OK;
+      }
+    default:
+      return PIO_NOT_FOUND;
+  }
 }
 
-uint8_t enc28j60_is_link_up( void ) 
+// ---------- status ----------
+
+static u08 enc28j60_status(u08 status_id, u08 *value)
 {
-    return (readPhyByte(PHSTAT2) >> 2) & 1;
+  switch(status_id) {
+    case PIO_STATUS_VERSION:
+      *value = rev;
+      return PIO_OK;
+    case PIO_STATUS_LINK_UP:
+      *value = (readPhyByte(PHSTAT2) >> 2) & 1;
+      return PIO_OK;
+    default:
+      *value = 0;
+      return PIO_NOT_FOUND;
+  }
 }
 
-u08 enc28j60_get_status( void )
+#if 0
+static u08 enc28j60_get_status( void )
 {
   u08 val = readRegByte(EIR);
   if(val & EIR_TXERIF) {
@@ -477,42 +487,38 @@ u08 enc28j60_get_status( void )
   }
   return val & 3;
 }
+#endif
 
-static void tx_wait_ready(void) 
+// ---------- send ----------
+
+static u08 enc28j60_send(const u08 *data, u16 size)
 {
-    while (readOp(ENC28J60_READ_CTRL_REG, ECON1) & ECON1_TXRTS)
-        if (readRegByte(EIR) & EIR_TXERIF) {
-            writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
-            writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
-        }
-}
-
-void enc28j60_packet_tx(const u08 *data, u16 size)
-{
-  enc28j60_packet_tx_begin();
-  enc28j60_packet_tx_blk(data, size);
-  enc28j60_packet_tx_end();
-  enc28j60_packet_tx_send(size);
-}
-
-void enc28j60_packet_tx_send(u16 len)
-{  
-  tx_wait_ready();
-  writeReg(ETXND, TXSTART_INIT+len);
-  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
-}
-
-void enc28j60_packet_tx_begin(void)
-{
+  // prepare tx buffer write
   writeReg(EWRPT, TXSTART_INIT);
   writeOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
-  writeBufBegin();  
+  
+  // fill buffer
+  spi_enable_eth(),
+  spi_out(ENC28J60_WRITE_BUF_MEM);  
+  while(size--) {
+    spi_out(*data++);
+  }
+  spi_disable_eth();
+
+  // wait for tx ready
+  while (readOp(ENC28J60_READ_CTRL_REG, ECON1) & ECON1_TXRTS)
+      if (readRegByte(EIR) & EIR_TXERIF) {
+          writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
+          writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
+      }
+
+  // initiate send
+  writeReg(ETXND, TXSTART_INIT+size);
+  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
+  return PIO_OK;
 }
 
-void enc28j60_packet_tx_end(void)
-{
-  writeBufEnd();
-}
+// ---------- recv ----------
 
 inline static void next_pkt(void)
 {
@@ -523,52 +529,56 @@ inline static void next_pkt(void)
   writeOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);  
 }
 
-u16 enc28j60_packet_rx(u08 *data, u16 max_size)
+static u08 read_hdr(u16 *got_size)
 {
-  u16 size = enc28j60_packet_rx_begin();
-  if(size > 0) {
-    u16 get = size;
-    if(get > max_size) {
-      get = max_size;
-    }
-    enc28j60_packet_rx_blk(data,get);
-    enc28j60_packet_rx_end();
-  }
-  return size;
+  struct {
+      uint16_t nextPacket;
+      uint16_t byteCount;
+      uint16_t status;
+  } header;
+  
+  readBuf(sizeof header, (uint8_t*) &header);
+
+  gNextPacketPtr  = header.nextPacket;
+  return header.byteCount - 4; //remove the CRC count
 }
 
-u08 enc28j60_packet_rx_num_waiting(void)
+static u08 enc28j60_recv(u08 *data, u16 max_size, u16 *got_size)
+{
+  writeReg(ERDPT, gNextPacketPtr);
+
+  // read chip's packet header
+  u08 status = read_hdr(got_size);
+
+  // was a receive error?
+  if ((status & 0x80)==0) {
+    next_pkt();
+    return PIO_IO_ERR;
+  }
+
+  // check size
+  u16 len = *got_size;
+  u08 result = PIO_OK;
+  if(len > max_size) {
+    len = max_size;
+    result = PIO_TOO_LARGE;
+  }
+
+  // read packet
+  readBuf(len, data);
+
+  next_pkt();
+  return result;
+}
+
+// ---------- has_recv ----------
+
+static u08 enc28j60_has_recv(void)
 {
   return readRegByte(EPKTCNT);
 }
 
-u16 enc28j60_packet_rx_begin(void) 
-{
-    uint16_t len = 0;
-    writeReg(ERDPT, gNextPacketPtr);
-
-    struct {
-        uint16_t nextPacket;
-        uint16_t byteCount;
-        uint16_t status;
-    } header;
-    
-    readBuf(sizeof header, (uint8_t*) &header);
-
-    gNextPacketPtr  = header.nextPacket;
-    len = header.byteCount - 4; //remove the CRC count
-    if ((header.status & 0x80)==0) {
-        len = 0;
-        next_pkt();
-    }
-    return len;
-}
-
-void enc28j60_packet_rx_end(void)
-{
-    next_pkt();
-}
-
+#if 0
 // Contributed by Alex M. Based on code from: http://blog.derouineau.fr
 //                  /2011/07/putting-enc28j60-ethernet-controler-in-sleep-mode/
 void enc28j60_power_down( void ) 
@@ -585,18 +595,6 @@ void enc28j60_power_up( void )
     writeOp(ENC28J60_BIT_FIELD_CLR, ECON2, ECON2_PWRSV);
     while(!readRegByte(ESTAT) & ESTAT_CLKRDY);
     writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
-}
-
-// Functions to enable/disable broadcast filter bits
-// With the bit set, broadcast packets are filtered.
-void enc28j60_enable_broadcast ( void ) 
-{
-    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/|ERXFCON_BCEN);
-}
-
-void enc28j60_disable_broadcast ( void ) 
-{
-    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
 }
 
 uint8_t enc28j60_do_BIST ( void ) 
@@ -675,4 +673,17 @@ uint8_t enc28j60_do_BIST ( void )
 	// The checksum should be equal 
 	return macResult == bitsResult;
 }
+#endif
 
+// ----- pio_dev -----
+static const char PROGMEM dev_name[] = "enc28j60";
+const pio_dev_t PROGMEM pio_dev_enc28j60 = {
+  .name = dev_name,
+  .init_f = enc28j60_init,
+  .exit_f = enc28j60_exit,
+  .send_f = enc28j60_send,
+  .recv_f = enc28j60_recv,
+  .has_recv_f = enc28j60_has_recv,
+  .status_f = enc28j60_status,
+  .control_f = enc28j60_control
+};
