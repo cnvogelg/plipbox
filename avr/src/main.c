@@ -34,10 +34,11 @@
 #include "cmd.h"
 
 #include "pb_test.h"
+#include "pio_test.h"
 #include "bridge.h"
 #include "main.h"
 
-u08 run_mode = RUN_MODE_BRIDGE;
+u08 run_mode = RUN_MODE_PIO_TEST;
 static u08 soft_reset = 0;
 
 static void init_hw(void)
@@ -52,7 +53,7 @@ static void init_hw(void)
   par_low_init();
 }
 
-static void test_loop(void)
+static void pb_test_loop(void)
 {
   pb_test_begin();
   while((run_mode == RUN_MODE_PB_TEST)&&!soft_reset) {
@@ -60,6 +61,16 @@ static void test_loop(void)
     pb_test_worker();
   }
   pb_test_end();
+}
+
+static void pio_test_loop(void)
+{
+  pio_test_begin();
+  while((run_mode == RUN_MODE_PIO_TEST)&&!soft_reset) {
+    soft_reset = !cmd_worker();
+    pio_test_worker();
+  }
+  pio_test_end();
 }
 
 static void bridge_loop(void)
@@ -93,7 +104,10 @@ void loop(void)
   while(!soft_reset) {
     switch(run_mode) {
       case RUN_MODE_PB_TEST:
-        test_loop();
+        pb_test_loop();
+        break;
+      case RUN_MODE_PIO_TEST:
+        pio_test_loop();
         break;
       case RUN_MODE_BRIDGE:
         bridge_loop();

@@ -540,7 +540,8 @@ static u08 read_hdr(u16 *got_size)
   readBuf(sizeof header, (uint8_t*) &header);
 
   gNextPacketPtr  = header.nextPacket;
-  return header.byteCount - 4; //remove the CRC count
+  *got_size = header.byteCount - 4; //remove the CRC count
+  return header.status;
 }
 
 static u08 enc28j60_recv(u08 *data, u16 max_size, u16 *got_size)

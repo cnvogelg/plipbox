@@ -131,7 +131,7 @@ ifdef DEV_ENC28J60
 DEFINES += DEV_ENC28J60
 SRC += spi.c enc28j60.c
 endif
-SRC += pio.c
+SRC += pio.c pio_test.c
 SRC += pb_test.c bridge.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c stats.c

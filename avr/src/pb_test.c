@@ -147,7 +147,7 @@ static pb_proto_funcs_t funcs = {
 void pb_test_begin(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[TEST] on\r\n"));
+  uart_send_pstring(PSTR("[PB_TEST] on\r\n"));
 
   // setup handlers for pb testing
   pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
@@ -159,7 +159,7 @@ void pb_test_begin(void)
 void pb_test_end(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[TEST] off\r\n"));  
+  uart_send_pstring(PSTR("[PB_TEST] off\r\n"));  
 }
 
 void pb_test_worker(void)

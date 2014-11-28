@@ -1,5 +1,5 @@
 /*
- * main.h - main loop
+ * pio_test.h - test packet I/O
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,16 +24,13 @@
  *
  */
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef PIO_TEST_H
+#define PIO_TEST_H
 
 #include "global.h"
 
-#define RUN_MODE_BRIDGE 	0
-#define RUN_MODE_PB_TEST 	1
-#define RUN_MODE_PIO_TEST 	2
-
-/* access run mode for command keys */
-extern u08 run_mode;
+extern void pio_test_begin(void);
+extern void pio_test_worker(void);
+extern void pio_test_end(void);
 
 #endif
