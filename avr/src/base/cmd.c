@@ -193,6 +193,9 @@ u08 cmd_worker(void)
           found = ptr;
           break;
         }
+        if(key == 0) {
+          break;
+        }
         ptr++;
       }
       // got a command?
