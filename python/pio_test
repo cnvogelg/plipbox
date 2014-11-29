@@ -1,0 +1,32 @@
+#!/usr/bin/env python2.7
+
+from __future__ import print_function
+
+import sys, os
+import socket
+import argparse
+import time
+
+def pio_test(ip, port, data_size, count, delay, verbose):
+	print("ip=",ip,"port=",port,"data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	data_add = " " * (data_size - 1)
+	for i in xrange(count):
+		data = chr(i) + data_add
+		s.sendto(data, (ip, port))
+		if delay > 0:
+			time.sleep(delay / 1000.0)
+
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+	parser.add_argument('-a', '--address', default="192.168.2.222", help="IP address of plipbox")
+	parser.add_argument('-p', '--port', default=6800, type=int, help="UDP port of plipbox")
+	parser.add_argument('-s', '--data-size', default=1400, type=int, help="size of test data")
+	parser.add_argument('-c', '--count', default=10, type=int, help="number of packets")
+	parser.add_argument('-d', '--delay', default=100, type=int, help="send delay in ms")
+	args = parser.parse_args()
+	pio_test(args.address, args.port, args.data_size, args.count, args.delay, args.verbose)
+
+if __name__ == '__main__':
+	main()

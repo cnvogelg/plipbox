@@ -137,6 +137,7 @@ COMMAND(cmd_param_word)
     switch(type) {
       case 'l': val = &param.test_plen; break;
       case 't': val = &param.test_ptype; break;
+      case 'p': val = &param.test_port; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -253,6 +254,7 @@ COMMAND(cmd_help)
     "tl       length of test packets\r\n"
     "tt       eth type of test packets\r\n"
     "ti <ip>  test IP address\r\n"
+    "tp <n>   test UDP port\r\n"
   ));
   return CMD_OK;
 }
@@ -293,6 +295,7 @@ CMD_NAME("dy", cmd_gen_dy );
 CMD_NAME("tl", cmd_gen_tl );
 CMD_NAME("tt", cmd_gen_tt );
 CMD_NAME("ti", cmd_gen_ti );
+CMD_NAME("tp", cmd_gen_tp );
   // help
 CMD_NAME("?", cmd_help );
 
@@ -333,6 +336,7 @@ const cmd_table_t PROGMEM cmd_table[] = {
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tl),
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tt),
   CMD_ENTRY_NAME(cmd_param_ip_addr, cmd_gen_ti),
+  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tp),
   // help
   CMD_ENTRY(cmd_help),
   { 0,0 } // last entry

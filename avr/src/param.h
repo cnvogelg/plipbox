@@ -55,6 +55,7 @@ typedef struct {
   u16 test_plen;
   u16 test_ptype;
   u08 test_ip[4];
+  u16 test_port;
 } param_t;
   
 extern param_t param;  

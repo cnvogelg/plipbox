@@ -31,10 +31,13 @@
 #include "param.h"
 #include "uartutil.h"
 #include "pkt_buf.h"
+#include "main.h"
 
 #include "net/net.h"
 #include "net/eth.h"
 #include "net/arp.h"
+#include "net/ip.h"
+#include "net/udp.h"
 
 void pio_test_begin(void)
 {
@@ -59,22 +62,24 @@ static u08 recv_packet(u16 *size)
   u08 result = pio_recv(pkt_buf, PKT_BUF_SIZE, size);
   u16 delta = timer_hw_get();
 
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("recv: "));
-  if(result == PIO_OK) {
-    // speed
-    uart_send_pstring(PSTR("v="));
-    u16 rate = timer_hw_calc_rate_kbs(*size, delta);
-    uart_send_rate_kbs(rate);
+  if(global_verbose) {
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("recv: "));
+    if(result == PIO_OK) {
+      // speed
+      uart_send_pstring(PSTR("v="));
+      u16 rate = timer_hw_calc_rate_kbs(*size, delta);
+      uart_send_rate_kbs(rate);
 
-    // size
-    uart_send_pstring(PSTR(" n="));
-    uart_send_hex_word(*size);
-    uart_send_crlf();
-  } else {
-    uart_send_pstring(PSTR("ERROR="));
-    uart_send_hex_byte(result);
-    uart_send_crlf();
+      // size
+      uart_send_pstring(PSTR(" n="));
+      uart_send_hex_word(*size);
+      uart_send_crlf();
+    } else {
+      uart_send_pstring(PSTR("ERROR="));
+      uart_send_hex_byte(result);
+      uart_send_crlf();
+    }
   }
   return result;
 }
@@ -85,22 +90,24 @@ static u08 send_packet(u16 size)
   u08 result = pio_send(pkt_buf, size);
   u16 delta = timer_hw_get();
 
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("send: "));
-  if(result == PIO_OK) {
-    // speed
-    uart_send_pstring(PSTR("v="));
-    u16 rate = timer_hw_calc_rate_kbs(size, delta);
-    uart_send_rate_kbs(rate);
+  if(global_verbose) {
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("send: "));
+    if(result == PIO_OK) {
+      // speed
+      uart_send_pstring(PSTR("v="));
+      u16 rate = timer_hw_calc_rate_kbs(size, delta);
+      uart_send_rate_kbs(rate);
 
-    // size
-    uart_send_pstring(PSTR(" n="));
-    uart_send_hex_word(size);
-    uart_send_crlf();
-  } else {
-    uart_send_pstring(PSTR("ERROR="));
-    uart_send_hex_byte(result);
-    uart_send_crlf();
+      // size
+      uart_send_pstring(PSTR(" n="));
+      uart_send_hex_word(size);
+      uart_send_crlf();
+    } else {
+      uart_send_pstring(PSTR("ERROR="));
+      uart_send_hex_byte(result);
+      uart_send_crlf();
+    }
   }
   return result;
 }
@@ -112,19 +119,39 @@ static void handle_arp(u08 *buf, u16 size)
     // is our IP?
     const u08 *tgt_ip = arp_get_tgt_ip(buf);
 
-    uart_send_time_stamp_spc();
-    uart_send_pstring(PSTR("ARP REQ: IP="));
-    net_dump_ip(tgt_ip);
-    uart_send_crlf();
+    if(global_verbose) {
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("ARP REQ: IP="));
+      net_dump_ip(tgt_ip);
+      uart_send_crlf();
+    }
 
     if(net_compare_ip(tgt_ip, param.test_ip)) {
       arp_make_reply(buf, param.mac_addr, param.test_ip);
       eth_make_bcast(pkt_buf, param.mac_addr);
       send_packet(size + ETH_HDR_SIZE);
 
-      uart_send_time_stamp_spc();
-      uart_send_pstring(PSTR("ARP REPLY!\r\n"));
+      if(global_verbose) {
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("ARP REPLY!\r\n"));
+      }
     }
+  }
+}
+
+static void handle_udp(u08 *buf, u16 size)
+{
+  u08 *udp_buf = buf + ip_get_hdr_length(buf);
+  const u08 *dst_ip = ip_get_tgt_ip(buf);
+  u16 dst_port = udp_get_tgt_port(udp_buf);
+  const u08 *data_ptr = udp_get_data_ptr(udp_buf);
+
+  // for us?
+  if(net_compare_ip(param.test_ip, dst_ip) && (dst_port == param.test_port)) {
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("UDP: "));
+    uart_send_hex_byte(*data_ptr);
+    uart_send_crlf();    
   }
 }
 
@@ -136,10 +163,19 @@ void pio_test_worker(void)
     if(recv_packet(&size) == PIO_OK) {
       // large enough?
       if(size > ETH_HDR_SIZE) {
+        // payload buf/size
+        u08 *pl_buf = pkt_buf + ETH_HDR_SIZE;
+        u16 pl_size = size - ETH_HDR_SIZE;
+
         // is a arp request?
         u16 type = eth_get_pkt_type(pkt_buf);
         if(type == ETH_TYPE_ARP) {
-          handle_arp(pkt_buf+ETH_HDR_SIZE, size-ETH_HDR_SIZE);
+          handle_arp(pl_buf, pl_size);
+        }
+        else if(type == ETH_TYPE_IPV4) {
+          if(ip_get_protocol(pl_buf) == IP_PROTOCOL_UDP) {
+            handle_udp(pl_buf, pl_size);
+          }
         }
       }
     }

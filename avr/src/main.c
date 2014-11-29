@@ -39,6 +39,7 @@
 #include "main.h"
 
 u08 run_mode = RUN_MODE_PIO_TEST;
+u08 global_verbose = 0;
 static u08 soft_reset = 0;
 
 static void init_hw(void)

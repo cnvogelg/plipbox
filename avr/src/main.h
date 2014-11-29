@@ -35,5 +35,6 @@
 
 /* access run mode for command keys */
 extern u08 run_mode;
+extern u08 global_verbose;
 
 #endif

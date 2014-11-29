@@ -65,9 +65,9 @@ COMMAND_KEY(cmd_toggle_auto_mode)
   pb_test_toggle_auto();
 }
 
-COMMAND_KEY(cmd_send_magic)
+COMMAND_KEY(cmd_toggle_verbose)
 {
-  //pb_io_send_magic(0xffff, 0);
+  global_verbose = !global_verbose;
 }
 
 const cmdkey_table_t PROGMEM cmdkey_table[] = {
@@ -78,6 +78,6 @@ const cmdkey_table_t PROGMEM cmdkey_table[] = {
   { 'p', cmd_send_test_packet },
   { 'P', cmd_send_test_packet_silent },
   { 'a', cmd_toggle_auto_mode },
-  { 'm', cmd_send_magic },
+  { 'v', cmd_toggle_verbose },
   { 0,0 }
 };
