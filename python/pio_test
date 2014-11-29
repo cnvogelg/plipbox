@@ -7,31 +7,51 @@ import socket
 import argparse
 import time
 
+def calc_rate(size, delta):
+	return size / (delta * 1024)
+
 def pio_test(ip, port, data_size, count, delay, verbose):
 	print("ip=",ip,"port=",port,"data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)	
 	si = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	si.bind(("", port))
 	si.settimeout(1)
 	data_add = " " * (data_size - 1)
-	for i in xrange(count):
-		start = time.clock()
-		# send data
-		data = chr(64+i) + data_add
-		si.sendto(data, (ip, port))
-		# get data
-		try:
+	avg_delta = 0
+	try:
+		ok = True
+		for i in xrange(count):
+			# gen data
+			data = chr(64+i) + data_add
+			# send data
+			start = time.time()
+			si.sendto(data, (ip, port))
+			# get data
 			(data_in, ip_in) = si.recvfrom(data_size)
-			end = time.clock()
+			end = time.time()
+
+			# eval data
 			delta = end - start
-			delta *= 1000000
 			ok = (data == data_in)
-			print(i,"d=",delta,"ok=",ok)
-		except socket.timeout as e:
-			print(e)
-			break
-		# do wait?
-		if delay > 0:
-			time.sleep(delay / 1000.0)
+			v = calc_rate(data_size * 2, delta)
+			avg_delta += delta
+			delta *= 1000 # in ms
+			if verbose:
+				print("@%d: d=%6.2f ms  v=%6.2f KiB/s  ok=%s" % (i,delta,v,ok))
+			if not ok:
+				print(i,"DATA MISMATCH")
+				break
+			# do wait?
+			if delay > 0:
+				time.sleep(delay / 1000.0)
+
+		if ok:
+			# calc result
+			delta = avg_delta / count
+			v = calc_rate(data_size * 2, delta)
+			delta *= 1000
+			print("@%d: d=%6.2f ms  v=%6.2f KiB/s" % (count, delta,v))
+	except socket.timeout as e:
+		print(e)
 	si.close()
 
 def main():
