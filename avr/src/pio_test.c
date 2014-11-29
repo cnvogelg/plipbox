@@ -25,12 +25,16 @@
  */
 
 #include "pio_test.h"
+
+#include "timer.h"
 #include "pio.h"
 #include "param.h"
 #include "uartutil.h"
 #include "pkt_buf.h"
+
 #include "net/net.h"
-#include "timer.h"
+#include "net/eth.h"
+#include "net/arp.h"
 
 void pio_test_begin(void)
 {
@@ -48,60 +52,96 @@ void pio_test_end(void)
   uart_send_pstring(PSTR("[PIO_TEST] off\r\n"));
 }
 
+static u08 recv_packet(u16 *size)
+{
+  // measure packet receive
+  timer_hw_reset();
+  u08 result = pio_recv(pkt_buf, PKT_BUF_SIZE, size);
+  u16 delta = timer_hw_get();
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("recv: "));
+  if(result == PIO_OK) {
+    // speed
+    uart_send_pstring(PSTR("v="));
+    u16 rate = timer_hw_calc_rate_kbs(*size, delta);
+    uart_send_rate_kbs(rate);
+
+    // size
+    uart_send_pstring(PSTR(" n="));
+    uart_send_hex_word(*size);
+    uart_send_crlf();
+  } else {
+    uart_send_pstring(PSTR("ERROR="));
+    uart_send_hex_byte(result);
+    uart_send_crlf();
+  }
+  return result;
+}
+
+static u08 send_packet(u16 size)
+{
+  timer_hw_reset();
+  u08 result = pio_send(pkt_buf, size);
+  u16 delta = timer_hw_get();
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("send: "));
+  if(result == PIO_OK) {
+    // speed
+    uart_send_pstring(PSTR("v="));
+    u16 rate = timer_hw_calc_rate_kbs(size, delta);
+    uart_send_rate_kbs(rate);
+
+    // size
+    uart_send_pstring(PSTR(" n="));
+    uart_send_hex_word(size);
+    uart_send_crlf();
+  } else {
+    uart_send_pstring(PSTR("ERROR="));
+    uart_send_hex_byte(result);
+    uart_send_crlf();
+  }
+  return result;
+}
+
+static void handle_arp(u08 *buf, u16 size)
+{
+  // is an ARP request
+  if(arp_is_ipv4(buf, size) && (arp_get_op(buf) == ARP_REQUEST)) {
+    // is our IP?
+    const u08 *tgt_ip = arp_get_tgt_ip(buf);
+
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("ARP REQ: IP="));
+    net_dump_ip(tgt_ip);
+    uart_send_crlf();
+
+    if(net_compare_ip(tgt_ip, param.test_ip)) {
+      arp_make_reply(buf, param.mac_addr, param.test_ip);
+      eth_make_bcast(pkt_buf, param.mac_addr);
+      send_packet(size + ETH_HDR_SIZE);
+
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("ARP REPLY!\r\n"));
+    }
+  }
+}
+
 void pio_test_worker(void)
 {
   // incoming packet?
   if(pio_has_recv()) {
     u16 size;
-
-    // measure packet receive
-    timer_hw_reset();
-    u08 result = pio_recv(pkt_buf, PKT_BUF_SIZE, &size);
-    u16 delta = timer_hw_get();
-
-    uart_send_time_stamp_spc();
-    uart_send_pstring(PSTR("recv: "));
-    if(result == PIO_OK) {
-      // speed
-      uart_send_pstring(PSTR("v="));
-      u16 rate = timer_hw_calc_rate_kbs(size, delta);
-      uart_send_rate_kbs(rate);
-
-      // size
-      uart_send_pstring(PSTR(" n="));
-      uart_send_hex_word(size);
-      uart_send_crlf();
-
-      // send a reply: swap src/dst addr
-      net_copy_mac(pkt_buf + 6, pkt_buf);
-      net_copy_mac(param.mac_addr, pkt_buf + 6);
-
-      timer_hw_reset();
-      result = pio_send(pkt_buf, size);
-      delta = timer_hw_get();
-
-      uart_send_time_stamp_spc();
-      uart_send_pstring(PSTR("send: "));
-      if(result == PIO_OK) {
-        // speed
-        uart_send_pstring(PSTR("v="));
-        u16 rate = timer_hw_calc_rate_kbs(size, delta);
-        uart_send_rate_kbs(rate);
-
-        // size
-        uart_send_pstring(PSTR(" n="));
-        uart_send_hex_word(size);
-        uart_send_crlf();
-      } else {
-        uart_send_pstring(PSTR("ERROR="));
-        uart_send_hex_byte(result);
-        uart_send_crlf();
+    if(recv_packet(&size) == PIO_OK) {
+      // large enough?
+      if(size > ETH_HDR_SIZE) {
+        // is a arp request?
+        u16 type = eth_get_pkt_type(pkt_buf);
+        if(type == ETH_TYPE_ARP) {
+          handle_arp(pkt_buf+ETH_HDR_SIZE, size-ETH_HDR_SIZE);
+        }
       }
-
-    } else {
-      uart_send_pstring(PSTR("ERROR="));
-      uart_send_hex_byte(result);
-      uart_send_crlf();
     }
   }
 }

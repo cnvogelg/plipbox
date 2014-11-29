@@ -46,4 +46,10 @@ inline u08 eth_is_arp_pkt(const u08 *pkt) { return eth_get_pkt_type(pkt) == ETH_
 inline u08  eth_is_ipv4_pkt(const u08 *pkt) { return eth_get_pkt_type(pkt) == ETH_TYPE_IPV4; }  
 inline void eth_set_pkt_type(u08 *pkt, u16 type) { net_put_word(pkt + ETH_OFF_TYPE, type); }
 
+inline void eth_make_bcast(u08 *pkt, const u08 *my_mac) 
+{
+	net_copy_mac(net_bcast_mac, pkt + ETH_OFF_TGT_MAC);
+	net_copy_mac(my_mac, pkt + ETH_OFF_SRC_MAC);
+}
+
 #endif

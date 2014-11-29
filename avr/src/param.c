@@ -59,7 +59,8 @@ static const param_t PROGMEM default_param = {
   .loop_back = 0,
   
   .test_plen = 1514,
-  .test_ptype = 0xfffd
+  .test_ptype = 0xfffd,
+  .test_ip = { 192,168,2,222 }
 };
 
 static void dump_byte(PGM_P str, const u08 val)
@@ -105,6 +106,9 @@ void param_dump(void)
   uart_send_crlf();
   dump_word(PSTR("tl: packet len   "), param.test_plen);
   dump_word(PSTR("tt: packet type  "), param.test_ptype);
+  uart_send_pstring(PSTR("ti: ip address   "));
+  net_dump_ip(param.test_ip);
+  uart_send_crlf();
 }
 
 // build check sum for parameter block

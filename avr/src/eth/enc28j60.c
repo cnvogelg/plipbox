@@ -498,9 +498,10 @@ static u08 enc28j60_send(const u08 *data, u16 size)
   writeOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
   
   // fill buffer
+  u16 num = size;
   spi_enable_eth(),
   spi_out(ENC28J60_WRITE_BUF_MEM);  
-  while(size--) {
+  while(num--) {
     spi_out(*data++);
   }
   spi_disable_eth();

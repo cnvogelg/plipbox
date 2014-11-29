@@ -169,6 +169,18 @@ COMMAND(cmd_param_mac_addr)
   }
 }
 
+COMMAND(cmd_param_ip_addr)
+{
+  u08 ip[4];
+
+  if(net_parse_ip(argv[1], ip)) {
+    net_copy_ip(ip, param.test_ip);
+    return CMD_OK;
+  } else {
+    return CMD_PARSE_ERROR;
+  }  
+}
+
 COMMAND(cmd_stats_dump)
 {
   stats_dump();
@@ -240,6 +252,7 @@ COMMAND(cmd_help)
     "\r\n"
     "tl       length of test packets\r\n"
     "tt       eth type of test packets\r\n"
+    "ti <ip>  test IP address\r\n"
   ));
   return CMD_OK;
 }
@@ -279,6 +292,7 @@ CMD_NAME("dy", cmd_gen_dy );
   // test
 CMD_NAME("tl", cmd_gen_tl );
 CMD_NAME("tt", cmd_gen_tt );
+CMD_NAME("ti", cmd_gen_ti );
   // help
 CMD_NAME("?", cmd_help );
 
@@ -318,6 +332,7 @@ const cmd_table_t PROGMEM cmd_table[] = {
   // test
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tl),
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tt),
+  CMD_ENTRY_NAME(cmd_param_ip_addr, cmd_gen_ti),
   // help
   CMD_ENTRY(cmd_help),
   { 0,0 } // last entry

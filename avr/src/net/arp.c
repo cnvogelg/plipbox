@@ -40,3 +40,13 @@ u08 arp_is_ipv4(const u08 *buf, u16 len)
   
   return (hw_type == 1) && (pt_type == 0x800) && (hw_size == 6) && (pt_size == 4);
 }
+
+void arp_make_reply(u08 *buf, const u08 *my_mac, const u08 *my_ip)
+{
+	// make a reply
+	net_put_word(buf + ARP_OFF_OP, ARP_REPLY);
+	net_copy_mac(buf + ARP_OFF_SRC_MAC, buf + ARP_OFF_TGT_MAC);
+	net_copy_ip(buf + ARP_OFF_SRC_IP, buf + ARP_OFF_TGT_IP);
+	net_copy_mac(my_mac, buf + ARP_OFF_SRC_MAC);
+	net_copy_ip(my_ip, buf + ARP_OFF_SRC_IP);
+}
