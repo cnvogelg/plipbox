@@ -69,8 +69,18 @@ SPI_SCK  = PB7
 
 extern void spi_init(void);
 
-extern void spi_out(u08 data);
-extern u08  spi_in(void);
+inline void spi_out(u08 data)
+{
+  SPDR = data;
+  while (!(SPSR&(1<<SPIF)));
+}
+
+inline u08 spi_in(void)
+{
+  SPDR = 0x00;
+  while (!(SPSR&(1<<SPIF)));
+  return SPDR;
+}
 
 inline void spi_enable_eth(void) { PORTB &= ~SPI_SS_MASK; }
 inline void spi_disable_eth(void) { PORTB |= SPI_SS_MASK; }

@@ -41,19 +41,3 @@ void spi_init(void)
   SPCR = _BV(SPE) | _BV(MSTR); // 8 MHz @ 16
 	SPSR = _BV(SPI2X); 
 }
-
-void spi_out(u08 data)
-{
-  SPDR = data;
-  while (!(SPSR&(1<<SPIF)));
-}
-
-u08 spi_in(void)
-{
-  SPDR = 0x00;
-  while (!(SPSR&(1<<SPIF)));
-  return SPDR;
-}
-
-
-
