@@ -32,6 +32,7 @@
 #include "uartutil.h"
 #include "pkt_buf.h"
 #include "main.h"
+#include "stats.h"
 
 #include "net/net.h"
 #include "net/eth.h"
@@ -45,10 +46,12 @@ void pio_test_begin(void)
   uart_send_pstring(PSTR("[PIO_TEST] on\r\n"));
 
   pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
+  stats_reset();
 }
 
 void pio_test_end(void)
 {
+  stats_dump();
   pio_exit();
 
   uart_send_time_stamp_spc();
@@ -62,18 +65,25 @@ static u08 recv_packet(u16 *size)
   u08 result = pio_recv(pkt_buf, PKT_BUF_SIZE, size);
   u16 delta = timer_hw_get();
 
+  u16 s = *size;
+  u16 rate = timer_hw_calc_rate_kbs(s, delta);
+  if(result == PIO_OK) {
+    stats_update_rx(s, rate);
+  } else {
+    stats.rx_err++;
+  }
+
   if(global_verbose) {
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("recv: "));
     if(result == PIO_OK) {
       // speed
       uart_send_pstring(PSTR("v="));
-      u16 rate = timer_hw_calc_rate_kbs(*size, delta);
       uart_send_rate_kbs(rate);
 
       // size
       uart_send_pstring(PSTR(" n="));
-      uart_send_hex_word(*size);
+      uart_send_hex_word(s);
       uart_send_crlf();
     } else {
       uart_send_pstring(PSTR("ERROR="));
@@ -90,13 +100,19 @@ static u08 send_packet(u16 size)
   u08 result = pio_send(pkt_buf, size);
   u16 delta = timer_hw_get();
 
+  u16 rate = timer_hw_calc_rate_kbs(size, delta);
+  if(result == PIO_OK) {
+    stats_update_tx(size, rate);
+  } else {
+    stats.tx_err++;
+  }
+
   if(global_verbose) {
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("send: "));
     if(result == PIO_OK) {
       // speed
       uart_send_pstring(PSTR("v="));
-      u16 rate = timer_hw_calc_rate_kbs(size, delta);
       uart_send_rate_kbs(rate);
 
       // size
@@ -148,11 +164,28 @@ static void handle_udp(u08 *buf, u16 size)
 
   // for us?
   if(net_compare_ip(param.test_ip, dst_ip) && (dst_port == param.test_port)) {
-    uart_send_time_stamp_spc();
-    uart_send_pstring(PSTR("UDP: "));
-    uart_send_hex_byte(*data_ptr);
-    uart_send_crlf();    
-  }
+    if(global_verbose) {
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("UDP: "));
+      uart_send_hex_byte(*data_ptr);
+      uart_send_crlf();
+    }
+
+    // send UDP packet back again
+    // flip IP/UDP
+    const u08 *src_ip = ip_get_src_ip(buf);
+    net_copy_ip(src_ip, buf + 16); // set tgt ip
+    net_copy_ip(param.test_ip, buf + 12); // set src ip
+    u16 src_port = udp_get_src_port(udp_buf);
+    net_put_word(udp_buf + UDP_SRC_PORT_OFF, dst_port);
+    net_put_word(udp_buf + UDP_TGT_PORT_OFF, src_port);
+
+    // flip eth
+    net_copy_mac(pkt_buf + ETH_OFF_SRC_MAC, pkt_buf + ETH_OFF_TGT_MAC);
+    net_copy_mac(param.mac_addr, pkt_buf + ETH_OFF_SRC_MAC);
+
+    send_packet(size + ETH_HDR_SIZE);
+  } 
 }
 
 void pio_test_worker(void)

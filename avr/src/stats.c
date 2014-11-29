@@ -47,6 +47,24 @@ void stats_reset(void)
   stats.tx_max_rate = 0;
 }
 
+void stats_update_rx(u16 size, u16 rate)
+{
+  stats.rx_cnt ++;
+  stats.rx_bytes += size;
+  if(rate > stats.rx_max_rate) {
+    stats.rx_max_rate = rate;
+  }
+}
+
+void stats_update_tx(u16 size, u16 rate)
+{
+  stats.tx_cnt ++;
+  stats.tx_bytes += size;
+  if(rate > stats.tx_max_rate) {
+    stats.tx_max_rate = rate;
+  }
+}
+
 void stats_dump(void)
 {
   // ----- header -----

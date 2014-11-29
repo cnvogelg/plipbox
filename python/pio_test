@@ -8,14 +8,31 @@ import argparse
 import time
 
 def pio_test(ip, port, data_size, count, delay, verbose):
-	print("ip=",ip,"port=",port,"data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	print("ip=",ip,"port=",port,"data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)	
+	si = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	si.bind(("", port))
+	si.settimeout(1)
 	data_add = " " * (data_size - 1)
 	for i in xrange(count):
-		data = chr(i) + data_add
-		s.sendto(data, (ip, port))
+		start = time.clock()
+		# send data
+		data = chr(64+i) + data_add
+		si.sendto(data, (ip, port))
+		# get data
+		try:
+			(data_in, ip_in) = si.recvfrom(data_size)
+			end = time.clock()
+			delta = end - start
+			delta *= 1000000
+			ok = (data == data_in)
+			print(i,"d=",delta,"ok=",ok)
+		except socket.timeout as e:
+			print(e)
+			break
+		# do wait?
 		if delay > 0:
 			time.sleep(delay / 1000.0)
+	si.close()
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -24,7 +41,7 @@ def main():
 	parser.add_argument('-p', '--port', default=6800, type=int, help="UDP port of plipbox")
 	parser.add_argument('-s', '--data-size', default=1400, type=int, help="size of test data")
 	parser.add_argument('-c', '--count', default=10, type=int, help="number of packets")
-	parser.add_argument('-d', '--delay', default=100, type=int, help="send delay in ms")
+	parser.add_argument('-d', '--delay', default=0, type=int, help="delay in ms")
 	args = parser.parse_args()
 	pio_test(args.address, args.port, args.data_size, args.count, args.delay, args.verbose)
 

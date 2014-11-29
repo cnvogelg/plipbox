@@ -54,5 +54,7 @@ extern stats_t stats;
 
 extern void stats_reset(void);
 extern void stats_dump(void);
+extern void stats_update_tx(u16 size, u16 rate);
+extern void stats_update_rx(u16 size, u16 rate);
 
 #endif
