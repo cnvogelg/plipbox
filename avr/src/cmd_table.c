@@ -182,7 +182,7 @@ COMMAND(cmd_param_ip_addr)
 
 COMMAND(cmd_stats_dump)
 {
-  stats_dump();
+  stats_dump_all();
   return CMD_OK;
 }
 

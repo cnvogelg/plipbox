@@ -328,6 +328,7 @@ static void bridge_worker(void)
   u08 status = pb_proto_handle(&cmd, &size, &delta);
   u16 rate = timer_hw_calc_rate_kbs(size, delta);
   u08 is_tx = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
+  u08 stats_id = is_tx ? STATS_ID_PB_TX : STATS_ID_PB_RX;
 
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
@@ -337,20 +338,7 @@ static void bridge_worker(void)
   // ok!
   if(status == PBPROTO_STATUS_OK) {
     // account data
-    if(is_tx) {
-      stats.tx_cnt++;
-      stats.tx_bytes+=size;
-      if(stats.tx_max_rate < rate) {
-        stats.tx_max_rate = rate;
-      }
-    } else {
-      stats.rx_cnt++;
-      stats.rx_bytes+=size;
-      if(stats.rx_max_rate < rate) {
-        stats.rx_max_rate = rate;
-      }  
-    }
-
+    stats_update_ok(stats_id, size, rate);
     // always dump proto
     if(param.dump_plip) {
       dump_pb_cmd(cmd, status, size, delta, rate, req_delta);
@@ -360,13 +348,8 @@ static void bridge_worker(void)
   else {
     // dump error
     dump_pb_cmd(cmd, status, size, delta, rate, req_delta);
-
     // account data
-    if(is_tx) {
-      stats.tx_err++;
-    } else {
-      stats.rx_err++;
-    }
+    stats_get(stats_id)->err++;
   }
 }
 
@@ -375,6 +358,7 @@ u08 bridge_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
 
+  stats_reset();
   pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
   pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
 
@@ -388,6 +372,8 @@ u08 bridge_loop(void)
 
     bridge_worker();
   }
+
+  stats_dump_all();
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE] off\r\n"));

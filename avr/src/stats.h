@@ -29,32 +29,30 @@
 
 #include "global.h"
 
-/*
-  rx = received from plipbox via ETH
-  tx = sent from plipbox via ETH
-*/
+#define STATS_ID_PB_RX  0
+#define STATS_ID_PB_TX  1
+#define STATS_ID_PIO_RX 2
+#define STATS_ID_PIO_TX 3
+#define STATS_ID_NUM    4
 
 typedef struct {
-  u16 rx_cnt;
-  u32 rx_bytes;
-  u16 rx_err;
-  u16 rx_filter;
-  u16 rx_drop;
-  u16 rx_max_rate;
-
-  u16 tx_cnt;
-  u32 tx_bytes;
-  u16 tx_err;
-  u16 tx_filter;
-  u16 tx_drop;
-  u16 tx_max_rate;
+  u32 bytes;
+  u16 cnt;
+  u16 err;
+  u16 drop;
+  u16 max_rate;
 } stats_t;
 
-extern stats_t stats;
+extern stats_t stats[STATS_ID_NUM];
 
 extern void stats_reset(void);
-extern void stats_dump(void);
-extern void stats_update_tx(u16 size, u16 rate);
-extern void stats_update_rx(u16 size, u16 rate);
+extern void stats_dump_all(void);
+extern void stats_dump(u08 pb, u08 pio);
+extern void stats_update_ok(u08 id, u16 size, u16 rate);
+
+inline stats_t *stats_get(u08 id)
+{
+  return &stats[id];
+}
 
 #endif

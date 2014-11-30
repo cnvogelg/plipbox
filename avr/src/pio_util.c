@@ -50,9 +50,9 @@ u08 pio_util_recv_packet(u16 *size)
   u16 s = *size;
   u16 rate = timer_hw_calc_rate_kbs(s, delta);
   if(result == PIO_OK) {
-    stats_update_rx(s, rate);
+    stats_update_ok(STATS_ID_PIO_RX, s, rate);
   } else {
-    stats.rx_err++;
+    stats_get(STATS_ID_PIO_RX)->err++;
   }
 
   if(global_verbose) {
@@ -84,9 +84,9 @@ u08 pio_util_send_packet(u16 size)
 
   u16 rate = timer_hw_calc_rate_kbs(size, delta);
   if(result == PIO_OK) {
-    stats_update_tx(size, rate);
+    stats_update_ok(STATS_ID_PIO_TX, size, rate);
   } else {
-    stats.tx_err++;
+    stats_get(STATS_ID_PIO_TX)->err++;
   }
 
   if(global_verbose) {

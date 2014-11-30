@@ -155,6 +155,7 @@ static void pb_test_worker(void)
   u08 status = pb_proto_handle(&cmd, &size, &delta);
   u16 rate = timer_hw_calc_rate_kbs(size, delta);
   u08 is_tx = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
+  u08 stats_id = is_tx ? STATS_ID_PB_TX : STATS_ID_PB_RX;
 
   // nothing done... return
   if(status == PBPROTO_STATUS_IDLE) {
@@ -164,12 +165,7 @@ static void pb_test_worker(void)
   // ok!
   if(status == PBPROTO_STATUS_OK) {
     // account data
-    if(is_tx) {
-      stats_update_tx(size, rate);
-    } else {
-      stats_update_rx(size, rate);
-    }
-
+    stats_update_ok(stats_id, size, rate);
     // dump result?
     if(!silent_mode) {
       // in interactive mode show result
@@ -190,13 +186,8 @@ static void pb_test_worker(void)
   else {
     // dump error
     dump_pb_cmd(cmd, status, size, delta, rate, trigger_ts);
-
     // account data
-    if(is_tx) {
-      stats.tx_err++;
-    } else {
-      stats.rx_err++;
-    }
+    stats_get(stats_id)->err++;
 
     // disable auto mode
     if(auto_mode) {
@@ -209,6 +200,8 @@ u08 pb_test_loop(void)
 {
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[PB_TEST] on\r\n"));
+
+  stats_reset();
 
   // setup handlers for pb testing
   pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
@@ -227,6 +220,8 @@ u08 pb_test_loop(void)
 
     pb_test_worker();
   }
+
+  stats_dump(1,0);
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[PB_TEST] off\r\n"));

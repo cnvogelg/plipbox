@@ -67,7 +67,7 @@ u08 bridge_test_loop(void)
     }
   }
 
-  stats_dump();
+  stats_dump_all();
   pio_exit();
 
   uart_send_time_stamp_spc();

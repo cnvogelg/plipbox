@@ -63,11 +63,13 @@ u08 pio_test_loop(void)
             pio_util_send_packet(size);
           }          
         }
+      } else {
+        stats_get(STATS_ID_PIO_RX)->err++;
       }
     }
   }
 
-  stats_dump();
+  stats_dump(0,1);
   pio_exit();
 
   uart_send_time_stamp_spc();

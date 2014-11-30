@@ -32,7 +32,7 @@
 
 COMMAND_KEY(cmd_dump_stats)
 {
-  stats_dump();
+  stats_dump_all();
 }
 
 COMMAND_KEY(cmd_reset_stats)

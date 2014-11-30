@@ -126,7 +126,7 @@ SRC += util.c uart.c uartutil.c timer.c
 SRC += par_low.c pb_proto.c
 SRC += pkt_buf.c param.c
 SRC += net.c arp.c
-SRC += dump.c
+SRC += dump.c stats.c
 ifdef DEV_ENC28J60
 DEFINES += DEV_ENC28J60
 SRC += spi.c enc28j60.c
@@ -134,7 +134,7 @@ endif
 SRC += pio.c pio_util.c pio_test.c
 SRC += pb_test.c bridge.c bridge_test.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
-SRC += main.c stats.c
+SRC += main.c
 
 # output format
 FORMAT = ihex

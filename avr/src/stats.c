@@ -28,75 +28,88 @@
 #include "uartutil.h"
 #include "uart.h"
 
-stats_t stats;
+stats_t stats[STATS_ID_NUM];
 
 void stats_reset(void)
 {
-  stats.rx_cnt = 0;
-  stats.rx_bytes = 0;
-  stats.rx_err = 0;
-  stats.rx_drop = 0;
-  stats.rx_filter = 0;
-  stats.rx_max_rate = 0;
-
-  stats.tx_cnt = 0;
-  stats.tx_bytes = 0;
-  stats.tx_err = 0;
-  stats.tx_drop = 0;
-  stats.tx_filter = 0;
-  stats.tx_max_rate = 0;
-}
-
-void stats_update_rx(u16 size, u16 rate)
-{
-  stats.rx_cnt ++;
-  stats.rx_bytes += size;
-  if(rate > stats.rx_max_rate) {
-    stats.rx_max_rate = rate;
+  for(u08 i=0;i<STATS_ID_NUM;i++) {
+    stats_t *s = &stats[i];
+    s->bytes = 0;
+    s->cnt = 0;
+    s->err = 0;
+    s->drop = 0;
+    s->max_rate = 0;
   }
 }
 
-void stats_update_tx(u16 size, u16 rate)
+void stats_update_ok(u08 id, u16 size, u16 rate)
 {
-  stats.tx_cnt ++;
-  stats.tx_bytes += size;
-  if(rate > stats.tx_max_rate) {
-    stats.tx_max_rate = rate;
+  stats_t *s = &stats[id];
+  s->cnt++;
+  s->bytes += size;
+  if(rate > s->max_rate) {
+    s->max_rate = rate;
   }
 }
 
-void stats_dump(void)
+static void dump_line(u08 id)
 {
-  // ----- header -----
-  uart_send_pstring(PSTR("   cnt  bytes    err  drop filt rate\r\n"));
-  
-  // ----- rx -----
-  uart_send_pstring(PSTR("rx "));
-  uart_send_hex_word(stats.rx_cnt);
-  uart_send_spc();
-  uart_send_hex_dword(stats.rx_bytes);
-  uart_send_spc();
-  uart_send_hex_word(stats.rx_err);
-  uart_send_spc();
-  uart_send_hex_word(stats.rx_drop);
-  uart_send_spc();
-  uart_send_hex_word(stats.rx_filter);
-  uart_send_spc();
-  uart_send_rate_kbs(stats.rx_max_rate);
-  uart_send_crlf();
+  const stats_t *s = &stats[id];
 
-  // ----- tx -----
-  uart_send_pstring(PSTR("tx "));
-  uart_send_hex_word(stats.tx_cnt);
+  uart_send_hex_word(s->cnt);
   uart_send_spc();
-  uart_send_hex_dword(stats.tx_bytes);
+  uart_send_hex_dword(s->bytes);
   uart_send_spc();
-  uart_send_hex_word(stats.tx_err);
+  uart_send_hex_word(s->err);
   uart_send_spc();
-  uart_send_hex_word(stats.tx_drop);
+  uart_send_hex_word(s->drop);
   uart_send_spc();
-  uart_send_hex_word(stats.tx_filter);
+  uart_send_rate_kbs(s->max_rate);
   uart_send_spc();
-  uart_send_rate_kbs(stats.tx_max_rate);
+
+  PGM_P str;
+  switch(id) {
+    case STATS_ID_PB_RX:
+      str = PSTR("rx plipbox");
+      break;
+    case STATS_ID_PIO_RX:
+      str = PSTR("rx pio");
+      break;
+    case STATS_ID_PB_TX:
+    case STATS_ID_PIO_TX:
+      str = PSTR("tx");
+      break;
+    default:
+      str = PSTR("?");
+      break;
+  }
+  uart_send_pstring(str);
+
   uart_send_crlf();
+}
+
+static void dump_header(void)
+{
+  uart_send_pstring(PSTR("cnt  bytes    err  drop rate\r\n"));  
+}
+
+void stats_dump_all(void)
+{
+  dump_header();
+  for(u08 i=0;i<STATS_ID_NUM;i++) {
+    dump_line(i);
+  }
+}
+
+void stats_dump(u08 pb, u08 pio)
+{
+  dump_header();
+  if(pb) {
+    dump_line(STATS_ID_PB_RX);
+    dump_line(STATS_ID_PB_TX);
+  }
+  if(pio) {
+    dump_line(STATS_ID_PIO_RX);
+    dump_line(STATS_ID_PIO_TX);
+  }
 }
