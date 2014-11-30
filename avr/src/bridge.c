@@ -40,7 +40,6 @@
 #include "dump.h"
 #include "timer.h"
 #include "stats.h"
-#include "eth_state.h"
 #include "util.h"
 #include "bridge.h"
 #include "main.h"

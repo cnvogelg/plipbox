@@ -31,8 +31,6 @@
 #include "net/net.h"
 #include "param.h"
 #include "stats.h"
-#include "eth_state.h"
-#include "pb_state.h"
 
 COMMAND(cmd_quit)
 {
