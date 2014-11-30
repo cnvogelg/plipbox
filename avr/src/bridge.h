@@ -29,8 +29,6 @@
 
 #include "global.h"
 
-extern void bridge_init(void);
-extern void bridge_exit(void);
-extern void bridge_worker(void);
+extern u08 bridge_loop(void);
 
 #endif

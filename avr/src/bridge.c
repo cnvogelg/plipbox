@@ -43,6 +43,8 @@
 #include "eth_state.h"
 #include "util.h"
 #include "bridge.h"
+#include "main.h"
+#include "cmd.h"
 
 static u08 req_pending;
 static u32 req_ts;
@@ -309,27 +311,9 @@ static pb_proto_funcs_t funcs = {
   .proc_pkt = proc_pkt
 };
 
-// ---------- API ----------
+// ---------- loop ----------
 
-void bridge_init(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
-
-  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
-
-  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
-}
-
-void bridge_exit(void)
-{
-  pio_exit();
-
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[BRIDGE] off\r\n"));
-}
-
-void bridge_worker(void)
+static void bridge_worker(void)
 {
   // check pio
   if(!req_pending && (pio_has_recv() > 0)) {
@@ -385,4 +369,28 @@ void bridge_worker(void)
       stats.rx_err++;
     }
   }
+}
+
+u08 bridge_loop(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
+
+  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
+  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
+
+  // main loop
+  u08 reset = 0;
+  while(run_mode == RUN_MODE_BRIDGE) {
+    reset = !cmd_worker();
+    if(reset) {
+      break;
+    }
+
+    bridge_worker();
+  }
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[BRIDGE] off\r\n"));
+  return reset;
 }

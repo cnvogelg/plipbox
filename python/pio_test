@@ -8,7 +8,7 @@ import argparse
 import time
 
 def calc_rate(size, delta):
-	return size / (delta * 1024)
+	return size / (delta * 1000)
 
 def pio_test(ip, port, data_size, count, delay, verbose):
 	print("ip=",ip,"port=",port,"data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)	
@@ -36,7 +36,7 @@ def pio_test(ip, port, data_size, count, delay, verbose):
 			avg_delta += delta
 			delta *= 1000 # in ms
 			if verbose:
-				print("@%d: d=%6.2f ms  v=%6.2f KiB/s  ok=%s" % (i,delta,v,ok))
+				print("@%d: d=%6.2f ms  v=%6.2f KB/s  ok=%s" % (i,delta,v,ok))
 			if not ok:
 				print(i,"DATA MISMATCH")
 				break
@@ -49,7 +49,7 @@ def pio_test(ip, port, data_size, count, delay, verbose):
 			delta = avg_delta / count
 			v = calc_rate(data_size * 2, delta)
 			delta *= 1000
-			print("@%d: d=%6.2f ms  v=%6.2f KiB/s" % (count, delta,v))
+			print("@%d: d=%6.2f ms  v=%6.2f KB/s" % (count, delta,v))
 	except socket.timeout as e:
 		print(e)
 	si.close()

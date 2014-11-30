@@ -38,7 +38,7 @@
 #include "bridge.h"
 #include "main.h"
 
-u08 run_mode = RUN_MODE_PIO_TEST;
+u08 run_mode = RUN_MODE_BRIDGE;
 u08 global_verbose = 0;
 static u08 soft_reset = 0;
 
@@ -54,37 +54,7 @@ static void init_hw(void)
   par_low_init();
 }
 
-static void pb_test_loop(void)
-{
-  pb_test_begin();
-  while((run_mode == RUN_MODE_PB_TEST)&&!soft_reset) {
-    soft_reset = !cmd_worker();
-    pb_test_worker();
-  }
-  pb_test_end();
-}
-
-static void pio_test_loop(void)
-{
-  pio_test_begin();
-  while((run_mode == RUN_MODE_PIO_TEST)&&!soft_reset) {
-    soft_reset = !cmd_worker();
-    pio_test_worker();
-  }
-  pio_test_end();
-}
-
-static void bridge_loop(void)
-{
-  bridge_init();
-  while((run_mode == RUN_MODE_BRIDGE)&&!soft_reset) {
-    soft_reset = !cmd_worker();
-    bridge_worker();
-  }
-  bridge_exit();
-}
-
-void loop(void)
+static void loop(void)
 {
   soft_reset = 0;
   init_hw();
@@ -102,13 +72,14 @@ void loop(void)
   uart_send_free_stack();
 #endif
 
+  // select main loop depending on current run mode
   while(!soft_reset) {
     switch(run_mode) {
       case RUN_MODE_PB_TEST:
-        pb_test_loop();
+        soft_reset = pb_test_loop();
         break;
       case RUN_MODE_PIO_TEST:
-        pio_test_loop();
+        soft_reset = pio_test_loop();
         break;
       case RUN_MODE_BRIDGE:
         bridge_loop();

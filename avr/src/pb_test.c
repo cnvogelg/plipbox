@@ -36,6 +36,8 @@
 #include "dump.h"
 #include "net/net.h"
 #include "pkt_buf.h"
+#include "main.h"
+#include "cmd.h"
 
 static u32 trigger_ts;
 
@@ -144,25 +146,7 @@ static pb_proto_funcs_t funcs = {
   .proc_pkt = proc_pkt
 };
 
-void pb_test_begin(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[PB_TEST] on\r\n"));
-
-  // setup handlers for pb testing
-  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
-  auto_mode = 0;
-  toggle_request = 0;
-  silent_mode = 0;
-}
-
-void pb_test_end(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[PB_TEST] off\r\n"));  
-}
-
-void pb_test_worker(void)
+static void pb_test_worker(void)
 {
   // call protocol handler (low level transmit)
   u08 cmd;
@@ -181,17 +165,9 @@ void pb_test_worker(void)
   if(status == PBPROTO_STATUS_OK) {
     // account data
     if(is_tx) {
-      stats.tx_cnt++;
-      stats.tx_bytes+=size;
-      if(stats.tx_max_rate < rate) {
-        stats.tx_max_rate = rate;
-      }
+      stats_update_tx(size, rate);
     } else {
-      stats.rx_cnt++;
-      stats.rx_bytes+=size;
-      if(stats.rx_max_rate < rate) {
-        stats.rx_max_rate = rate;
-      }
+      stats_update_rx(size, rate);
     }
 
     // dump result?
@@ -227,6 +203,35 @@ void pb_test_worker(void)
       pb_test_toggle_auto();
     }
   }
+}
+
+u08 pb_test_loop(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[PB_TEST] on\r\n"));
+
+  // setup handlers for pb testing
+  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
+  auto_mode = 0;
+  toggle_request = 0;
+  silent_mode = 0;
+
+  // test loop
+  u08 reset = 0;
+  while(run_mode == RUN_MODE_PB_TEST) {
+    // command line handling
+    reset = !cmd_worker();
+    if(reset) {
+      break;
+    }
+
+    pb_test_worker();
+  }
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[PB_TEST] off\r\n"));
+
+  return reset;
 }
 
 void pb_test_send_packet(u08 silent)

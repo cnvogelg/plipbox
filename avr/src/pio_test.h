@@ -29,8 +29,6 @@
 
 #include "global.h"
 
-extern void pio_test_begin(void);
-extern void pio_test_worker(void);
-extern void pio_test_end(void);
+extern u08 pio_test_loop(void);
 
 #endif

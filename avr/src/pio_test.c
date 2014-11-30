@@ -33,30 +33,13 @@
 #include "pkt_buf.h"
 #include "main.h"
 #include "stats.h"
+#include "cmd.h"
 
 #include "net/net.h"
 #include "net/eth.h"
 #include "net/arp.h"
 #include "net/ip.h"
 #include "net/udp.h"
-
-void pio_test_begin(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[PIO_TEST] on\r\n"));
-
-  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
-  stats_reset();
-}
-
-void pio_test_end(void)
-{
-  stats_dump();
-  pio_exit();
-
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[PIO_TEST] off\r\n"));
-}
 
 static u08 recv_packet(u16 *size)
 {
@@ -188,29 +171,53 @@ static void handle_udp(u08 *buf, u16 size)
   } 
 }
 
-void pio_test_worker(void)
+u08 pio_test_loop(void)
 {
-  // incoming packet?
-  if(pio_has_recv()) {
-    u16 size;
-    if(recv_packet(&size) == PIO_OK) {
-      // large enough?
-      if(size > ETH_HDR_SIZE) {
-        // payload buf/size
-        u08 *pl_buf = pkt_buf + ETH_HDR_SIZE;
-        u16 pl_size = size - ETH_HDR_SIZE;
+  u08 reset = 0;
 
-        // is a arp request?
-        u16 type = eth_get_pkt_type(pkt_buf);
-        if(type == ETH_TYPE_ARP) {
-          handle_arp(pl_buf, pl_size);
-        }
-        else if(type == ETH_TYPE_IPV4) {
-          if(ip_get_protocol(pl_buf) == IP_PROTOCOL_UDP) {
-            handle_udp(pl_buf, pl_size);
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[PIO_TEST] on\r\n"));
+
+  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
+  stats_reset();
+  
+  while(run_mode == RUN_MODE_PIO_TEST) {
+    // handle commands
+    reset = !cmd_worker();
+    if(reset) {
+      break;
+    }
+
+    // incoming packet?
+    if(pio_has_recv()) {
+      u16 size;
+      if(recv_packet(&size) == PIO_OK) {
+        // large enough?
+        if(size > ETH_HDR_SIZE) {
+          // payload buf/size
+          u08 *pl_buf = pkt_buf + ETH_HDR_SIZE;
+          u16 pl_size = size - ETH_HDR_SIZE;
+
+          // is a arp request?
+          u16 type = eth_get_pkt_type(pkt_buf);
+          if(type == ETH_TYPE_ARP) {
+            handle_arp(pl_buf, pl_size);
+          }
+          else if(type == ETH_TYPE_IPV4) {
+            if(ip_get_protocol(pl_buf) == IP_PROTOCOL_UDP) {
+              handle_udp(pl_buf, pl_size);
+            }
           }
         }
       }
     }
   }
+
+  stats_dump();
+  pio_exit();
+
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[PIO_TEST] off\r\n"));
+
+  return reset;
 }
