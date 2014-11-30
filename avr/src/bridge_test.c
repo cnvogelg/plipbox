@@ -1,5 +1,5 @@
 /*
- * pio_test.c - test packet I/O
+ * bridge_test.c - test packet I/O and PB loop back
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,7 +24,7 @@
  *
  */
 
-#include "pio_test.h"
+#include "bridge_test.h"
 
 #include "pio.h"
 #include "pio_util.h"
@@ -34,17 +34,17 @@
 #include "stats.h"
 #include "cmd.h"
 
-u08 pio_test_loop(void)
+u08 bridge_test_loop(void)
 {
   u08 reset = 0;
 
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[PIO_TEST] on\r\n"));
+  uart_send_pstring(PSTR("[BRIDGE_TEST] on\r\n"));
 
   pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
   stats_reset();
   
-  while(run_mode == RUN_MODE_PIO_TEST) {
+  while(run_mode == RUN_MODE_BRIDGE_TEST) {
     // handle commands
     reset = !cmd_worker();
     if(reset) {
@@ -71,7 +71,7 @@ u08 pio_test_loop(void)
   pio_exit();
 
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("[PIO_TEST] off\r\n"));
+  uart_send_pstring(PSTR("[BRIDGE_TEST] off\r\n"));
 
   return reset;
 }

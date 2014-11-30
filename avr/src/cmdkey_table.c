@@ -55,6 +55,11 @@ COMMAND_KEY(cmd_enter_bridge_mode)
   run_mode = RUN_MODE_BRIDGE;
 }
 
+COMMAND_KEY(cmd_enter_bridge_test_mode)
+{
+  run_mode = RUN_MODE_BRIDGE_TEST;
+}
+
 COMMAND_KEY(cmd_send_test_packet)
 {
   pb_test_send_packet(0);
@@ -78,9 +83,10 @@ COMMAND_KEY(cmd_toggle_verbose)
 const cmdkey_table_t PROGMEM cmdkey_table[] = {
   { 's', cmd_dump_stats },
   { 'S', cmd_reset_stats },
-  { 't', cmd_enter_pb_test_mode },
-  { 'i', cmd_enter_pio_test_mode },
-  { 'b', cmd_enter_bridge_mode },
+  { '4', cmd_enter_pb_test_mode },
+  { '3', cmd_enter_pio_test_mode },
+  { '2', cmd_enter_bridge_test_mode },
+  { '1', cmd_enter_bridge_mode },
   { 'p', cmd_send_test_packet },
   { 'P', cmd_send_test_packet_silent },
   { 'a', cmd_toggle_auto_mode },

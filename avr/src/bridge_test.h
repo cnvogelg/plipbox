@@ -1,5 +1,5 @@
 /*
- * main.h - main loop
+ * bridge_test.h - test packet I/O and PB loop back
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,19 +24,11 @@
  *
  */
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef BRIDGE_TEST_H
+#define BRIDGE_TEST_H
 
 #include "global.h"
 
-#define RUN_MODE_BRIDGE 		0
-#define RUN_MODE_BRIDGE_TEST	1
-#define RUN_MODE_PB_TEST 		2
-#define RUN_MODE_PIO_TEST 		3
-
-
-/* access run mode for command keys */
-extern u08 run_mode;
-extern u08 global_verbose;
+extern u08 bridge_test_loop(void);
 
 #endif

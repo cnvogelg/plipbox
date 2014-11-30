@@ -35,6 +35,7 @@
 
 #include "pb_test.h"
 #include "pio_test.h"
+#include "bridge_test.h"
 #include "bridge.h"
 #include "main.h"
 
@@ -81,8 +82,11 @@ static void loop(void)
       case RUN_MODE_PIO_TEST:
         soft_reset = pio_test_loop();
         break;
+      case RUN_MODE_BRIDGE_TEST:
+        soft_reset = bridge_test_loop();
+        break;
       case RUN_MODE_BRIDGE:
-        bridge_loop();
+        soft_reset = bridge_loop();
         break;
     }
   }

@@ -132,7 +132,7 @@ DEFINES += DEV_ENC28J60
 SRC += spi.c enc28j60.c
 endif
 SRC += pio.c pio_util.c pio_test.c
-SRC += pb_test.c bridge.c
+SRC += pb_test.c bridge.c bridge_test.c
 SRC += cmd.c cmd_table.c cmdkey_table.c
 SRC += main.c stats.c
 
