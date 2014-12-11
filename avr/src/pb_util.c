@@ -32,7 +32,7 @@
 #include "dump.h"
 #include "main.h"
 
-u08 pb_util_handle(u08 *was_tx)
+u08 pb_util_handle(void)
 {
   // call protocol handler (low level transmit)
   u08 status = pb_proto_handle();

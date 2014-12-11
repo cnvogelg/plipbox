@@ -142,8 +142,7 @@ static pb_proto_funcs_t funcs = {
 
 static void pb_test_worker(void)
 {
-  u08 is_tx;
-  u08 status = pb_util_handle(&is_tx);
+  u08 status = pb_util_handle();
 
   // ok!
   if(status == PBPROTO_STATUS_OK) {
@@ -154,7 +153,7 @@ static void pb_test_worker(void)
     }
 
     // next iteration?
-    if(is_tx) {
+    if(pb_proto_stat.is_send) {
       if(auto_mode) {
         // next iteration after 
         pb_test_send_packet(1);

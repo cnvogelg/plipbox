@@ -21,7 +21,8 @@ def pio_test(ip, port, data_size, count, delay, verbose):
 		ok = True
 		for i in xrange(count):
 			# gen data
-			data = chr(64+i) + data_add
+			tag = i % 128
+			data = chr(64+tag) + data_add
 			# send data
 			start = time.time()
 			si.sendto(data, (ip, port))

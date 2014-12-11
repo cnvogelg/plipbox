@@ -29,6 +29,6 @@
 
 #include "global.h"
 
-extern u08 pb_util_handle(u08 *was_tx);
+extern u08 pb_util_handle(void);
 
 #endif
