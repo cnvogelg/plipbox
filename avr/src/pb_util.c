@@ -1,5 +1,5 @@
 /*
- * dump.h - helper functions for debugging
+ * pb_util.c: plipbox protocol high level helpers
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,20 +24,41 @@
  *
  */
 
-#ifndef DUMP_H
-#define DUMP_H
-
-#include "global.h"
+#include "pb_util.h"
 
 #include "pb_proto.h"
+#include "timer.h"
+#include "stats.h"
+#include "dump.h"
+#include "main.h"
 
-extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
-extern void dump_arp_pkt(const u08 *arp_buf);
-extern void dump_ip_pkt(const u08 *ip_buf);
-extern void dump_ip_protocol(const u08 *ip_buf);
+u08 pb_util_handle(u08 *was_tx)
+{
+  // call protocol handler (low level transmit)
+  u08 status = pb_proto_handle();
+  // nothing done... return
+  if(status == PBPROTO_STATUS_IDLE) {
+    return PBPROTO_STATUS_IDLE; // inactive
+  }
 
-extern void dump_pb_cmd(const pb_proto_stat_t *ps);
+  const pb_proto_stat_t *ps = &pb_proto_stat;
 
-extern void dump_line(const u08 *eth_buf, u16 size);
-
-#endif
+  // ok!
+  if(status == PBPROTO_STATUS_OK) {
+    // account data
+    stats_update_ok(ps->stats_id, ps->size, ps->rate);
+    // dump result?
+    if(global_verbose) {
+      // in interactive mode show result
+      dump_pb_cmd(ps);
+    }
+  }
+  // pb proto failed with an error
+  else {
+    // dump error
+    dump_pb_cmd(ps);
+    // account data
+    stats_get(ps->stats_id)->err++;
+  }
+  return status;
+}

@@ -30,6 +30,7 @@
 #include "pb_proto.h"
 #include "par_low.h"
 #include "timer.h"
+#include "stats.h"
 
 #include "uartutil.h"
 
@@ -43,8 +44,12 @@
 static pb_proto_funcs_t    *funcs;
 static u08 *pb_buf;
 static u16 pb_buf_size;
+static u32 trigger_ts;
 
 u16 pb_proto_timeout = 5000; // = 500ms in 100us ticks
+
+// public stat func
+pb_proto_stat_t pb_proto_stat;
 
 // ----- Init -----
 
@@ -80,6 +85,7 @@ u08 pb_proto_get_line_status(void)
 void pb_proto_request_recv(void)
 {
   par_low_pulse_ack(1);
+  trigger_ts = time_stamp;
 }
 
 // ----- HELPER -----
@@ -500,20 +506,23 @@ recv_burst_exit:
   return result;  
 }
 
-u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size, u16 *ret_delta)
+u08 pb_proto_handle(void)
 {
   u08 result;
-   
+  pb_proto_stat_t *ps = &pb_proto_stat;
+
   // handle server side of plipbox protocol
-  *ret_cmd = 0; 
+  ps->cmd = 0; 
   
   // make sure that SEL == 1
   if(!GET_SELECT()) {
+    ps->status = PBPROTO_STATUS_IDLE;
     return PBPROTO_STATUS_IDLE;
   }
   
   // make sure that REQ == 0
   if(GET_REQ()) {
+    ps->status = PBPROTO_STATUS_IDLE;
     return PBPROTO_STATUS_IDLE;
   }
   
@@ -525,28 +534,31 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size, u16 *ret_delta)
   if((cmd == PBPROTO_CMD_RECV) || (cmd == PBPROTO_CMD_RECV_BURST)) {
     u08 res = funcs->fill_pkt(pb_buf, pb_buf_size, &pkt_size);
     if(res != PBPROTO_STATUS_OK) {
+      ps->status = res;
       return res;
     }
   }
 
   // start timer
+  u32 ts = time_stamp;
   timer_hw_reset();
 
   // confirm cmd with RAK = 1
   SET_RAK();
 
+  u16 ret_size = 0;
   switch(cmd) {
     case PBPROTO_CMD_RECV:
-      result = cmd_recv(pkt_size, ret_size);
+      result = cmd_recv(pkt_size, &ret_size);
       break;
     case PBPROTO_CMD_SEND:
-      result = cmd_send(ret_size);
+      result = cmd_send(&ret_size);
       break;
     case PBPROTO_CMD_RECV_BURST:
-      result = cmd_recv_burst(pkt_size, ret_size);
+      result = cmd_recv_burst(pkt_size, &ret_size);
       break;
     case PBPROTO_CMD_SEND_BURST:
-      result = cmd_send_burst(ret_size);
+      result = cmd_send_burst(&ret_size);
       break;
     default:
       result = PBPROTO_STATUS_INVALID_CMD;
@@ -565,11 +577,19 @@ u08 pb_proto_handle(u08 *ret_cmd, u16 *ret_size, u16 *ret_delta)
   // process buffer for send command
   if(result == PBPROTO_STATUS_OK) {
     if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
-      result = funcs->proc_pkt(pb_buf, *ret_size);
+      result = funcs->proc_pkt(pb_buf, ret_size);
     }
   } 
-     
-  *ret_delta = delta;
-  *ret_cmd = cmd;
+  
+  // fill in stats
+  ps->cmd = cmd;
+  ps->status = result;
+  ps->size = ret_size;
+  ps->delta = delta;
+  ps->rate = timer_hw_calc_rate_kbs(ret_size, delta);
+  ps->ts = ts;
+  ps->is_send = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
+  ps->stats_id = ps->is_send ? STATS_ID_PB_TX : STATS_ID_PB_RX;
+  ps->recv_delta = ps->is_send ? 0 : (u16)(ps->ts - trigger_ts);
   return result;
 }

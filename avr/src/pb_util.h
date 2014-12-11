@@ -1,5 +1,5 @@
 /*
- * dump.h - helper functions for debugging
+ * pb_util.h: plipbox protocol high level helpers
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,20 +24,11 @@
  *
  */
 
-#ifndef DUMP_H
-#define DUMP_H
+#ifndef PB_UTIL_H
+#define PB_UTIL_H
 
 #include "global.h"
 
-#include "pb_proto.h"
-
-extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
-extern void dump_arp_pkt(const u08 *arp_buf);
-extern void dump_ip_pkt(const u08 *ip_buf);
-extern void dump_ip_protocol(const u08 *ip_buf);
-
-extern void dump_pb_cmd(const pb_proto_stat_t *ps);
-
-extern void dump_line(const u08 *eth_buf, u16 size);
+extern u08 pb_util_handle(u08 *was_tx);
 
 #endif

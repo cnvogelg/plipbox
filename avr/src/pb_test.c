@@ -27,19 +27,16 @@
 #include "pb_test.h"
 
 #include "uartutil.h"
-#include "uart.h"
 #include "pb_proto.h"
+#include "pb_util.h"
 #include "param.h"
-#include "timer.h"
-#include "util.h"
 #include "stats.h"
-#include "dump.h"
-#include "net/net.h"
-#include "pkt_buf.h"
 #include "main.h"
 #include "cmd.h"
-
-static u32 trigger_ts;
+#include "timer.h"
+#include "net/net.h"
+#include "pkt_buf.h"
+#include "dump.h"
 
 static u08 toggle_request;
 static u08 auto_mode;
@@ -49,9 +46,6 @@ static u08 silent_mode;
 
 static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 {
-  // convert trigger ts to delta
-  trigger_ts = time_stamp - trigger_ts;
-
   *size = param.test_plen;
   if(*size > max_size) {
     return PBPROTO_STATUS_PACKET_TOO_LARGE;
@@ -148,28 +142,15 @@ static pb_proto_funcs_t funcs = {
 
 static void pb_test_worker(void)
 {
-  // call protocol handler (low level transmit)
-  u08 cmd;
-  u16 size;
-  u16 delta;
-  u08 status = pb_proto_handle(&cmd, &size, &delta);
-  u16 rate = timer_hw_calc_rate_kbs(size, delta);
-  u08 is_tx = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
-  u08 stats_id = is_tx ? STATS_ID_PB_TX : STATS_ID_PB_RX;
-
-  // nothing done... return
-  if(status == PBPROTO_STATUS_IDLE) {
-    return; // inactive
-  }
+  u08 is_tx;
+  u08 status = pb_util_handle(&is_tx);
 
   // ok!
   if(status == PBPROTO_STATUS_OK) {
-    // account data
-    stats_update_ok(stats_id, size, rate);
-    // dump result?
+
+    // always dump I/O
     if(!silent_mode) {
-      // in interactive mode show result
-      dump_pb_cmd(cmd, status, size, delta, rate, trigger_ts);
+      dump_pb_cmd(&pb_proto_stat);
     }
 
     // next iteration?
@@ -183,12 +164,7 @@ static void pb_test_worker(void)
     }
   }
   // pb proto failed with an error
-  else {
-    // dump error
-    dump_pb_cmd(cmd, status, size, delta, rate, trigger_ts);
-    // account data
-    stats_get(stats_id)->err++;
-
+  else if(status != PBPROTO_STATUS_IDLE) {
     // disable auto mode
     if(auto_mode) {
       pb_test_toggle_auto();
@@ -232,7 +208,6 @@ u08 pb_test_loop(void)
 void pb_test_send_packet(u08 silent)
 {
   silent_mode = silent;
-  trigger_ts = time_stamp;
   pb_proto_request_recv();
 }
 

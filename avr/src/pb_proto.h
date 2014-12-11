@@ -68,6 +68,20 @@ typedef struct {
     pb_proto_proc_func      proc_pkt; // for SEND command
 } pb_proto_funcs_t;
 
+typedef struct {
+  u08 cmd;		// received pb proto command
+  u08 status;   // status after processing the command
+  u08 is_send;    // was a transmit command (amiga send?)
+  u08 stats_id; // what id to use for stats recording
+  u16 size;     // packet size 
+  u16 delta;    // hw timing for transmit
+  u16 rate;     // delta converted to transfer rate
+  u16 recv_delta; // delta after recv was requested 
+  u32 ts;       // time stamp of transfer
+} pb_proto_stat_t;
+
+extern pb_proto_stat_t pb_proto_stat; // filled by pb_proto_handle()
+
 // ----- Parameter -----
 
 extern u16 pb_proto_rx_timeout; // timeout for next byte in 100us
@@ -76,7 +90,7 @@ extern u16 pb_proto_rx_timeout; // timeout for next byte in 100us
 
 extern void pb_proto_init(pb_proto_funcs_t *f, u08 *buf, u16 buf_size);
 extern u08  pb_proto_get_line_status(void);
-extern u08  pb_proto_handle(u08 *cmd, u16 *size, u16 *ret_delta);
+extern u08  pb_proto_handle(void); // side effect: fill pb_proto_stat!
 extern void pb_proto_request_recv(void);
 
 #endif

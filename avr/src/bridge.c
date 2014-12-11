@@ -314,6 +314,7 @@ static pb_proto_funcs_t funcs = {
 
 static void bridge_worker(void)
 {
+#if 0
   // check pio
   if(!req_pending && (pio_has_recv() > 0)) {
     pb_proto_request_recv();
@@ -351,6 +352,7 @@ static void bridge_worker(void)
     // account data
     stats_get(stats_id)->err++;
   }
+#endif
 }
 
 u08 bridge_loop(void)
