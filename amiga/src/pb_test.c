@@ -246,7 +246,7 @@ void __stdargs _main(char *cmdline)
   if(args_array[DEVICE_ARG] != 0) {
     dev_name = (char *)args_array[DEVICE_ARG];
   } else {
-    dev_name = "plipdox.device";
+    dev_name = "plipbox.device";
   }
   if(args_array[MTU_ARG] != 0) {
     mtu = *((ULONG *)args_array[MTU_ARG]);
