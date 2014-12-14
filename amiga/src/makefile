@@ -7,7 +7,7 @@ OBJ_DIR=../obj
 AMI_OBJ_DIR=base:obj
 AMI_BIN_DIR=base:bin
 
-# where does the amiga files reside?
+# where do the amiga files reside?
 # expects the following dirs:
 # wb310          - HD install of workbench 3.1
 # sc             - install directory of SAS C 6.58 compiler
@@ -51,7 +51,7 @@ COMMON_DEFINES += DEFINE DEVICE_DATE=$(DEVICE_DATE)
 CFLAGS_COMMON = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST \
                 NOSTKCHK NOCHKABORT \
                 SMALLCODE SMALLDATA VERBOSE NOICONS STRICT ANSI \
-				$(CPUCCOPT) $(COMMON_DEFINES)
+                $(CPUCCOPT) $(COMMON_DEFINES)
 
 # build type flags
 CFLAGS_DEBUG = $(CFLAGS_COMMON) 
@@ -91,7 +91,9 @@ LIBSIZE_TOOL = $(BUILD_PATH)/libsize
 LIBSIZE_INC = $(BUILD_PATH)/libsize.i
 LIBSIZE_OBJ = $(BUILD_PATH)/libsize.o
 
-PB_TEST_TOOL = $(BUILD_PATH)/pb_test
+# the plipbox test tool
+PB_TEST_TOOL_NAME = pb_test_$(BUILD_TYPE)_$(CPUSUFFIX)
+PB_TEST_TOOL = $(BIN_DIR)/$(PB_TEST_TOOL_NAME)
 PB_TEST_TOOL_OBJ = $(BUILD_PATH)/pb_test.o
 
 # add driver directory

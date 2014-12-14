@@ -60,10 +60,11 @@ static ULONG pkt_buf_size;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K";
+  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K";
 enum args_offset {
   DEVICE_ARG,
   UNIT_ARG,
+  MTU_ARG,
   NUM_ARGS
 };
 static struct RDArgs *args_rd = NULL;
@@ -145,14 +146,20 @@ static void close_device(void)
   }
 }
 
+static void sana_error(void)
+{
+  UWORD error = sana_req->ios2_Req.io_Error;
+  UWORD wire_error = sana_req->ios2_WireError;
+  Printf("IO failed: cmd=%04lx -> error=%d, wire_error=%d\n", 
+         sana_req->ios2_Req.io_Command, error, wire_error);  
+}
+
 static BOOL sana_cmd(UWORD cmd)
 {
   sana_req->ios2_Req.io_Command = cmd;
 
   if(DoIO((struct IORequest *)sana_req) != 0) {
-    UWORD error = sana_req->ios2_Req.io_Error;
-    UWORD wire_error = sana_req->ios2_WireError;
-    Printf("DoIO failed: cmd=%04lx -> error=%d, wire_error=%d\n", cmd, error, wire_error);
+    sana_error();
     return FALSE;
   } else {
     return TRUE;
@@ -169,11 +176,58 @@ static BOOL sana_offline(void)
   return sana_cmd(S2_OFFLINE);
 }
 
+static void reply_loop(void)
+{
+  ULONG wmask;
+
+  PutStr("Waiting for incoming packets...\n");
+  for(;;) {
+    /* read request */
+    sana_req->ios2_Req.io_Command = S2_READORPHAN; /*CMD_READ;*/
+    sana_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
+    sana_req->ios2_DataLength = pkt_buf_size;
+    /*sana_req->ios2_PacketType = type;*/
+    sana_req->ios2_Data = pkt_buf;
+    BeginIO((struct IORequest *)sana_req);
+    wmask = Wait(SIGBREAKF_CTRL_C | (1UL << msg_port->mp_SigBit));
+    
+    /* user break */
+    if(wmask & SIGBREAKF_CTRL_C) {
+      AbortIO((struct IORequest *)sana_req);
+      WaitIO((struct IORequest *)sana_req);
+      PutStr("***Break\n");
+      break;
+    }
+
+    /* got a packet? */
+    if(WaitIO((struct IORequest *)sana_req) != 0)
+    {
+      sana_error();
+      break;
+    } else {
+      PutStr("+\n");
+
+      /* inconmig dst will be new src */
+      memcpy(sana_req->ios2_SrcAddr, sana_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
+
+      /* send packet back */
+      sana_req->ios2_Req.io_Command = CMD_WRITE;
+      if(DoIO((struct IORequest *)sana_req) != 0) {
+        sana_error();
+        break;
+      } else {
+        PutStr("-\n");
+      }
+    }
+  }
+}
+
 /* ---------- main ---------- */
 void __stdargs _main(char *cmdline)
 {
   BOOL ok = TRUE;
   ULONG unit;
+  ULONG mtu;
   char *dev_name;
 
   /* parse args */
@@ -194,24 +248,39 @@ void __stdargs _main(char *cmdline)
   } else {
     dev_name = "plipdox.device";
   }
-
-  /* open device */
-  Printf("device: %s:%lu\n", dev_name, unit);
-  if(open_device(dev_name, unit, 0)) {
-    /* set device online */
-    if(sana_online()) {
-
-      /* TBD: main loop */
-
-      /* finally offline again */
-      if(!sana_offline()) {
-        PutStr("Error going offline!\n");
-      }
-    } else {
-      PutStr("Error going online!\n");
-    }
+  if(args_array[MTU_ARG] != 0) {
+    mtu = *((ULONG *)args_array[MTU_ARG]);
+  } else {
+    mtu = 1500;
   }
-  close_device();
+
+  /* alloc buffer */
+  pkt_buf_size = mtu;
+  pkt_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
+  if(pkt_buf != NULL) {
+    /* open device */
+    Printf("device: %s:%lu\n", dev_name, unit);
+    if(open_device(dev_name, unit, 0)) {
+      /* set device online */
+      if(sana_online()) {
+
+        reply_loop();
+
+        /* finally offline again */
+        if(!sana_offline()) {
+          PutStr("Error going offline!\n");
+        }
+      } else {
+        PutStr("Error going online!\n");
+      }
+    }
+    close_device();
+
+    /* free packet buffer */
+    FreeMem(pkt_buf, pkt_buf_size);
+  } else {
+    PutStr("Error allocating pkt_buf!\n");
+  }
 
   /* free args */
   FreeArgs(args_rd);
