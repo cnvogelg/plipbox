@@ -91,12 +91,17 @@ LIBSIZE_TOOL = $(BUILD_PATH)/libsize
 LIBSIZE_INC = $(BUILD_PATH)/libsize.i
 LIBSIZE_OBJ = $(BUILD_PATH)/libsize.o
 
+PB_TEST_TOOL = $(BUILD_PATH)/pb_test
+PB_TEST_TOOL_OBJ = $(BUILD_PATH)/pb_test.o
+
 # add driver directory
 VPATH = .:$(DEVICE_NAME)
 
 # --- rules ---
 
-all: dirs $(OUTPUT)
+.PHONY: pb_test libsize all opt dist clean clean_obj clean_dist dirs
+
+all: dirs $(OUTPUT) $(PB_TEST_TOOL)
 
 opt:
 	$(MAKE) BUILD_TYPE=RELEASE
@@ -163,6 +168,12 @@ $(LIBSIZE_INC): $(LIBSIZE_TOOL)
 libsize: $(LIBSIZE_TOOL)
 
 $(LIBSIZE_TOOL): $(LIBSIZE_OBJ)
+	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
+
+# --- pb_test tool ---
+pb_test: $(PB_TEST_TOOL)
+
+$(PB_TEST_TOOL): $(PB_TEST_TOOL_OBJ)
 	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
 
 # --- dependencies ---
