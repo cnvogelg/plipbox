@@ -135,11 +135,6 @@ static u08 proc_pkt(const u08 *buf, u16 size)
 
 // ----- function table -----
 
-static pb_proto_funcs_t funcs = {
-  .fill_pkt = fill_pkt,
-  .proc_pkt = proc_pkt
-};
-
 static void pb_test_worker(void)
 {
   u08 status = pb_util_handle();
@@ -179,7 +174,7 @@ u08 pb_test_loop(void)
   stats_reset();
 
   // setup handlers for pb testing
-  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
+  pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
   auto_mode = 0;
   toggle_request = 0;
   silent_mode = 0;

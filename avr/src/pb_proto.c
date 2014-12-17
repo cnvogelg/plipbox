@@ -41,7 +41,8 @@
 #define GET_SELECT      par_low_get_select
 
 // recv funcs
-static pb_proto_funcs_t    *funcs;
+static pb_proto_fill_func fill_func;
+static pb_proto_proc_func proc_func;
 static u08 *pb_buf;
 static u16 pb_buf_size;
 static u32 trigger_ts;
@@ -53,9 +54,10 @@ pb_proto_stat_t pb_proto_stat;
 
 // ----- Init -----
 
-void pb_proto_init(pb_proto_funcs_t *f, u08 *buf, u16 buf_size)
+void pb_proto_init(pb_proto_fill_func ff, pb_proto_proc_func pf, u08 *buf, u16 buf_size)
 {
-  funcs = f;
+  fill_func = ff;
+  proc_func = pf;
   pb_buf = buf;
   pb_buf_size = buf_size;
 
@@ -532,7 +534,7 @@ u08 pb_proto_handle(void)
   // fill buffer for recv command
   u16 pkt_size = 0;
   if((cmd == PBPROTO_CMD_RECV) || (cmd == PBPROTO_CMD_RECV_BURST)) {
-    u08 res = funcs->fill_pkt(pb_buf, pb_buf_size, &pkt_size);
+    u08 res = fill_func(pb_buf, pb_buf_size, &pkt_size);
     if(res != PBPROTO_STATUS_OK) {
       ps->status = res;
       return res;
@@ -577,7 +579,7 @@ u08 pb_proto_handle(void)
   // process buffer for send command
   if(result == PBPROTO_STATUS_OK) {
     if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
-      result = funcs->proc_pkt(pb_buf, ret_size);
+      result = proc_func(pb_buf, ret_size);
     }
   } 
   

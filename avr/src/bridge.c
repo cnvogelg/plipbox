@@ -64,13 +64,6 @@ static u08 proc_pkt(const u08 *buf, u16 size)
   return PBPROTO_STATUS_OK;
 }
 
-// ----- function table -----
-
-static pb_proto_funcs_t funcs = {
-  .fill_pkt = fill_pkt,
-  .proc_pkt = proc_pkt
-};
-
 // ---------- loop ----------
 
 u08 bridge_loop(void)
@@ -80,7 +73,7 @@ u08 bridge_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
 
-  pb_proto_init(&funcs, pkt_buf, PKT_BUF_SIZE);
+  pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
   pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
   stats_reset();
   
