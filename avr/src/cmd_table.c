@@ -86,14 +86,9 @@ COMMAND(cmd_param_toggle)
   u08 type = argv[0][1];
   u08 *val = 0;
   
-  if(group == 'd') {
+  if(group == 't') {
     switch(type) {
-      case 'd': val = &param.dump_dirs; break;
-      case 'e': val = &param.dump_eth; break;
-      case 'i': val = &param.dump_ip; break;
-      case 'a': val = &param.dump_arp; break;
-      case 'p': val = &param.dump_proto; break;
-      case 'l': val = &param.dump_plip; break;
+      case 'm': val = &param.test_mode; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -241,18 +236,11 @@ COMMAND(cmd_help)
     "fp [on]  enable filtering of PLIP packets\r\n"
     "fe [on]  enable filtering of ETH packets\r\n"
     "\r\n"
-    "dd <val> select diagnosis directions. add values:\r\n"
-    "         [1=plip(rx),2=eth(rx),4=plip(tx),8=eth(tx)]\r\n"
-    "de [on]  toggle dump ethernet packets\r\n"
-    "di [on]  toggle dump IP contents\r\n"
-    "da [on]  toggle dump ARP contents\r\n"
-    "dp [on]  toggle dump TCP/UDP contents\r\n"
-    "dl [on]  toggle dump PLIP info\r\n"
-    "\r\n"
     "tl       length of test packets\r\n"
     "tt       eth type of test packets\r\n"
     "ti <ip>  test IP address\r\n"
     "tp <n>   test UDP port\r\n"
+    "tm <n>   test mode\r\n"
   ));
   return CMD_OK;
 }
@@ -281,19 +269,12 @@ CMD_NAME("fc", cmd_gen_fc );
 CMD_NAME("fp", cmd_gen_fp );
 CMD_NAME("fe", cmd_gen_fe );
 CMD_NAME("fl", cmd_gen_fl );
-  // dump commands
-CMD_NAME("dd", cmd_gen_dd );
-CMD_NAME("de", cmd_gen_de );
-CMD_NAME("di", cmd_gen_di );
-CMD_NAME("da", cmd_gen_da );
-CMD_NAME("dp", cmd_gen_dp );
-CMD_NAME("dl", cmd_gen_dl );
-CMD_NAME("dy", cmd_gen_dy );
   // test
 CMD_NAME("tl", cmd_gen_tl );
 CMD_NAME("tt", cmd_gen_tt );
 CMD_NAME("ti", cmd_gen_ti );
 CMD_NAME("tp", cmd_gen_tp );
+CMD_NAME("tm", cmd_gen_tm );
   // help
 CMD_NAME("?", cmd_help );
 
@@ -322,19 +303,12 @@ const cmd_table_t PROGMEM cmd_table[] = {
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fp),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fe),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fl),
-  // dump commands
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dd),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_de),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_di),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_da),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dp),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dl),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_dy),
   // test
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tl),
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tt),
   CMD_ENTRY_NAME(cmd_param_ip_addr, cmd_gen_ti),
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tp),
+  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_tm),
   // help
   CMD_ENTRY(cmd_help),
   { 0,0 } // last entry

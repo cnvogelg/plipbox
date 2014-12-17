@@ -38,6 +38,7 @@
 #include "net/net.h"
 #include "net/eth.h"
 #include "pkt_buf.h"
+#include "dump.h"
 
 static u16 pio_pkt_size;
 
@@ -52,8 +53,11 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
     return PBPROTO_STATUS_PACKET_TOO_LARGE;
   }
 
-  // switch eth type to magic for loop back
-  net_put_word(buf + ETH_OFF_TYPE, 0xfffd);
+  // in test mode 0 send via internal device loopback
+  if(param.test_mode == 0) {
+    // switch eth type to magic for loop back
+    net_put_word(buf + ETH_OFF_TYPE, ETH_TYPE_MAGIC_LOOPBACK);
+  }
 
   // consumed packet
   pio_pkt_size = 0;
@@ -66,17 +70,27 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 */
 static u08 proc_pkt(const u08 *buf, u16 size)
 {
-  // make sure its a magic packet
+  // make sure its the expected packet type
   u16 type = net_get_word(pkt_buf + ETH_OFF_TYPE);
-  if(type != 0xfffd) {
-    uart_send_pstring(PSTR("NO MAGIC!!\r\n"));
-  } else {
-    // switch eth type back to IPv4
-    net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_IPV4);
 
-    // send packet via pio
-    pio_util_send_packet(size);
+  // in test mode 0 packet was sent by internal device loopback
+  if(param.test_mode == 0) {
+    if(type != ETH_TYPE_MAGIC_LOOPBACK) {
+      uart_send_pstring(PSTR("NO MAGIC!!\r\n"));
+      return PBPROTO_STATUS_OK;
+    } else {
+      // switch eth type back to IPv4
+      net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_IPV4);
+    }
+  } else {
+    if(type != ETH_TYPE_IPV4) {
+      uart_send_pstring(PSTR("NO IPV4!!\r\n"));
+      return PBPROTO_STATUS_OK;      
+    }
   }
+
+  // send packet via pio
+  pio_util_send_packet(size);
 
   return PBPROTO_STATUS_OK;
 }

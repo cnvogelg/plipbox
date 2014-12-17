@@ -338,6 +338,9 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       req->ios2_Req.io_Flags |= SANA2IOF_BCAST;
    }
    
+   /* store packet type */
+   req->ios2_PacketType = (USHORT)frame->hwf_Type;
+
    return ok;
 }
 

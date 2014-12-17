@@ -29,13 +29,6 @@
 
 #include "global.h"
 
-#define DUMP_DIR_PLIP_RX  1
-#define DUMP_DIR_ETH_RX   2
-#define DUMP_DIR_PLIP_TX  4
-#define DUMP_DIR_ETH_TX   8
-#define DUMP_FLOW_CTL     16
-#define DUMP_ERRORS       32
-
 typedef struct {
   u08 mac_addr[6];
 
@@ -45,17 +38,11 @@ typedef struct {
   u08 full_duplex;
   u08 loop_back;
 
-  u08 dump_dirs;
-  u08 dump_eth;
-  u08 dump_ip;
-  u08 dump_arp;
-  u08 dump_proto;
-  u08 dump_plip;
-  
   u16 test_plen;
   u16 test_ptype;
   u08 test_ip[4];
   u16 test_port;
+  u08 test_mode;
 } param_t;
   
 extern param_t param;  

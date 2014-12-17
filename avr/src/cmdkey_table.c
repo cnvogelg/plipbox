@@ -29,6 +29,7 @@
 #include "stats.h"
 #include "pb_test.h"
 #include "main.h"
+#include "uartutil.h"
 
 COMMAND_KEY(cmd_dump_stats)
 {
@@ -78,6 +79,8 @@ COMMAND_KEY(cmd_toggle_auto_mode)
 COMMAND_KEY(cmd_toggle_verbose)
 {
   global_verbose = !global_verbose;
+  uart_send_pstring(PSTR("VERBOSE: "));
+  uart_send_pstring(global_verbose ? PSTR("ON\r\n") : PSTR("OFF\r\n"));
 }
 
 const cmdkey_table_t PROGMEM cmdkey_table[] = {

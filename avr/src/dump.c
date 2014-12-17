@@ -187,22 +187,15 @@ extern void dump_ip_protocol(const u08 *ip_buf)
 
 extern void dump_line(const u08 *eth_buf, u16 size)
 {
-  if(param.dump_eth) {
-    dump_eth_pkt(eth_buf, size);
-  }
+  dump_eth_pkt(eth_buf, size);
+  
   const u08 *ip_buf = eth_buf + ETH_HDR_SIZE;
   u16 type = eth_get_pkt_type(eth_buf);
   if(type == ETH_TYPE_ARP) {
-    if(param.dump_arp) {
-      dump_arp_pkt(ip_buf);
-    }
+    dump_arp_pkt(ip_buf);
   } else if(type == ETH_TYPE_IPV4) {
-    if(param.dump_ip) {
-      dump_ip_pkt(ip_buf);
-      if(param.dump_proto) {
-        dump_ip_protocol(ip_buf);
-      }
-    }
+    dump_ip_pkt(ip_buf);
+    dump_ip_protocol(ip_buf);
   }
 }
 

@@ -60,11 +60,12 @@ static ULONG pkt_buf_size;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K";
+  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S";
 enum args_offset {
   DEVICE_ARG,
   UNIT_ARG,
   MTU_ARG,
+  VERBOSE_ARG,
   NUM_ARGS
 };
 static struct RDArgs *args_rd = NULL;
@@ -179,6 +180,7 @@ static BOOL sana_offline(void)
 static void reply_loop(void)
 {
   ULONG wmask;
+  ULONG verbose = args_array[VERBOSE_ARG];
 
   PutStr("Waiting for incoming packets...\n");
   for(;;) {
@@ -205,18 +207,23 @@ static void reply_loop(void)
       sana_error();
       break;
     } else {
-      PutStr("+\n");
+      if(verbose) {
+        PutStr("+\n");
+      }
 
       /* inconmig dst will be new src */
       memcpy(sana_req->ios2_SrcAddr, sana_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
 
       /* send packet back */
       sana_req->ios2_Req.io_Command = CMD_WRITE;
+      sana_req->ios2_Req.io_Flags = 0;
       if(DoIO((struct IORequest *)sana_req) != 0) {
         sana_error();
         break;
       } else {
-        PutStr("-\n");
+        if(verbose) {
+          PutStr("-\n");
+        }
       }
     }
   }

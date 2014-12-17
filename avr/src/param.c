@@ -45,13 +45,6 @@ uint16_t eeprom_crc16 EEMEM;
 static const param_t PROGMEM default_param = {
   .mac_addr = { 0x1a,0x11,0xaf,0xa0,0x47,0x11},
 
-  .dump_dirs = 0,
-  .dump_eth = 0,
-  .dump_ip = 0,
-  .dump_arp = 0,
-  .dump_proto = 0,
-  .dump_plip = 0,
-  
   .filter_plip = 1,
   .filter_eth = 1,
   .flow_ctl = 1,
@@ -61,7 +54,8 @@ static const param_t PROGMEM default_param = {
   .test_plen = 1514,
   .test_ptype = 0xfffd,
   .test_ip = { 192,168,2,222 },
-  .test_port = 6800
+  .test_port = 6800,
+  .test_mode = 0
 };
 
 static void dump_byte(PGM_P str, const u08 val)
@@ -94,15 +88,6 @@ void param_dump(void)
   dump_byte(PSTR("fe: filter ETH   "), param.filter_eth);
   dump_byte(PSTR("fp: filter PLIP  "), param.filter_plip);
   
-  // diagnosis
-  uart_send_crlf();  
-  dump_byte(PSTR("dd: dump dirs    "), param.dump_dirs);
-  dump_byte(PSTR("de: dump ETH     "), param.dump_eth);
-  dump_byte(PSTR("di: dump IP      "), param.dump_ip);
-  dump_byte(PSTR("da: dump ARP     "), param.dump_arp);
-  dump_byte(PSTR("dp: dump proto   "), param.dump_proto);
-  dump_byte(PSTR("dl: dump plip    "), param.dump_plip);
-  
   // test
   uart_send_crlf();
   dump_word(PSTR("tl: packet len   "), param.test_plen);
@@ -111,6 +96,7 @@ void param_dump(void)
   net_dump_ip(param.test_ip);
   uart_send_crlf();
   dump_word(PSTR("tp: udp port     "), param.test_port);
+  dump_byte(PSTR("tm: test mode    "), param.test_mode);
 }
 
 // build check sum for parameter block

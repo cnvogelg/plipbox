@@ -39,6 +39,8 @@
 #define ETH_TYPE_IPV4 0x800
 #define ETH_TYPE_ARP  0x806   
 
+#define ETH_TYPE_MAGIC_LOOPBACK 0XFFFD
+
 inline const u08* eth_get_tgt_mac(const u08 *pkt) { return pkt + ETH_OFF_TGT_MAC; }
 inline const u08 *eth_get_src_mac(const u08 *pkt) { return pkt + ETH_OFF_SRC_MAC; }
 inline u16 eth_get_pkt_type(const u08 *pkt) { return net_get_word(pkt + ETH_OFF_TYPE); }
