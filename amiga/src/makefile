@@ -35,7 +35,7 @@ AS          = $(RUN) sc:c/sc
 
 # SAS C flags
 LIBS        = LIB lib:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
-CINCLUDES   = INCDIR="include:" INCDIR="netinclude:" INCDIR="$(DEVICE_NAME)"
+CINCLUDES   = INCDIR="netinclude:" INCDIR="include:" INCDIR="$(DEVICE_NAME)"
 ASMINCLUDES = $(CINCLUDES) INCDIR="$(AMI_OBJ_DIR)/$(BUILD_DIR)"
 CPUSUFFIX   = 000
 CPUCCOPT    = CPU=68$(CPUSUFFIX)
@@ -96,14 +96,19 @@ PB_TEST_TOOL_NAME = pb_test_$(BUILD_TYPE)_$(CPUSUFFIX)
 PB_TEST_TOOL = $(BIN_DIR)/$(PB_TEST_TOOL_NAME)
 PB_TEST_TOOL_OBJ = $(BUILD_PATH)/pb_test.o
 
+# the udp test tool
+UDP_TEST_TOOL_NAME = udp_test_$(BUILD_TYPE)_$(CPUSUFFIX)
+UDP_TEST_TOOL = $(BIN_DIR)/$(UDP_TEST_TOOL_NAME)
+UDP_TEST_TOOL_OBJ = $(BUILD_PATH)/udp_test.o
+
 # add driver directory
 VPATH = .:$(DEVICE_NAME)
 
 # --- rules ---
 
-.PHONY: pb_test libsize all opt dist clean clean_obj clean_dist dirs
+.PHONY: pb_test udp_test tools libsize all opt dist clean clean_obj clean_dist dirs
 
-all: dirs $(OUTPUT) $(PB_TEST_TOOL)
+all: dirs $(OUTPUT) tools
 
 opt:
 	$(MAKE) BUILD_TYPE=RELEASE
@@ -172,11 +177,20 @@ libsize: $(LIBSIZE_TOOL)
 $(LIBSIZE_TOOL): $(LIBSIZE_OBJ)
 	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
 
+# ----- tools -----
+tools: pb_test udp_test
+
 # --- pb_test tool ---
 pb_test: $(PB_TEST_TOOL)
 
 $(PB_TEST_TOOL): $(PB_TEST_TOOL_OBJ)
 	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
+
+# --- udp test tool ---
+udp_test: $(UDP_TEST_TOOL)
+
+$(UDP_TEST_TOOL): $(UDP_TEST_TOOL_OBJ)
+	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@) LIB NETLIB:net.lib
 
 # --- dependencies ---
 rt.asm: $(LIBSIZE_INC) $(DEVINFO_INC)
