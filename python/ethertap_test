@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+import argparse
+
+import impacket.ImpactPacket as ImpactPacket
+from ethertap import EtherTap
+from pb.pktdecode import PacketDecoder
+
+ETHER_BROADCAST = (0xff,) * 6
+MY_MAC = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
+MY_IP = (192,168,2,111)
+
+def gen_arp_request():
+  # build ethernet frame
+  eth = ImpactPacket.Ethernet()
+  eth.set_ether_type(0x0806)          # this is an ARP packet
+  eth.set_ether_dhost(ETHER_BROADCAST)# destination host (broadcast)
+  eth.set_ether_shost(MY_MAC)
+
+  # build ARP packet
+  arp = ImpactPacket.ARP()
+  arp.set_ar_hrd(1)
+  arp.set_ar_hln(6)                   # ethernet address length = 6
+  arp.set_ar_pln(4)                   # ip address length = 4
+  arp.set_ar_pro(0x800)               # protocol: ip
+  arp.set_ar_op(1)                    # opcode: request
+  arp.set_ar_tha(ETHER_BROADCAST)     # target hardware address (broadcast)
+  arp.set_ar_tpa(MY_IP)               # gracious ARP
+  arp.set_ar_sha(MY_MAC)              # source hardware address
+  arp.set_ar_spa(MY_IP)               # source protocol address
+  eth.contains(arp)
+  return eth.get_packet()
+
+def ethertap_test(eth_if, verbose=False):
+  pd = PacketDecoder(MY_MAC)
+  with EtherTap(eth_if) as et:
+    # send a gracious ARP of my mac
+    arp = gen_arp_request()
+    et.write(arp)
+    # main loop
+    try:
+      while True:
+        p = et.read()
+        print pd.decode_raw_pkt(p)
+    except KeyboardInterrupt:
+      print "***Break"
+
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+  parser.add_argument('-i', '--interface', default='en3', help="ethernet interface to tap")
+  args = parser.parse_args()
+  ethertap_test(args.interface, verbose=args.verbose)
+
+if __name__ == '__main__':
+  main()
