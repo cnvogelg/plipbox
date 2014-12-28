@@ -1,6 +1,7 @@
 import sys
 import os
-import select
+import fcntl
+import struct
 from oshelper import OSHelper
 from netif import NetIf
 
@@ -40,7 +41,7 @@ class Tap:
       IFF_NO_PI = 0x1000
       self._fd = os.open('/dev/net/tun', os.O_RDWR)
       fcntl.ioctl(self._fd, TUNSETIFF,
-                  struct.pack("16sH", self.base_name,
+                  struct.pack("16sH", self._ifname,
                               IFF_TAP | IFF_NO_PI))
       return self._fd
     else:

@@ -10,7 +10,7 @@ class EtherTapError(Exception):
 class EtherTap:
   """create a bridge between an ethernet adapter and a tap device"""
 
-  def __init__(self, eth_if, tap_if=None, bridge_if=None, oshelper=None, netif=None):
+  def __init__(self, eth_if, tap_if=None, bridge_if=None, oshelper=None, netif=None, autoconfig=False):
     """create an EtherTap for the given ethernet interface"""
     if oshelper is None:
       oshelper = OSHelper()
@@ -34,6 +34,7 @@ class EtherTap:
     self._bridge = None
     self._eth_config = False
     self._bridge_up = False
+    self._autoconfig = autoconfig
 
   def open(self):
     # check interfaces
@@ -47,7 +48,7 @@ class EtherTap:
 
     # check if ethernet is configured
     entry = ifnames[self.eth_if]
-    if not self._netif.if_is_configured(entry):
+    if self._autoconfig and not self._netif.if_is_configured(entry):
       ret = self._netif.if_configure(self.eth_if, '0.0.0.0')
       if ret != 0:
         raise EtherTapError("failed configuring ethernet")

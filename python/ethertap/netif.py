@@ -27,10 +27,12 @@ class NetIf:
         if n > 0:
           # begin of interface section
           if begin_if:
-              ifname = elements[0][:-1]
-              current = {}
-              ifs[ifname] = current
-              elements = elements[1:]
+            ifname = elements[0]
+            if ifname[-1] == ':':
+              ifname = ifname[:-1]
+            current = {}
+            ifs[ifname] = current
+            elements = elements[1:]
           # check parameters
           if elements[0] == 'ether':
             current['mac'] = elements[1]
@@ -88,10 +90,10 @@ class NetIf:
 
   def split_netif_name(self, ifname):
     """split interface name into prefix and number"""
-    if len(ifname) < 3:
+    if len(ifname) < 2:
       raise ValueError("interface name too short")
     if ifname[-1] not in string.digits:
-      raise ValueError("no number in interface name")
+      return (ifname, 0)
     if ifname[-2] in string.digits:
       return (ifname[:-2], int(ifname[-2:]))
     else:

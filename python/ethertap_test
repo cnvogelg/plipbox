@@ -16,7 +16,7 @@ def ethertap_test(eth_if, verbose=False):
   with EtherTap(eth_if) as et:
     # send a gracious ARP of my mac to announce my IP
     #arp_pkt = netpkt.arp.gen_arp_self_request(MY_MAC, MY_IP)
-    #et.write(arp_pkt)
+    #et.write(arp_pkt.get_packet())
     # main loop
     try:
       while True:
@@ -27,15 +27,16 @@ def ethertap_test(eth_if, verbose=False):
           one_line = pp.pkt_to_oneliner(eth_pkt)
           print one_line
         # handle arp request
-        raw_pkt = netpkt.arp.handle_arp(eth_pkt, MY_MAC, MY_IP)
-        if raw_pkt is None:
+        reply_pkt = netpkt.arp.handle_arp(eth_pkt, MY_MAC, MY_IP)
+        if reply_pkt is None:
           # handle potential pings
-          raw_pkt = netpkt.icmp.handle_ping(eth_pkt, MY_IP)
+          reply_pkt = netpkt.icmp.handle_ping(eth_pkt, MY_IP)
         # anything to reply?
-        if raw_pkt is not None:
+        if reply_pkt is not None:
+          raw_pkt = reply_pkt.get_packet()
           et.write(raw_pkt)
           if verbose:
-            one_line = pp.pkt_to_oneliner(eth_pkt)
+            one_line = pp.pkt_to_oneliner(reply_pkt)
             print one_line
 
     except KeyboardInterrupt:

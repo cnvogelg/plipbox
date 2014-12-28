@@ -40,4 +40,4 @@ def handle_ping(eth_pkt, my_ip):
   icmp_pkt.auto_checksum = 1
 
   # return new packet
-  return eth_pkt.get_packet()
+  return eth_pkt
