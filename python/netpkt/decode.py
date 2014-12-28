@@ -1,12 +1,21 @@
 from impacket.ImpactDecoder import EthDecoder
 from impacket.ImpactPacket import *
 
-from ethframe import MacAddress
-
 class PacketDecoder:
+  """decode a raw packet into a structure of transport layers
+     using impacket lib
+  """
+  def __init__(self):
+    self._decoder = EthDecoder()
+
+  def decode_raw(self, raw_pkt):
+    return self._decoder.decode(raw_pkt)
+
+
+class PrettyPrinter:
+  """convert packet contents into a one liner"""
 
   def __init__(self, my_mac):
-    self.decoder = EthDecoder()
     self.my_mac = my_mac
     self.my_ip = None
     self.my_mac_name = "plipbox_mac_addr"
@@ -15,9 +24,8 @@ class PacketDecoder:
     self.tcp_num = {}
     self.counter = 0
 
-  def decode_raw_pkt(self, raw_pkt):
-    # decode ethernet packet
-    eth_pkt = self.decoder.decode(raw_pkt)
+  def pkt_to_oneliner(self, eth_pkt):
+    # get layer contained in ethernet packet
     pkt = eth_pkt.child()
 
     # IP packet
@@ -50,7 +58,7 @@ class PacketDecoder:
       elif isinstance(sub_pkt, ICMP):
         it = sub_pkt.get_icmp_type()
         type_name = sub_pkt.get_type_name(it)
-        t = "[ICMP %s %s -> %s]" % (type_name, src_ip, tgt_ip)
+        t = "[ICMP %s(%d) %s -> %s]" % (type_name, it, src_ip, tgt_ip)
         return t
       else:
         return None
@@ -65,7 +73,7 @@ class PacketDecoder:
       tpa = pkt.as_pro(pkt.get_ar_tpa())
 
       # assign my ip
-      if MacAddress(pkt.get_ar_tha()) == self.my_mac:
+      if pkt.get_ar_tha() == self.my_mac:
         self.my_ip = tpa
 
       sham = self._map_mac_addr(sha)

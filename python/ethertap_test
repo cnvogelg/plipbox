@@ -2,46 +2,42 @@
 
 import argparse
 
-import impacket.ImpactPacket as ImpactPacket
 from ethertap import EtherTap
-from pb.pktdecode import PacketDecoder
+import netpkt.decode
+import netpkt.arp
+import netpkt.icmp
 
-ETHER_BROADCAST = (0xff,) * 6
-MY_MAC = (0x1a,0x11,0xaf,0xa0,0x47,0x11)
-MY_IP = (192,168,2,111)
-
-def gen_arp_request():
-  # build ethernet frame
-  eth = ImpactPacket.Ethernet()
-  eth.set_ether_type(0x0806)          # this is an ARP packet
-  eth.set_ether_dhost(ETHER_BROADCAST)# destination host (broadcast)
-  eth.set_ether_shost(MY_MAC)
-
-  # build ARP packet
-  arp = ImpactPacket.ARP()
-  arp.set_ar_hrd(1)
-  arp.set_ar_hln(6)                   # ethernet address length = 6
-  arp.set_ar_pln(4)                   # ip address length = 4
-  arp.set_ar_pro(0x800)               # protocol: ip
-  arp.set_ar_op(1)                    # opcode: request
-  arp.set_ar_tha(ETHER_BROADCAST)     # target hardware address (broadcast)
-  arp.set_ar_tpa(MY_IP)               # gracious ARP
-  arp.set_ar_sha(MY_MAC)              # source hardware address
-  arp.set_ar_spa(MY_IP)               # source protocol address
-  eth.contains(arp)
-  return eth.get_packet()
+MY_MAC = (0x1a,0x11,0xaf,0xa0,0x47,0x1a)
+MY_IP = (192,168,2,221)
 
 def ethertap_test(eth_if, verbose=False):
-  pd = PacketDecoder(MY_MAC)
+  pd = netpkt.decode.PacketDecoder()
+  pp = netpkt.decode.PrettyPrinter(MY_MAC)
   with EtherTap(eth_if) as et:
-    # send a gracious ARP of my mac
-    arp = gen_arp_request()
-    et.write(arp)
+    # send a gracious ARP of my mac to announce my IP
+    #arp_pkt = netpkt.arp.gen_arp_self_request(MY_MAC, MY_IP)
+    #et.write(arp_pkt)
     # main loop
     try:
       while True:
-        p = et.read()
-        print pd.decode_raw_pkt(p)
+        raw_pkt = et.read()
+        eth_pkt = pd.decode_raw(raw_pkt)
+        # show a one liner of packet
+        if verbose:
+          one_line = pp.pkt_to_oneliner(eth_pkt)
+          print one_line
+        # handle arp request
+        raw_pkt = netpkt.arp.handle_arp(eth_pkt, MY_MAC, MY_IP)
+        if raw_pkt is None:
+          # handle potential pings
+          raw_pkt = netpkt.icmp.handle_ping(eth_pkt, MY_IP)
+        # anything to reply?
+        if raw_pkt is not None:
+          et.write(raw_pkt)
+          if verbose:
+            one_line = pp.pkt_to_oneliner(eth_pkt)
+            print one_line
+
     except KeyboardInterrupt:
       print "***Break"
 
