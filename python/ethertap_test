@@ -11,6 +11,7 @@
 # use the latter with ./pio_test to measure the performance of UDP transfers.
 #
 
+from __future__ import print_function
 import argparse
 
 from ethertap import EtherTap
@@ -24,8 +25,8 @@ def ethertap_test(eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
   ip_addr = map(int, ip_addr_str.split('.'))
   mac_addr = map(lambda x: int(x,16), mac_addr_str.split(':'))
 
-  print "tapping interface '%s': virtual host mac='%s', ip=%s, udp=%d" % \
-    (eth_if, mac_addr_str, ip_addr_str, udp_port)
+  print("tapping interface '%s': virtual host mac='%s', ip=%s, udp=%d" % \
+    (eth_if, mac_addr_str, ip_addr_str, udp_port))
 
   # setup decoder
   pd = netpkt.decode.PacketDecoder()
@@ -44,7 +45,7 @@ def ethertap_test(eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
         # show a one liner of packet
         if verbose:
           one_line = pp.pkt_to_oneliner(eth_pkt)
-          print one_line
+          print(one_line)
         # handle arp request
         reply_pkt = netpkt.arp.handle_arp(eth_pkt, mac_addr, ip_addr)
         if reply_pkt is None:
@@ -58,10 +59,10 @@ def ethertap_test(eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
           et.write(raw_pkt)
           if verbose:
             one_line = pp.pkt_to_oneliner(reply_pkt)
-            print one_line
+            print(one_line)
 
     except KeyboardInterrupt:
-      print "***Break"
+      print("***Break")
 
 def main():
   parser = argparse.ArgumentParser()

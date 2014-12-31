@@ -1,7 +1,8 @@
-from bridge import Bridge
-from tap import Tap
-from netif import NetIf
-from oshelper import OSHelper
+from __future__ import print_function
+from .bridge import Bridge
+from .tap import Tap
+from .netif import NetIf
+from .oshelper import OSHelper
 
 class EtherTapError(Exception):
   """Custom error class for all EtherTap related errors"""
@@ -134,4 +135,4 @@ if __name__ == '__main__':
     ifs = et._netif.get_interfaces()
     for ifname in ifs:
       if ifname in (et.eth_if, et.tap_if, et.bridge_if):
-        print ifname, ifs[ifname]
+        print(ifname, ifs[ifname])

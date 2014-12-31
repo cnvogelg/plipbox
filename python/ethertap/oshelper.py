@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.7
-
+from __future__ import print_function
 import os
 import sys
 import subprocess
@@ -88,6 +88,6 @@ class OSHelper:
 if __name__ == '__main__':
   osh = OSHelper()
   res = osh.ifconfig_output()
-  print res
+  print(res)
 
 

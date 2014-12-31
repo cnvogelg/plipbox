@@ -1,9 +1,10 @@
+from __future__ import print_function
 import sys
 import os
 import fcntl
 import struct
-from oshelper import OSHelper
-from netif import NetIf
+from .oshelper import OSHelper
+from .netif import NetIf
 
 class Tap:
   """Code for handling a TAP device"""
@@ -74,6 +75,6 @@ class Tap:
 if __name__ == '__main__':
   tap = Tap()
   fd = tap.open()
-  print "open", fd
+  print("open", fd)
   ret = tap.close()
-  print "close", ret
+  print("close", ret)

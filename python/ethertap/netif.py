@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import string
 
@@ -161,12 +162,12 @@ if __name__ == '__main__':
   netif = NetIf(osh)
   ifs = netif.get_interfaces()
   for ifname in ifs:
-    print ifname,"->",ifs[ifname]
-  print "'en0' ->", netif.has_interface('en0')
-  print "free tap ->", netif.find_unused_tap_netif()
-  print "free bridge ->", netif.find_unused_bridge_netif()
-  print "split: 'ex0' ->", netif.split_netif_name('ex0')
-  print "split: 'eth29' ->", netif.split_netif_name('eth29')
-  print "get all eths ->", netif.get_all_ethernet_netifs()
-  print "pick eths ->", netif.pick_ethernet_netifs()
-  print "pick eths (only zero) ->", netif.pick_ethernet_netifs(only_zero_ip=True)
+    print(ifname,"->",ifs[ifname])
+  print("'en0' ->", netif.has_interface('en0'))
+  print("free tap ->", netif.find_unused_tap_netif())
+  print("free bridge ->", netif.find_unused_bridge_netif())
+  print("split: 'ex0' ->", netif.split_netif_name('ex0'))
+  print("split: 'eth29' ->", netif.split_netif_name('eth29'))
+  print("get all eths ->", netif.get_all_ethernet_netifs())
+  print("pick eths ->", netif.pick_ethernet_netifs())
+  print("pick eths (only zero) ->", netif.pick_ethernet_netifs(only_zero_ip=True))

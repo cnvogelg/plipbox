@@ -1,6 +1,7 @@
+from __future__ import print_function
 import sys
-from oshelper import OSHelper
-from netif import NetIf
+from .oshelper import OSHelper
+from .netif import NetIf
 
 class Bridge:
   """setup a ethernet bridge device connecting two ethernet devices
@@ -61,24 +62,24 @@ if __name__ == '__main__':
   netif = NetIf(osh)
   ifname = netif.find_unused_bridge_netif()
   eths = netif.pick_ethernet_netifs()
-  print "creating bridge", ifname
+  print("creating bridge", ifname)
   bridge = Bridge(ifname, osh, netif)
   ret = bridge.create()
-  print "create", ret
+  print("create", ret)
 
   for eth in eths:
     ret = bridge.add_if(eth)
-    print "add_if", eth, ret
+    print("add_if", eth, ret)
 
   ret = bridge.up()
-  print "up", ret
+  print("up", ret)
 
   ret = bridge.down()
-  print "down", ret
+  print("down", ret)
 
   for eth in eths:
     ret = bridge.delete_if(eth)
-    print "delete_if", ret
+    print("delete_if", ret)
 
   ret = bridge.destroy()
-  print "destroy", ret
+  print("destroy", ret)

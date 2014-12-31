@@ -1,1 +1,1 @@
-from ethertap import EtherTap
+from .ethertap import EtherTap
