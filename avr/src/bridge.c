@@ -166,9 +166,20 @@ u08 bridge_loop(void)
     pb_util_handle();
 
     // incoming packet via PIO?
-    if((pending_pkt_size == 0) && pio_has_recv()) {
+    if(pio_has_recv()) {
       u16 size;
       if(pio_util_recv_packet(&size) == PIO_OK) {
+        
+        // if already a packet is pending then we have lost it :(
+        if(pending_pkt_size != 0) {
+          stats_t *stats = stats_get(STATS_ID_PB_RX);
+          stats->drop ++;
+          if(global_verbose) {
+            uart_send_time_stamp_spc();
+            uart_send_pstring(PSTR("DROP\r\n"));
+          }
+        }
+
         // request receive
         pending_pkt_size = size;
         pb_proto_request_recv();
