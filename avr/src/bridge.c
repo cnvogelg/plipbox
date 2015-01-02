@@ -44,9 +44,27 @@
 #include "net/net.h"
 
 #define FLAG_ONLINE       1
+#define FLAG_SEND_MAGIC   2
 
-static u16 pending_pkt_size;
 static u08 flags;
+static u08 req_is_pending;
+
+static void trigger_request(void)
+{
+  if(!req_is_pending) {
+    req_is_pending = 1;
+    pb_proto_request_recv();
+    if(global_verbose) {
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("REQ\r\n"));
+    }
+  } else {
+    if(global_verbose) {
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("req ign\r\n"));
+    }
+  }
+}
 
 // ----- magic packets -----
 
@@ -78,9 +96,8 @@ static void magic_offline(void)
 
 static void magic_loopback(u16 size)
 {
-  // request receive
-  pending_pkt_size = size;
-  pb_proto_request_recv();
+  flags |= FLAG_SEND_MAGIC;
+  trigger_request();
 }
 
 static void request_magic(void)
@@ -94,8 +111,8 @@ static void request_magic(void)
   net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_MAGIC_ONLINE);
 
   // request receive
-  pending_pkt_size = ETH_HDR_SIZE;
-  pb_proto_request_recv();  
+  flags |= FLAG_SEND_MAGIC;
+  trigger_request();
 }
 
 // ----- packet callbacks -----
@@ -103,11 +120,16 @@ static void request_magic(void)
 // the Amiga requests a new packet
 static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 {
-  // use pending packet
-  *size = pending_pkt_size;
+  // need to send a magic?
+  if((flags & FLAG_SEND_MAGIC) == FLAG_SEND_MAGIC) {
+    flags &= ~FLAG_SEND_MAGIC;
+    *size = ETH_HDR_SIZE;
+  } else {
+    // pending PIO packet?
+    pio_util_recv_packet(size);
+  }
 
-  // consume packet
-  pending_pkt_size = 0;
+  req_is_pending = 0;
 
   return PBPROTO_STATUS_OK;  
 }
@@ -154,7 +176,8 @@ u08 bridge_loop(void)
 
   // online flag
   flags = 0;
-  
+  req_is_pending = 0;
+
   while(run_mode == RUN_MODE_BRIDGE) {
     // handle commands
     reset = !cmd_worker();
@@ -165,26 +188,12 @@ u08 bridge_loop(void)
     // handle pbproto
     pb_util_handle();
 
-    // incoming packet via PIO?
-    if(pio_has_recv()) {
-      u16 size;
-      if(pio_util_recv_packet(&size) == PIO_OK) {
-        
-        // if already a packet is pending then we have lost it :(
-        if(pending_pkt_size != 0) {
-          stats_t *stats = stats_get(STATS_ID_PB_RX);
-          stats->drop ++;
-          if(global_verbose) {
-            uart_send_time_stamp_spc();
-            uart_send_pstring(PSTR("DROP\r\n"));
-          }
-        }
-
-        // request receive
-        pending_pkt_size = size;
-        pb_proto_request_recv();
-      }
-    }
+    // incoming packet via PIO available?
+    u08 n = pio_has_recv();
+    if(n>0) {
+      // if no request is pending then request it
+      trigger_request();
+     }
   }
 
   stats_dump_all();
