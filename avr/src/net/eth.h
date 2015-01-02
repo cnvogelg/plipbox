@@ -39,6 +39,11 @@
 #define ETH_TYPE_IPV4 0x800
 #define ETH_TYPE_ARP  0x806   
 
+// own magic eth types
+#define ETH_TYPE_MAGIC_ONLINE	0xffff
+#define ETH_TYPE_MAGIC_OFFLINE  0xfffe
+#define ETH_TYPE_MAGIC_LOOPBACK 0xfffd
+
 #define ETH_TYPE_MAGIC_LOOPBACK 0XFFFD
 
 inline const u08* eth_get_tgt_mac(const u08 *pkt) { return pkt + ETH_OFF_TGT_MAC; }

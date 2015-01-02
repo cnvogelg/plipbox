@@ -40,11 +40,67 @@
 #include "pb_util.h"
 #include "pio_util.h"
 #include "pio.h"
+#include "net/eth.h"
+#include "net/net.h"
+
+#define FLAG_ONLINE       1
 
 static u16 pending_pkt_size;
+static u08 flags;
+
+// ----- magic packets -----
+
+static void magic_online(const u08 *buf)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[MAGIC] online\r\n"));
+  flags |= FLAG_ONLINE;
+
+  // validate mac address and if it does not match then reconfigure PIO
+  const u08 *src_mac = eth_get_src_mac(buf);
+  if(!net_compare_mac(param.mac_addr, src_mac)) {
+    // update mac param and save
+    net_copy_mac(src_mac, param.mac_addr);
+    param_save();
+
+    // re-configure PIO
+    pio_exit();
+    pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
+  }
+}
+
+static void magic_offline(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[MAGIC] offline\r\n"));
+  flags &= ~FLAG_ONLINE;
+}
+
+static void magic_loopback(u16 size)
+{
+  // request receive
+  pending_pkt_size = size;
+  pb_proto_request_recv();
+}
+
+static void request_magic(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("[MAGIC] request\r\n"));
+
+  // build magic packet
+  net_copy_bcast_mac(pkt_buf + ETH_OFF_TGT_MAC);
+  net_copy_mac(param.mac_addr, pkt_buf + ETH_OFF_SRC_MAC);
+  net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_MAGIC_ONLINE);
+
+  // request receive
+  pending_pkt_size = ETH_HDR_SIZE;
+  pb_proto_request_recv();  
+}
 
 // ----- packet callbacks -----
 
+// the Amiga requests a new packet
 static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 {
   // use pending packet
@@ -56,11 +112,30 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
   return PBPROTO_STATUS_OK;  
 }
 
+// handle incoming packet from Amiga
 static u08 proc_pkt(const u08 *buf, u16 size)
 {
-  // send packet via pio
-  pio_util_send_packet(size);
-
+  // get eth type
+  u16 eth_type = eth_get_pkt_type(buf);
+  switch(eth_type) {
+    case ETH_TYPE_MAGIC_ONLINE:
+      magic_online(buf);
+      break;
+    case ETH_TYPE_MAGIC_OFFLINE:
+      magic_offline();
+      break;
+    case ETH_TYPE_MAGIC_LOOPBACK:
+      magic_loopback(size);
+      break;
+    default:
+      // send packet via pio
+      pio_util_send_packet(size);
+      // if a packet arrived and we are not online then request online state
+      if((flags & FLAG_ONLINE)==0) {
+        request_magic();
+      }
+      break;
+  }
   return PBPROTO_STATUS_OK;
 }
 
@@ -76,6 +151,9 @@ u08 bridge_loop(void)
   pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
   pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
   stats_reset();
+
+  // online flag
+  flags = 0;
   
   while(run_mode == RUN_MODE_BRIDGE) {
     // handle commands
