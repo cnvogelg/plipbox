@@ -191,9 +191,21 @@ u08 bridge_loop(void)
     // incoming packet via PIO available?
     u08 n = pio_has_recv();
     if(n>0) {
-      // if no request is pending then request it
-      trigger_request();
-     }
+      // if we are online then request the packet receiption
+      if(flags & FLAG_ONLINE) {
+        // if no request is pending then request it
+        trigger_request();
+      }  
+      // offline: get and drop pio packet
+      else {
+        u16 size;
+        pio_util_recv_packet(&size);
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("OFFLINE DROP: "));
+        uart_send_hex_word(size);
+        uart_send_crlf();
+      }
+    }
   }
 
   stats_dump_all();
