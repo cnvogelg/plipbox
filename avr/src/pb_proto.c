@@ -258,24 +258,8 @@ static u08 cmd_recv(u16 size, u16 *ret_size)
 
 static u08 cmd_send_burst(u16 *ret_size)
 {
-  u08 hi, lo, bhi, blo;
+  u08 hi, lo;
   u08 status;
-   
-  // --- burst size hi ---
-  status = wait_req(1, PBPROTO_STAGE_BURST_HI);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  bhi = par_low_data_in();
-  CLR_RAK();
-   
-  // --- burst size lo ---
-  status = wait_req(0, PBPROTO_STAGE_BURST_LO);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  blo = par_low_data_in();
-  SET_RAK();
    
   // --- packet size hi ---
   status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
@@ -294,7 +278,6 @@ static u08 cmd_send_burst(u16 *ret_size)
   // delay SET_RAK until burst begin...
 
   u16 size = hi << 8 | lo;
-  u16 burst_size = bhi << 8 | blo; // size in words
 
   // check size
   if(size > pb_buf_size) {
@@ -302,72 +285,53 @@ static u08 cmd_send_burst(u16 *ret_size)
   }
 
   // round to even and convert to words
-  u16 words = size;
-  if(words & 1) {
-    words++;
-  }
-  words >>= 1;
-
-  // ----- burst chunk loop -----
+  u16 words = (size +1) >> 1;
   u16 i;
   u08 result = PBPROTO_STATUS_OK;
-  u16 got_words = 0;
   u08 *ptr = pb_buf;
-  while(words > 0) {
 
-    // calc size of burst
-    u16 bs = burst_size;
-    if(bs > words) {
-      bs = words;
-    }
-    words -= bs;
-
-    // ----- burst loop -----
-    // BEGIN TIME CRITICAL
-    cli();
-    SET_RAK(); // trigger start of burst
-    for(i=0;i<bs;i++) {
-      // wait REQ == 1
-      while(!GET_REQ()) {
-        if(!GET_SELECT()) goto send_burst_exit;
-      }
-      *(ptr++) = par_low_data_in();
-      
-      // wait REQ == 0
-      while(GET_REQ()) {
-        if(!GET_SELECT()) goto send_burst_exit;
-      }
-      *(ptr++) = par_low_data_in();
-    }
-send_burst_exit:
-    sei();
-    // END TIME CRITICAL
-
+  // ----- burst loop -----
+  // BEGIN TIME CRITICAL
+  cli();
+  SET_RAK(); // trigger start of burst
+  for(i=0;i<words;i++) {
     // wait REQ == 1
     while(!GET_REQ()) {
       if(!GET_SELECT()) goto send_burst_exit;
     }
-
-    CLR_RAK();
-
+    *(ptr++) = par_low_data_in();
+    
     // wait REQ == 0
     while(GET_REQ()) {
       if(!GET_SELECT()) goto send_burst_exit;
     }
-  
-    got_words += i;
+    *(ptr++) = par_low_data_in();
+  }
+send_burst_exit:
+  sei();
+  // END TIME CRITICAL
 
-    // error?
-    if(i<bs) {
-      result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
-      break;
-    }
+  // wait REQ == 1
+  while(!GET_REQ()) {
+    if(!GET_SELECT()) goto send_burst_exit;
+  }
+
+  CLR_RAK();
+
+  // wait REQ == 0
+  while(GET_REQ()) {
+    if(!GET_SELECT()) goto send_burst_exit;
+  }
+
+  // error?
+  if(i<words) {
+    result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
   }
 
   // final ACK 
   SET_RAK();
 
-  *ret_size = got_words << 1;
+  *ret_size = i << 1;
   return result;  
 }
 
@@ -384,28 +348,12 @@ send_burst_exit:
 
 static u08 cmd_recv_burst(u16 size, u16 *ret_size)
 {
-  u08 hi, lo, bhi, blo;
+  u08 hi, lo;
   u08 status;
    
   hi = (u08)(size >> 8);
   lo = (u08)(size & 0xff);
 
-  // --- get burst size hi ---
-  status = wait_req(1, PBPROTO_STAGE_BURST_HI);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  bhi = par_low_data_in();
-  CLR_RAK();
-   
-  // --- get burst size lo ---
-  status = wait_req(0, PBPROTO_STAGE_BURST_LO);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  blo = par_low_data_in();
-  SET_RAK();
-   
   // --- set packet size hi
   status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
   if(status != PBPROTO_STATUS_OK) {
@@ -429,73 +377,56 @@ static u08 cmd_recv_burst(u16 size, u16 *ret_size)
     return status;
   }
 
-  // calc burst size
-  u16 burst_size = bhi << 8 | blo; // size in words
   // round to even and convert to words
   u16 words = (size + 1) >> 1;
-
-  // ----- burst chunk loop -----
-  u16 i=0;
   u08 result = PBPROTO_STATUS_OK;
-  u16 got_words = 0;
+  u16 i;
   u08 *ptr = pb_buf;
-  while(words > 0) {
 
-    // calc size of burst
-    u16 bs = burst_size;
-    if(bs > words) {
-      bs = words;
-    }
-    words -= bs;
+  // ----- burst loop -----
+  // BEGIN TIME CRITICAL
+  cli();
+  // prepare first byte
+  CLR_RAK(); // trigger start of burst
+  // loop
+  for(i=0;i<words;i++) {
 
-    // ----- burst loop -----
-    // BEGIN TIME CRITICAL
-    cli();
-    // prepare first byte
-    CLR_RAK(); // trigger start of burst
-    // loop
-    for(i=0;i<bs;i++) {
+    DELAY
+    par_low_data_out(*(ptr++));      
 
-      DELAY
-      par_low_data_out(*(ptr++));      
-
-      // wait REQ == 0
-      while(GET_REQ()) {
-        if(!GET_SELECT()) goto recv_burst_exit;
-      }
-
-      DELAY
-      par_low_data_out(*(ptr++));
-
-      // wait REQ == 1
-      while(!GET_REQ()) {
-        if(!GET_SELECT()) goto recv_burst_exit;
-      }
-
-    }
-recv_burst_exit:
-    sei();
-    // END TIME CRITICAL
-
-    // final wait REQ == 0
+    // wait REQ == 0
     while(GET_REQ()) {
       if(!GET_SELECT()) goto recv_burst_exit;
     }
 
-    SET_RAK();
-      
-    // final wait REQ == 1
+    DELAY
+    par_low_data_out(*(ptr++));
+
+    // wait REQ == 1
     while(!GET_REQ()) {
       if(!GET_SELECT()) goto recv_burst_exit;
     }
-  
-    got_words += i;
 
-    // error?
-    if(i<bs) {
-      result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
-      break;
-    }
+  }
+recv_burst_exit:
+  sei();
+  // END TIME CRITICAL
+
+  // final wait REQ == 0
+  while(GET_REQ()) {
+    if(!GET_SELECT()) goto recv_burst_exit;
+  }
+
+  SET_RAK();
+    
+  // final wait REQ == 1
+  while(!GET_REQ()) {
+    if(!GET_SELECT()) goto recv_burst_exit;
+  }
+  
+  // error?
+  if(i<words) {
+    result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
   }
 
   // final ACK
@@ -504,7 +435,7 @@ recv_burst_exit:
   // [IN]
   par_low_data_set_input();
 
-  *ret_size = got_words << 1;
+  *ret_size = i << 1;
   return result;  
 }
 

@@ -34,7 +34,7 @@ struct HWBase
    /* config options */
    ULONG                       hwb_TimeOutMicros;
    ULONG                       hwb_TimeOutSecs;
-   UWORD                       hwb_BurstSize;    /* in words -1 */
+   UWORD                       hwb_BurstMode;
 };
 
 #define HWB_RECV_PENDING           0
@@ -51,14 +51,14 @@ struct HWBase
 /* ----- config ----- */
 
 #define CONFIGFILE "ENV:SANA2/plipbox.config"
-#define TEMPLATE "TIMEOUT/K/N,BURST/K/N"
+#define TEMPLATE "TIMEOUT/K/N,NOBURST/S"
 
 /* structure to be filled by ReadArgs template */ 
 struct TemplateConfig
 {
    struct CommonConfig common;
    ULONG *timeout;
-   ULONG *burst;
+   ULONG no_burst;
 };
 
 #endif

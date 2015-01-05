@@ -361,8 +361,8 @@ hwr_ExitError:
 ;     hwburstsend() - low level send routine in burst mode
 ;
 ; SYNOPSIS
-;     void hwburstsend(struct HWBase *, struct HWFrame *, WORD burstSize)
-;                      A0               A1                D0
+;     void hwburstsend(struct HWBase *, struct HWFrame *)
+;                      A0               A1
 ;
 ; FUNCTION
 ;     This functions sends a HW frame with the plipbox protocol via
@@ -372,7 +372,6 @@ _hwburstsend:
          movem.l  d2-d7/a2-a6,-(sp)
          move.l   a0,a2                               ; a2 = HWBase
          move.l   a1,a3                               ; a3 = Frame
-         move.w   d0,d5                               ; d5 = burstSize in words
          moveq    #FALSE,d2                           ; d2 = return value
          moveq    #HS_REQ_BIT,d3                      ; d3 = HS_REQ
          moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
@@ -382,15 +381,11 @@ _hwburstsend:
          move.l   a5,a4
          add.l    #(ciaa+ciaprb-BaseAX),a4
 
-         ; d1 = burst size -1
-         move.w   d0,d1
-         subq.w   #1,d1
-
          ; --- size calc for burst
          ; packet size (in bytes) rounded to words (d6)
          move.w   (a3),d6
-         addq.w   #1,d6
-         lsr.w    #1,d6                               ; d6 = packet size in words
+         subq.w   #1,d6
+         lsr.w    #1,d6                               ; d6 = packet size in words - 1
 
          ; --- prepare
          ; Wait RAK == 0
@@ -413,9 +408,7 @@ bww_RakOk1:
          ; Set SEL = 1 -> Trigger Plipbox
          SETSELECT a5
 
-         ; --- send burst size 
-         move.w   d5,d7
-         lsr.w    #8,d7 ; prepare burst hi
+         ; --- send size (without burst)
          ; Wait RAK == 1
 bww_WaitRak2a:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -424,10 +417,10 @@ bww_WaitRak2a:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bww_WaitRak2a
-         bra      bww_ExitError
+         bra.s    bww_ExitError
 bww_RakOk2a:
-         ; Set <burst_words> hi byte
-         move.b   d7,(a4)                             ; write data to port
+         ; Set <size> hi byte
+         move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
 
@@ -439,59 +432,14 @@ bww_WaitRak2b:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bww_WaitRak2b
-         bra      bww_ExitError
+         bra.s    bww_ExitError
 bww_RakOk2b:
-         ; Set <burst_words> lo byte
-         move.b   d5,(a4)                             ; write data to port
-         ; Toggle REQ
-         bclr     d3,(a5)                             ; set REQ=0
-
-         ; --- send size (without burst)
-         ; Wait RAK == 1
-bww_WaitRak2c:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         bne.s    bww_RakOk2c
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    bww_WaitRak2c
-         bra.s    bww_ExitError
-bww_RakOk2c:
-         ; Set <size> hi byte
-         move.b   (a3)+,(a4)                          ; write data to port
-         ; Toggle REQ
-         bset     d3,(a5)                             ; set REQ=1
-
-         ; Wait RAK == 0
-bww_WaitRak2d:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         beq.s    bww_RakOk2d
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    bww_WaitRak2d
-         bra.s    bww_ExitError
-bww_RakOk2d:
          ; Set <size> lo byte
          move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
 
-         ; ---- burst chunk loop
-bww_BurstChunk:
-         ; setup size of even burst chunk: d7 = words-1 per chunk
-         cmp.w    d6,d5    ; compare remaining size with burst size
-         blt.s    bww_bce_ok
-         ; last loop - use remaining size for loop
-         move.w   d6,d7
-         subq.w   #1,d7 ; correct for dbra
-         moveq    #0,d6 ; update remaining size
-         bra.s    bww_WaitRak3a
-bww_bce_ok:
-         ; full lopp - use burst size for loop
-         move.w   d1,d7
-         sub.w    d5,d6 ; update remaining size
-         
+         ; ---- burst enter sync
          ; Wait RAK == 1 (sync before burst)
 bww_WaitRak3a:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -506,7 +454,7 @@ bww_RakOk3a:
          ; disable all irq
          JSRLIB   Disable
          
-         ; --- burst loop
+         ; --- burst loop begin
 bww_BurstLoop:
          ; set even data 0,2,4,...
          move.b   (a3)+,(a4)                          ; write data to port
@@ -518,13 +466,15 @@ bww_BurstLoop:
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=1
 
-         dbra     d7,bww_BurstLoop
+         dbra     d6,bww_BurstLoop
+         ; --- burst loop end
 
          ; enable all irq
          JSRLIB   Enable
 
          bset     d3,(a5)                             ; set REQ=1
 
+         ; ---- burst exit sync
          ; Wait RAK == 0 (sync after burst)
 bww_WaitRak3b:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -537,10 +487,6 @@ bww_WaitRak3b:
 bww_RakOk3b:
 
          bclr     d3,(a5)                             ; set REQ=0
-
-         ; done?
-         tst.w    d6
-         bne.s    bww_BurstChunk
 
          ; --- wait final RAK
          ; final Wait RAK == 1
@@ -561,8 +507,6 @@ bww_ExitError:
          ; [IN]
          SETCIAINPUT a5
 
-         bclr     d3,(a5)                             ; set REQ=0
-
          ; SEL = 0
          CLRSELECT a5
 
@@ -576,8 +520,8 @@ bww_ExitError:
 ;     hwburstrecv() - low level receive routine in burst mode
 ;
 ; SYNOPSIS
-;     void hwburstrecv(struct HWBase *, struct HWFrame *, WORD burstSize)
-;                      A0               A1                D0
+;     void hwburstrecv(struct HWBase *, struct HWFrame *)
+;                      A0               A1
 ;
 ; FUNCTION
 ;     This functions receives a HW frame with the plipbox protocol via
@@ -596,10 +540,6 @@ _hwburstrecv:
          ; a4 = data reg of CIA
          move.l   a5,a4
          add.l    #(ciaa+ciaprb-BaseAX),a4
-
-         ; d1 = burst size -1
-         move.w   d0,d1
-         subq.w   #1,d1
 
          ; --- prepare
          ; Wait RAK == 0
@@ -622,9 +562,7 @@ bwr_RakOk1:
          ; Set SEL = 1 -> Trigger Plipbox
          SETSELECT a5
 
-         ; --- send burst size 
-         move.w   d5,d7
-         lsr.w    #8,d7 ; prepare burst hi
+         ; --- toggle to input
          ; Wait RAK == 1
 bwr_WaitRak2a:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -635,11 +573,12 @@ bwr_WaitRak2a:
          beq.s    bwr_WaitRak2a
          bra      bwr_ExitError
 bwr_RakOk2a:
-         ; Set <burst_words> hi byte
-         move.b   d7,(a4)                             ; write data to port
+         ; [IN]
+         SETCIAINPUT a5
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
 
+         ; --- read size word ---
          ; Wait RAK == 0
 bwr_WaitRak2b:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -648,40 +587,8 @@ bwr_WaitRak2b:
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bwr_WaitRak2b
-         bra      bwr_ExitError
+         bra.s    bwr_ExitError
 bwr_RakOk2b:
-         ; Set <burst_words> lo byte
-         move.b   d5,(a4)                             ; write data to port
-         ; Toggle REQ
-         bclr     d3,(a5)                             ; set REQ=0
-
-         ; --- toggle to input
-         ; Wait RAK == 1
-bwr_WaitRak2c:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         bne.s    bwr_RakOk2c
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    bwr_WaitRak2c
-         bra      bwr_ExitError
-bwr_RakOk2c:
-         ; [IN]
-         SETCIAINPUT a5
-         ; Toggle REQ
-         bset     d3,(a5)                             ; set REQ=1
-
-         ; --- read size word ---
-         ; Wait RAK == 0
-bwr_WaitRak2d:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         beq.s    bwr_RakOk2d
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    bwr_WaitRak2d
-         bra      bwr_ExitError
-bwr_RakOk2d:
          
          ; Read <Size_Hi>
          move.b   (a4),(a3)+                          ; read par port
@@ -689,15 +596,15 @@ bwr_RakOk2d:
          bclr     d3,(a5)                             ; REQ toggle
          
          ; Wait RAK == 1
-bwr_WaitRak2e:
+bwr_WaitRak2c:
          move.b   (a5),d0                             ; ciab+ciapra
          btst     d4,d0
-         bne.s    bwr_RakOk2e
+         bne.s    bwr_RakOk2c
          ; check for timeout
          tst.b    hwb_TimeoutSet(a2)
-         beq.s    bwr_WaitRak2e
+         beq.s    bwr_WaitRak2c
          bra.s    bwr_ExitError
-bwr_RakOk2e:
+bwr_RakOk2c:
          ; Read <Size_Lo>
          move.b   (a4),(a3)+                          ; READCIABYTE
          ; Set REQ = 1
@@ -711,24 +618,11 @@ bwr_RakOk2e:
          cmp.w    hwb_MaxFrameSize(a2),d6             ; buffer too large
          bhi.s    bwr_ExitError
 
-         ; convert packet size (d6) to words (and round up if necessary)
-         addq.w   #1,d6
+         ; convert packet size (d6) to words-1 (and round up if necessary)
+         subq.w   #1,d6
          lsr.w    #1,d6
 
-         ; ---- burst chunk loop
-bwr_BurstChunk:
-         ; setup size of burst chunk: d7 = words-1 per chunk
-         cmp.w    d6,d5    ; compare with remaining size
-         blt.s    bwr_bce_ok
-         ; last loop
-         move.w   d6,d7    ; use remaining size for final loop
-         subq.w   #1,d7 
-         moveq    #0,d6    ; size done
-         bra.s    bwr_WaitRak3a
-bwr_bce_ok:
-         move.w   d1,d7    ; use burst size - 1
-         sub.w    d5,d6    ; update size
-
+         ; ---- burst enter
          ; Wait RAK == 0 (sync before burst)
 bwr_WaitRak3a:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -743,7 +637,7 @@ bwr_RakOk3a:
          ; disable all irq
          JSRLIB   Disable
                   
-         ; --- burst loop
+         ; --- burst loop begin
 bwr_BurstLoop:
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
@@ -755,13 +649,15 @@ bwr_BurstLoop:
          ; get odd data 1,3,5,...
          move.b   (a4),(a3)+                          ; read data from port
 
-         dbra     d7,bwr_BurstLoop
+         dbra     d6,bwr_BurstLoop
+         ; --- burst loop end
 
          ; enable all irq
          JSRLIB   Enable
 
          bclr     d3,(a5)                             ; set REQ=0
 
+         ; ---- burst leave
          ; Wait RAK == 1 (sync after burst)
 bwr_WaitRak3b:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -774,10 +670,6 @@ bwr_WaitRak3b:
 bwr_RakOk3b:
 
          bset     d3,(a5)                             ; set REQ=1
-
-         ; done?
-         tst.w    d6
-         bne.s    bwr_BurstChunk
 
          ; --- wait final RAK
          ; final Wait RAK == 0
