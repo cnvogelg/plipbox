@@ -99,7 +99,7 @@ static u08 parse_args(u08 len)
   return argc;
 }
 
-static void show_help(void)
+static void show_cmd_help(void)
 {
   uart_send_pstring(PSTR("Command Help:\r\n"));
   const cmd_table_t * ptr = cmd_table;
@@ -138,7 +138,7 @@ static void show_help(void)
 
 static u08 cmd_loop(void)
 {
-  uart_send_pstring(PSTR("command mode. enter '?' for help.\r\n"));
+  uart_send_pstring(PSTR("Command Mode. Enter <?>+<return> for help and <q>+<return> to leave.\r\n"));
   u08 num_chars = 1;
   u08 status = CMD_OK;
   while(status != CMD_QUIT) {
@@ -164,7 +164,7 @@ static u08 cmd_loop(void)
 #endif
         // help?
         if(cmd_args[0][0] == '?') {
-          show_help();
+          show_cmd_help();
         } else {
           // find command
           const cmd_table_t * ptr = cmd_table;
@@ -214,6 +214,27 @@ static u08 cmd_loop(void)
   return 1;
 }
 
+static void show_cmdkey_help(void)
+{
+  uart_send_pstring(PSTR("Command Key Help:\r\n"));
+  const cmdkey_table_t *ptr = cmdkey_table;
+  while(1) {
+    u08 key = pgm_read_byte(&ptr->key);
+    if(key == 0) {
+      break;
+    }
+    const char *help = pgm_read_word(&ptr->help);
+
+    uart_send(key);
+    uart_send_pstring(PSTR("   "));
+    uart_send_pstring(help);
+    uart_send_crlf();
+
+    ptr++;
+  }
+
+}
+
 u08 cmd_worker(void)
 {
   // small hack to enter commands
@@ -225,6 +246,9 @@ u08 cmd_worker(void)
       if(!stay) {
         return 0;
       }
+    } else if(cmd == '?') {
+      // show help
+      show_cmdkey_help();
     } else {
       // search command
       const cmdkey_table_t *ptr = cmdkey_table;

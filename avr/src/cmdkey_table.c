@@ -83,16 +83,27 @@ COMMAND_KEY(cmd_toggle_verbose)
   uart_send_pstring(global_verbose ? PSTR("ON\r\n") : PSTR("OFF\r\n"));
 }
 
+CMDKEY_HELP(cmd_enter_bridge_mode, "enter bridge mode");
+CMDKEY_HELP(cmd_enter_bridge_test_mode, "enter bridge test mode");
+CMDKEY_HELP(cmd_enter_pio_test_mode, "enter PIO test mode");
+CMDKEY_HELP(cmd_enter_pb_test_mode, "enter PB test mode");
+CMDKEY_HELP(cmd_dump_stats, "dump statistics");
+CMDKEY_HELP(cmd_reset_stats, "reset statistics");
+CMDKEY_HELP(cmd_toggle_verbose, "toggle verbose output");
+CMDKEY_HELP(cmd_send_test_packet, "send a test packet (pbtest mode)");
+CMDKEY_HELP(cmd_send_test_packet_silent, "send a test packet (silent) (pbtest mode)");
+CMDKEY_HELP(cmd_toggle_auto_mode, "toggle auto send (pbtest mode)");
+
 const cmdkey_table_t PROGMEM cmdkey_table[] = {
-  { 's', cmd_dump_stats },
-  { 'S', cmd_reset_stats },
-  { '4', cmd_enter_pb_test_mode },
-  { '3', cmd_enter_pio_test_mode },
-  { '2', cmd_enter_bridge_test_mode },
-  { '1', cmd_enter_bridge_mode },
-  { 'p', cmd_send_test_packet },
-  { 'P', cmd_send_test_packet_silent },
-  { 'a', cmd_toggle_auto_mode },
-  { 'v', cmd_toggle_verbose },
+  CMDKEY_ENTRY('1', cmd_enter_bridge_mode),
+  CMDKEY_ENTRY('2', cmd_enter_bridge_test_mode),
+  CMDKEY_ENTRY('3', cmd_enter_pio_test_mode), 
+  CMDKEY_ENTRY('4', cmd_enter_pb_test_mode),
+  CMDKEY_ENTRY('s', cmd_dump_stats),
+  CMDKEY_ENTRY('S', cmd_reset_stats),
+  CMDKEY_ENTRY('v', cmd_toggle_verbose),
+  CMDKEY_ENTRY('p', cmd_send_test_packet),
+  CMDKEY_ENTRY('P', cmd_send_test_packet_silent),
+  CMDKEY_ENTRY('a', cmd_toggle_auto_mode),
   { 0,0 }
 };

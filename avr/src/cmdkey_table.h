@@ -31,12 +31,15 @@
 #include "global.h"
 
 #define COMMAND_KEY(x) static void x (void)
+#define CMDKEY_HELP(x,y) static const char x ## _help[] PROGMEM = y 
+#define CMDKEY_ENTRY(x,y) { x, y, y ## _help }
 
 typedef void (*cmdkey_func_t)(void);
 
 struct cmdkey_table_s {
   u08     key;
   cmdkey_func_t func;
+  const char * help;
 };
 typedef struct cmdkey_table_s cmdkey_table_t;
 

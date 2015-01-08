@@ -69,6 +69,9 @@ static void loop(void)
   param_dump();
   uart_send_crlf();
 
+  // help info
+  uart_send_pstring(PSTR("Press <return> to enter command mode or <?> for key help\r\n"));
+
 #ifdef DEBUG
   uart_send_free_stack();
 #endif
