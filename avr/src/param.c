@@ -45,11 +45,8 @@ uint16_t eeprom_crc16 EEMEM;
 static const param_t PROGMEM default_param = {
   .mac_addr = { 0x1a,0x11,0xaf,0xa0,0x47,0x11},
 
-  .filter_plip = 1,
-  .filter_eth = 1,
-  .flow_ctl = 1,
+  .flow_ctl = 0,
   .full_duplex = 0,
-  .loop_back = 0,
   
   .test_plen = 1514,
   .test_ptype = 0xfffd,
@@ -83,10 +80,7 @@ void param_dump(void)
   // options
   uart_send_crlf();
   dump_byte(PSTR("fd: full duplex  "), param.full_duplex);
-  dump_byte(PSTR("fl: loop back    "), param.loop_back);
-  dump_byte(PSTR("fc: ETH flow ctl "), param.flow_ctl);
-  dump_byte(PSTR("fe: filter ETH   "), param.filter_eth);
-  dump_byte(PSTR("fp: filter PLIP  "), param.filter_plip);
+  dump_byte(PSTR("fc: flow control "), param.flow_ctl);
   
   // test
   uart_send_crlf();

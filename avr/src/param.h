@@ -32,11 +32,8 @@
 typedef struct {
   u08 mac_addr[6];
 
-  u08 filter_eth;
-  u08 filter_plip;
   u08 flow_ctl;
   u08 full_duplex;
-  u08 loop_back;
 
   u16 test_plen;
   u16 test_ptype;

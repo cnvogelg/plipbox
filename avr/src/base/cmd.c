@@ -99,6 +99,43 @@ static u08 parse_args(u08 len)
   return argc;
 }
 
+static void show_help(void)
+{
+  uart_send_pstring(PSTR("Command Help:\r\n"));
+  const cmd_table_t * ptr = cmd_table;
+  while(1) {
+    const char * name = pgm_read_word(&ptr->name);
+    if(name == 0) {
+      break;
+    }
+    const char * help = pgm_read_word(&ptr->help);
+
+    // show command
+    u08 pos = 0;
+    while(1) {
+      u08 c = pgm_read_byte(name);
+      if(c==0) {
+        break;
+      }
+      uart_send(c);
+      pos++;
+      name++;
+    }
+
+    // pad
+    while(pos < 10) {
+      uart_send(' ');
+      pos++;
+    }
+
+    // show help
+    uart_send_pstring(help);
+    uart_send_crlf();
+
+    ptr ++;
+  }
+}
+
 static u08 cmd_loop(void)
 {
   uart_send_pstring(PSTR("command mode. enter '?' for help.\r\n"));
@@ -125,45 +162,50 @@ static u08 cmd_loop(void)
           uart_send_crlf();
         }
 #endif
-        // find command
-        const cmd_table_t * ptr = cmd_table;
-        const cmd_table_t * found = 0;
-        while(1) {
-          const char * name = pgm_read_word(&ptr->name);
-          if(name == 0) {
-            break;
-          }
-          if(strcmp_P((const char *)cmd_args[0], name)==0) {
-            found = ptr;
-            break;
-          }
-          ptr ++;
-        }
-        // got a command
-        if(found != 0) {
-          // execute command
-          cmd_table_func_t func = (cmd_table_func_t)pgm_read_word(&found->func);
-          status = func(argc, (const u08 **)&cmd_args);
-          // show result
-          uart_send_hex_byte(status);
-          uart_send_spc();
-          u08 type = status & CMD_MASK;
-          if(type == CMD_MASK_OK) {
-            if(status == CMD_RESET) {
-              uart_send_pstring(PSTR("RESET\r\n"));
-              return 0;
-            } else {
-              uart_send_pstring(PSTR("OK\r\n"));
-            }
-          } else if(type == CMD_MASK_SYNTAX) {
-            uart_send_pstring(PSTR("SYNTAX\r\n")); 
-          } else if(type == CMD_MASK_ERROR) {
-            uart_send_pstring(PSTR("ERROR\r\n"));
-          } else {
-            uart_send_pstring(PSTR("???\r\n"));
-          }
+        // help?
+        if(cmd_args[0][0] == '?') {
+          show_help();
         } else {
-          uart_send_pstring(PSTR("HUH?\r\n"));
+          // find command
+          const cmd_table_t * ptr = cmd_table;
+          const cmd_table_t * found = 0;
+          while(1) {
+            const char * name = pgm_read_word(&ptr->name);
+            if(name == 0) {
+              break;
+            }
+            if(strcmp_P((const char *)cmd_args[0], name)==0) {
+              found = ptr;
+              break;
+            }
+            ptr ++;
+          }
+          // got a command
+          if(found != 0) {
+            // execute command
+            cmd_table_func_t func = (cmd_table_func_t)pgm_read_word(&found->func);
+            status = func(argc, (const u08 **)&cmd_args);
+            // show result
+            uart_send_hex_byte(status);
+            uart_send_spc();
+            u08 type = status & CMD_MASK;
+            if(type == CMD_MASK_OK) {
+              if(status == CMD_RESET) {
+                uart_send_pstring(PSTR("RESET\r\n"));
+                return 0;
+              } else {
+                uart_send_pstring(PSTR("OK\r\n"));
+              }
+            } else if(type == CMD_MASK_SYNTAX) {
+              uart_send_pstring(PSTR("SYNTAX\r\n")); 
+            } else if(type == CMD_MASK_ERROR) {
+              uart_send_pstring(PSTR("ERROR\r\n"));
+            } else {
+              uart_send_pstring(PSTR("???\r\n"));
+            }
+          } else {
+            uart_send_pstring(PSTR("HUH?\r\n"));
+          }
         }
       }
     }

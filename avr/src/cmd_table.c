@@ -96,9 +96,6 @@ COMMAND(cmd_param_toggle)
     switch(type) {
       case 'd': val = &param.full_duplex; break;
       case 'c': val = &param.flow_ctl; break;
-      case 'e': val = &param.filter_eth; break;
-      case 'p': val = &param.filter_plip; break;
-      case 'l': val = &param.loop_back; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -187,96 +184,28 @@ COMMAND(cmd_stats_reset)
   return CMD_OK;
 }
 
-COMMAND(cmd_ether_configure)
-{
-  //eth_state_configure();
-  return CMD_OK;
-}
-
-COMMAND(cmd_ether_init)
-{
-  //eth_state_init();
-  return CMD_OK;
-}
-
-COMMAND(cmd_ether_shutdown)
-{
-  //eth_state_shutdown();
-  return CMD_OK;
-}
-
-COMMAND(cmd_plipbox_init)
-{
-  //pb_state_init();
-  return CMD_OK;
-}
-
-COMMAND(cmd_help)
-{
-  uart_send_pstring(PSTR(
-    "q        quit command mode\r\n"
-    "r        soft reset device\r\n"
-    "v        print plipbox version\r\n"
-    "\r\n"
-    "p        print parameters\r\n"
-    "ps       save parameters to EEPROM\r\n"
-    "pl       load parameters from EEPROM\r\n"
-    "\r\n"
-    "sd       dump statistics\r\n"
-    "sr       reset statistics\r\n"
-    "\r\n"
-    "ec       re-configure ethernet\r\n"
-    "ei       re-init ethernet\r\n"
-    "es       ethernet shutdown\r\n"
-    "pi       re-init plipbox\r\n"
-    "\r\n"
-    "fd [on]  enable full duplex mode\r\n"
-    "fl [on]  enable loop back\r\n"
-    "fc [on]  enable flow control for ETH packets\r\n"
-    "fp [on]  enable filtering of PLIP packets\r\n"
-    "fe [on]  enable filtering of ETH packets\r\n"
-    "\r\n"
-    "tl       length of test packets\r\n"
-    "tt       eth type of test packets\r\n"
-    "ti <ip>  test IP address\r\n"
-    "tp <n>   test UDP port\r\n"
-    "tm <n>   test mode\r\n"
-  ));
-  return CMD_OK;
-}
-
 // ----- Names -----
-CMD_NAME("q", cmd_quit);
-CMD_NAME("r", cmd_device_reset);
-CMD_NAME("v", cmd_version);
+CMD_NAME("q", cmd_quit, "quit command mode");
+CMD_NAME("r", cmd_device_reset, "soft reset device");
+CMD_NAME("v", cmd_version, "print firmware version");
   // param
-CMD_NAME("p", cmd_param_dump );
-CMD_NAME("ps", cmd_param_save );
-CMD_NAME("pl", cmd_param_load );
-CMD_NAME("pr", cmd_param_reset );
+CMD_NAME("p", cmd_param_dump, "print parameters");
+CMD_NAME("ps", cmd_param_save, "save parameters to EEPROM");
+CMD_NAME("pl", cmd_param_load, "load parameters from EEPROM" );
+CMD_NAME("pr", cmd_param_reset, "reset parameters to default" );
   // stats
-CMD_NAME("sd", cmd_stats_dump );
-CMD_NAME("sr", cmd_stats_reset );
-  // ethernet
-CMD_NAME("ec", cmd_ether_configure );
-CMD_NAME("ei", cmd_ether_init );
-CMD_NAME("es", cmd_ether_shutdown);
-CMD_NAME("pi", cmd_plipbox_init );
+CMD_NAME("sd", cmd_stats_dump, "dump statistics" );
+CMD_NAME("sr", cmd_stats_reset, "reset statistics" );
   // options
-CMD_NAME("m", cmd_gen_m );
-CMD_NAME("fd", cmd_gen_fd );
-CMD_NAME("fc", cmd_gen_fc );
-CMD_NAME("fp", cmd_gen_fp );
-CMD_NAME("fe", cmd_gen_fe );
-CMD_NAME("fl", cmd_gen_fl );
+CMD_NAME("m", cmd_gen_m, "mac address of device <mac>" );
+CMD_NAME("fd", cmd_gen_fd, "set full duple mode [on]" );
+CMD_NAME("fc", cmd_gen_fc, "set flow control [on]" );
   // test
-CMD_NAME("tl", cmd_gen_tl );
-CMD_NAME("tt", cmd_gen_tt );
-CMD_NAME("ti", cmd_gen_ti );
-CMD_NAME("tp", cmd_gen_tp );
-CMD_NAME("tm", cmd_gen_tm );
-  // help
-CMD_NAME("?", cmd_help );
+CMD_NAME("tl", cmd_gen_tl,  "test packet length <n>");
+CMD_NAME("tt", cmd_gen_tt, "test packet eth type <n>" );
+CMD_NAME("ti", cmd_gen_ti, "test IP address <ip>" );
+CMD_NAME("tp", cmd_gen_tp, "test UDP port <n>" );
+CMD_NAME("tm", cmd_gen_tm, "test mode [0|1]" );
 
 // ----- Entries -----
 const cmd_table_t PROGMEM cmd_table[] = {
@@ -291,25 +220,15 @@ const cmd_table_t PROGMEM cmd_table[] = {
   // stats
   CMD_ENTRY(cmd_stats_dump),
   CMD_ENTRY(cmd_stats_reset),
-  // ethernet
-  CMD_ENTRY(cmd_ether_configure),
-  CMD_ENTRY(cmd_ether_init),
-  CMD_ENTRY(cmd_ether_shutdown),
-  CMD_ENTRY(cmd_plipbox_init),
   // options
   CMD_ENTRY_NAME(cmd_param_mac_addr, cmd_gen_m),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fd),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fc),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fp),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fe),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fl),
   // test
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tl),
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tt),
   CMD_ENTRY_NAME(cmd_param_ip_addr, cmd_gen_ti),
   CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tp),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_tm),
-  // help
-  CMD_ENTRY(cmd_help),
   { 0,0 } // last entry
 };
