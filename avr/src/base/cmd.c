@@ -141,6 +141,7 @@ static u08 cmd_loop(void)
   uart_send_pstring(PSTR("Command Mode. Enter <?>+<return> for help and <q>+<return> to leave.\r\n"));
   u08 num_chars = 1;
   u08 status = CMD_OK;
+  u08 result = CMD_WORKER_DONE;
   while(status != CMD_QUIT) {
     // print prompt
     uart_send_pstring(PSTR("> "));
@@ -192,7 +193,10 @@ static u08 cmd_loop(void)
             if(type == CMD_MASK_OK) {
               if(status == CMD_RESET) {
                 uart_send_pstring(PSTR("RESET\r\n"));
-                return 0;
+                return CMD_WORKER_RESET;
+              } else if(status == CMD_OK_RESTART) {
+                uart_send_pstring(PSTR("OK (NEED RESTART)\r\n"));
+                result = CMD_WORKER_RESTART;
               } else {
                 uart_send_pstring(PSTR("OK\r\n"));
               }
@@ -210,8 +214,12 @@ static u08 cmd_loop(void)
       }
     }
   }
-  uart_send_pstring(PSTR("bye\r\n"));
-  return 1;
+  if(result == CMD_WORKER_DONE) {
+    uart_send_pstring(PSTR("bye\r\n"));
+  } else {
+    uart_send_pstring(PSTR("bye. restarting...\r\n"));
+  }
+  return result;
 }
 
 static void show_cmdkey_help(void)
@@ -237,18 +245,18 @@ static void show_cmdkey_help(void)
 
 u08 cmd_worker(void)
 {
+  u08 result = CMD_WORKER_IDLE;
+
   // small hack to enter commands
   if(uart_read_data_available()) {
     u08 cmd = uart_read();
     if(cmd == '\n') {
       // enter command loop
-      u08 stay = cmd_loop();
-      if(!stay) {
-        return 0;
-      }
+      result = cmd_loop();
     } else if(cmd == '?') {
       // show help
       show_cmdkey_help();
+      result = CMD_WORKER_DONE;
     } else {
       // search command
       const cmdkey_table_t *ptr = cmdkey_table;
@@ -264,12 +272,14 @@ u08 cmd_worker(void)
         }
         ptr++;
       }
-      // got a command?
+      // got a key command?
       if(found != 0) {
         cmdkey_func_t func = pgm_read_word(&found->func);
         func();
+        result = CMD_WORKER_DONE;
       }
     }
   }
-  return 1;
+
+  return result;
 }

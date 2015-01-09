@@ -24,6 +24,8 @@
  *
  */
 
+#include <util/delay.h>
+
 #include "global.h"
 #include "board.h"
 #include "uart.h"
@@ -41,7 +43,6 @@
 
 u08 run_mode = RUN_MODE_BRIDGE;
 u08 global_verbose = 0;
-static u08 soft_reset = 0;
 
 static void init_hw(void)
 {
@@ -57,7 +58,6 @@ static void init_hw(void)
 
 static void loop(void)
 {
-  soft_reset = 0;
   init_hw();
   
   // send welcome
@@ -77,22 +77,32 @@ static void loop(void)
 #endif
 
   // select main loop depending on current run mode
-  while(!soft_reset) {
+  while(1) {
+    u08 result = CMD_WORKER_IDLE;
     switch(run_mode) {
       case RUN_MODE_PB_TEST:
-        soft_reset = pb_test_loop();
+        result = pb_test_loop();
         break;
       case RUN_MODE_PIO_TEST:
-        soft_reset = pio_test_loop();
+        result = pio_test_loop();
         break;
       case RUN_MODE_BRIDGE_TEST:
-        soft_reset = bridge_test_loop();
+        result = bridge_test_loop();
         break;
       case RUN_MODE_BRIDGE:
-        soft_reset = bridge_loop();
+      default:
+        result = bridge_loop();
         break;
     }
+    // exit loop to perform reset
+    if(result == CMD_WORKER_RESET) {
+      break;
+    }
   }
+
+  // wait a bit
+  uart_send_pstring(PSTR("resetting...\r\n"));
+  _delay_ms(100);
 }
 
 int main(void)

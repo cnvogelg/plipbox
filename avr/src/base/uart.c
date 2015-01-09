@@ -66,6 +66,9 @@ void uart_init(void)
 {
   cli();
 
+  // disable first
+  UCSRB = 0;
+
   // baud rate
   UBRRH = (u08)((UART_UBRR)>>8);
   UBRRL = (u08)((UART_UBRR)&0xff);
@@ -74,6 +77,10 @@ void uart_init(void)
   UCSRC = 0x86; // 0x86 -> use UCSRC, 8 bit, 1 stop, no parity, asynch. mode
 
   sei();
+
+  uart_rx_start = 0;
+  uart_rx_end = 0;
+  uart_rx_size = 0;
 }
 
 // receiver interrupt

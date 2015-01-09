@@ -342,7 +342,6 @@ static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
   spi_disable_eth();
   
   is_full_duplex = (flags & PIO_INIT_FULL_DUPLEX) == PIO_INIT_FULL_DUPLEX;
-  u08 loop_back = (flags & PIO_INIT_LOOP_BACK) == PIO_INIT_LOOP_BACK;
 
   // soft reset cpu
   writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
@@ -395,10 +394,7 @@ static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
   writeReg(MAMXFL, MAX_FRAMELEN);
 
   // PHY init
-  // Note: loop_back only works with half duplex!
-  if(!loop_back) {
-    writePhy(PHCON2, PHCON2_HDLDIS);
-  }
+  writePhy(PHCON2, PHCON2_HDLDIS);
   if(is_full_duplex) {
     writePhy(PHCON1, PHCON1_PDPXMD);
   }

@@ -36,7 +36,7 @@
 
 u08 pio_test_loop(void)
 {
-  u08 reset = 0;
+  u08 result = CMD_WORKER_IDLE;
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[PIO_TEST] on\r\n"));
@@ -46,8 +46,8 @@ u08 pio_test_loop(void)
   
   while(run_mode == RUN_MODE_PIO_TEST) {
     // handle commands
-    reset = !cmd_worker();
-    if(reset) {
+    result = cmd_worker();
+    if(result & CMD_WORKER_RESET) {
       break;
     }
 
@@ -75,5 +75,5 @@ u08 pio_test_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[PIO_TEST] off\r\n"));
 
-  return reset;
+  return result;
 }

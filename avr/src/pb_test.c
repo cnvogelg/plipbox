@@ -180,11 +180,11 @@ u08 pb_test_loop(void)
   silent_mode = 0;
 
   // test loop
-  u08 reset = 0;
+  u08 result = CMD_WORKER_IDLE;
   while(run_mode == RUN_MODE_PB_TEST) {
     // command line handling
-    reset = !cmd_worker();
-    if(reset) {
+    result = cmd_worker();
+    if(result & CMD_WORKER_RESET) {
       break;
     }
 
@@ -196,7 +196,7 @@ u08 pb_test_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[PB_TEST] off\r\n"));
 
-  return reset;
+  return result;
 }
 
 void pb_test_send_packet(u08 silent)

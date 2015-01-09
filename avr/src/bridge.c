@@ -105,11 +105,6 @@ static void request_magic(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[MAGIC] request\r\n"));
 
-  // build magic packet
-  net_copy_bcast_mac(pkt_buf + ETH_OFF_TGT_MAC);
-  net_copy_mac(param.mac_addr, pkt_buf + ETH_OFF_SRC_MAC);
-  net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_MAGIC_ONLINE);
-
   // request receive
   flags |= FLAG_SEND_MAGIC;
   trigger_request();
@@ -123,6 +118,12 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
   // need to send a magic?
   if((flags & FLAG_SEND_MAGIC) == FLAG_SEND_MAGIC) {
     flags &= ~FLAG_SEND_MAGIC;
+
+    // build magic packet
+    net_copy_bcast_mac(pkt_buf + ETH_OFF_TGT_MAC);
+    net_copy_mac(param.mac_addr, pkt_buf + ETH_OFF_SRC_MAC);
+    net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_MAGIC_ONLINE);
+
     *size = ETH_HDR_SIZE;
   } else {
     // pending PIO packet?
@@ -165,7 +166,7 @@ static u08 proc_pkt(const u08 *buf, u16 size)
 
 u08 bridge_loop(void)
 {
-  u08 reset = 0;
+  u08 result = CMD_WORKER_IDLE;
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
@@ -178,10 +179,12 @@ u08 bridge_loop(void)
   flags = 0;
   req_is_pending = 0;
 
+  u08 flow_control = param.flow_ctl;
+  u08 limit_flow = 0;
   while(run_mode == RUN_MODE_BRIDGE) {
     // handle commands
-    reset = !cmd_worker();
-    if(reset) {
+    result = cmd_worker();
+    if(result & CMD_WORKER_RESET) {
       break;
     }
 
@@ -206,6 +209,32 @@ u08 bridge_loop(void)
         uart_send_crlf();
       }
     }
+
+    // flow control
+    if(flow_control) {
+      // flow limited
+      if(limit_flow) {
+        // disable again?
+        if(n==0) {
+          pio_control(PIO_CONTROL_FLOW, 0);
+          limit_flow = 0;
+          if(global_verbose) {
+            uart_send_pstring(PSTR("FLOW off\r\n"));
+          }
+        }
+      } 
+      // no flow limit
+      else {
+        // enable?
+        if(n>1) {
+          pio_control(PIO_CONTROL_FLOW, 1);
+          limit_flow = 1;
+          if(global_verbose) {
+            uart_send_pstring(PSTR("FLOW on\r\n"));
+          }
+        }
+      }
+    }
   }
 
   stats_dump_all();
@@ -214,5 +243,5 @@ u08 bridge_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE] off\r\n"));
 
-  return reset;
+  return result;
 }

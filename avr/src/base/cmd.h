@@ -29,6 +29,11 @@
 
 #include "global.h"
 
+#define CMD_WORKER_IDLE     0
+#define CMD_WORKER_DONE     1
+#define CMD_WORKER_RESET    2
+#define CMD_WORKER_RESTART  3
+
 extern u08 cmd_worker(void);
 
 #endif

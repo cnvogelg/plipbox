@@ -85,6 +85,7 @@ COMMAND(cmd_param_toggle)
   u08 group = argv[0][0];
   u08 type = argv[0][1];
   u08 *val = 0;
+  u08 result = CMD_OK;
   
   if(group == 't') {
     switch(type) {
@@ -94,8 +95,8 @@ COMMAND(cmd_param_toggle)
   }
   else if(group == 'f') {
     switch(type) {
-      case 'd': val = &param.full_duplex; break;
-      case 'c': val = &param.flow_ctl; break;
+      case 'd': val = &param.full_duplex; result = CMD_OK_RESTART; break;
+      case 'c': val = &param.flow_ctl; result = CMD_OK_RESTART; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -114,7 +115,7 @@ COMMAND(cmd_param_toggle)
       return CMD_PARSE_ERROR;
     }
   }
-  return CMD_OK;
+  return result;
 }
 
 COMMAND(cmd_param_word)
