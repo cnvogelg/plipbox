@@ -28,6 +28,12 @@
 
 #include <avr/interrupt.h>
 
+// timer counter
+volatile u16 timer_100us = 0;
+volatile u16 timer_10ms = 0;
+volatile u32 time_stamp = 0;
+static u16 count;
+
 void timer_init(void)
 {
   cli();
@@ -82,14 +88,13 @@ void timer_init(void)
   // reset timer
   TCNT1 = 0;
 
+  timer_100us = 0;
+  timer_10ms = 0;
+  time_stamp = 0;
+  count = 0;
+
   sei();
 }
-
-// timer counter
-volatile u16 timer_100us = 0;
-volatile u16 timer_10ms = 0;
-volatile u32 time_stamp = 0;
-static u16 count;
 
 // timer2 compare A handler
 #ifdef TIMER2_COMPA_vect
