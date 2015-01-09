@@ -43,8 +43,9 @@
 #include "net/eth.h"
 #include "net/net.h"
 
-#define FLAG_ONLINE       1
-#define FLAG_SEND_MAGIC   2
+#define FLAG_ONLINE         1
+#define FLAG_SEND_MAGIC     2
+#define FLAG_FIRST_TRANSFER 4
 
 static u08 flags;
 static u08 req_is_pending;
@@ -72,7 +73,7 @@ static void magic_online(const u08 *buf)
 {
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[MAGIC] online\r\n"));
-  flags |= FLAG_ONLINE;
+  flags |= FLAG_ONLINE | FLAG_FIRST_TRANSFER;
 
   // validate mac address and if it does not match then reconfigure PIO
   const u08 *src_mac = eth_get_src_mac(buf);
@@ -106,7 +107,7 @@ static void request_magic(void)
   uart_send_pstring(PSTR("[MAGIC] request\r\n"));
 
   // request receive
-  flags |= FLAG_SEND_MAGIC;
+  flags |= FLAG_SEND_MAGIC | FLAG_FIRST_TRANSFER;
   trigger_request();
 }
 
@@ -128,6 +129,13 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
   } else {
     // pending PIO packet?
     pio_util_recv_packet(size);
+
+    // report first packet transfer
+    if(flags & FLAG_FIRST_TRANSFER) {
+      flags &= ~FLAG_FIRST_TRANSFER;
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("FIRST TRANSFER!\r\n"));
+    }
   }
 
   req_is_pending = 0;
@@ -219,6 +227,7 @@ u08 bridge_loop(void)
           pio_control(PIO_CONTROL_FLOW, 0);
           limit_flow = 0;
           if(global_verbose) {
+            uart_send_time_stamp_spc();
             uart_send_pstring(PSTR("FLOW off\r\n"));
           }
         }
@@ -230,6 +239,7 @@ u08 bridge_loop(void)
           pio_control(PIO_CONTROL_FLOW, 1);
           limit_flow = 1;
           if(global_verbose) {
+            uart_send_time_stamp_spc();
             uart_send_pstring(PSTR("FLOW on\r\n"));
           }
         }

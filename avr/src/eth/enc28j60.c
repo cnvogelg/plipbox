@@ -382,7 +382,7 @@ static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
   if(is_full_duplex) {
     mac3val |= MACON3_FULDPX;
   }
-  writeOp(ENC28J60_BIT_FIELD_SET, MACON3, mac3val);
+  writeRegByte(MACON3, mac3val);
   
   if(is_full_duplex) {
     writeRegByte(MABBIPG, 0x15);      
@@ -394,9 +394,12 @@ static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
   writeReg(MAMXFL, MAX_FRAMELEN);
 
   // PHY init
-  writePhy(PHCON2, PHCON2_HDLDIS);
   if(is_full_duplex) {
     writePhy(PHCON1, PHCON1_PDPXMD);
+    writePhy(PHCON2, 0);
+  } else {
+    writePhy(PHCON1, 0);
+    writePhy(PHCON2, PHCON2_HDLDIS);
   }
   
   // prepare flow control
