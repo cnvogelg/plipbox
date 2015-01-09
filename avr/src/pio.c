@@ -71,6 +71,8 @@ u08 pio_init(const u08 mac[6],u08 flags)
   if(result == PIO_OK) {
     uart_send_pstring(PSTR(": ok! mac="));
     net_dump_mac(mac);
+    uart_send_pstring(PSTR(" flags="));
+    uart_send_hex_byte(flags);
     // show revision
     u08 rev;
     result = pio_dev_status(cur_dev, PIO_STATUS_VERSION, &rev);

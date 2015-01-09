@@ -171,7 +171,7 @@ u08 bridge_loop(void)
   uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
 
   pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
-  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
+  pio_init(param.mac_addr, pio_util_get_init_flags());
   stats_reset();
 
   // online flag

@@ -29,6 +29,9 @@
 
 #include "global.h"
 
+/* get the configured init flags for PIO */
+extern u08 pio_util_get_init_flags(void);
+
 /* receive packet from current PIO and store in pkt_buf.
    also update stats and is verbose if enabled.
    only call if pio_has_recv() ist not 0!

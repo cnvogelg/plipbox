@@ -41,7 +41,7 @@ u08 pio_test_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[PIO_TEST] on\r\n"));
 
-  pio_init(param.mac_addr, PIO_INIT_BROAD_CAST);
+  pio_init(param.mac_addr, pio_util_get_init_flags());
   stats_reset();
   
   while(run_mode == RUN_MODE_PIO_TEST) {

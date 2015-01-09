@@ -39,6 +39,7 @@
 #define PIO_INIT_FULL_DUPLEX    1
 #define PIO_INIT_LOOP_BACK      2
 #define PIO_INIT_BROAD_CAST     4
+#define PIO_INIT_FLOW_CONTROL   8
 
 /* status flags */
 #define PIO_STATUS_VERSION      0

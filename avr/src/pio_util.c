@@ -40,6 +40,20 @@
 #include "net/ip.h"
 #include "net/udp.h"
 
+u08 pio_util_get_init_flags()
+{
+  u08 flags = PIO_INIT_BROAD_CAST;
+  
+  if(param.flow_ctl) {
+    flags |= PIO_INIT_FLOW_CONTROL;
+  }
+  if(param.full_duplex) {
+    flags |= PIO_INIT_FULL_DUPLEX;
+  }
+
+  return flags;
+}
+
 u08 pio_util_recv_packet(u16 *size)
 {
   // measure packet receive
