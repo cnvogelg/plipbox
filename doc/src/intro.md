@@ -116,25 +116,24 @@ device driver and deliverd as an Ethernet packet to the TCP/IP stack.
                                +-----plipbox-----+          gw: 192.168.2.1
                                                    
 
-Now the plipbox firmware is most transparent and essentially looks like one big
-ethernet device attached to the Amiga. In this setup no NAT is applied.
+Now the plipbox firmware is most transparent and essentially looks like an
+ethernet device directly attached to the Amiga. In this setup no NAT is applied.
 
 You now configure your Amiga's TCP/IP stack like it is directly attached to the
 local network. Give yourself a static IP or use DHCP, set the local network's
-net mask and the default gateway. Also the stack now needs to do ARPing to map
+net mask, and the default gateway. Also the stack now needs to do ARPing to map
 the IP addresses to Ethernet MAC addresses and it manages an own ARP cache.
 
-The plipbox firmware is now very slim and almost zero-config. The only
-parameter available is the MAC address of the Eth Port. This has a suitable
-default value that only needs to be changed if multiple plipboxes are used in a
-single local network.
+The plipbox firmware is now very slim and zero-config. The only essential
+parameter is the MAC address of the Eth Port. It has to have the same value
+as it is used in the plipbox.device driver. The address will be automatically
+transferred by the driver to the firmware on startup. By default both use
+the mac address 1a:11:a1:a0:47:11. 
 
-Note that both the plipbox.device driver and the plipbox firmware need to know
-the MAC address of the Eth port (here 1a:11:a1:a0:47:11). So if you change the
-address then make sure that both parts use the same new address! The device
-driver uses the address to generate the correct source address in each frame
-while the plipbox uses the address to setup a HW Ethernet filter so that Eth
-Port only reports packets suitable for the Amiga.
+The device driver uses the mac address to generate the correct source address
+in each frame while the plipbox firmware uses the mac address to setup a HW
+Ethernet filter so that the Eth Port only reports packets for this or the
+broadcast address.
 
 In summary, with the new approach the Amiga has a bit more to do (e.g. handling
 ARP packets) but all problems that were observed with NAT are gone now.
