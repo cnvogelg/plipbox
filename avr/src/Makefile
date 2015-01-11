@@ -252,6 +252,7 @@ clean_dist: clean
 build_all: clean
 	@for a in $(DIST_BOARDS) ; do \
 		$(MAKE) build BOARD=$$a ;\
+		if [ $$? != 0 ]; then exit 1 ; fi ; \
 	done
 	$(MAKE) build BOARD=arduino MCU=atmega328
 

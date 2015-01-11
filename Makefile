@@ -50,7 +50,11 @@ snap:
 
 pack:
 	@echo "packing $(PACK_NAME)"
-	@for a in $(SUBDIRS) ; do $(MAKE) -C $$a dist ; done
+	@for a in $(SUBDIRS) ; do \
+		echo "---- $$a -----" ; \
+		$(MAKE) -C $$a dist ; \
+		if [ $$? != 0 ]; then exit 1 ; fi ; \
+	done
 	@rm -rf $(PACK_NAME) $(PACK_NAME).zip
 	@mkdir $(PACK_NAME)
 	@cp -a $(DISTFILES) $(PACK_NAME)
