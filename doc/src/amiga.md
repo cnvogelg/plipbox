@@ -23,6 +23,7 @@ The following network stacks have been successfully tested with plipbox:
 [rs]: http://roadshow.apc-tcp.de/index-de.php
 [cwb]: http://classicwb.abime.net
 
+
 2. Setup Hints
 --------------
 
@@ -160,7 +161,62 @@ The following network stacks have been successfully tested with plipbox:
         downgoesoffline=yes
         hardwareaddress=1a:11:a1:a0:00:01
 
-3. Build plipbox.device from Source
+
+3. plipbox.device Configuration
+-------------------------------
+
+While the plipbox.device is in general zero-config and needs no adjustement,
+you can control some options via a configuration file.
+
+The text file needs to be called:
+
+        ENV:SANA2/plipbox.config
+
+Store your file in the environment archive to have it available after the
+next reboot, too:
+
+        ENVARC:SANA2/plipbox.config
+
+The following options are supported:
+
+  - **NOBURST** (switch /S) (default: burst on)
+    - Starting with version 0.6 a fast burst mode is used for parallel port
+      data transfer. It is always recommended to use this mode. However, if
+      you experience problems with fast transfers then you can use this
+      option to fall back to the old transfer protocol. Its slower but
+      more reliable.
+
+  - **TIMEOUT** (numerical key /K/N) (default: 500 * 1000) (unit: microseconds)
+    - The parallel transfer uses time outs to detect error conditions.
+    - Use this value to adjust timing.
+ 
+  - **NOSPECIALSTATS** (switch /S) (default: special stats on)
+    - The SANA-II device tracks statistics information.
+    - Use this switch to disable the extra statistics information that is
+      recorded during normal operation of the device.
+
+  - **PRIORITY** (numerical key /K/N) (default: 0) (unit: AmigaOS task prio)
+    - A server task is used in the plipbox.device to handle the parallel port
+      transfers.
+    - Use this value to alter the scheduling priority of the send/receive
+      task.
+
+  - **BPS** (numerical key /K/N) (default: 60 * 1024 * 8) (unit: bits/second)
+    - A SANA-II device reports a bitrate per second value as an indication
+      for the achievable transfer speed of the network device.
+    - Use this parameter to adjust the speed that is reported to the TCP/IP
+      stack from the device.
+
+  - **MTU** (numerical key /K/N) (default: 1500) (unit: bytes)
+    - The maximum transfer unit is the maximum number of bytes a device can 
+      transfer in a single packet. By default its 1500 and exactly matches
+      the MTU that Ethernet uses.
+    - For the plipbox the MTU size is also the size of the parallel transfers.
+    - Use this parameter to set a smaller MTU and tune the transfer rates.
+    - Note that a non 1500 MTU will cause fragmentation on upper levels.
+
+
+4. Build plipbox.device from Source
 -----------------------------------
 
  - Only for advanced users! All others can use the supplied binaries!
