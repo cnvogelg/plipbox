@@ -1,5 +1,5 @@
-plipbox: Amiga Setup
-====================
+plipbox: Amiga Driver Documentation
+===================================
 
 0. Changes
 ----------

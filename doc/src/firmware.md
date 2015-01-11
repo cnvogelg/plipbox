@@ -1,24 +1,29 @@
-plipbox: Firmware Setup
-=======================
+plipbox: Firmware Documentation
+===============================
 
 1. Flash Firmware
 -----------------
 
-### 1.1 Find Arduino Serial Port
+### 1.1 Find plipbox Serial Port
 
-You need to connect your Arduino typically via the USB port to your Mac or PC 
-and this will install a "virtual" serial port that allows to reach the Arduino
-via a serial link. 
+You can connect your plipbox typically via the USB port to your Mac or PC 
+and this will install a "virtual" serial port. Other plipbox devices have the
+serial port available on 2 pins with +5V signals. Then you need an external
+USB-to-Serial device to convert the serial signals to a virtual serial device.
 
-The device is called differently depending on your OS:
+The virtual serial port is called differently depending on your OS:
 
  * Macs: `/dev/cu.usbserial-<serial>`
  * Linux: `/dev/ttyUSB<num>`
  * Windows: `COM1 ... COMx`
   
-You can find out the port associated with your Arduino by looking at the registered devices before and after attaching the device.
+You can find out the port associated with your plipbox by looking at the
+registered devices before and after attaching the device.
 
-### 1.2 Flash on Arduino Hardware with "avrdude"
+### 1.2 Flashing with Serial Link
+
+Some AVR devices like the Arduino-based ones allow you to flash the firmware
+via the (virtual) serial link.
 
 First select correct firmware file for flashing. The firmware used for the
 Arduino 2009 prototype is called `*-ardiuno-*.hex` and the firmware for the
@@ -34,10 +39,10 @@ a command line tools.
 
 Now open a shell/terminal/cmd.exe on your OS and call the firmware tool with:
 
-        > avrdude -p m328p -P <your_serial_port> -b 57600 -c arduino -U flash:w:plipbox-0.1-57600-arduino-atmega328.hex
+        > avrdude -p m328p -P <your_serial_port> -b 57600 -c arduino -U flash:w:plipbox-0.x-57600-arduino-atmega328.hex
 
 This assumes that you have the plipbox firmware file called 
-`plipbox-0.4-57600-arduino-atmega328.hex` in your current directory.
+`plipbox-0.x-57600-arduino-atmega328.hex` in your current directory.
 In the release archive you can find it in the `avr/firmware` directory.
 
 Furthermore, replace `<your_serial_port>` with the device name of your
@@ -53,17 +58,17 @@ If everything works well then you will see the following output:
         avrdude: NOTE: FLASH memory has been specified, an erase cycle will be performed
                  To disable this feature, specify the -D option.
         avrdude: erasing chip
-        avrdude: reading input file "plipbox-0.1-57600-arduino-atmega328.hex"
-        avrdude: input file plipbox-0.1-57600-arduino-atmega328.hex auto detected as Intel Hex
+        avrdude: reading input file "plipbox-0.x-57600-arduino-atmega328.hex"
+        avrdude: input file plipbox-0.x-57600-arduino-atmega328.hex auto detected as Intel Hex
         avrdude: writing flash (16596 bytes):
         
         Writing | ################################################## | 100% 4.67s
         
         avrdude: 16596 bytes of flash written
-        avrdude: verifying flash memory against plipbox-0.1-57600-arduino-atmega328.hex:
-        avrdude: load data flash data from input file plipbox-0.1-57600-arduino-atmega328.hex:
-        avrdude: input file plipbox-0.1-57600-arduino-atmega328.hex auto detected as Intel Hex
-        avrdude: input file plipbox-0.1-57600-arduino-atmega328.hex contains 16596 bytes
+        avrdude: verifying flash memory against plipbox-0.x-57600-arduino-atmega328.hex:
+        avrdude: load data flash data from input file plipbox-0.x-57600-arduino-atmega328.hex:
+        avrdude: input file plipbox-0.x-57600-arduino-atmega328.hex auto detected as Intel Hex
+        avrdude: input file plipbox-0.x-57600-arduino-atmega328.hex contains 16596 bytes
         avrdude: reading on-chip flash data:
         
         Reading | ################################################## | 100% 3.37s
@@ -78,23 +83,26 @@ If everything works well then you will see the following output:
 Now your device is fully operational and we use the serial link to communicate 
 with plipbox.
 
-### 1.3 Flash on AVR-NET-IO Board
+### 1.3 Flashing with ISP
 
-The AVR-NET-IO-Board from Pollin.de has a different AVR
-chip, the ATmega32 and thus needs another firmware version:
+All AVR boards can be flashed with an In-System-Programmer (ISP) device. This
+device directly programs the flash ROM. The ISP is an external tool that
+is also typically connected via USB to your PC. I use the [USBasp][1] thats
+a cheap AVR ISP that is supported by avrdude and has a USB connector. You can
+build one yourself or buy a [kit][2].
 
-        plipbox-0.1-57600-avrnetio-atmega32.hex
+The AVR-NET-IO-Board from Pollin.de needs to be flashed via ISP and this 
+firmware variant:
 
-Again I use avrdude to flash the firmware. Although the board provides a 
-bootloader via serial port I was not able to use this with avrdude. So
-I switched over to direct ISP programming but that needs an AVR ISP
-programming adapter. I use the [USBasp][1] thats a cheap AVR ISP that
-is supported by avrdude and has a USB connector. You can build one
-yourself or buy a [kit][2].
+        plipbox-<version>-57600-avrnetio-atmega32.hex
 
-The command avrdude is as follows:
+Again you can use `avrdude` to flash the firmware. The command avrdude is as
+follows:
 
         > avrdude -p m32 -c usbasp -U flash:w:plipbox-0.1-57600-avrnetio-atmega32.hex
+
+Please note the different flash adapter `usbasp` here and that you do not need
+a serial speed now.
 
 [1]: http://www.fischl.de/usbasp/
 [2]: http://www.fundf.net/usbasp/
@@ -102,7 +110,7 @@ The command avrdude is as follows:
 2. plipbox Configuration
 ------------------------
 
-The plipbox firmware uses the serial link available on your Arduino to show you 
+The plipbox firmware uses the serial link available on your plipbox to show you 
 device information and allows you to configure the device in this terminal.
 
 Starting with version 0.3 the plipbox device is essentially a zero-config device,
@@ -122,15 +130,17 @@ or [TeraTerm][2] for Windows. Linux users might try [minicom][3] or [picocom][4]
 [3]: http://alioth.debian.org/projects/minicom/
 [4]: http://code.google.com/p/picocom/
 
-Run your terminal program and select the serial port of your Arduino (see 
+Run your terminal program and select the serial port of your plipbox (see 
 section 1.1). For the serial port select the following parameters:
 
   * 8 N 1 = 8 data bits, no parity, 1 stop bit
   * no hardware (RTS/CTS) hand shaking
   * no software (XON/XOFF) hand shaking
 
+### 2.2 Entering/Leaving Command Mode
+
 If everything went well you will see the startup message of the plipbox 
-firmware:
+firmware after a reset of the device:
 
         Welcome to plipbox <version> <date>
         by lallafa (http://www.lallafa.de/blog)
@@ -139,128 +149,285 @@ You see all important parameters of your device and their current values.
 Below is the current status of the device starting with `eth rev` that
 tells you that the firmware correctly detected your Ethernet chip.
 
-### 2.2 Entering/Leaving Command Mode
-
-If you press Return in your terminal program then the device will enter
+If you press **Return** in your terminal program then the device will enter
 *command mode*. This mode allows you to enter commands that the device
 will execute. Its mainly used to set parameters and load/save them.
 
+While the device is in command mode it does not handle any transfers - its
+completely inactive. You have to quit command mode first to return to normal
+operation.
+
 Command mode is shown with a command prompt "> " in the beginning of a line.
 
-If you enter **q** and Return you give the *quit* command to leave the command
-mode and the device returns to active mode. 
+If you enter **q** and **Return** you give the *quit* command to leave the
+command mode and the device returns to active mode. 
 
-*Note* that during command mode the device does NOT operate and does NOT pass
-any IP packets.
+If you enter **?** and **Return** a help text will be displayed. It shows
+you all the commands that are available.
 
-See the following section for a complete list of all commands available.
-
-A command usually consists of a command name and optional arguments. All
-a seperated by spaces on the command line.
-
-A command is always finished by pressing Return.
+While running in active mode you can also press keys to trigger commands.
+See section 2.4 for details on those keyboard commands.
 
 ### 2.3 plipbox Commands
 
-#### Common Commands
+See this section for a complete list of all commands available.
+
+A command usually consists of a command name and optional arguments. All
+are seperated by spaces on the command line. The arguments are always numbers
+and given in hexadecimal (only IP address is given in decimal). The numbers
+have a fixed size of either 2 or 4 digits and are denoted as follows:
+
+  - **nn**: byte (8 bit)
+    - hex value
+    - always give 2 digits.
+    - Example: `af`, `00`
+  - **nnnn**: word (16 bit)
+    - hex value
+    - always give 4 digits.
+    - Example: `0010`, `ab12`
+  - **nn:nn:nn:nn:nn:nn**
+    - 6 bytes in hex values.
+    - Example: `1a:11:af:a0:47:11`
+  - **nnn.nnn.nnn.nnn**
+    - 4 bytes given in decimal. always give 3 digits per byte.
+    - Example: `192.168.0.42`
+
+A command is always finished by pressing **Return**.
+
+#### 2.3.1 Common Commands
 
   - **q**: Leave command mode
   - **r**: Soft reset device and restart it
   - **v**: Show plipbox firmware version
+
+#### 2.3.2 Parameter Storage
+
   - **p**: Show parameters
   - **ps**: Save parameters to EEPROM
   - **pl**: Load parameters from EEPROM
   - **pr**: Reset parameters to factory defaults
 
-#### Configuration
+#### 2.3.3 Configuration Commands
 
-  - **fd <n>**: Toggle between Ethernet full and half duplex mode. If fd is
-    set to one then full duplex mode is enabled. Note: the duplex mode can
-    only be switched after a reset of the device. So set your desired value
-    with this command then save the parameters with **ps** and reset the
-    device with **r**. 
+  - **m nn:nn:nn:nn:nn:nn:nn** (Mac Address)
+    - Set the mac address of the plipbox device.
+    - Always ensure that the firmware uses the same value as the 
+      plipbox.device driver!
+    - Normally you don't need to alter the mac address via this parameter.
+      The driver will automatically push the mac address to the firmware on
+      every change.
 
-  - **fc <n>**: Toggle the use of Ethernet flow control to limit the rate
-    of incoming Ethernet packets. If the parameter is set to one then flow
-    control is enabled.
+  - **fd [nn]** (Full Duplex)
+    - Toggle between Ethernet full and half duplex mode. If fd is
+      set to one then full duplex mode is enabled. Note: the duplex mode can
+      only be switched after a reset of the device. So set your desired value
+      with this command then save the parameters with **ps** and reset the
+      device with **r** to test the new setup. 
 
-  - **fe <n>**: Toggle filtering of incoming packets on Ethernet port. If the
-    filter is enabled then IP multicast and unknown broadcast packets are
-    removed. This increases the performance of plipbox as unwanted packets are
-    not transferred via PLIP.
+  - **fc [nn]** (Flow Control)
+    - Toggle the use of Ethernet flow control to limit the rate
+      of incoming Ethernet packets. If the parameter is set to one then flow
+      control is enabled.
 
-  - **fp <n>**: Toggle filtering of incoming packets on PLIP port. If this
-    filter is enabled then unknown packets sent from the Amiga are silently
-    dropped.
+#### 2.3.4 Statistics Commands
 
-#### Statistics
-
-  - **sd**: Dump the statistics information. The plipbox records a number of 
-    typical network statistics including sent packets, send bytes, transfer
-    errors and so on for each direction. This command prints the currently
-    accumulated values.
+  - **sd** (Dump Statistics)
+    - Dump the statistics information. The plipbox records a number of 
+      typical network statistics including sent packets, send bytes, transfer
+      errors and so on for each direction. This command prints the currently
+      accumulated values.
     
-  - **sr**: Reset the statistics counters.
+  - **sr** (Reset Statistics)
+    - Reset the statistics counters.
 
-#### Error Log
+#### 2.3.5 Test Commands
 
-  - **ld**: Dump the error log. If an error occurs during the transfer of
-    an Amiga plipbox command then an entry is added to the error log. The
-    error log stores the time stamp when the error happened, the duration
-    of the command, the command byte, the result code and the size of the
-    command. Have a look at the source to interpret the values. Up to 16
-    error values are stored in the log. Then the oldest ones are removed.
-    
-  - **lr**: Reset the error log and remove all former entries.
+plipbox offers a rich set of diagnosis (or test) modes. Some of them use extra
+parameters that can be configured in command mode. See section 3 for details.
 
-  - **la <n>**: This parameter allows to toggle the logging of all commands.
-    In contrast to normal operation that only logs the commands that failed
-    by enabling this parameter all commands are logged in the error log.
+  - **tl nnnn** (Test Packet Length) (4 byte hex word)
+    - The number of bytes that will be transferred per packet in test mode.
 
-#### Diagnosis
+  - **tt nnnn** (Test Packet Ethernet Type) (4 byte hex word)
+    - The ethernet type of the packets that will be sent in test mode.
 
-plipbox offers a rich set of diagnosis (or debug) commands that let you watch
-the packet traffic running through the box. You can see the packets and even
-decode their contents (to some degree).
+  - **ti nnn.nnn.nnn.nnn** (Test Mode IP) (IP address)
+    - In PIO test mode the plipbox device has its own IP address
 
-  - **dd <nn>**: Master switch to enable diagnosis output for the selected 
-    channels. The channels are given as a single byte value (2 hex digits)
-    with the following encoding:
-    
-          1: plip(rx)
-          2: eth(rx)
-          4: plip(tx)
-          8: eth(tx)
-          16: eth flow control
-          32: eth errors
-    
-    Just add the values if multiple channels are to be selected. Value `0f`
-    enables all channels.
-  
-  - **de**: Toggle dumping contents of Ethernet packets. If enabled this option
-    prints the Ethernet header including source MAC, target MAC, packet type,
-    and size.
+  - **tp nnnn** (Test Mode UDP Port) (4 byte hex word)
+    - In PIO test mode the plipbox answers UDP requests on this port
 
-  - **di**: Decode IP packets. If enabled the IP packet header is decoded and
-    the source IP, target IP, protocol type is printed.
-  
-  - **da**: Decode ARP packets. If enabled the contents of ARP packets including
-    ARP source HW+IP addr and destination HW+IP addr is printed.
-  
-  - **dp**: Decode IP protocols: TCP and UDP. If enabled some information from
-    TCP and UDP packets is also decoded. This includes source/destination port.
-    
-  - **dl**: Give details on the PLIP transfer
+  - **tm [nn]** (Toggle test submode)
+    - Some test modes have a sub mode. Use this command to toggle it.
 
 ### 2.4 plipbox Key Commands
 
 If you are in *active mode* (not command mode) then you can press some command
 keys to trigger actions on the device:
 
-  - **s**: Dump the current statistics. Similar to **sd** command.
-  - **S**: Reset statistics counters. Similar to **sr** command.
-  - **l**: Dump the error log. Similar to **ld** command.
-  - **L**: Reset the error log. Similar to **lr** command.
+#### 2.4.1 Mode Selection
+
+  - **1** (Enter Bridge Mode)
+  - **2** (Enter Bridge Test Mode)
+  - **3** (Enter PIO Test Mode)
+  - **4** (Enter plipbox Protocol Test Mode)
+
+#### 2.4.2 Statistics
+
+  - **s** (Dump Statistics)
+    - Dump the current statistics.
+    - Similar to **sd** command.
+  - **S** (Reset Statistics)
+    - Reset statistics counters. 
+    - Similar to **sr** command.
+
+#### 2.4.3 Diagnosis
+
+  - **v** (Toggle Verbose)
+    - If verbose is enabled then detailed information on every transfer
+      is printed
+    - Please note that verbose significantly degrades the performance of
+      the device and should only be used for analysis purposes.
+  - **p** (Send a Packet)
+  - **P** (Send a Packet silent)
+    - Trigger sending a test packet
+    - Works in plipbox test mode only
+  - **a** (Toggle auto-send Packets)
+    - If enabled it will automatically send packets continuously until
+      you stop auto mode again.
+
+
+## 3. plipbox Run Modes
+
+### 3.1 Terms
+
+The plipbox device consists of two sub parts:
+
+  - The **parallel port** connects to the Amiga. There the plipbox
+    protocol (short: pb) is talked to transfer packets from/to the Amiga
+    on this interface.
+  - The **PIO port** (PIO stands for packet I/O). Currently, an ethernet
+    controller is the PIO device of the plipbox. The PIO port transfers
+    the packets to your local network.
+
+Overview:
+
+        | Local Network        +------- plipbox -----+
+        |                +------------+    +------------------+
+        |<-------------->| PIO Port   |    | PB/Parallel Port |<------> Amiga
+        |                +------------+    +------------------+
+        |                      +---------------------+
+
+### 3.2 Normal Operation: Bridge Mode
+
+After startup plipbox enters **bridge mode**. This is the normal operation
+of the device: Both PIO and parallel port are active and packets are received
+on both ports. If a packet arrives then the packet is sent on the other port.
+
+On your Amiga you use the plipbox.device and your TCP/IP stack to transfer
+your internet traffic.
+
+Incoming PIO Traffic:
+
+        | Local Network
+        |                 +-----------+
+        |---- Packets --->|  plipbox  |---- Packets ---> Amiga
+        |                 +-----------+                  TCP/IP Stack
+        |                                                + plipbox.device
+        
+Incoming PB Traffic:
+
+        | Local Network
+        |                 +-----------+
+        |<--- Packets ----|  plipbox  |<--- Packets ---- Amiga
+        |                 +-----------+                  TCP/IP Stack
+        |                                                + plipbox.device
+
+Use command key **1** (see section 2.4.1) to enable this mode.
+
+### 3.3 UDP Roundtrip Tests
+
+These tests allow you to test sending traffic across plipbox with a
+special test setup: A PC test program called **pio_test** (see `python`
+directory of the software distribution) is used to generate special UDP
+packets that are sent to the plipbox. The plipbox will bridge them to the
+Amiga and a special test program there will return them. The returned
+packets are bridged to the PIO port and sent back to the PC. The PC test
+program will then send the next UDP packet on the round trip. After a given
+number of packets the test program stops and gives you average transfer speeds.
+
+#### 3.3.1 Loopback with TCP/IP Stack: Bridge Mode + udp_test
+
+The basic operation in this test mode is to use the TCP/IP Stack on the 
+Amiga to receive and reply the packets. The plipbox device is operated in
+the normal Bridge Mode.
+
+UDP Packet Round Trip of Test:
+
+      +-----------+ 1. Send UDP Pkt +---------+ 2. Bridge       +--------------+
+      | PC with   |---------------->|         |---------------->| Amiga        |
+      | pio_test  | 4. Bridge       | plipbox | 3. Reply UDP    | TCP/IP Stack |
+      | running   |<----------------|  Bridge |<----------------| +udp_test    |
+      +-----------+                 +---------+                 +--------------+
+
+Tested Components:
+  - plipbox Bridge Mode
+  - plipbox.device in normal operation
+  - TCP/IP Stack on Amiga
+
+Test Setup:
+  - On plipbox:
+    - Make sure mode is Bridge (key **1**)
+  - On Amiga:
+    - Configure your TCP/IP with plipbox.device for normal operation
+    - Bring up the plipbox network interface and retrieve assigned IP: `AmigaIP`, e.g. 192.168.2.42
+  - On PC:
+    - Make sure you can reach the Amiga by pinging the AmigaIP
+
+    > ping 192.168.2.42
+
+    - Now launch the test program and give the Amiga's IP
+
+    > python27 pio_test -a 192.168.2.42 -c 1000
+
+    - Note: The `-c` option gives the number of test packets to be sent
+
+#### 3.3.2 Loopback with SANA-II Device Interface: Bridge Test Mode + dev_test
+
+UDP Packet Round Trip of Test:
+
+      +-----------+ 1. Send UDP Pkt +---------+ 2. Bridge       +--------------+
+      | PC with   |---------------->|         |---------------->| Amiga        |
+      | pio_test  | 4. Bridge       | plipbox | 3. Reply UDP    | no stack     |
+      | running   |<----------------|         |<----------------| +dev_test    |
+      +-----------+                 +---------+                 +--------------+
+
+Test Setup:
+
+  - On Amiga:
+    - Stop your TCP/IP Stack if its still running.
+    - Bring up the plipbox network interface and retrieve assigned IP: `AmigaIP`, e.g. 192.168.2.42
+    - Make sure test mode parameter (`tm`) is set to zero 0.
+
+  - On PC:
+    - Make sure you can reach the Amiga by pinging the AmigaIP
+
+    > ping 192.168.2.42
+
+    - Now launch the test program and give the Amiga's IP
+
+    > python27 pio_test -a 192.168.2.42 -c 1000
+
+    - Note: The `-c` option gives the number of test packets to be sent
+
+### 3.4 PB Test Mode
+
+### 3.5 PIO Test Mode
+
+### 3.6 PC Test Tools
+
+### 3.7 Amiga Test Tools
+
 
 EOF
 
