@@ -1,5 +1,5 @@
 /*
- * pb_test.c: test tool for device level testing of plipbox.device
+ * dev_test.c: test tool for device level testing of plipbox.device
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>

@@ -92,9 +92,9 @@ LIBSIZE_INC = $(BUILD_PATH)/libsize.i
 LIBSIZE_OBJ = $(BUILD_PATH)/libsize.o
 
 # the plipbox test tool
-PB_TEST_TOOL_NAME = pb_test_$(BUILD_TYPE)_$(CPUSUFFIX)
-PB_TEST_TOOL = $(BIN_DIR)/$(PB_TEST_TOOL_NAME)
-PB_TEST_TOOL_OBJ = $(BUILD_PATH)/pb_test.o
+DEV_TEST_TOOL_NAME = dev_test_$(BUILD_TYPE)_$(CPUSUFFIX)
+DEV_TEST_TOOL = $(BIN_DIR)/$(DEV_TEST_TOOL_NAME)
+DEV_TEST_TOOL_OBJ = $(BUILD_PATH)/dev_test.o
 
 # the udp test tool
 UDP_TEST_TOOL_NAME = udp_test_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -106,7 +106,7 @@ VPATH = .:$(DEVICE_NAME)
 
 # --- rules ---
 
-.PHONY: pb_test udp_test tools libsize all opt dist clean clean_obj clean_dist dirs
+.PHONY: dev_test udp_test tools libsize all opt dist clean clean_obj clean_dist dirs
 
 all: dirs $(OUTPUT) tools
 
@@ -178,12 +178,12 @@ $(LIBSIZE_TOOL): $(LIBSIZE_OBJ)
 	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
 
 # ----- tools -----
-tools: pb_test udp_test
+tools: dev_test udp_test
 
-# --- pb_test tool ---
-pb_test: $(PB_TEST_TOOL)
+# --- dev_test tool ---
+dev_test: $(DEV_TEST_TOOL)
 
-$(PB_TEST_TOOL): $(PB_TEST_TOOL_OBJ)
+$(DEV_TEST_TOOL): $(DEV_TEST_TOOL_OBJ)
 	$(LD) lib:c.o $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
 
 # --- udp test tool ---
