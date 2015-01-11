@@ -104,11 +104,11 @@ static void show_cmd_help(void)
   uart_send_pstring(PSTR("Command Help:\r\n"));
   const cmd_table_t * ptr = cmd_table;
   while(1) {
-    const char * name = pgm_read_word(&ptr->name);
+    const char * name = (const char *)pgm_read_word(&ptr->name);
     if(name == 0) {
       break;
     }
-    const char * help = pgm_read_word(&ptr->help);
+    const char * help = (const char *)pgm_read_word(&ptr->help);
 
     // show command
     u08 pos = 0;
@@ -171,7 +171,7 @@ static u08 cmd_loop(void)
           const cmd_table_t * ptr = cmd_table;
           const cmd_table_t * found = 0;
           while(1) {
-            const char * name = pgm_read_word(&ptr->name);
+            const char * name = (const char *)pgm_read_word(&ptr->name);
             if(name == 0) {
               break;
             }
@@ -231,7 +231,7 @@ static void show_cmdkey_help(void)
     if(key == 0) {
       break;
     }
-    const char *help = pgm_read_word(&ptr->help);
+    const char *help = (const char *)pgm_read_word(&ptr->help);
 
     uart_send(key);
     uart_send_pstring(PSTR("   "));
@@ -274,7 +274,7 @@ u08 cmd_worker(void)
       }
       // got a key command?
       if(found != 0) {
-        cmdkey_func_t func = pgm_read_word(&found->func);
+        cmdkey_func_t func = (cmdkey_func_t)pgm_read_word(&found->func);
         func();
         result = CMD_WORKER_DONE;
       }
