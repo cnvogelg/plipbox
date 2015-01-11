@@ -8,6 +8,7 @@ plipbox: Amiga Setup
 * 2012-06-03  _38.1b_  plipbox support
 * 2013-04-06  _0.3_    introduced own plipbox.device ethernet device
 * 2013-05-19  _0.3_    converted to markdown. added more stacks
+* 2015-01-11  _0.6_    adapted to new file names
 
 1. Supported Network Stacks
 ---------------------------
@@ -32,10 +33,10 @@ The following network stacks have been successfully tested with plipbox:
  
  - Copy `plipbox.device` from this release in the `amiga/bin` directory to your
    Amiga installation. Select the suitable m680x0 version for your hardware
-   platform and copy the plipbox.device file without the `.000` or `.020`
-   extension:
+   platform and copy the plipbox.device file without the `RELEASE_000` or
+   `RELEASE_020` extension:
 
-        copy plipbox.device.000 devs:networks/plipbox.device
+        copy plipbox.device_RELEASE_000 devs:networks/plipbox.device
 
 ### 2.2 AmiTCP
  
@@ -148,8 +149,15 @@ The following network stacks have been successfully tested with plipbox:
         
   - If you use multiple plipbox devices in a single network then you have to 
   assign them unique MAC addresses. You can set the MAC address of your plipbox
-  with the following option in your configuration file:
+  with the following option in your Roadshow device configuration file:
   
+        hardwareaddress=1a:11:a1:a0:00:01
+
+  - A complete device config looks like:
+
+        device=plipbox.device
+        configure=dhcp
+        downgoesoffline=yes
         hardwareaddress=1a:11:a1:a0:00:01
 
 3. Build plipbox.device from Source
@@ -176,8 +184,9 @@ The following network stacks have been successfully tested with plipbox:
 
         > make dist       build release files
         > make all        build without optimization
-        > make all_opt    build with optimization
-        > make clean      remove all built files
+        > make opt        build with optimization
+        > make clean      remove files of current build
+        > make clean_dist remove all build files
 
  - The resulting files can then be found in `amiga/bin`
 
