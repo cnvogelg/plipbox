@@ -54,11 +54,7 @@ MAX_SRAM = 2048
 #UART_BAUD = 19200
 #UART_BAUD = 250000
 UART_BAUD = 57600
-
-LDR_PROG = arduino
-#LDR_SPEED = 19200
-LDR_SPEED = 57600
-LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
+FLASHER = arduino
 
 else
 ifeq "$(BOARD)" "nano"
@@ -69,10 +65,7 @@ F_CPU = 16000000
 MAX_SIZE = 30720
 MAX_SRAM = 2048
 UART_BAUD = 57600
-
-LDR_PROG = arduino
-LDR_SPEED = 57600
-LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c $(LDR_PROG)
+FLASHER = arduino
 
 # its a subclass of the Arduino board
 DEFINES += HAVE_arduino
@@ -80,7 +73,6 @@ BOARDFILE = arduino.c
 ifeq "$(DEBUG)" "1"
 DEFINES += DEBUG
 endif
-
 
 else
 ifeq "$(BOARD)" "avrnetio"
@@ -91,12 +83,41 @@ F_CPU = 16000000
 MAX_SIZE = 32768
 MAX_SRAM = 2048
 UART_BAUD = 57600
-LDR_PROG = usbasp
-LDR_SPEC = -c $(LDR_PROG)
+FLASHER = isp
 
 else
 
 $(error "Unsupported board '$(BOARD)'. Only $(ALL_BOARDS) allowed!")
+
+endif
+endif
+endif
+
+# ----- setup flasher -----
+# 'arduino' = Arduino bootloader via serial
+ifeq "$(FLASHER)" "arduino"
+
+LDR_SPEED ?= $(UART_BAUD)
+LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c arduino
+
+else
+# 'isp' = AVRISP mkII compatible, e.g. Diamex All AVR
+ifeq "$(FLASHER)" "isp"
+
+ISP_PORT ?= usb
+ISP_TYPE ?= avrisp2
+ISP_SPEED ?= 1
+LDR_SPEC = -P $(ISP_PORT) -B $(ISP_SPEED) -c $(ISP_TYPE)
+
+else
+# 'usbasp' = see http://www.fischl.de/usbasp/
+ifeq "$(FLASHER)" "usbasp"
+
+LDR_SPEC = -c usbasp
+
+else
+
+$(error "Unsupported flasher '$(FLASHER)'!")
 
 endif
 endif
