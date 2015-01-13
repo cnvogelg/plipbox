@@ -189,6 +189,7 @@ u08 bridge_loop(void)
 
   u08 flow_control = param.flow_ctl;
   u08 limit_flow = 0;
+  u08 first = 1;
   while(run_mode == RUN_MODE_BRIDGE) {
     // handle commands
     result = cmd_worker();
@@ -202,6 +203,13 @@ u08 bridge_loop(void)
     // incoming packet via PIO available?
     u08 n = pio_has_recv();
     if(n>0) {
+      // show first incoming packet
+      if(first) {
+        first = 0;
+        uart_send_time_stamp_spc();
+        uart_send_pstring(PSTR("FIRST INCOMING!\r\n"));
+      }
+
       // if we are online then request the packet receiption
       if(flags & FLAG_ONLINE) {
         // if no request is pending then request it
