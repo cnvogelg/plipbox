@@ -60,7 +60,7 @@ def main():
 	parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
 	parser.add_argument('-a', '--address', default="192.168.2.222", help="IP address of plipbox")
 	parser.add_argument('-p', '--tgt-port', default=6800, type=int, help="UDP port of plipbox")
-	parser.add_argument('-P', '--src-port', default=6800, type=int, help="UDP port of plipbox")
+	parser.add_argument('-P', '--src-port', default=6800, type=int, help="UDP port here")
 	parser.add_argument('-s', '--data-size', default=1400, type=int, help="size of test data")
 	parser.add_argument('-c', '--count', default=10, type=int, help="number of packets")
 	parser.add_argument('-d', '--delay', default=0, type=int, help="delay in ms")

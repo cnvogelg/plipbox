@@ -320,12 +320,12 @@ Overview:
 
 ### 3.2 Normal Operation: Bridge Mode
 
-After startup plipbox enters **bridge mode**. This is the normal operation
+After startup plipbox enters **bridge mode**. This is the normal operation mode
 of the device: Both PIO and parallel port are active and packets are received
 on both ports. If a packet arrives then the packet is sent on the other port.
 
-On your Amiga you use the plipbox.device and your TCP/IP stack to transfer
-your internet traffic.
+On your Amiga you use the `plipbox.device` and your TCP/IP stack (e.g.
+`Roadshow`) to transfer your internet traffic.
 
 Incoming PIO Traffic:
 
@@ -333,101 +333,291 @@ Incoming PIO Traffic:
         |                 +-----------+
         |---- Packets --->|  plipbox  |---- Packets ---> Amiga
         |                 +-----------+                  TCP/IP Stack
-        |                                                + plipbox.device
-        
+        |                PIO         PB                  + plipbox.device
+
 Incoming PB Traffic:
 
         | Local Network
         |                 +-----------+
         |<--- Packets ----|  plipbox  |<--- Packets ---- Amiga
         |                 +-----------+                  TCP/IP Stack
-        |                                                + plipbox.device
+        |                PIO         PB                  + plipbox.device
 
 Use command key **1** (see section 2.4.1) to enable this mode.
 
 ### 3.3 UDP Roundtrip Tests
 
-These tests allow you to test sending traffic across plipbox with a
-special test setup: A PC test program called **pio_test** (see `python`
-directory of the software distribution) is used to generate special UDP
-packets that are sent to the plipbox. The plipbox will bridge them to the
-Amiga and a special test program there will return them. The returned
-packets are bridged to the PIO port and sent back to the PC. The PC test
-program will then send the next UDP packet on the round trip. After a given
-number of packets the test program stops and gives you average transfer speeds.
+These tests allow you to test sending traffic across plipbox with a special
+test setup: A PC test program called **pio_test** (see `python` directory of
+the software distribution) is used to generate special UDP packets that are
+sent to the plipbox. The plipbox will bridge them to the Amiga and a special
+test program there will return them. The returned packets are bridged back to
+the PIO port and sent back to the PC. The PC test program will then send the
+next UDP packet on the next round trip. After a given number of packets the
+test program stops and gives you average transfer speeds.
+
+If something went wrong then a packet sent will not arrive in time at the
+pio_test program and the test will be aborted with an error.
 
 #### 3.3.1 Loopback with TCP/IP Stack: Bridge Mode + udp_test
 
-The basic operation in this test mode is to use the TCP/IP Stack on the 
-Amiga to receive and reply the packets. The plipbox device is operated in
-the normal Bridge Mode.
+The basic operation in this test mode is to use the TCP/IP Stack on the Amiga
+to receive and reply the packets. The plipbox device is operated in the normal
+Bridge Mode. So this setup tests all components and plipbox is run in normal
+bridge mode.
 
 UDP Packet Round Trip of Test:
 
       +-----------+ 1. Send UDP Pkt +---------+ 2. Bridge       +--------------+
       | PC with   |---------------->|         |---------------->| Amiga        |
-      | pio_test  | 4. Bridge       | plipbox | 3. Reply UDP    | TCP/IP Stack |
+      |           |                 | plipbox |                 | TCP/IP Stack |
+      | pio_test  | 4. Bridge       |         | 3. Reply UDP    | pb.device    |
       | running   |<----------------|  Bridge |<----------------| +udp_test    |
       +-----------+                 +---------+                 +--------------+
 
 Tested Components:
-  - plipbox Bridge Mode
-  - plipbox.device in normal operation
-  - TCP/IP Stack on Amiga
+  
+- local network (link PC <-> plipbox)
+- plipbox Bridge Mode
+- plipbox.device in normal operation
+- TCP/IP Stack on Amiga
 
 Test Setup:
-  - On plipbox:
+  
+- On plipbox:
     - Make sure mode is Bridge (key **1**)
-  - On Amiga:
+- On Amiga:
     - Configure your TCP/IP with plipbox.device for normal operation
     - Bring up the plipbox network interface and retrieve assigned IP: `AmigaIP`, e.g. 192.168.2.42
-  - On PC:
+- On PC:
     - Make sure you can reach the Amiga by pinging the AmigaIP
 
-    > ping 192.168.2.42
+            > ping 192.168.2.42
 
     - Now launch the test program and give the Amiga's IP
 
-    > python27 pio_test -a 192.168.2.42 -c 1000
+            > python27 pio_test -a 192.168.2.42 -c 1000
 
     - Note: The `-c` option gives the number of test packets to be sent
 
-#### 3.3.2 Loopback with SANA-II Device Interface: Bridge Test Mode + dev_test
+#### 3.3.2 Loopback with SANA-II Device Interface
+
+This test omits the TCP/IP stack running on the Amiga. The SANA-II device
+driver is still in the loop and launched by a special test program called
+**dev_test** from this release.
+
+With the missing stack the Amiga is not able to perform networking including
+ARP and UDP handling. The **Bridge Test** mode of the firmware handles ARP und
+UDP now on its own and only passes the packets to the Amiga for performance
+evaluation.
+
+All test packets are still transferred across the SANA-II interface of
+plipbox.device to the dev_test program.
 
 UDP Packet Round Trip of Test:
 
       +-----------+ 1. Send UDP Pkt +---------+ 2. Bridge       +--------------+
       | PC with   |---------------->|         |---------------->| Amiga        |
-      | pio_test  | 4. Bridge       | plipbox | 3. Reply UDP    | no stack     |
-      | running   |<----------------|         |<----------------| +dev_test    |
+      |           |                 | plipbox |                 |              |
+      | pio_test  | 4. Bridge       |  Bridge | 3. Reply UDP    | pb.device    |
+      | running   |<----------------|  Test   |<----------------| +dev_test    |
       +-----------+                 +---------+                 +--------------+
+
+Tested Components:
+  
+- local network (link PC <-> plipbox)
+- plipbox Bridge Mode
+- plipbox.device in normal operation
+- SANA-II API
 
 Test Setup:
 
-  - On Amiga:
+- On plipbox:
+    - Enter bridge test mode (key **2**)
+    - In Parameters set:
+        - IP address and UDP port (`ti`, `tp`)
+        - Test mode ist set to **1** (`tm`)
+- On Amiga:
     - Stop your TCP/IP Stack if its still running.
-    - Bring up the plipbox network interface and retrieve assigned IP: `AmigaIP`, e.g. 192.168.2.42
-    - Make sure test mode parameter (`tm`) is set to zero 0.
-
-  - On PC:
-    - Make sure you can reach the Amiga by pinging the AmigaIP
+    - Run **dev_test** with **-d plipbox.device**
+- On PC:
+    - Make sure you can reach the plipbox by its address
 
     > ping 192.168.2.42
 
-    - Now launch the test program and give the Amiga's IP
+    - Now launch the test program and give the plipbox's IP
 
     > python27 pio_test -a 192.168.2.42 -c 1000
 
     - Note: The `-c` option gives the number of test packets to be sent
 
-### 3.4 PB Test Mode
+#### 3.3.3 Internal Loopback in plipbox.device
 
-### 3.5 PIO Test Mode
+This test mode removes the SANA-II interface API from the packet roundtrip. The
+packets are still sent from the plipbox to the Amiga but now the plipbox.device
+returns them internally.
+
+UDP Packet Round Trip of Test:
+
+      +-----------+ 1. Send UDP Pkt +---------+ 2. Bridge       +--------------+
+      | PC with   |---------------->|         |---------------->| Amiga        |
+      |           |                 | plipbox |                 |              |
+      | pio_test  | 4. Bridge       |  Bridge | 3. Reply UDP    | pb.device    |
+      | running   |<----------------|  Test   |<----------------|              |
+      +-----------+                 +---------+                 +--------------+
+
+Tested Components:
+  
+- local network (link PC <-> plipbox)
+- plipbox Bridge Mode
+- plipbox.device internal loopback
+
+Test Setup:
+
+- On plipbox:
+    - Enter bridge test mode (key **2**)
+    - In Parameters set:
+        - IP address and UDP port (`ti`, `tp`)
+        - Test mode ist set to **0** (`tm`)
+- On Amiga:
+    - Stop your TCP/IP Stack if its still running.
+    - Run **dev_test** with **-d plipbox.device**
+- On PC:
+    - Make sure you can reach the plipbox by pinging its address:
+
+    > ping 192.168.2.42
+
+    - Now launch the test program and give the plipbox's IP
+
+    > python27 pio_test -a 192.168.2.42 -c 1000
+
+    - Note: The `-c` option gives the number of test packets to be sent
+
+### 3.4 PIO Test Mode
+
+The PIO Test Mode is an isolated transfer test for the PIO port of the plipbox.
+No parallel transmission to the Amiga is involved. Only the raw transfer speed
+of the PIO device (here the Ethernet) is measured.
+
+Tested Components:
+
+- local network (link PC <-> plipbox)
+- PIO device (Ethernet port) of plipbox
+
+Test Setup:
+
+- On plipbox:
+    - Enter PIO test mode (key **3**)
+    - In Parameters set:
+        - IP address and UDP port (`ti`, `tp`)
+        - Test mode ist set to **0** (`tm`)
+- On PC:
+    - Make sure you can reach the plipbox by pinging its address:
+
+    > ping 192.168.2.42
+
+    - Now launch the test program and give the plipbox's IP
+
+    > python27 pio_test -a 192.168.2.42 -c 1000
+
+    - Note: The `-c` option gives the number of test packets to be sent
+
+### 3.5 PB Test Mode
+
+This test mode only transfers packets between the plipbox and the Amiga. The
+packet transfer is initiated by the plipbox and then retrieved and replied with
+plipbox.device's internal loopback.
+
+You need to open the plipbox.device and set it to online with a tool like
+[sanautil][1] or dev_test from this release.
+
+This mode is suitable to estimate the raw transfer speed of packet sent across
+the parallel port and measures the performance of the current plipbox protocol
+implementation.
+
+Tested Components:
+  
+- plipbox protocol
+- parallel port transfer speed
+
+Test Setup:
+
+- On Amiga:
+    - Stop your TCP/IP Stsck if its still running
+    - Run **dev_test -d plipbox.device** or
+    - Run **sanautil -d plipbox.device online**
+    - Stop with **Ctrl-C**
+- On plipbox
+    - Enter PB Test Mode (key **4**)
+    - On serial prompt:
+        - Send a single test packet (key **p** or **P**)
+        - Start auto test:
+            - Press key **a** to begin test
+            - Press key **s** to see current statistics
+            - Press key **a** again to stop test
+            - Press key **s** for final stats or **S** to reset stats
+
+[1]: http://aminet.net/package/comm/net/sanautil
 
 ### 3.6 PC Test Tools
 
+The tools are found in the **python** sub directory of the release and you need
+Python 2.7 on your system to run it.
+
+#### pio_test
+
+This tool is used to send UDP packets to the plipbox and measures the round
+trip, i.e. the time until the packet is returned from plipbox.
+
+        usage: pio_test [-h] [-v] [-a ADDRESS] [-p TGT_PORT] [-P SRC_PORT]
+                        [-s DATA_SIZE] [-c COUNT] [-d DELAY]
+
+        optional arguments:
+          -h, --help            show this help message and exit
+          -v, --verbose         be verbose
+          -a ADDRESS, --address ADDRESS
+                                IP address of plipbox
+          -p TGT_PORT, --tgt-port TGT_PORT
+                                UDP port of plipbox
+          -P SRC_PORT, --src-port SRC_PORT
+                                UDP port here
+          -s DATA_SIZE, --data-size DATA_SIZE
+                                size of test data
+          -c COUNT, --count COUNT
+                                number of packets
+          -d DELAY, --delay DELAY
+                                delay in ms
+
 ### 3.7 Amiga Test Tools
 
+The tools are found in **amiga/bin** sub directory and compiled for different
+m68k CPU variants. Like with `plipbox.device` pick the one matching your Amiga.
+
+#### dev_test
+
+This little tool opens the given SANA-II device and waits for any incoming packets.
+All received packets are simply bounced and sent back with almost no modification:
+Only source and target address and UDP port are swapped.
+
+        dev_test -D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S
+        
+        -D=DEVICE       SANA-II device file to be used (default: plipbox.device)
+        -U=UNIT         Unit of device that will be opened (default: 0)
+        -M=MTU          Maximum size of packets to be received
+        -V=VERBOSE      Be more verbose
+
+Never run this tool if your Amiga TCP/IP stack is running.
+
+#### udp_test
+
+This tool uses bsdsocket.library of your Amiga's TCP/IP stack to open a UDP socket
+on the given port. Any packet that arrives on this port is simply bounced and sent
+back to the sender.
+
+        udp_test -V=VERBOSE/S,-P=PORT/K/N
+        
+        -P=PORT         UDP Port to be opened (default: 6800)
+        -V=VERBOSE      Be more verbose
 
 EOF
 
