@@ -170,7 +170,7 @@ You typically run the plipbox emulator with:
       > cd python
       > ./plipbox -e <ethernet_if>
 
-The `-e` option is required to set the ethernet address you want to use for
+The `-e` option is required to set the ethernet device you want to use for
 bridging. On Mac OS X this interface is typically named `en*`, on Linux it is
 `eth*`.
 

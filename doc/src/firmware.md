@@ -610,7 +610,7 @@ Never run this tool if your Amiga TCP/IP stack is running.
 
 #### udp_test
 
-This tool uses bsdsocket.library of your Amiga's TCP/IP stack to open a UDP socket
+This tool uses `bsdsocket.library` of your Amiga's TCP/IP stack to open a UDP socket
 on the given port. Any packet that arrives on this port is simply bounced and sent
 back to the sender.
 

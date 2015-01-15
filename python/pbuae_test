@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+#
+# pbuae_test
+#
+# test the pbproto emulation on the vpar link to FS-UAE
+#
+
+from __future__ import print_function
+import argparse
+import logging
+
+import pbuae
+
+class Handler:
+  def __init__(self, pbproto):
+    self.pbproto = pbproto
+    self.count = 10
+    self.save_data = None
+    
+  def recv(self):
+    print("<-- want packet: size=%d" % len(self.save_data))
+    return self.save_data
+  
+  def send(self, data):
+    print("--> got packet: size=%d" % len(data))
+    # ping pong
+    if self.count > 0:
+      self.count -= 1
+      self.save_data = data
+      self.pbproto.request_recv()
+
+def pbuae_test(pty_name, verbose=False):
+  s = pbuae.SoPTY(pty_name)
+  v = pbuae.VPar(s)
+  p = pbuae.PBProto(v)
+
+  if verbose:
+    v._log.setLevel(logging.DEBUG)
+  if verbose:
+    p._log.setLevel(logging.DEBUG)
+
+  h = Handler(p)
+  p.set_packet_handler(h.recv, h.send)
+  p.open()
+  try:
+    print("syncing with emulator via vpar PTY on '%s'" % pty_name)
+    p.sync_with_emu()
+    print("got sync!")
+    while p.handle() is not False:
+      print("loop")
+  except KeyboardInterrupt:
+    print("***Break")
+  finally:
+    p.close()
+
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+  parser.add_argument('-p', '--pty', default='/tmp/vpar', help="file node for vpar endpoint")
+  args = parser.parse_args()
+  logging.basicConfig()
+  pbuae_test(args.pty, verbose=args.verbose)
+
+if __name__ == '__main__':
+  main()
