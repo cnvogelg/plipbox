@@ -1,32 +1,55 @@
+from __future__ import print_function
 import time
+import threading
+import traceback
+import logging
 
 class Reader:
 
-  def __init__(self, name, args, log, ts_base, decoder=None):
+  def __init__(self, name, quit_event, **kwargs):
+    self._log = logging.getLogger(name)
+    if "level" in kwargs:
+      self._log.setLevel(kwargs['level'])
     self.name = name
-    self.args = args
-    self.log = log
-    self.decoder = decoder
-    self.ts_base = ts_base
-
-  def log_packet(self, eth_frame, raw_pkt, tag):
-    # nothing to do
-    if not self.args.verbose:
-      return
-    # filter all
-    if not self.args.all_packets and tag is not None:
-      return
-    # tag == None -> ok
-    if tag is None:
-      tag = " ok "
-    # get a timestamp
-    t = time.time() - self.ts_base
-    # try to decode packet
-    if self.decoder is not None:
-      info = self.decoder.decode_raw_pkt(raw_pkt)
-    else:
-      info = None
-    # if decoding fails use eth frame
-    if info is None:
-      info = eth_frame.__str__()
-    self.log("%12.6f %s: [%4d] [%s]" % (t, self.name, len(raw_pkt), tag), info)
+    self.quit_event = quit_event
+    self.thread = threading.Thread(target=self.run, name=self.name)
+    self.timeout = 1
+  
+  def set_send_func(self, send_func):
+    self.send_func = send_func
+  
+  def start(self):
+    self.thread.start()
+    
+  def stop(self):
+    self.quit_event.set()
+    self.thread.join()
+  
+  def open(self):
+    raise
+    
+  def close(self):
+    raise
+    
+  def _get_pkt(self):
+    raise
+    
+  def run(self):
+    try:
+      self._log.debug("++ run")
+      while not self.quit_event.is_set():
+        pkt = self._get_pkt()
+        if pkt is not None:
+          self.send_func(pkt)
+        elif pkt is False:
+          # do quit...
+          self.quit_event.set()
+      self._log.debug("-- run")
+    except KeyboardInterrupt:
+      print("***Break [%s]" % self.name)
+      self.quit_event.set()
+    except Exception as e:
+      print(self.name, "Unexpected error:", e)
+      traceback.print_exc()
+      self.quit_event.set()
+    self._log.debug("thread done")

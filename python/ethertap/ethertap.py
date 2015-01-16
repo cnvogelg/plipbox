@@ -74,7 +74,7 @@ class EtherTap:
     ret1 = self._bridge.add_if(self.eth_if)
     ret2 = self._bridge.add_if(self.tap_if)
     if ret1 != 0 or ret2 != 0:
-      raise EtherTapError("error adding interfaces")
+      raise EtherTapError("error adding interfaces to bridge")
 
     # bring up bridge
     ret = self._bridge.up()
@@ -84,6 +84,13 @@ class EtherTap:
 
   def close(self):
     errors = 0
+
+    if self._tap is not None:
+      # close tap
+      ret = self._tap.close()
+      if ret != 0:
+        errors += 1
+
     if self._bridge is not None:
       # bring down bridge
       if self._bridge_up:
@@ -93,12 +100,6 @@ class EtherTap:
 
       # remove bridge
       ret = self._bridge.destroy()
-      if ret != 0:
-        errors += 1
-
-    if self._tap is not None:
-      # close tap
-      ret = self._tap.close()
       if ret != 0:
         errors += 1
 

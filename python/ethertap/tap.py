@@ -3,6 +3,7 @@ import sys
 import os
 import fcntl
 import struct
+import select
 from .oshelper import OSHelper
 from .netif import NetIf
 

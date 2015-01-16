@@ -53,11 +53,14 @@ class PBProto:
     self._vpar.trigger_ack()
 
   def sync_with_emu(self, timeout=None):
+    """sync with emu and return true if sync was done or false if not"""
     # get initial sync
     ok = self._vpar.request_state(timeout)
     if not ok:
-      raise PBProtoError("Error syncing with emulator")
-    self._in_sync = True
+      return False
+    else:
+      self._in_sync = True
+      return True
 
   def handle(self):
     """main entry to handle the plipbox protocol on the vpar link.
@@ -208,7 +211,7 @@ class PBProto:
     self.recv_buf = None
     self._log.debug("--- incoming recv ---")
 
-  def _wait_select(self, value, timeout=1, ctx="", start=0, throw=True):
+  def _wait_select(self, value, timeout=5, ctx="", start=0, throw=True):
     """wait for SELECT signal"""
     t = time.time()
     begin = t
@@ -240,7 +243,7 @@ class PBProto:
                          (ctx, delta, timeout))
     return found
 
-  def _wait_req(self, expect, timeout=1, ctx="", start=0):
+  def _wait_req(self, expect, timeout=5, ctx="", start=0):
     """wait for toggle on POUT signal"""
     #print expect
     t = time.time()

@@ -1,89 +1,90 @@
 #!/usr/bin/env python2.7
 
 from __future__ import print_function
-
-import sys, os
-import time
+import sys
 import argparse
+import logging
 import threading
 
-import pb.veth
-import pb.vpar
-from pb.pktdecode import PacketDecoder
 import pb.ethreader
-import pb.pbreader
-import pb.ethframe
+import pb.pbuaereader
 
 # ---- main ----
 print("Welcome to plipbox!")
 
-# default param
-plipbox_mac = pb.ethframe.MacAddress((0x1a,0x11,0xaf,0xa0,0x47,0x11))
-
 # parse args
 parser = argparse.ArgumentParser()
-parser.add_argument('-r', '--rx', action='store_true', default=False, help="only receive")
-
-parser.add_argument('-e', '--eth-if', default="en1", help="ethernet interface name")
-parser.add_argument('-t', '--tap-if', default="tap0", help="tap interface name")
-parser.add_argument('-b', '--bridge-if', default="bridge1", help="bridge interface name")
-
-parser.add_argument('-l', '--vpar-link', default="/tmp/vpar", help="link name for vpar pty")
-parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose and dump packets")
-parser.add_argument('-a', '--all-packets', action='store_true', default=False, help="show all packets")
-parser.add_argument('-d', '--debug', type=int, default=0, help="debug flags: 1=low level, 2=protocol")
-parser.add_argument('-E', '--eth-pass', action='store_true', default=False, help="pass all packets on ethernet")
+parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+parser.add_argument('-d', '--debug', action='store_true', default=False, help="show debug info")
+parser.add_argument('-i', '--interface', default='en3', help="ethernet interface to tap")
+parser.add_argument('-p', '--pty', default='/tmp/vpar', help="file node for vpar endpoint")
 args = parser.parse_args()
 
-def log(*v,**kw):
-  global args
-  if args.verbose or 'force' in kw:
-    print(*v)
+# setup logging
+logging.basicConfig()
+level = logging.WARN
+if args.debug:
+  level = logging.DEBUG
+elif args.verbose:
+  level = logging.INFO
+log = logging.getLogger("main")
+log.setLevel(level)
 
-# setup plipbox and ethernet
-ts_base = time.time()
-decoder = PacketDecoder(plipbox_mac)
+# create reader
+quit_event = threading.Event()
+pio = pb.ethreader.EthernetReader(quit_event, args.interface, level=level)
+pb = pb.pbuaereader.PBUAEReader(quit_event, args.pty, level=level)
 
-# setup io modules
-ifs = (args.eth_if, args.tap_if, args.bridge_if)
-print(ifs)
-eth_io = pb.veth.VEth(*ifs)
-pb_io = pb.vpar.PBVPar(args.vpar_link, debug=args.debug)
-
-# setup reader
-eth = pb.ethreader.EthernetReader(eth_io, args, log, ts_base, decoder)
-pb = pb.pbreader.PlipboxReader(pb_io, args, log, ts_base, decoder)
-
-# setup shared env
-leave_event = threading.Event()
-online_event = threading.Event()
-pb.set_env(eth, leave_event, online_event)
-eth.set_env(pb, leave_event, online_event, plipbox_mac)
-
-# start reader threads
-eth_thread = threading.Thread(target=eth.run)
-pb_thread = threading.Thread(target=pb.run)
-if eth_thread is not None:
-  eth_thread.start()
-if pb_thread is not None:
-  pb_thread.start()
-
-# main thread waiting for leave event to be set
+# try to open pio
 try:
-  log("enter main loop")
-  while True:
-    leave_event.wait(0.5)
-except KeyboardInterrupt:
-  log("BREAK [main]")
-  leave_event.set()
+  pio.open()
+except Exception as e:
+  print("ERROR opening PIO for interface '%s':" % args.interface, e)
+  sys.exit(1)
 
-# shut down
-if eth_thread is not None:
-  log("joining ethernet")
-  eth_thread.join()
-if pb_thread is not None:
-  log("joining plipbox")
-  pb_thread.join()
-log("done")
-print("exit plipbox")
+# try to open pb
+try:
+  pb.open()
+except Exception as e:
+  print("ERROR opening PB for pty '%s':" % args.pty, e)
+  pio.close()
+  sys.exit(2)
+
+# set senders
+pio.set_send_func(pb.send)
+pb.set_send_func(pio.send)
+
+# main part
+try:
+  # start threads
+  log.debug("+start")
+  pio.start()
+  pb.start()
+  log.debug("-start")
+  # main thread waiting
+  print("Press Ctrl-C to quit.")
+  log.debug("+main loop")
+  try:
+    while True:
+      if quit_event.wait(1):
+        break
+  except KeyboardInterrupt:
+    print("***Break")
+    quit_event.set()
+  log.debug("-main loop")
+finally:
+  # stop threads
+  log.debug("stop pio")
+  pio.stop()
+  log.debug("stop pb")
+  pb.stop()
+  log.debug("stop done")
+  # close resources
+  log.debug("close pio")
+  pio.close()
+  log.debug("close pb")
+  pb.close()
+  log.debug("close done")
+
+print("done")
 

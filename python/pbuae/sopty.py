@@ -25,6 +25,7 @@ class SoPTY:
       os.unlink(self._link_name)
     os.symlink(self._slave_name, self._link_name)
     self._fd = master
+    self._slave_fd = slave
     self._clean_tty()
 
   def _clean_tty(self):
@@ -46,9 +47,9 @@ class SoPTY:
   def close(self):
     """close pty again"""
     try:
-      os.close(self._fd)
       os.unlink(self._link_name)
-      self._fd = None
+      os.close(self._fd)
+      os.close(self._slave_fd)
     except OSError:
       pass
 

@@ -26,14 +26,7 @@ class EthFrame:
     MAGIC_ONLINE = 0xffff
     MAGIC_OFFLINE = 0xfffe
 
-    def __init__(self):
-        self.raw_buf = None
-        self.tgt_mac = None
-        self.src_mac = None
-        self.eth_type = None
-        self.size = 0
-
-    def decode(self, raw_buf):
+    def __init__(self, raw_buf):
         self.raw_buf = raw_buf
         self.tgt_mac = MacAddress(struct.unpack("BBBBBB", raw_buf[0:6]))
         self.src_mac = MacAddress(struct.unpack("BBBBBB", raw_buf[6:12]))
