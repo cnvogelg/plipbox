@@ -6,7 +6,7 @@ Amigas via Ethernet to your local network. It bridges IP traffic received
 via PLIP on the parallel port of the Amiga to the Ethernet port attached
 to the Arduino.
 
-Copyright (C) 2012,2013 Christian Vogelgsang <chris@vogelgsang.org>
+Copyright (C) 2012-2015 Christian Vogelgsang <chris@vogelgsang.org>
 
 Released under the GNU Public License V2 (see COPYING for details)
 
