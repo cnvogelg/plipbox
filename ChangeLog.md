@@ -51,3 +51,12 @@ version 0.5 (30.11.2013)
 - improved device statistics
 - added error log
 
+version 0.6 (17.01.2015)
+------------------------
+
+ - new fast burst protocol for raw parallel transfers of up to 235 KiB/s
+ - see benchmark.md for detailed performance values
+ - cleaned up firmware and driver code
+ - rewrote firmware to handle a full ethernet frame in SRAM
+ - reduced parameters in firmware -> simplified usage
+ - added new test modes to allow detailed benchmarking of all system components
