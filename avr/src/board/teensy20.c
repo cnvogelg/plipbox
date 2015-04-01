@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * teensy20.c - teensy 2.0 hardware access
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,14 +24,14 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#include <avr/io.h>
 
 #include "global.h"
+#include "board.h"
 
-#define PKT_BUF_SIZE    1514
-#define PKT_BUF_BEGIN   pkt_buf
-
-extern u08 pkt_buf[PKT_BUF_SIZE];
-
-#endif
+void board_init(void)
+{
+   // set pre-scaler
+   CLKPR = 0x80;
+   CLKPR = 0;
+}

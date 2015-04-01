@@ -121,9 +121,9 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
     flags &= ~FLAG_SEND_MAGIC;
 
     // build magic packet
-    net_copy_bcast_mac(pkt_buf + ETH_OFF_TGT_MAC);
-    net_copy_mac(param.mac_addr, pkt_buf + ETH_OFF_SRC_MAC);
-    net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_MAGIC_ONLINE);
+    net_copy_bcast_mac(PKT_BUF_BEGIN + ETH_OFF_TGT_MAC);
+    net_copy_mac(param.mac_addr, PKT_BUF_BEGIN + ETH_OFF_SRC_MAC);
+    net_put_word(PKT_BUF_BEGIN + ETH_OFF_TYPE, ETH_TYPE_MAGIC_ONLINE);
 
     *size = ETH_HDR_SIZE;
   } else {
@@ -179,7 +179,7 @@ u08 bridge_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE] on\r\n"));
 
-  pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
+  pb_proto_init(fill_pkt, proc_pkt, PKT_BUF_BEGIN, PKT_BUF_SIZE);
   pio_init(param.mac_addr, pio_util_get_init_flags());
   stats_reset();
 

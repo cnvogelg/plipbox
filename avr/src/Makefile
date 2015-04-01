@@ -24,7 +24,7 @@
 #
 
 # ----- Config Options -----
- 
+
 OS=$(shell uname -s)
 
 # install dir of avr libc (here MacPorts location)
@@ -34,13 +34,14 @@ else
 AVRLIBC_DIR = /usr/lib/avr
 endif
 
-ALL_BOARDS= arduino avrnetio nano
-DIST_BOARDS= arduino avrnetio nano
+ALL_BOARDS= arduino avrnetio nano teensy20
+DIST_BOARDS= arduino avrnetio nano teensy20
 
 # select board
 BOARD ?= nano
 DEBUG ?= 1
 DEV_ENC28J60 ?= 1
+DEV_USBSER ?= 0
 
 ifeq "$(BOARD)" "arduino"
 
@@ -86,9 +87,23 @@ UART_BAUD = 57600
 FLASHER = isp
 
 else
+ifeq "$(BOARD)" "teensy20"
+
+MCU = atmega32u4
+FLASH_MCU = atmega32u4
+F_CPU = 16000000
+MAX_SIZE = 32768
+MAX_SRAM = 2048
+UART_BAUD = 57600
+FLASHER = teensy
+DEV_ENC28J60 = 0
+DEV_USBSER = 1
+
+else
 
 $(error "Unsupported board '$(BOARD)'. Only $(ALL_BOARDS) allowed!")
 
+endif
 endif
 endif
 endif
@@ -116,9 +131,15 @@ ifeq "$(FLASHER)" "usbasp"
 LDR_SPEC = -c usbasp
 
 else
+ifeq "$(FLASHER)" "teensy"
+
+# teensy will be set below
+
+else
 
 $(error "Unsupported flasher '$(FLASHER)'!")
 
+endif
 endif
 endif
 endif
@@ -138,7 +159,7 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:board:eth:base
+VPATH = .:net:board:eth:base:usbser
 
 # source files
 BOARDFILE ?= $(BOARD).c
@@ -148,9 +169,13 @@ SRC += par_low.c pb_proto.c
 SRC += pkt_buf.c param.c
 SRC += net.c arp.c
 SRC += dump.c stats.c
-ifdef DEV_ENC28J60
+ifeq "$(DEV_ENC28J60)" "1"
 DEFINES += DEV_ENC28J60
 SRC += spi.c enc28j60.c
+endif
+ifeq "$(DEV_USBSER)" "1"
+DEFINES += DEV_USBSER
+SRC += usbser.c usb_serial.c
 endif
 SRC += pio.c pio_util.c pio_test.c
 SRC += pb_util.c pb_test.c bridge.c bridge_test.c
@@ -176,8 +201,8 @@ CFLAGS += -Os
 #CFLAGS += -fno-inline
 CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
-CFLAGS += -mmcu=$(MCU) -I. -Ibase -Ieth
- 
+CFLAGS += -mmcu=$(MCU) -I. -Ibase -Ieth -Iusbser
+
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
 CFLAGS_LOCAL += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(DEPDIR)/$(@F:.o=.d)
 CFLAGS_LOCAL += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
@@ -224,7 +249,7 @@ help:
 	@echo "clean"
 
 dirs:
-	@if [ ! -d $(BUILD) ]; then mkdir -p $(BUILD); fi 
+	@if [ ! -d $(BUILD) ]; then mkdir -p $(BUILD); fi
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi
 	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
 	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
@@ -317,7 +342,7 @@ dist_int: build_all
 # compile
 $(OBJDIR)/%.o : %.c
 	@echo "  compiling $<"
-	$(HIDE)$(CC) -c $(CFLAGS) $(CFLAGS_LOCAL) $< -o $@ 
+	$(HIDE)$(CC) -c $(CFLAGS) $(CFLAGS_LOCAL) $< -o $@
 
 # include dependencies
 -include $(shell mkdir -p $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*.d)
@@ -352,11 +377,15 @@ check_prog:
 
 prog: $(OUTPUT).hex size
 	@echo "  --- programming flash ---"
+ifeq "$(FLASHER)" "teensy"
+	teensy_loader_cli -mmcu=$(FLASH_MCU) -v -w $(OUTPUT).hex
+else
 	$(AVRDUDE) $(AVRDUDE_LDR_FLAGS) $(AVRDUDE_WRITE_FLASH)
+endif
 
 read_fuse:
 	$(AVRDUDE) $(AVRDUDE_LDR_FLAGS) -U lfuse:r:lfuse.txt:h -U hfuse:r:hfuse.txt:h
-	@echo -n " lfuse: " 
+	@echo -n " lfuse: "
 	@cat lfuse.txt
 	@echo -n " hfuse: "
 	@cat hfuse.txt

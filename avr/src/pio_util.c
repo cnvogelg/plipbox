@@ -58,7 +58,7 @@ u08 pio_util_recv_packet(u16 *size)
 {
   // measure packet receive
   timer_hw_reset();
-  u08 result = pio_recv(pkt_buf, PKT_BUF_SIZE, size);
+  u08 result = pio_recv(PKT_BUF_BEGIN, PKT_BUF_SIZE, size);
   u16 delta = timer_hw_get();
 
   u16 s = *size;
@@ -93,7 +93,7 @@ u08 pio_util_recv_packet(u16 *size)
 u08 pio_util_send_packet(u16 size)
 {
   timer_hw_reset();
-  u08 result = pio_send(pkt_buf, size);
+  u08 result = pio_send(PKT_BUF_BEGIN, size);
   u16 delta = timer_hw_get();
 
   u16 rate = timer_hw_calc_rate_kbs(size, delta);
@@ -126,7 +126,7 @@ u08 pio_util_send_packet(u16 size)
 
 u08 pio_util_handle_arp(u16 size)
 {
-  u16 type = eth_get_pkt_type(pkt_buf);
+  u16 type = eth_get_pkt_type(PKT_BUF_BEGIN);
   if(type != ETH_TYPE_ARP) {
     return 0;
   }
@@ -135,7 +135,7 @@ u08 pio_util_handle_arp(u16 size)
   }
 
   // payload buf/size
-  u08 *pl_buf = pkt_buf + ETH_HDR_SIZE;
+  u08 *pl_buf = PKT_BUF_BEGIN + ETH_HDR_SIZE;
   u16 pl_size = size - ETH_HDR_SIZE;
 
   // is an ARP request
@@ -152,7 +152,7 @@ u08 pio_util_handle_arp(u16 size)
 
     if(net_compare_ip(tgt_ip, param.test_ip)) {
       arp_make_reply(pl_buf, param.mac_addr, param.test_ip);
-      eth_make_bcast(pkt_buf, param.mac_addr);
+      eth_make_bcast(PKT_BUF_BEGIN, param.mac_addr);
       pio_util_send_packet(size);
 
       if(global_verbose) {
@@ -167,7 +167,7 @@ u08 pio_util_handle_arp(u16 size)
 
 u08 pio_util_handle_udp_test(u16 size)
 {
-  u08 *ip_buf = pkt_buf + ETH_HDR_SIZE;
+  u08 *ip_buf = PKT_BUF_BEGIN + ETH_HDR_SIZE;
   u08 *udp_buf = ip_buf + ip_get_hdr_length(ip_buf);
   const u08 *dst_ip = ip_get_tgt_ip(ip_buf);
   u16 dst_port = udp_get_tgt_port(udp_buf);
@@ -192,8 +192,8 @@ u08 pio_util_handle_udp_test(u16 size)
     net_put_word(udp_buf + UDP_TGT_PORT_OFF, src_port);
 
     // flip eth
-    net_copy_mac(pkt_buf + ETH_OFF_SRC_MAC, pkt_buf + ETH_OFF_TGT_MAC);
-    net_copy_mac(param.mac_addr, pkt_buf + ETH_OFF_SRC_MAC);
+    net_copy_mac(PKT_BUF_BEGIN + ETH_OFF_SRC_MAC, PKT_BUF_BEGIN + ETH_OFF_TGT_MAC);
+    net_copy_mac(param.mac_addr, PKT_BUF_BEGIN + ETH_OFF_SRC_MAC);
 
     return 1;
  } else {

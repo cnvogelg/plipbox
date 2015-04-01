@@ -174,7 +174,7 @@ u08 pb_test_loop(void)
   stats_reset();
 
   // setup handlers for pb testing
-  pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
+  pb_proto_init(fill_pkt, proc_pkt, PKT_BUF_BEGIN, PKT_BUF_SIZE);
   auto_mode = 0;
   toggle_request = 0;
   silent_mode = 0;

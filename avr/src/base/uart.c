@@ -49,6 +49,24 @@
 #define DOR    DOR0
 #define PE     UPE0
 
+#else
+#ifdef UBRR1H
+
+// for atmega32u4
+#define UBRRH  UBRR1H
+#define UBRRL  UBRR1L
+#define UCSRA  UCSR1A
+#define UCSRB  UCSR1B
+#define UCSRC  UCSR1C
+#define UDRE   UDRE1
+#define UDR    UDR1
+
+#define RXC    RXC1
+#define TXC    TXC1
+#define DOR    DOR1
+#define PE     UPE1
+
+#endif
 #endif
 
 // calc ubbr from baud rate
@@ -84,10 +102,14 @@ void uart_init(void)
 }
 
 // receiver interrupt
+#ifdef USART1_RX_vect
+ISR(USART1_RX_vect)
+#else
 #ifdef USART_RXC_vect
 ISR(USART_RXC_vect)
 #else
 ISR(USART_RX_vect)
+#endif
 #endif
 {
   u08 data = UDR;

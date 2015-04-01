@@ -26,7 +26,7 @@
 include version.mk
 
 SUBDIRS := avr/src amiga/src doc/src
-DISTFILES := Makefile README.md ChangeLog.md COPYING contrib doc avr amiga hardware
+DISTFILES := Makefile README.md ChangeLog.md COPYING contrib doc avr amiga hardware python
 PROJECT := plipbox
 
 REVSION := $(shell git log -1 --pretty=format:%h)

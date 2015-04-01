@@ -71,7 +71,7 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
 static u08 proc_pkt(const u08 *buf, u16 size)
 {
   // make sure its the expected packet type
-  u16 type = net_get_word(pkt_buf + ETH_OFF_TYPE);
+  u16 type = net_get_word(PKT_BUF_BEGIN + ETH_OFF_TYPE);
 
   // in test mode 0 packet was sent by internal device loopback
   if(param.test_mode == 0) {
@@ -80,7 +80,7 @@ static u08 proc_pkt(const u08 *buf, u16 size)
       return PBPROTO_STATUS_OK;
     } else {
       // switch eth type back to IPv4
-      net_put_word(pkt_buf + ETH_OFF_TYPE, ETH_TYPE_IPV4);
+      net_put_word(PKT_BUF_BEGIN + ETH_OFF_TYPE, ETH_TYPE_IPV4);
     }
   } else {
     if(type != ETH_TYPE_IPV4) {
@@ -102,7 +102,7 @@ u08 bridge_test_loop(void)
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("[BRIDGE_TEST] on\r\n"));
 
-  pb_proto_init(fill_pkt, proc_pkt, pkt_buf, PKT_BUF_SIZE);
+  pb_proto_init(fill_pkt, proc_pkt, PKT_BUF_BEGIN, PKT_BUF_SIZE);
   pio_init(param.mac_addr, pio_util_get_init_flags());
   stats_reset();
   

@@ -1,5 +1,5 @@
 /*
- * pkt_buf.h - manage the packet buffer
+ * usbser.h - transfer via USB serial
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,14 +24,11 @@
  *
  */
 
-#ifndef PKT_BUF_H
-#define PKT_BUF_H
+#ifndef USBSER_H
+#define USBSER_H
 
-#include "global.h"
+#include "pio_dev.h"
 
-#define PKT_BUF_SIZE    1514
-#define PKT_BUF_BEGIN   pkt_buf
-
-extern u08 pkt_buf[PKT_BUF_SIZE];
+extern const pio_dev_t PROGMEM pio_dev_usbser;
 
 #endif

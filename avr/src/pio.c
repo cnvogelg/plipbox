@@ -32,11 +32,17 @@
 #ifdef DEV_ENC28J60
 #include "enc28j60.h"
 #endif
+#ifdef DEV_USBSER
+#include "usbser.h"
+#endif
 
 // the table of available devices
 static const pio_dev_ptr_t PROGMEM devices[] = {
 #ifdef DEV_ENC28J60
   &pio_dev_enc28j60,
+#endif
+#ifdef DEV_USBSER
+  &pio_dev_usbser,
 #endif
 };
 #define NUM_DEVICES  (sizeof(devices) / sizeof(pio_dev_ptr_t))

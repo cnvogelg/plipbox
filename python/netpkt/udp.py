@@ -1,4 +1,45 @@
+from impacket.ImpactDecoder import EthDecoder
 from impacket.ImpactPacket import *
+
+def gen_udp_test_packet(saddr, sport, taddr, tport, data):
+  # generate a result
+  d = Data()
+  d.set_data(data)
+
+  eth = Ethernet()
+  ip = IP()
+  udp = UDP()
+
+  eth.set_ether_type(0x800)
+
+  ip.set_ip_src(saddr)
+  ip.set_ip_dst(taddr)
+  ip.set_ip_id(0x1234)
+
+  udp.set_uh_sport(sport)
+  udp.set_uh_dport(tport)
+
+  udp.contains(d)
+
+  eth.contains(ip)
+  ip.contains(udp)
+
+  return eth.get_packet()
+
+def decode_udp_test_packet(saddr, sport, taddr, tport, data):
+  decoder = EthDecoder()
+  eth_pkt = decoder.decode(data)
+  ip_pkt = eth_pkt.child()
+  if not isinstance(ip_pkt, IP):
+    # no IP packet
+    return None
+  udp_pkt = ip_pkt.child()
+  if not isinstance(udp_pkt, UDP):
+    # no ICMP packet
+    return None
+
+  data = udp_pkt.child()
+  return data.get_buffer_as_string()
 
 def handle_udp_echo(eth_pkt, my_ip, my_port):
   ip_pkt = eth_pkt.child()

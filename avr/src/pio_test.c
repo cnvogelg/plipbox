@@ -33,6 +33,7 @@
 #include "main.h"
 #include "stats.h"
 #include "cmd.h"
+#include "param.h"
 
 u08 pio_test_loop(void)
 {
@@ -43,7 +44,7 @@ u08 pio_test_loop(void)
 
   pio_init(param.mac_addr, pio_util_get_init_flags());
   stats_reset();
-  
+
   while(run_mode == RUN_MODE_PIO_TEST) {
     // handle commands
     result = cmd_worker();
@@ -55,13 +56,18 @@ u08 pio_test_loop(void)
     if(pio_has_recv()) {
       u16 size;
       if(pio_util_recv_packet(&size) == PIO_OK) {
-        // handle ARP?
-        if(!pio_util_handle_arp(size)) {
-          // is it a UDP test packet?
-          if(pio_util_handle_udp_test(size)) {
-            // directly send back test packet
-            pio_util_send_packet(size);
-          }          
+        if(param.test_mode) {
+          // simple packet return
+          pio_util_send_packet(size);
+        } else {
+          // handle ARP?
+          if(!pio_util_handle_arp(size)) {
+            // is it a UDP test packet?
+            if(pio_util_handle_udp_test(size)) {
+              // directly send back test packet
+              pio_util_send_packet(size);
+            }
+          }
         }
       } else {
         stats_get(STATS_ID_PIO_RX)->err++;

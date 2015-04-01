@@ -6,66 +6,129 @@ import sys, os
 import socket
 import argparse
 import time
+import pio
+import netpkt.udp
+
+class PioEth:
+  """access eth pio on plipbox by directly sending UDP packets"""
+  def __init__(self, sport, ip, tport):
+    self.sport = sport
+    self.ip = ip
+    self.tport = tport
+
+  def open(self):
+    self.si = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.si.bind(("", self.sport))
+    self.si.settimeout(1)
+
+  def close(self):
+    self.si.close()
+
+  def recv(self, max_size):
+    (data_in, ip_in) = self.si.recvfrom(size)
+    return data_in
+
+  def send(self, data):
+    self.si.sendto(data, (self.ip, self.tport))
+
+class PioUSBSer:
+  def __init__(self, sport, taddr, tport, serial_port):
+    self.sport = sport
+    self.tport = tport
+    self.saddr = "192.168.2.1"
+    self.taddr = taddr
+    if serial_port is None:
+      print("No serial port given! Use -S to set one.")
+      sys.exit(1)
+    self.usbser = pio.USBSer(serial_port)
+
+  def open(self):
+    self.usbser.open()
+
+  def close(self):
+    self.usbser.close()
+
+  def recv(self, max_size):
+    pkt = self.usbser.recv(max_size)
+    data = netpkt.udp.decode_udp_test_packet(self.saddr, self.sport, self.taddr, self.tport, pkt)
+    return data
+
+  def send(self, data):
+    pkt = netpkt.udp.gen_udp_test_packet(self.saddr, self.sport, self.taddr, self.tport, data)
+    self.usbser.send(pkt)
+
 
 def calc_rate(size, delta):
-	return size / (delta * 1000)
+  return size / (delta * 1000)
 
-def pio_test(ip, tport, sport, data_size, count, delay, verbose):
-	print("ip=",ip,"tgt_port=",tport,"src_port=",sport,"data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)	
-	si = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	si.bind(("", sport))
-	si.settimeout(1)
-	data_add = " " * (data_size - 1)
-	avg_delta = 0
-	try:
-		ok = True
-		for i in xrange(count):
-			# gen data
-			tag = i % 128
-			data = chr(64+tag) + data_add
-			# send data
-			start = time.time()
-			si.sendto(data, (ip, tport))
-			# get data
-			(data_in, ip_in) = si.recvfrom(data_size)
-			end = time.time()
+def pio_test(pio_name, serial_port, ip, tport, sport, data_size, count, delay, verbose):
+  if pio_name == 'eth':
+    print("eth: ip=",ip,"tgt_port=",tport,"src_port=",sport)
+  else:
+    print("usbser: port=",serial_port)
+  print("data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)
 
-			# eval data
-			delta = end - start
-			ok = (data == data_in)
-			v = calc_rate(data_size * 2, delta)
-			avg_delta += delta
-			delta *= 1000 # in ms
-			if verbose:
-				print("@%d: d=%6.2f ms  v=%6.2f KB/s  ok=%s" % (i,delta,v,ok))
-			if not ok:
-				print(i,"DATA MISMATCH")
-				break
-			# do wait?
-			if delay > 0:
-				time.sleep(delay / 1000.0)
+  if pio_name == 'eth':
+    p = PioEth(sport, ip, tport)
+  else:
+    p = PioUSBSer(sport, ip, tport, serial_port)
 
-		if ok:
-			# calc result
-			delta = avg_delta / count
-			v = calc_rate(data_size * 2, delta)
-			delta *= 1000
-			print("@%d: d=%6.2f ms  v=%6.2f KB/s" % (count, delta,v))
-	except socket.timeout as e:
-		print(e)
-	si.close()
+  p.open()
+  data_add = " " * (data_size - 1)
+  avg_delta = 0
+  try:
+    ok = True
+    for i in xrange(count):
+      # gen data
+      tag = i % 128
+      data = chr(64+tag) + data_add
+      # send data
+      start = time.time()
+      p.send(data)
+      # get data
+      data_in = p.recv(data_size)
+      end = time.time()
+
+      # eval data
+      delta = end - start
+      ok = (data == data_in)
+      v = calc_rate(data_size * 2, delta)
+      avg_delta += delta
+      delta *= 1000 # in ms
+      if verbose:
+        print("@%d: d=%6.2f ms  v=%6.2f KB/s  ok=%s" % (i,delta,v,ok))
+      if not ok:
+        print(i,"DATA MISMATCH")
+        print("send data:",data)
+        print("recv data:",data_in)
+        break
+      # do wait?
+      if delay > 0:
+        time.sleep(delay / 1000.0)
+
+    if ok:
+      # calc result
+      delta = avg_delta / count
+      v = calc_rate(data_size * 2, delta)
+      delta *= 1000
+      print("@%d: d=%6.2f ms  v=%6.2f KB/s" % (count, delta,v))
+  finally:
+    p.close()
 
 def main():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
-	parser.add_argument('-a', '--address', default="192.168.2.222", help="IP address of plipbox")
-	parser.add_argument('-p', '--tgt-port', default=6800, type=int, help="UDP port of plipbox")
-	parser.add_argument('-P', '--src-port', default=6800, type=int, help="UDP port here")
-	parser.add_argument('-s', '--data-size', default=1400, type=int, help="size of test data")
-	parser.add_argument('-c', '--count', default=10, type=int, help="number of packets")
-	parser.add_argument('-d', '--delay', default=0, type=int, help="delay in ms")
-	args = parser.parse_args()
-	pio_test(args.address, args.tgt_port, args.src_port, args.data_size, args.count, args.delay, args.verbose)
+  parser = argparse.ArgumentParser()
+  parser.add_argument('pio', choices=['eth', 'usbser'], help="select pio to access plipbox")
+  parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+  parser.add_argument('-a', '--address', default="192.168.2.222", help="UDP: IP address of plipbox")
+  parser.add_argument('-p', '--tgt-port', default=6800, type=int, help="UDP: port of plipbox")
+  parser.add_argument('-P', '--src-port', default=6800, type=int, help="UDP: port here")
+  parser.add_argument('-S', '--serial-port', default=None, help="serial: port/device")
+  parser.add_argument('-s', '--data-size', default=1400, type=int, help="size of test data")
+  parser.add_argument('-c', '--count', default=10, type=int, help="number of packets")
+  parser.add_argument('-d', '--delay', default=0, type=int, help="delay in ms")
+  args = parser.parse_args()
+  pio_test(args.pio, args.serial_port, args.address, args.tgt_port, args.src_port,
+           args.data_size, args.count, args.delay, args.verbose)
 
 if __name__ == '__main__':
-	main()
+  main()

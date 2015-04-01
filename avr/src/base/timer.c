@@ -37,10 +37,36 @@ static u16 count;
 void timer_init(void)
 {
   cli();
-  
+
+#ifdef __AVR_ATmega32U4__
+  // ----- TIMER0 (8bit) -----
+  // 100us timer
+
+  // clear timer/counter on compare0 match
+  TCCR0A = _BV(WGM01); // CTC
+  TCCR0B = _BV(CS01); // prescale 8
+
+  // t_tick = prescale / F_CPPU = 8 / F_CPU
+  // how many ticks n until 100 us are reached?
+  //
+  // t_tick * n = 100 us
+  //
+  // -> n = 100 * F_CPU / ( prescaler * 1000000 )
+  // -> compare val m = n -1
+
+#define TIMER0_COMPARE_VAL ((100 * F_CPU) / (8 * 1000000)) - 1
+  OCR0A = TIMER0_COMPARE_VAL;
+
+  // reset timer
+  TCNT0 = 0x00;
+
+  // enable Output Compare 0 overflow interrupt
+  TIMSK0 = _BV(OCIE0A);
+
+#else /* not TIMER0 */
   // ----- TIMER2 (8bit) -----
   // 100us timer
-  
+
   // clear timer/counter on compare0 match
 #ifdef TCCR2A
   TCCR2A = _BV(WGM21); // CTC
@@ -56,7 +82,7 @@ void timer_init(void)
   //
   // -> n = 100 * F_CPU / ( prescaler * 1000000 )
   // -> compare val m = n -1
-  
+
 #define TIMER2_COMPARE_VAL ((100 * F_CPU) / (8 * 1000000)) - 1
 #ifdef OCR2A
   OCR2A = TIMER2_COMPARE_VAL;
@@ -66,25 +92,26 @@ void timer_init(void)
 
   // reset timer
   TCNT2  = 0x00;
-  
+
   // enable Output Compare 0 overflow interrupt
 #ifdef TIMSK2
   TIMSK2 = _BV(OCIE2A);
 #else
   TIMSK |= _BV(OCIE2);
 #endif
+#endif
 
   // ----- TIMER1 (16bit) -----
-  // prescale 64 
+  // prescale 64
   // 16 MHz -> 250 KHz = 4 us timer
-  
+
   // set to CTC on OCR1A with prescale 8
   TCCR1A = 0x00;
   TCCR1B = _BV(CS10) | _BV(CS11); // prescale 64
 #ifdef TCCR1C
   TCCR1C = 0x00;
 #endif
-  
+
   // reset timer
   TCNT1 = 0;
 
@@ -96,11 +123,16 @@ void timer_init(void)
   sei();
 }
 
+#ifdef __AVR_ATmega32U4__
+// timer0 compare A handler
+ISR(TIMER0_COMPA_vect)
+#else
 // timer2 compare A handler
 #ifdef TIMER2_COMPA_vect
 ISR(TIMER2_COMPA_vect)
 #else
 ISR(TIMER2_COMP_vect)
+#endif
 #endif
 {
   timer_100us++;
@@ -110,7 +142,7 @@ ISR(TIMER2_COMP_vect)
     count = 0;
     timer_10ms++;
   }
-} 
+}
 
 void timer_delay_10ms(u16 timeout)
 { timer_10ms=0; while(timer_10ms<timeout); }
@@ -124,7 +156,7 @@ u16 timer_hw_calc_rate_kbs(u16 bytes, u16 delta)
 {
   if(delta != 0) {
     u32 nom = 1000 * (u32)bytes * 100;
-    u32 denom = (u32)delta * 4; 
+    u32 denom = (u32)delta * 4;
     u32 rate = nom / denom;
     return (u16)rate;
   } else {

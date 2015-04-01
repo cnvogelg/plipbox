@@ -33,19 +33,19 @@ void par_low_init(void)
   // /STROBE (IN)
   PAR_STROBE_DDR &= ~PAR_STROBE_MASK;
   PAR_STROBE_PORT |= PAR_STROBE_MASK;
-  
+
   // SELECT (IN)
   PAR_SELECT_DDR &= ~PAR_SELECT_MASK;
   PAR_SELECT_PORT |= PAR_SELECT_MASK;
-  
+
   // BUSY (OUT) (0)
   PAR_BUSY_DDR |= PAR_BUSY_MASK;
   PAR_BUSY_PORT &= ~PAR_BUSY_MASK;
-  
+
   // POUT (IN)
   PAR_POUT_DDR &= ~PAR_POUT_MASK;
   PAR_POUT_PORT |= PAR_POUT_MASK;
-  
+
   // /ACK (OUT) (1)
   PAR_ACK_DDR |= PAR_ACK_MASK;
   PAR_ACK_PORT |= PAR_ACK_MASK;
@@ -68,7 +68,7 @@ void par_low_data_set_input(void)
   PAR_DATA_HI_DDR &= ~PAR_DATA_HI_MASK;
 }
 #else
-#ifdef HAVE_avrnetio
+#if defined(HAVE_avrnetio) || defined(HAVE_teensy20)
 void par_low_data_set_output(void)
 {
   PAR_DATA_DDR = 0xff;
