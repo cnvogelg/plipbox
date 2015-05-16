@@ -6,7 +6,7 @@ import sys, os
 import socket
 import argparse
 import time
-import pio
+import pbserial
 import netpkt.udp
 
 class PioEth:
@@ -31,7 +31,7 @@ class PioEth:
   def send(self, data):
     self.si.sendto(data, (self.ip, self.tport))
 
-class PioUSBSer:
+class PioSerial:
   def __init__(self, sport, taddr, tport, serial_port):
     self.sport = sport
     self.tport = tport
@@ -40,22 +40,22 @@ class PioUSBSer:
     if serial_port is None:
       print("No serial port given! Use -S to set one.")
       sys.exit(1)
-    self.usbser = pio.USBSer(serial_port)
+    self.device = pbserial.Device(serial_port)
 
   def open(self):
-    self.usbser.open()
+    self.device.open()
 
   def close(self):
-    self.usbser.close()
+    self.device.close()
 
   def recv(self, max_size):
-    pkt = self.usbser.recv(max_size)
+    pkt = self.device.recv(max_size)
     data = netpkt.udp.decode_udp_test_packet(self.saddr, self.sport, self.taddr, self.tport, pkt)
     return data
 
   def send(self, data):
     pkt = netpkt.udp.gen_udp_test_packet(self.saddr, self.sport, self.taddr, self.tport, data)
-    self.usbser.send(pkt)
+    self.device.send(pkt)
 
 
 def calc_rate(size, delta):
@@ -65,13 +65,13 @@ def pio_test(pio_name, serial_port, ip, tport, sport, data_size, count, delay, v
   if pio_name == 'eth':
     print("eth: ip=",ip,"tgt_port=",tport,"src_port=",sport)
   else:
-    print("usbser: port=",serial_port)
+    print("ser: port=",serial_port)
   print("data_size",data_size,"count=",count,"delay=",delay,"verbose=",verbose)
 
   if pio_name == 'eth':
     p = PioEth(sport, ip, tport)
   else:
-    p = PioUSBSer(sport, ip, tport, serial_port)
+    p = PioSerial(sport, ip, tport, serial_port)
 
   p.open()
   data_add = " " * (data_size - 1)
@@ -117,7 +117,7 @@ def pio_test(pio_name, serial_port, ip, tport, sport, data_size, count, delay, v
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('pio', choices=['eth', 'usbser'], help="select pio to access plipbox")
+  parser.add_argument('pio', choices=['eth', 'ser'], help="select pio to access plipbox")
   parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
   parser.add_argument('-a', '--address', default="192.168.2.222", help="UDP: IP address of plipbox")
   parser.add_argument('-p', '--tgt-port', default=6800, type=int, help="UDP: port of plipbox")

@@ -1,0 +1,58 @@
+#!/usr/bin/env python2.7
+#
+# pbser_sim
+#
+# simulate a serial port via a pseudo terminal
+# talk the pbserial protocol on this port
+# and simulate a host behind it that responds to UDP packets
+#
+# you can use this program to test the plipbox serial pio without
+# attaching a real plipbox...
+
+from __future__ import print_function
+
+import argparse
+import pbserial
+import netpkt.simhost
+
+def pbser_sim(host_ip_str, udp_port, host_mac_str, link_name, verbose):
+  # parse parameter
+  host_ip = map(int, host_ip_str.split('.'))
+  host_mac = map(lambda x: int(x,16), host_mac_str.split(':'))
+
+  sim = netpkt.simhost.SimHost(host_mac, host_ip, udp_port, verbose)
+  with pbserial.Host(link_name) as host:
+    if verbose:
+      print("Bound to virtual serial port at:", link_name)
+      print("Simulating Host: IP=", host_ip_str, "UDP=", udp_port, "MAC=", host_mac_str)
+    try:
+      # send init
+      #host.send(sim.get_init_packet())
+
+      # main loop
+      while True:
+        raw_pkt = host.recv()
+        if verbose:
+          print("IN: ",len(raw_pkt))
+        # do host sim
+        reply_raw_pkt = sim.handle_packet(raw_pkt)
+        if reply_raw_pkt is not None:
+          if verbose:
+            print("OUT",len(reply_raw_pkt))
+          host.send(reply_raw_pkt)
+
+    except KeyboardInterrupt:
+      print("***Break")
+
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
+  parser.add_argument('-l', '--link-name', default="/tmp/pbser", help="link name of virtual serial port")
+  parser.add_argument('-a', '--address', default='192.168.2.222', help="ip address of virtual host")
+  parser.add_argument('-p', '--port', default=6800, type=int, help="udp port of virtual host")
+  parser.add_argument('-m', '--mac', default="1a:11:af:a0:47:1a", help="mac address of virtual host")
+  args = parser.parse_args()
+  pbser_sim(args.address, args.port, args.mac, args.link_name, args.verbose)
+
+if __name__ == '__main__':
+  main()

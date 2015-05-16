@@ -55,7 +55,17 @@ class SoPTY:
 
   def read(self, size):
     """perform a (blocking) read on the PTY"""
-    return os.read(self._fd, size)
+    data = ""
+    n = size
+    while len(data) < size:
+       part = os.read(self._fd, n)
+       np = len(part)
+       if np == 0:
+          # EOF
+          break
+       data = data + part
+       n = n - np
+    return data
 
   def write(self, buf):
     """perform a write on the PTY"""
