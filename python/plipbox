@@ -8,16 +8,19 @@ import threading
 
 import pb.ethreader
 import pb.pbuaereader
+import pb.pbserialreader
 
 # ---- main ----
 print("Welcome to plipbox!")
 
 # parse args
 parser = argparse.ArgumentParser()
+parser.add_argument('pb', choices=['uae', 'ser'], help="select plipbox access mode")
 parser.add_argument('-v', '--verbose', action='store_true', default=False, help="be verbose")
 parser.add_argument('-d', '--debug', action='store_true', default=False, help="show debug info")
 parser.add_argument('-i', '--interface', default='en3', help="ethernet interface to tap")
 parser.add_argument('-p', '--pty', default='/tmp/vpar', help="file node for vpar endpoint")
+parser.add_argument('-s', '--serial-port', default="/serial/port", help="serial port device name")
 args = parser.parse_args()
 
 # setup logging
@@ -33,7 +36,10 @@ log.setLevel(level)
 # create reader
 quit_event = threading.Event()
 pio = pb.ethreader.EthernetReader(quit_event, args.interface, level=level)
-pb = pb.pbuaereader.PBUAEReader(quit_event, args.pty, level=level)
+if args.pb == 'uae':
+  pb = pb.pbuaereader.PBUAEReader(quit_event, args.pty, level=level)
+else:
+  pb = pb.pbserialreader.PBSerialReader(quit_event, args.serial_port, level=level)
 
 # try to open pio
 try:
@@ -46,7 +52,7 @@ except Exception as e:
 try:
   pb.open()
 except Exception as e:
-  print("ERROR opening PB for pty '%s':" % args.pty, e)
+  print("ERROR opening plipbox access:", e)
   pio.close()
   sys.exit(2)
 

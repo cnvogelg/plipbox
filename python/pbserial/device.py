@@ -24,7 +24,7 @@ class Device:
   def can_recv(self):
     return self.serial.inWaiting() > 0
 
-  def recv(self, get_size):
+  def recv(self):
     hdr = self.serial.read(self.pkt.HDR_SIZE)
     if len(hdr) == 0:
       return None

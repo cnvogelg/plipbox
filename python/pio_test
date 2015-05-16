@@ -49,7 +49,7 @@ class PioSerial:
     self.device.close()
 
   def recv(self, max_size):
-    pkt = self.device.recv(max_size)
+    pkt = self.device.recv()
     data = netpkt.udp.decode_udp_test_packet(self.saddr, self.sport, self.taddr, self.tport, pkt)
     return data
 

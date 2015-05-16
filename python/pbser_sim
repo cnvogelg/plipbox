@@ -38,7 +38,7 @@ def pbser_sim(host_ip_str, udp_port, host_mac_str, link_name, verbose):
         reply_raw_pkt = sim.handle_packet(raw_pkt)
         if reply_raw_pkt is not None:
           if verbose:
-            print("OUT",len(reply_raw_pkt))
+            print("OUT:",len(reply_raw_pkt))
           host.send(reply_raw_pkt)
 
     except KeyboardInterrupt:
