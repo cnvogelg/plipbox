@@ -209,9 +209,9 @@ class VPar:
 
 # ----- Test -----
 if __name__ == '__main__':
-  import sopty
+  import util
   logging.basicConfig()
-  s = sopty.SoPTY('/tmp/vpar')
+  s = util.SoPTY('/tmp/vpar')
   v = VPar(s)
   v._log.setLevel(logging.DEBUG)
   v.open()

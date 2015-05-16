@@ -102,7 +102,7 @@ class PBProto:
       ok = self._vpar.poll_state()
       if not ok:
         # timeout occurred
-        return None 
+        return None
       self._log.debug("got state: ctl=%02x dat=%02x" % (self._vpar.peek_control(), self._vpar.peek_data()))
 
   def _handle_cmd(self):
@@ -292,13 +292,13 @@ class PBProto:
 
 # ----- Test -----
 if __name__ == '__main__':
-  import sopty
+  import util
   import vpar
 
   save_data = None
   count = 10
   logging.basicConfig()
-  s = sopty.SoPTY('/tmp/vpar')
+  s = util.SoPTY('/tmp/vpar')
   v = vpar.VPar(s)
   p = PBProto(v)
 
@@ -306,7 +306,7 @@ if __name__ == '__main__':
     global save_data
     print("<-- want packet: size=%d" % len(save_data))
     return save_data
-  
+
   def send(data):
     global count, save_data, p
     print("--> got packet: size=%d" % len(data))

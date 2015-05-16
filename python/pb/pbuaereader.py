@@ -1,6 +1,7 @@
 from __future__ import print_function
 import reader
 import pbuae
+import util
 import Queue
 import logging
 import ethframe
@@ -10,7 +11,7 @@ class PBUAEReader(reader.Reader):
   def __init__(self, quit_event, pty_name, **kwargs):
     reader.Reader.__init__(self, "PAR", quit_event, **kwargs)
     self.pty_name = pty_name
-    self.sopty = pbuae.SoPTY(pty_name)
+    self.sopty = util.SoPTY(pty_name)
     self.vpar = pbuae.VPar(self.sopty)
     self.pbproto = pbuae.PBProto(self.vpar)
     if 'level' in kwargs:
@@ -36,7 +37,7 @@ class PBUAEReader(reader.Reader):
     pkt = self.pkt_queue.get()
     self._log.debug("AMIGA recv:")
     return pkt
-    
+
   def _send_cmd(self, data):
     """data was sent from Amiga"""
     self._log.debug("AMIGA send: {}".format(len(data)))
