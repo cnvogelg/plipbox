@@ -14,12 +14,13 @@ class OSHelper:
      search the tools by path and ensure they are available.
      if necessary call them with sudo.
   """
-  
-  def __init__(self, use_sudo=True):
+
+  def __init__(self, use_sudo=True, verbose=False):
     # we'll need sudo for most commands
     self._ifconfig = '/sbin/ifconfig'
     self._tools = [ self._ifconfig ]
     self._use_sudo = use_sudo
+    self._verbose = verbose
     if use_sudo:
       self._sudo = '/usr/bin/sudo'
       self._tools.append(self._sudo)
@@ -53,6 +54,8 @@ class OSHelper:
   def _run(self, cmd, args):
     """run a command and return exit code"""
     full_cmd = self._get_cmd(cmd, args)
+    if self._verbose:
+      print("run", full_cmd)
     # run and check result
     with open(os.devnull, "w") as f:
       ret = subprocess.call(full_cmd, stdout=f, stderr=f)
@@ -61,10 +64,12 @@ class OSHelper:
   def _run_with_output(self, cmd, args):
     """run and return (exitcode, stdout, stderr)"""
     full_cmd = self._get_cmd(cmd, args)
+    if self._verbose:
+      print("run_with_output", full_cmd)
     p = subprocess.Popen(full_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = p.communicate()
     return (p.returncode, stdout)
-  
+
   def ifconfig(self, *args):
     """call ifconfig with the given set of parameters"""
     return self._run(self._ifconfig, args)

@@ -29,7 +29,7 @@ def ethertap_test(eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
   simhost = netpkt.simhost.SimHost(mac_addr, ip_addr, udp_port, verbose)
 
   # build tap
-  with EtherTap(eth_if) as et:
+  with EtherTap(eth_if, verbose=verbose) as et:
     # send a gracious ARP of my mac to announce my IP
     et.write(simhost.get_init_packet())
     # main loop
