@@ -53,6 +53,15 @@ class EtherCap:
     os.write(self.pStdout, hdr)
     os.write(self.pStdout, buf)
 
+  def __enter__(self):
+    """for use in 'with'"""
+    self.open()
+    return self
+
+  def __exit__(self, type, value, traceback):
+    """for use in 'with'"""
+    self.close()
+
 # test
 if __name__ == '__main__':
   import sys

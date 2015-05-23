@@ -15,9 +15,10 @@ from __future__ import print_function
 import argparse
 
 from ethertap import EtherTap
+from ethercap import EtherCap
 import netpkt.simhost
 
-def ethertap_test(eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
+def ethertap_test(tap, eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
   # parse parameter
   ip_addr = map(int, ip_addr_str.split('.'))
   mac_addr = map(lambda x: int(x,16), mac_addr_str.split(':'))
@@ -29,7 +30,7 @@ def ethertap_test(eth_if, ip_addr_str, udp_port, mac_addr_str, verbose=False):
   simhost = netpkt.simhost.SimHost(mac_addr, ip_addr, udp_port, verbose)
 
   # build tap
-  with EtherTap(eth_if, verbose=verbose) as et:
+  with tap as et:
     # send a gracious ARP of my mac to announce my IP
     et.write(simhost.get_init_packet())
     # main loop
@@ -50,7 +51,11 @@ def main():
   parser.add_argument('-p', '--port', default=6800, type=int, help="udp port of virtual host")
   parser.add_argument('-m', '--mac', default="1a:11:af:a0:47:1a", help="mac address of virtual host")
   args = parser.parse_args()
-  ethertap_test(args.interface, args.address, args.port, args.mac, verbose=args.verbose)
+
+  # select tap
+  tap = EtherCap(args.interface)
+
+  ethertap_test(tap, args.interface, args.address, args.port, args.mac, verbose=args.verbose)
 
 if __name__ == '__main__':
   main()

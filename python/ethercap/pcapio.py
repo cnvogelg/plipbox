@@ -13,8 +13,7 @@ import pcap
 import sys
 import os
 import struct
-import threading
-
+import select
 import time
 
 # parse options
@@ -34,12 +33,19 @@ if sys.platform == 'darwin':
 else:
   p = pcap.pcap(ifc)
 
+# get send method: older pcap modules used 'inject', newer ones 'sendpacket'
+try:
+  p.inject
+  send_func = lambda pkt : p.inject(pkt, len(pkt))
+except AttributeError:
+  send_func = lambda pkt : p.sendpacket(pkt)
+
 # get stdin/stdout streams
 stdin = sys.stdin.fileno()
 stdout = sys.stdout.fileno()
 
 # callback for incoming pcap packet
-def got_packet(ts, pkt):
+def write_packet_stdout(ts, pkt):
   if verbose:
     print(time.time(),"GOT",len(pkt))
   else:
@@ -47,34 +53,32 @@ def got_packet(ts, pkt):
     os.write(stdout, hdr)
     os.write(stdout, pkt)
 
-# read loop: get packets via pcap and write them to stdout
-def read_loop():
+def read_packet_stdin():
+  # read from stdin
+  hdr = os.read(stdin, 2)
+  # error reading packet from stdin
+  if hdr is None or len(hdr) == 0:
+    return False
+  # read packet from stdin
+  size = struct.unpack("H", hdr)[0]
+  data = os.read(stdin, size)
+  send_func(data)
+  return True
+
+# main loop
+def main_loop():
   try:
     while True:
-      # dispatch forever
-      p.dispatch(0, got_packet)
+      # dispatch full buffer
+      p.dispatch(-1, write_packet_stdout)
+      # check for incoming packet
+      rx,_,_ = select.select([stdin],[],[],0)
+      if stdin in rx:
+        if not read_packet_stdin():
+          break
   except Exception:
     pass
-
-# write loop: get packets from stdin and send via pcap
-def write_loop():
-  try:
-    while True:
-      # read from stdin
-      hdr = os.read(stdin, 2)
-      # error reading packet from stdin
-      if hdr is None or len(hdr) == 0:
-        break
-      # read packet from stdin
-      size = struct.unpack("H", hdr)[0]
-      data = os.read(stdin, size)
-      p.inject(data, size)
-  except Exception:
+  except KeyboardInterrupt:
     pass
 
-# run read loop in own thread
-t = threading.Thread(target=read_loop)
-t.run()
-
-# write loop runs in main thread
-write_loop()
+main_loop()
