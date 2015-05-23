@@ -9,7 +9,8 @@ class EtherCap:
   def __init__(self, eth_if):
     pcapio = os.path.join(os.path.dirname(__file__),"pcapio.py")
     self.sudo = "/usr/bin/sudo"
-    self.args = (self.sudo, sys.executable, pcapio, eth_if)
+    # use sudo's non-interactive -n switch
+    self.args = (self.sudo, "-n", sys.executable, pcapio, eth_if)
 
   def open(self):
     # fork
@@ -54,8 +55,10 @@ class EtherCap:
 
 # test
 if __name__ == '__main__':
-  ec = EtherCap("wlan0")
-  print("open")
+  import sys
+  ifc = "eth0" if len(sys.argv) < 2 else sys.argv[1]
+  ec = EtherCap(ifc)
+  print("open",ifc)
   ec.open()
   print("read")
   buf = ec.read()
