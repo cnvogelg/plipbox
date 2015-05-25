@@ -55,7 +55,7 @@ class EtherTap:
         print("eth_config:",self._eth_config)
 
     # configure eth: 0.0.0.0 up promisc
-    ret = self._netif.if_configure(self.eth_if, '0.0.0.0')
+    ret = self._netif.if_configure(self.eth_if, '0.0.0.0', promisc=True)
     if ret != 0:
       raise EtherTapError("failed configuring ethernet. ret=%d" % ret)
     ret = self._netif.if_up(self.eth_if)

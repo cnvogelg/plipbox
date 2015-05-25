@@ -34,6 +34,7 @@ class NetIf:
             current = {}
             ifs[ifname] = current
             elements = elements[1:]
+            current['promisc'] = (elements[0].find('PROMISC')!=-1)
           # check parameters
           if elements[0] == 'ether':
             current['mac'] = elements[1]
@@ -63,7 +64,8 @@ class NetIf:
               current['active'] = False
           # linux: options
           elif len(elements) > 1 and elements[-2].startswith('MTU:'):
-            current['active'] = (elements[0] == 'UP')
+            current['active'] = ('UP' in elements)
+            current['promisc'] = ('PROMISC' in elements)
 
     return ifs
 
@@ -159,13 +161,20 @@ class NetIf:
     """try to bring down interface. return exitcode of ifconfig call"""
     return self._osh.ifconfig(name,'down')
 
-  def if_configure(self, name, inet, netmask=None, broadcast=None):
+  def if_configure(self, name, inet=None, netmask=None, broadcast=None, promisc=None):
     """configure ip"""
-    args = [name, inet]
+    args = [name]
+    if inet is not None:
+      args.append(inet)
     if netmask is not None:
       args.extend(('netmask', netmask))
     if broadcast is not None:
       args.extend(('broadcast', broadcast))
+    if promisc is not None and sys.platform == 'linux2':
+      if promisc:
+        args.append('promisc')
+      else:
+        args.append('-promisc')
     return self._osh.ifconfig(*args)
 
   def if_reconfigure(self, name, entry):
@@ -180,6 +189,12 @@ class NetIf:
       args += ['netmask', entry['netmask']]
     if 'broadcast' in entry:
       args += ['broadcast', entry['broadcast']]
+    if 'promisc' in entry and sys.platform == 'linux2':
+      on = entry['promisc']
+      if on:
+        args.append('promisc')
+      else:
+        args.append('-promisc')
     if len(args) == 1:
       return 0
     return self._osh.ifconfig(*args)

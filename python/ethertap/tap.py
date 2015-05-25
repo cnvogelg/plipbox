@@ -27,18 +27,9 @@ class Tap:
       if not os.path.exists(self._name):
         return -1
       self._fd = os.open(self._name, os.O_RDWR)
-      # up interface
-      ret = self._netif.if_up(self._ifname)
-      if ret != 0:
-        return -1
-      return self._fd
     elif sys.platform == 'linux2':
       # Linux needs 'tunctl' tool and user needs sudo access
       ret = self._osh.tunctl('-t', self._ifname,'-u', str(os.getuid()))
-      if ret != 0:
-        return -1
-      # up interface
-      ret = self._netif.if_up(self._ifname)
       if ret != 0:
         return -1
       # now open tap
@@ -49,9 +40,17 @@ class Tap:
       fcntl.ioctl(self._fd, TUNSETIFF,
                   struct.pack("16sH", self._ifname,
                               IFF_TAP | IFF_NO_PI))
-      return self._fd
+      # promisc interface
+      ret = self._netif.if_configure(self._ifname, promisc=True)
+      if ret != 0:
+        return -1
     else:
       raise NotImplementedError("unsupported platform!")
+    # up interface
+    ret = self._netif.if_up(self._ifname)
+    if ret != 0:
+      return -1
+    return self._fd
 
   def close(self):
     os.close(self._fd)
