@@ -27,6 +27,10 @@ class Tap:
       if not os.path.exists(self._name):
         return -1
       self._fd = os.open(self._name, os.O_RDWR)
+      # up interface
+      ret = self._netif.if_up(self._ifname)
+      if ret != 0:
+        return -1
       return self._fd
     elif sys.platform == 'linux2':
       # Linux needs 'tunctl' tool and user needs sudo access

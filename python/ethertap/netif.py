@@ -22,7 +22,7 @@ class NetIf:
         if line[0] in string.ascii_letters:
           begin_if = True
         else:
-          begin_if = False          
+          begin_if = False
         elements = line.split()
         n = len(elements)
         if n > 0:
@@ -38,13 +38,22 @@ class NetIf:
           if elements[0] == 'ether':
             current['mac'] = elements[1]
           elif elements[0] == 'inet':
-            current['inet'] = elements[1]
-            if n >= 4:
-              if elements[2] == 'netmask':
-                current['netmask'] = elements[3]
-              if n >= 6:
-                if elements[4] == 'broadcast':
-                  current['broadcast'] = elements[5]
+            # linux:
+            if elements[1].startswith('addr:'):
+              current['inet'] = elements[1][len('addr:'):]
+              if n > 2:
+                current['broadcast'] = elements[2][len('Bcast:'):]
+              if n > 3:
+                current['netmask'] = elements[3][len('Mask:'):]
+            # mac
+            else:
+              current['inet'] = elements[1]
+              if n >= 4:
+                if elements[2] == 'netmask':
+                  current['netmask'] = elements[3]
+                if n >= 6:
+                  if elements[4] == 'broadcast':
+                    current['broadcast'] = elements[5]
           elif elements[0] == 'media:':
             current['media'] = ' '.join(elements[1:])
           elif elements[0] == 'status:':
@@ -52,6 +61,9 @@ class NetIf:
               current['active'] = True
             elif elements[1] == 'inactive':
               current['active'] = False
+          # linux: options
+          elif len(elements) > 1 and elements[-2].startswith('MTU:'):
+            current['active'] = (elements[0] == 'UP')
 
     return ifs
 
@@ -75,6 +87,8 @@ class NetIf:
 
   def find_unused_netif(self, prefix):
     ifnames = self.get_interfaces()
+    if ifnames is None:
+      return prefix + "0"
     for a in range(99):
       ifname = prefix + str(a)
       if ifname not in ifnames:
@@ -154,6 +168,21 @@ class NetIf:
       args.extend(('broadcast', broadcast))
     return self._osh.ifconfig(*args)
 
+  def if_reconfigure(self, name, entry):
+    """reconfigure interface with values given in entry"""
+    args = [name]
+    if 'inet' in entry:
+      addr = entry['inet']
+      if addr == '0.0.0.0':
+        return 0
+      args.append(addr)
+    if 'netmask' in entry:
+      args += ['netmask', entry['netmask']]
+    if 'broadcast' in entry:
+      args += ['broadcast', entry['broadcast']]
+    if len(args) == 1:
+      return 0
+    return self._osh.ifconfig(*args)
 
 # ----- test -----
 if __name__ == '__main__':

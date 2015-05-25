@@ -11,7 +11,7 @@ class EtherTapError(Exception):
 class EtherTap:
   """create a bridge between an ethernet adapter and a tap device"""
 
-  def __init__(self, eth_if, tap_if=None, bridge_if=None, oshelper=None, netif=None, autoconfig=False, verbose=False):
+  def __init__(self, eth_if, tap_if=None, bridge_if=None, oshelper=None, netif=None, verbose=False):
     """create an EtherTap for the given ethernet interface"""
     if oshelper is None:
       oshelper = OSHelper(verbose=verbose)
@@ -33,30 +33,34 @@ class EtherTap:
     self._netif = netif
     self._tap = None
     self._bridge = None
-    self._eth_config = False
+    self._eth_config = None
     self._bridge_up = False
-    self._autoconfig = autoconfig
+    self._verbose = verbose
 
   def open(self):
     # check interfaces
     ifnames = self._netif.get_interfaces()
-    if self.eth_if not in ifnames:
-      raise EtherTapError("ethernet interface not found: "+self.eth_if)
-    if self.tap_if in ifnames:
-      raise EtherTapError("tap interface already exists: "+self.tap_if)
-    if self.bridge_if in ifnames:
-      raise EtherTapError("bridge interface already exists: "+self.bridge_if)
+    if ifnames is not None:
+#      if self.eth_if not in ifnames:
+#        raise EtherTapError("ethernet interface not found: "+self.eth_if)
+      if self.tap_if in ifnames:
+        raise EtherTapError("tap interface already exists: "+self.tap_if)
+      if self.bridge_if in ifnames:
+        raise EtherTapError("bridge interface already exists: "+self.bridge_if)
 
-    # check if ethernet is configured
-    entry = ifnames[self.eth_if]
-    if self._autoconfig and not self._netif.if_is_configured(entry):
-      ret = self._netif.if_configure(self.eth_if, '0.0.0.0')
-      if ret != 0:
-        raise EtherTapError("failed configuring ethernet")
-      ret = self._netif.if_up(self.eth_if)
-      if ret != 0:
-        raise EtherTapError("failed configuring ethernet")
-      self._eth_config = True
+    # get old config
+    if ifnames is not None and self.eth_if in ifnames:
+      self._eth_config = ifnames[self.eth_if]
+      if self._verbose:
+        print("eth_config:",self._eth_config)
+
+    # configure eth: 0.0.0.0 up promisc
+    ret = self._netif.if_configure(self.eth_if, '0.0.0.0')
+    if ret != 0:
+      raise EtherTapError("failed configuring ethernet. ret=%d" % ret)
+    ret = self._netif.if_up(self.eth_if)
+    if ret != 0:
+      raise EtherTapError("failed configuring ethernet")
 
     # create tap
     self._tap = Tap(self.tap_if, self._osh, self._netif)
@@ -75,6 +79,12 @@ class EtherTap:
     ret2 = self._bridge.add_if(self.tap_if)
     if ret1 != 0 or ret2 != 0:
       raise EtherTapError("error adding interfaces to bridge")
+
+    # configure bridge to eth
+    if self._eth_config is not None:
+      ret = self._netif.if_reconfigure(self.bridge_if, self._eth_config)
+      if ret != 0:
+        raise EtherTapError("failed configuring bridge")
 
     # bring up bridge
     ret = self._bridge.up()
@@ -110,10 +120,22 @@ class EtherTap:
         errors += 1
 
     # ethernet down
-    if self._eth_config:
-      ret = self._netif.if_down(self.eth_if)
+    ret = self._netif.if_down(self.eth_if)
+    if ret != 0:
+      errors += 1
+
+    # reconfigure ethernet again
+    entry = self._eth_config
+    if entry is not None:
+      # set config
+      ret = self._netif.if_reconfigure(self.eth_if, entry)
       if ret != 0:
         errors += 1
+      # enable again
+      if entry['active']:
+        ret = self._netif.if_up(self.eth_if)
+        if ret != 0:
+          errors += 1
 
     return errors
 

@@ -50,10 +50,14 @@ def main():
   parser.add_argument('-a', '--address', default='192.168.2.221', help="ip address of virtual host")
   parser.add_argument('-p', '--port', default=6800, type=int, help="udp port of virtual host")
   parser.add_argument('-m', '--mac', default="1a:11:af:a0:47:1a", help="mac address of virtual host")
+  parser.add_argument('-c', '--capture', default=False, action='store_true', help="use EtherCap instead of EtherTap")
   args = parser.parse_args()
 
   # select tap
-  tap = EtherCap(args.interface)
+  if args.capture:
+    tap = EtherCap(args.interface)
+  else:
+    tap = EtherTap(args.interface, verbose=args.verbose)
 
   ethertap_test(tap, args.interface, args.address, args.port, args.mac, verbose=args.verbose)
 
