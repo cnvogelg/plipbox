@@ -18,7 +18,7 @@ The following network stacks have been successfully tested with plipbox:
 * AmiTCP 3.0b2
 * Genesis (OS3.9)
 * MiamiDX (from [Classic Workbench][cwb])
-* [Roadshow 1.11][rs] 
+* [Roadshow 1.11][rs]
 
 [rs]: http://roadshow.apc-tcp.de/index-de.php
 [cwb]: http://classicwb.abime.net
@@ -31,7 +31,7 @@ The following network stacks have been successfully tested with plipbox:
 
  - All network stacks expect the plipbox device driver in `devs:networks` on
    your system volume. So copy this file first before proceeding.
- 
+
  - Copy `plipbox.device` from this release in the `amiga/bin` directory to your
    Amiga installation. Select the suitable m680x0 version for your hardware
    platform and copy the plipbox.device file without the `RELEASE_000` or
@@ -40,37 +40,46 @@ The following network stacks have been successfully tested with plipbox:
         copy plipbox.device_RELEASE_000 devs:networks/plipbox.device
 
 ### 2.2 AmiTCP
- 
- - For a very simple setup you can use the [Network Boot Disk for Amiga][nwbd]
-   and start with this one. You have to modify the vanilla disk as it does
-   not contain the plipdox drivers, yet. 
-   [nwbd]: http://roadshow.apc-tcp.de/index-de.php
- - Insert this disk into your favorite Amiga emulator and perform the following
-   steps to prepare the disk.
- - Copy `plipbox.device` on the disk (see section 2.1)
- - Edit the file `AmiTCP/db/interfaces` and add:
- 
+
+  - For a very simple setup you can use the [Network Boot Disk for Amiga][nwbd]
+    and start with this one. You have to modify the vanilla disk as it does
+    not contain the plipdox drivers, yet.
+  - Insert this disk into your favorite Amiga emulator and boot it.
+  - Now first time installation starts:
+    - Click "Continue"
+    - Answer "Which network card to use": with "Other"
+    - Answer "Which network driver to use:" with "Cancel"
+    - If asked, answer "install A1200 PCMCIA fix" with "Yes"
+    - Answer "Do you want to change IP config" with "Yes" if it doesn't fit
+      your needs
+    - Enter your IP parameters
+    - Add samba host name if you like
+    - Set your keybord type
+    - After setup is finished please reboot the Amiga
+  - Copy `plipbox.device` on the disk (see section 2.1)
+    - E.g. mount a directory as volume in your virtual Amiga and copy from there
+    - copy `plipbox.device` to `devs:networks/`
+  - Edit the file `AmiTCP/db/interfaces` and add:
+
         plipbox dev=devs:networks/plipbox.device
- - Adjust your `AmiTCP:bin/startnet` and rename the interface to `plipbox0`.
-   On the network boot disk: Edit `df0:s/Prefs/Env-Archive/nbddriver` (EnvARC:)
-   and set `plipbox0`
- - In `EnvARC:sana2` (Network Boot Disk: `df0:s/Prefs/Env-Archive`) you can
-   place an optional configuration file called `plipbox.config`.
-   For options see the plipbox documentation.
-   A sample file is available in directory `amiga/src` of this release.
- - Correctly set your Amiga's IP to match your network environment.
-   In the network boot disk use `EnvARC:nbdip` to set the Amiga's IP and
-   use `EnvARC:nbdgw` to set the gateway of your network.
- - Do not forget to configure the correct DNS server otherwise you won't be
-   able to resolve non-numeric IP addresses. Have a look at the file
-   `AmiTCP:db/netdb-myhost` and adapt the `NAMESERVER` entry accordingly.
-   Use the DNS server of your local network here. (in my setup 192.168.2.1).
-   The network boot disk uses the IP address stored in the `EnvARC:nbdns` file.
+
+  - Edit `df0:Prefs/Env-Archive/nbddriver` (EnvARC:) and set it to `plipbox0`
+  - In `EnvARC:sana2` (Network Boot Disk: `df0:Prefs/Env-Archive`) you can
+    place an optional configuration file called `plipbox.config`.
+    For options see the plipbox documentation.
+    A sample file is available in directory `amiga/src` of this release.
+  - You can alter your IP settings later on the disk with:
+    - Use `EnvARC:nbdip` to set the Amiga's IP
+    - Use `EnvARC:nbdgw` to set the gateway of your network.
+    - Use `EnvARC:nbdnm` to set the netmask
+    - Use `EnvARC:nbdns` to set your DNS name server
+
+[nwbd]: http://jpv.wmhost.com/NetworkBootDisk/
 
 ### 2.3 Genesis
 
   - Genesis is very similar to the AmiTCP setup (its more or less a UI for
-    AmiTCP and uses its core for the network stuff) 
+    AmiTCP and uses its core for the network stuff)
   - Copy the plibpox.device to your system (see section 2.1)
   - Open the `GenesisPrefs`
   - In `Interfaces` select `New`
@@ -78,11 +87,11 @@ The following network stacks have been successfully tested with plipbox:
       - Enter the interface `Name: plipbox0`
       - Enter `IP Address, Gateway, Netmask` to match your local network
     - In `SANA II` Tab enter:
-      - `Specify SANA II device: devs:networks/plipbox.device`  
+      - `Specify SANA II device: devs:networks/plipbox.device`
     - Confirm interface creation with `Okay`
     - In `Resolve` Tab do not forget to name your DNS servers and set your
-      domain name(s) 
-  - Note: `dynamic` setup does not work with plipbox. You must either use static 
+      domain name(s)
+  - Note: `dynamic` setup does not work with plipbox. You must either use static
     or an external [DHCP client][dhcp] suitable for AmiTCP/Genesis.
   - Now you can start `Genesis` and enable your new `plipbox0` interface
 
@@ -104,7 +113,7 @@ The following network stacks have been successfully tested with plipbox:
     - You can either configure your Amiga statically or with DHCP: Select
     `static` or `dynamic` in `IP Type, Netmask Type, Gateway Type`. Enter
     your network parameters in static mode.
-    - Note: multicast is not supported in plipbox. Therefore, keep 
+    - Note: multicast is not supported in plipbox. Therefore, keep
     `Multicast: disabled`.
     - Note: Configure DHCP in `TCP/IP Settings...` to fetch DNS servers, too.
   - In `Databases` Tab select Table `DNS servers` and add your static DNS
@@ -121,7 +130,7 @@ The following network stacks have been successfully tested with plipbox:
   - Begin with copying the plipbox device driver (see section 2.1)
   - Then you need an interface configuration file for the plipbox device.
   Simply copy a template from `Storage/NetInterface` and modify this one:
-  
+
         copy sys:Storage/NetInterfaces/cnet devs:NetInterfaces/plipbox
 
   - Now adjust the following values in the file (use either static or DHCP section!):
@@ -138,20 +147,20 @@ The following network stacks have been successfully tested with plipbox:
   - After a reboot the interface will be brought up automatically in the
   `User-Startup` section of Roadshow
   - For testing you can activate/de-activate the interface with:
-  
+
         > addnetinterface devs:netinterfaces/plipbox
         > ... use network ...
         > netshutdown
 
   - To make sure that the plipbox device goes offline if you shut down the net
   you have to add the following options to your interface configuration file:
-  
+
         downgoesoffline=yes
-        
-  - If you use multiple plipbox devices in a single network then you have to 
+
+  - If you use multiple plipbox devices in a single network then you have to
   assign them unique MAC addresses. You can set the MAC address of your plipbox
   with the following option in your Roadshow device configuration file:
-  
+
         hardwareaddress=1a:11:a1:a0:00:01
 
   - A complete device config looks like:
@@ -189,7 +198,7 @@ The following options are supported:
   - **TIMEOUT** (numerical key /K/N) (default: 500 * 1000) (unit: microseconds)
     - The parallel transfer uses time outs to detect error conditions.
     - Use this value to adjust timing.
- 
+
   - **NOSPECIALSTATS** (switch /S) (default: special stats on)
     - The SANA-II device tracks statistics information.
     - Use this switch to disable the extra statistics information that is
@@ -208,7 +217,7 @@ The following options are supported:
       stack from the device.
 
   - **MTU** (numerical key /K/N) (default: 1500) (unit: bytes)
-    - The maximum transfer unit is the maximum number of bytes a device can 
+    - The maximum transfer unit is the maximum number of bytes a device can
       transfer in a single packet. By default its 1500 and exactly matches
       the MTU that Ethernet uses.
     - For the plipbox the MTU size is also the size of the parallel transfers.
