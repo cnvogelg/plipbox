@@ -25,7 +25,7 @@ class PioEth:
     self.si.close()
 
   def recv(self, max_size):
-    (data_in, ip_in) = self.si.recvfrom(size)
+    (data_in, ip_in) = self.si.recvfrom(max_size)
     return data_in
 
   def send(self, data):

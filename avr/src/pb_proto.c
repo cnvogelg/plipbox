@@ -39,6 +39,7 @@
 #define CLR_RAK         par_low_set_busy_lo
 #define GET_REQ         par_low_get_pout
 #define GET_SELECT      par_low_get_select
+#define GET_STROBE      par_low_get_strobe
 
 // recv funcs
 static pb_proto_fill_func fill_func;
@@ -128,7 +129,7 @@ static u08 cmd_send(u16 *ret_size)
 {
   u08 hi, lo;
   u08 status;
-   
+
   // --- get size hi ---
   status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
   if(status != PBPROTO_STATUS_OK) {
@@ -136,7 +137,7 @@ static u08 cmd_send(u16 *ret_size)
   }
   hi = par_low_data_in();
   CLR_RAK();
-   
+
   // --- get size lo ---
   status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
   if(status != PBPROTO_STATUS_OK) {
@@ -144,21 +145,21 @@ static u08 cmd_send(u16 *ret_size)
   }
   lo = par_low_data_in();
   SET_RAK();
-   
+
   u16 size = hi << 8 | lo;
 
   // check size
   if(size > pb_buf_size) {
     return PBPROTO_STATUS_PACKET_TOO_LARGE;
   }
-  
+
   // round to even and convert to words
   u16 words = size;
   if(words & 1) {
     words++;
   }
   words >>= 1;
-  
+
   // --- data loop ---
   u16 i;
   u16 got = 0;
@@ -182,7 +183,7 @@ static u08 cmd_send(u16 *ret_size)
     SET_RAK();
     got++;
   }
-  
+
   *ret_size = got;
   return status;
 }
@@ -196,13 +197,13 @@ static u08 cmd_recv(u16 size, u16 *ret_size)
     return status;
   }
   u08 hi = (u08)(size >> 8);
-  
+
   // [OUT]
   par_low_data_set_output();
 
   par_low_data_out(hi);
   CLR_RAK();
-  
+
   // --- set size lo ---
   status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
   if(status != PBPROTO_STATUS_OK) {
@@ -211,7 +212,7 @@ static u08 cmd_recv(u16 size, u16 *ret_size)
   u08 lo = (u08)(size & 0xff);
   par_low_data_out(lo);
   SET_RAK();
-  
+
   // get number of words
   u16 words = size;
   if(words & 1) {
@@ -241,15 +242,15 @@ static u08 cmd_recv(u16 size, u16 *ret_size)
     SET_RAK();
     got++;
   }
-  
+
   // final wait
   if(status == PBPROTO_STATUS_OK) {
     status = wait_req(1, PBPROTO_STAGE_LAST_DATA);
   }
-  
+
   // [IN]
   par_low_data_set_input();
-  
+
   *ret_size = got;
   return status;
 }
@@ -260,7 +261,7 @@ static u08 cmd_send_burst(u16 *ret_size)
 {
   u08 hi, lo;
   u08 status;
-   
+
   // --- packet size hi ---
   status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
   if(status != PBPROTO_STATUS_OK) {
@@ -285,7 +286,9 @@ static u08 cmd_send_burst(u16 *ret_size)
   }
 
   // round to even and convert to words
-  u16 words = (size +1) >> 1;
+  if(size & 1) {
+    size++;
+  }
   u16 i;
   u08 result = PBPROTO_STATUS_OK;
   u08 *ptr = pb_buf;
@@ -294,18 +297,16 @@ static u08 cmd_send_burst(u16 *ret_size)
   // BEGIN TIME CRITICAL
   cli();
   SET_RAK(); // trigger start of burst
-  for(i=0;i<words;i++) {
-    // wait REQ == 1
-    while(!GET_REQ()) {
+  for(i=0;i<size;i++) {
+    // wait STROBE falling edge
+    while(GET_STROBE()) {
       if(!GET_SELECT()) goto send_burst_exit;
     }
     *(ptr++) = par_low_data_in();
-    
-    // wait REQ == 0
-    while(GET_REQ()) {
+    // wait end of STROBE
+    while(!GET_STROBE()) {
       if(!GET_SELECT()) goto send_burst_exit;
     }
-    *(ptr++) = par_low_data_in();
   }
 send_burst_exit:
   sei();
@@ -324,33 +325,22 @@ send_burst_exit:
   }
 
   // error?
-  if(i<words) {
+  if(i<size) {
     result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
   }
 
-  // final ACK 
+  // final ACK
   SET_RAK();
 
-  *ret_size = i << 1;
-  return result;  
+  *ret_size = i;
+  return result;
 }
-
-// delay loop for recv
-#if (F_CPU == 16000000)
-
-// at least 2us
-// 3 cycles per call
-#define DELAY _delay_loop_1(6);
-
-#else
-#error Delay loop not defined for F_CPU
-#endif
 
 static u08 cmd_recv_burst(u16 size, u16 *ret_size)
 {
   u08 hi, lo;
   u08 status;
-   
+
   hi = (u08)(size >> 8);
   lo = (u08)(size & 0xff);
 
@@ -378,35 +368,30 @@ static u08 cmd_recv_burst(u16 size, u16 *ret_size)
   }
 
   // round to even and convert to words
-  u16 words = (size + 1) >> 1;
   u08 result = PBPROTO_STATUS_OK;
   u16 i;
   u08 *ptr = pb_buf;
+  if((size&1)==0) {
+    size--;
+  }
 
   // ----- burst loop -----
   // BEGIN TIME CRITICAL
   cli();
   // prepare first byte
+  par_low_data_out(*(ptr++));
   CLR_RAK(); // trigger start of burst
   // loop
-  for(i=0;i<words;i++) {
-
-    DELAY
-    par_low_data_out(*(ptr++));      
-
-    // wait REQ == 0
-    while(GET_REQ()) {
+  for(i=0;i<size;i++) {
+    // wait for STROBE==0
+    while(GET_STROBE()) {
       if(!GET_SELECT()) goto recv_burst_exit;
     }
-
-    DELAY
     par_low_data_out(*(ptr++));
-
-    // wait REQ == 1
-    while(!GET_REQ()) {
+    // wait for STROBE==1 again
+    while(!GET_STROBE()) {
       if(!GET_SELECT()) goto recv_burst_exit;
     }
-
   }
 recv_burst_exit:
   sei();
@@ -418,14 +403,14 @@ recv_burst_exit:
   }
 
   SET_RAK();
-    
+
   // final wait REQ == 1
   while(!GET_REQ()) {
     if(!GET_SELECT()) goto recv_burst_exit;
   }
-  
+
   // error?
-  if(i<words) {
+  if(i<size) {
     result = PBPROTO_STATUS_TIMEOUT | PBPROTO_STAGE_DATA;
   }
 
@@ -435,8 +420,8 @@ recv_burst_exit:
   // [IN]
   par_low_data_set_input();
 
-  *ret_size = i << 1;
-  return result;  
+  *ret_size = i+1;
+  return result;
 }
 
 u08 pb_proto_handle(void)
@@ -445,20 +430,20 @@ u08 pb_proto_handle(void)
   pb_proto_stat_t *ps = &pb_proto_stat;
 
   // handle server side of plipbox protocol
-  ps->cmd = 0; 
-  
+  ps->cmd = 0;
+
   // make sure that SEL == 1
   if(!GET_SELECT()) {
     ps->status = PBPROTO_STATUS_IDLE;
     return PBPROTO_STATUS_IDLE;
   }
-  
+
   // make sure that REQ == 0
   if(GET_REQ()) {
     ps->status = PBPROTO_STATUS_IDLE;
     return PBPROTO_STATUS_IDLE;
   }
-  
+
   // read command byte and execute it
   u08 cmd = par_low_data_in();
 
@@ -497,10 +482,10 @@ u08 pb_proto_handle(void)
       result = PBPROTO_STATUS_INVALID_CMD;
       break;
   }
-   
+
   // wait for SEL == 0
   wait_sel(0, PBPROTO_STAGE_END_SELECT);
-  
+
   // reset RAK = 0
   CLR_RAK();
 
@@ -512,8 +497,8 @@ u08 pb_proto_handle(void)
     if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
       result = proc_func(pb_buf, ret_size);
     }
-  } 
-  
+  }
+
   // fill in stats
   ps->cmd = cmd;
   ps->status = result;

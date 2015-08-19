@@ -69,7 +69,7 @@ static u08 fill_pkt(u08 *buf, u16 max_size, u16 *size)
     num--;
   }
 
-  return PBPROTO_STATUS_OK;  
+  return PBPROTO_STATUS_OK;
 }
 
 static u08 proc_pkt(const u08 *buf, u16 size)
@@ -108,6 +108,10 @@ static u08 proc_pkt(const u08 *buf, u16 size)
     if(*ptr != val) {
       uart_send_pstring(PSTR("ERR: data @"));
       uart_send_hex_word(num);
+      uart_send_spc();
+      uart_send_hex_byte(*ptr);
+      uart_send_spc();
+      uart_send_hex_byte(val);
       uart_send_crlf();
     }
     val++;
@@ -150,7 +154,7 @@ static void pb_test_worker(void)
     // next iteration?
     if(pb_proto_stat.is_send) {
       if(auto_mode) {
-        // next iteration after 
+        // next iteration after
         pb_test_send_packet(1);
       } else {
         silent_mode = 0;
