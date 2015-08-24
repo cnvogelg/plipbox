@@ -40,7 +40,7 @@
 void dump_eth_pkt(const u08 *eth_buf, u16 size)
 {
   u08 buf[4];
-  
+
   uart_send('[');
   dword_to_dec(size, buf, 4, 4);
   uart_send_data(buf,4);
@@ -68,7 +68,7 @@ void dump_arp_pkt(const u08 *arp_buf)
     uart_send_hex_word(op);
   }
   uart_send(',');
-  
+
   // src pair
   uart_send('(');
   net_dump_mac(arp_get_src_mac(arp_buf));
@@ -83,7 +83,7 @@ void dump_arp_pkt(const u08 *arp_buf)
   uart_send(',');
   net_dump_ip(arp_get_tgt_ip(arp_buf));
   uart_send(')');
-  
+
   uart_send(']');
   uart_send(' ');
 }
@@ -173,13 +173,13 @@ extern void dump_ip_protocol(const u08 *ip_buf)
     uart_send_pstring(PSTR(",seq="));
     u32 seq = tcp_get_seq_num(proto_buf);
     uart_send_hex_dword(seq);
-    
+
     if(flags & TCP_FLAGS_ACK) {
       u32 ack = tcp_get_ack_num(proto_buf);
       uart_send_pstring(PSTR(",ack="));
       uart_send_hex_dword(ack);
     }
-    
+
     uart_send(']');
     uart_send(' ');
   }
@@ -188,7 +188,7 @@ extern void dump_ip_protocol(const u08 *ip_buf)
 extern void dump_line(const u08 *eth_buf, u16 size)
 {
   dump_eth_pkt(eth_buf, size);
-  
+
   const u08 *ip_buf = eth_buf + ETH_HDR_SIZE;
   u16 type = eth_get_pkt_type(eth_buf);
   if(type == ETH_TYPE_ARP) {
@@ -202,17 +202,15 @@ extern void dump_line(const u08 *eth_buf, u16 size)
 void dump_pb_cmd(const pb_proto_stat_t *ps)
 {
   u08 buf[4];
-  
+
   uart_send_time_stamp_spc();
 
   // show command
   u08 cmd = ps->cmd;
   u08 is_valid = 1;
   switch(cmd) {
-    case PBPROTO_CMD_SEND:
     case PBPROTO_CMD_SEND_BURST:
       break;
-    case PBPROTO_CMD_RECV:
     case PBPROTO_CMD_RECV_BURST:
       break;
     default:
@@ -251,7 +249,7 @@ void dump_pb_cmd(const pb_proto_stat_t *ps)
 
   // packet delta
   uart_send_pstring(PSTR(" d="));
-  dword_to_dec(ps->delta, buf, 4, 4);  
+  dword_to_dec(ps->delta, buf, 4, 4);
   uart_send_data(buf,4);
 
   // speed

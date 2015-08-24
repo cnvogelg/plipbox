@@ -49,8 +49,6 @@
 #define PBPROTO_STAGE_INPUT              0x80
 
 // commands
-#define PBPROTO_CMD_SEND       0x11   // amiga wants to send a packet
-#define PBPROTO_CMD_RECV       0x22   // amiga wants to receive a packet
 #define PBPROTO_CMD_SEND_BURST 0x33
 #define PBPROTO_CMD_RECV_BURST 0x44
 
@@ -68,10 +66,10 @@ typedef struct {
   u08 status;   // status after processing the command
   u08 is_send;    // was a transmit command (amiga send?)
   u08 stats_id; // what id to use for stats recording
-  u16 size;     // packet size 
+  u16 size;     // packet size
   u16 delta;    // hw timing for transmit
   u16 rate;     // delta converted to transfer rate
-  u16 recv_delta; // delta after recv was requested 
+  u16 recv_delta; // delta after recv was requested
   u32 ts;       // time stamp of transfer
 } pb_proto_stat_t;
 

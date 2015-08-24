@@ -124,139 +124,6 @@ static u08 wait_sel(u08 select_state, u08 state_flag)
 
 // ---------- Handler ----------
 
-// amiga wants to send a packet
-static u08 cmd_send(u16 *ret_size)
-{
-  u08 hi, lo;
-  u08 status;
-
-  // --- get size hi ---
-  status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  hi = par_low_data_in();
-  CLR_RAK();
-
-  // --- get size lo ---
-  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  lo = par_low_data_in();
-  SET_RAK();
-
-  u16 size = hi << 8 | lo;
-
-  // check size
-  if(size > pb_buf_size) {
-    return PBPROTO_STATUS_PACKET_TOO_LARGE;
-  }
-
-  // round to even and convert to words
-  u16 words = size;
-  if(words & 1) {
-    words++;
-  }
-  words >>= 1;
-
-  // --- data loop ---
-  u16 i;
-  u16 got = 0;
-  u08 *ptr = pb_buf;
-  for(i = 0; i < words; i++) {
-    // -- even byte: 0,2,4,...
-    status = wait_req(1, PBPROTO_STAGE_DATA);
-    if(status != PBPROTO_STATUS_OK) {
-      break;
-    }
-    *(ptr++) = par_low_data_in();
-    CLR_RAK();
-    got++;
-
-    // -- odd byte: 1,3,5,...
-    status = wait_req(0, PBPROTO_STAGE_DATA);
-    if(status != PBPROTO_STATUS_OK) {
-      break;
-    }
-    *(ptr++) = par_low_data_in();
-    SET_RAK();
-    got++;
-  }
-
-  *ret_size = got;
-  return status;
-}
-
-// amiga wants to receive a packet
-static u08 cmd_recv(u16 size, u16 *ret_size)
-{
-  // --- set size hi ----
-  u08 status = wait_req(1, PBPROTO_STAGE_SIZE_HI);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  u08 hi = (u08)(size >> 8);
-
-  // [OUT]
-  par_low_data_set_output();
-
-  par_low_data_out(hi);
-  CLR_RAK();
-
-  // --- set size lo ---
-  status = wait_req(0, PBPROTO_STAGE_SIZE_LO);
-  if(status != PBPROTO_STATUS_OK) {
-    return status;
-  }
-  u08 lo = (u08)(size & 0xff);
-  par_low_data_out(lo);
-  SET_RAK();
-
-  // get number of words
-  u16 words = size;
-  if(words & 1) {
-    words++;
-  }
-  words >>= 1;
-
-  // --- data ---
-  u16 got = 0;
-  const u08 *ptr = pb_buf;
-  for(u16 i = 0; i < words; i++) {
-    // even bytes 0,2,4,...
-    status = wait_req(1, PBPROTO_STAGE_DATA);
-    if(status != PBPROTO_STATUS_OK) {
-      break;
-    }
-    par_low_data_out(*(ptr++));
-    CLR_RAK();
-    got++;
-
-    // odd bytes 1,3,5,...
-    status = wait_req(0, PBPROTO_STAGE_DATA);
-    if(status != PBPROTO_STATUS_OK) {
-      break;
-    }
-    par_low_data_out(*(ptr++));
-    SET_RAK();
-    got++;
-  }
-
-  // final wait
-  if(status == PBPROTO_STATUS_OK) {
-    status = wait_req(1, PBPROTO_STAGE_LAST_DATA);
-  }
-
-  // [IN]
-  par_low_data_set_input();
-
-  *ret_size = got;
-  return status;
-}
-
-// ---------- BURST ----------
-
 static u08 cmd_send_burst(u16 *ret_size)
 {
   u08 hi, lo;
@@ -449,7 +316,7 @@ u08 pb_proto_handle(void)
 
   // fill buffer for recv command
   u16 pkt_size = 0;
-  if((cmd == PBPROTO_CMD_RECV) || (cmd == PBPROTO_CMD_RECV_BURST)) {
+  if(cmd == PBPROTO_CMD_RECV_BURST) {
     u08 res = fill_func(pb_buf, pb_buf_size, &pkt_size);
     if(res != PBPROTO_STATUS_OK) {
       ps->status = res;
@@ -466,12 +333,6 @@ u08 pb_proto_handle(void)
 
   u16 ret_size = 0;
   switch(cmd) {
-    case PBPROTO_CMD_RECV:
-      result = cmd_recv(pkt_size, &ret_size);
-      break;
-    case PBPROTO_CMD_SEND:
-      result = cmd_send(&ret_size);
-      break;
     case PBPROTO_CMD_RECV_BURST:
       result = cmd_recv_burst(pkt_size, &ret_size);
       break;
@@ -494,7 +355,7 @@ u08 pb_proto_handle(void)
 
   // process buffer for send command
   if(result == PBPROTO_STATUS_OK) {
-    if((cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST)) {
+    if(cmd == PBPROTO_CMD_SEND_BURST) {
       result = proc_func(pb_buf, ret_size);
     }
   }
@@ -506,7 +367,7 @@ u08 pb_proto_handle(void)
   ps->delta = delta;
   ps->rate = timer_hw_calc_rate_kbs(ret_size, delta);
   ps->ts = ts;
-  ps->is_send = (cmd == PBPROTO_CMD_SEND) || (cmd == PBPROTO_CMD_SEND_BURST);
+  ps->is_send = (cmd == PBPROTO_CMD_SEND_BURST);
   ps->stats_id = ps->is_send ? STATS_ID_PB_TX : STATS_ID_PB_RX;
   ps->recv_delta = ps->is_send ? 0 : (u16)(ps->ts - trigger_ts);
   return result;
