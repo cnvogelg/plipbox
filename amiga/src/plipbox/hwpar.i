@@ -27,21 +27,8 @@ PLIP_ADDRFIELDSIZE  equ 6
    STRUCTURE HWFrame,0
      SHORT    hwf_Size
 
-HWF_CMD_SEND     equ     $11
-HWF_CMD_RECV     equ     $22
 HWF_CMD_SEND_BURST equ   $33
 HWF_CMD_RECV_BURST equ   $44
-
-PKTFRAMESIZE_1   equ     4
-PKTFRAMESIZE_2   equ     2
-PKTFRAMESIZE_3   equ     14
-
-SYNCBYTE_HEAD    equ     $42
-SYNCBYTE_CRC     equ     $01
-SYNCBYTE_NOCRC   equ     $02
-SYNCWORD_CRC     equ     ((SYNCBYTE_HEAD<<8)|SYNCBYTE_CRC)
-SYNCWORD_NOCRC   equ     ((SYNCBYTE_HEAD<<8)|SYNCBYTE_NOCRC)
-
 
 ;****************************************************************************
 

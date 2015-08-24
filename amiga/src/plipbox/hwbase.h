@@ -19,7 +19,6 @@ struct HWBase
    volatile UBYTE              hwb_Flags;
    /* NOT used in asm */
    ULONG                       hwb_IntSig;        /* sent from int to server */
-   ULONG                       hwb_CollSigMask;
    struct MsgPort          *   hwb_TimeoutPort;      /* for timeout handling */
    struct Library          *   hwb_TimerBase;
    struct Library          *   hwb_MiscBase;          /* various libs & res. */
@@ -27,8 +26,7 @@ struct HWBase
    APTR                        hwb_OldExceptData;
    ULONG                       hwb_OldExcept;
    struct Interrupt            hwb_Interrupt;          /* for AddICRVector() */
-   struct timerequest          hwb_TimeoutReq,       /* for timeout handling */
-                               hwb_CollReq;        /* for collision handling */
+   struct timerequest          hwb_TimeoutReq;       /* for timeout handling */
    ULONG                       hwb_AllocFlags;
 
    /* config options */
@@ -51,14 +49,13 @@ struct HWBase
 /* ----- config ----- */
 
 #define CONFIGFILE "ENV:SANA2/plipbox.config"
-#define TEMPLATE "TIMEOUT/K/N,NOBURST/S"
+#define TEMPLATE "TIMEOUT/K/N"
 
-/* structure to be filled by ReadArgs template */ 
+/* structure to be filled by ReadArgs template */
 struct TemplateConfig
 {
    struct CommonConfig common;
    ULONG *timeout;
-   ULONG no_burst;
 };
 
 #endif

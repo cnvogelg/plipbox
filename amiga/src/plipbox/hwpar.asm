@@ -14,8 +14,6 @@
 
 
       xdef    _interrupt
-      xdef    _hwsend
-      xdef    _hwrecv
       xdef    _hwburstsend
       xdef    _hwburstrecv
 
@@ -75,289 +73,6 @@ skipint:
 ;----------------------------------------------------------------------------
 ;
 ; NAME
-;     hwsend() - low level send routine
-;
-; SYNOPSIS
-;     void hwsend(struct HWBase *, struct HWFrame *)
-;                 A0               A1
-;
-; FUNCTION
-;     This functions sends a HW frame with the plipbox protocol via
-;     the parallel port
-;
-_hwsend:
-         movem.l  d2-d7/a2-a6,-(sp)
-         move.l   a0,a2                               ; a2 = HWBase
-         move.l   a1,a3                               ; a3 = Frame
-         moveq    #FALSE,d2                           ; d2 = return value
-         moveq    #HS_REQ_BIT,d3                      ; d3 = HS_REQ
-         moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
-         lea      BaseAX,a5                           ; a5 = CIA HW base
-
-         ; --- prepare
-         ; Wait RAK == 0
-hww_WaitRak1:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0
-         beq.s    hww_RakOk1
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hww_WaitRak1
-         bra.s    hww_ExitError
-hww_RakOk1:         
-         ; --- init handshake 
-         ; [OUT]
-         SETCIAOUTPUT a5
-         
-         ; Set <CMD_SEND>
-         move.b   #HWF_CMD_SEND,ciaa+ciaprb-BaseAX(a5)
-         
-         ; Set SEL = 1 -> Trigger Plipbox
-         SETSELECT a5
-         
-         ; --- (size +) data loop         
-         ; packet size (in bytes)
-         move.w   (a3),d6
-         btst     #0,d6
-         beq.s    hww_even
-         addq.w   #1,d6
-hww_even:
-         ; convert to words
-         ; (includes size field for dbra)
-         lsr.w    #1,d6
-
-         ; -- even byte 0,2,4,...
-         ; Wait RAK == 1
-hww_WaitRak2a:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         bne.s    hww_RakOk2a
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hww_WaitRak2a
-         bra.s    hww_ExitError
-hww_RakOk2a:
-         ; Set <Size|Data_n>
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
-         ; Toggle REQ
-         bset     d3,(a5)                             ; set REQ=1
-
-         ; -- odd byte 1,3,5,...
-         ; Wait RAK == 0
-hww_WaitRak2b:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         beq.s    hww_RakOk2b
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hww_WaitRak2b
-         bra.s    hww_ExitError
-hww_RakOk2b:
-         ; Set <Size|Data_n>
-         move.b   (a3)+,ciaa+ciaprb-BaseAX(a5)        ; write data to port
-         ; Toggle REQ
-         bclr     d3,(a5)                             ; set REQ=0
-
-         ; loop for all packet bytes
-         dbra     d6,hww_WaitRak2a
-
-         ; --- shutdown
-         ; final Wait RAK == 1
-hww_WaitRak3:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         bne.s    hww_RakOk3
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hww_WaitRak3
-         bra.s    hww_ExitError
-hww_RakOk3:
-        
-         ; --- send is OK ---
-         moveq    #TRUE,d2                            ; rc = TRUE
-hww_ExitError:
-         ; --- exit ---
-         ; [IN]
-         SETCIAINPUT a5
-
-         ; SEL = 0
-         CLRSELECT a5
-
-         move.l   d2,d0                               ; return rc
-         movem.l  (sp)+,d2-d7/a2-a6
-         rts
-
-;----------------------------------------------------------------------------
-;
-; NAME
-;     hwrecv() - low level receive routine
-;
-; SYNOPSIS
-;     void hwrecv(struct HWBase *, struct HWFrame *)
-;                 A0               A1
-;
-; FUNCTION
-;     Receive a packet with the plipbox protocol
-;
-_hwrecv:
-         movem.l  d2-d7/a2-a6,-(sp)
-         move.l   a0,a2                               ; a2 = HWBase
-         move.l   a1,a3                               ; a3 = HWFrame
-         moveq    #FALSE,d5                           ; d5 = return value
-         move.l   hwb_SysBase(a2),a6                  ; a6 = CIABase
-         moveq    #HS_REQ_BIT,d3                      ; d3 = HS_REQ
-         moveq    #HS_RAK_BIT,d4                      ; d4 = HS_RAK
-         lea      BaseAX,a5                           ; a5 = ciab+ciapra
-
-         ; --- prepare
-         ; Wait RAK == 0
-hwr_WaitRak1:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0
-         beq.s    hwr_RakOk1
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak1
-         bra      hwr_ExitError
-hwr_RakOk1:
-   
-         ; --- init handshake 
-         ; [OUT]
-         SETCIAOUTPUT a5
-         
-         ; Set <CMD_RECV>
-         move.b   #HWF_CMD_RECV,ciaa+ciaprb-BaseAX(a5)
-         
-         ; Set SEL = 1 -> trigger Plipbox
-         SETSELECT a5
-        
-         ; Wait RAK == 1
-hwr_WaitRak2:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0
-         bne.s    hwr_RakOk2
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak2
-         bra.s    hwr_ExitError
-hwr_RakOk2:
-
-         ; [IN]
-         SETCIAINPUT a5
- 
-         ; Set REQ = 1
-         bset     d3,(a5)
-         
-         ; --- read size word ---
-         ; Wait RAK == 0
-hwr_WaitRak3:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         beq.s    hwr_RakOk3
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak3
-         bra.s    hwr_ExitError
-hwr_RakOk3:
-         
-         ; Read <Size_Hi>
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port
-         ; Set REQ = 0
-         bclr     d3,(a5)                             ; REQ toggle
-         
-         ; Wait RAK == 1
-hwr_WaitRak4:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0
-         bne.s    hwr_RakOk4
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak4
-         bra.s    hwr_ExitError
-hwr_RakOk4:
-         ; Read <Size_Lo>
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; READCIABYTE
-         ; Set REQ = 1
-         bset     d3,(a5)                             ; REQ toggle
-
-         ; --- check size
-         ; now fetch full size word and check for max frame size
-         move.w   -2(a3),d6                           ; = length
-         tst.w    d6
-         beq.s    hwr_ExitOk                          ; empty size? ok
-         cmp.w    hwb_MaxFrameSize(a2),d6             ; buffer too large
-         bhi.s    hwr_ExitError
-
-         ; convert to words
-         ; (-1 for dbra)
-         btst     #0,d6
-         bne.s    hwr_odd
-         subq.w   #1,d6
-hwr_odd:
-         lsr.w    #1,d6
-         
-         ; --- main packet data loop ---
-         ; wait for incoming RAK on data byte
-
-         ; -- even bytes: 0,2,4,...
-         ; Wait RAK == 0
-hwr_WaitRak5a:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         beq.s    hwr_RakOk5a
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak5a
-         bra.s    hwr_ExitError
-hwr_RakOk5a: 
-         ; Read <DATA_n>
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port byte
-         bclr     d3,(a5)                             ; toggle REQ
-
-         ; -- odd bytes: 1,3,5,...
-         ; Wait RAK == 1
-hwr_WaitRak5b:
-         move.b   (a5),d0                             ; ciab+ciapra
-         btst     d4,d0                               ; RAK toggled?
-         bne.s    hwr_RakOk5b
-         ; check for timeout
-         tst.b    hwb_TimeoutSet(a2)
-         beq.s    hwr_WaitRak5b
-         bra.s    hwr_ExitError
-hwr_RakOk5b: 
-         ; Read <DATA_n>
-         move.b   ciaa+ciaprb-BaseAX(a5),(a3)+        ; read par port byte
-         bset    d3,(a5)                              ; toggle REQ
-
-         ; loop for all packet bytes
-         dbra     d6,hwr_WaitRak5a
-
-hwr_ExitOk:
-         moveq    #TRUE,d5
-hwr_ExitError:
-         ; --- exit ---
-         
-         ; reset signal
-         moveq    #0,d0
-         move.l   hwb_IntSigMask(a1),d1
-         JSRLIB   SetSignal
-         
-         ; clear RECV_PENDING flag set by irq
-         bclr     #HWB_RECV_PENDING,hwb_Flags(a2)
-         
-         ; clear REQ
-         bclr     d3,(a5)
-         
-         ; clear SEL
-         CLRSELECT a5
-
-         move.l   d5,d0                               ; return value
-         movem.l  (sp)+,d2-d7/a2-a6
-         rts
-
-;----------------------------------------------------------------------------
-;
-; NAME
 ;     hwburstsend() - low level send routine in burst mode
 ;
 ; SYNOPSIS
@@ -397,14 +112,14 @@ bww_WaitRak1:
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bww_WaitRak1
          bra      bww_ExitError
-bww_RakOk1:         
-         ; --- init handshake 
+bww_RakOk1:
+         ; --- init handshake
          ; [OUT]
          SETCIAOUTPUT a5
-         
+
          ; Set <CMD_SEND_BURST>
          move.b   #HWF_CMD_SEND_BURST,(a4)
-         
+
          ; Set SEL = 1 -> Trigger Plipbox
          SETSELECT a5
 
@@ -453,14 +168,14 @@ bww_RakOk3a:
 
          ; disable all irq
          JSRLIB   Disable
-         
+
          ; --- burst loop begin
 bww_BurstLoop:
          ; set even data 0,2,4,...
          move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
-         
+
          ; set odd data 1,3,5,...
          move.b   (a3)+,(a4)                          ; write data to port
          ; Toggle REQ
@@ -500,7 +215,7 @@ bww_WaitRak4:
          bra.s    bww_ExitError
 
          ; --- exit
-bww_ExitOk:       
+bww_ExitOk:
          moveq    #TRUE,d2                            ; rc = TRUE
 bww_ExitError:
 
@@ -551,14 +266,14 @@ bwr_WaitRak1:
          tst.b    hwb_TimeoutSet(a2)
          beq.s    bwr_WaitRak1
          bra      bwr_ExitError
-bwr_RakOk1:         
-         ; --- init handshake 
+bwr_RakOk1:
+         ; --- init handshake
          ; [OUT]
          SETCIAOUTPUT a5
-         
+
          ; Set <CMD_RECV_BURST>
          move.b   #HWF_CMD_RECV_BURST,(a4)
-         
+
          ; Set SEL = 1 -> Trigger Plipbox
          SETSELECT a5
 
@@ -589,12 +304,12 @@ bwr_WaitRak2b:
          beq.s    bwr_WaitRak2b
          bra.s    bwr_ExitError
 bwr_RakOk2b:
-         
+
          ; Read <Size_Hi>
          move.b   (a4),(a3)+                          ; read par port
          ; Set REQ = 0
          bclr     d3,(a5)                             ; REQ toggle
-         
+
          ; Wait RAK == 1
 bwr_WaitRak2c:
          move.b   (a5),d0                             ; ciab+ciapra
@@ -636,14 +351,14 @@ bwr_RakOk3a:
 
          ; disable all irq
          JSRLIB   Disable
-                  
+
          ; --- burst loop begin
 bwr_BurstLoop:
          ; Toggle REQ
          bclr     d3,(a5)                             ; set REQ=0
          ; get even data 0,2,4,...
          move.b   (a4),(a3)+                          ; read data from port
-         
+
          ; Toggle REQ
          bset     d3,(a5)                             ; set REQ=1
          ; get odd data 1,3,5,...
@@ -683,7 +398,7 @@ bwr_WaitRak4:
          bra.s    bwr_ExitError
 
          ; --- exit
-bwr_ExitOk:       
+bwr_ExitOk:
          moveq    #TRUE,d2                            ; rc = TRUE
 bwr_ExitError:
 
@@ -691,7 +406,7 @@ bwr_ExitError:
          moveq    #0,d0
          move.l   hwb_IntSigMask(a1),d1
          JSRLIB   SetSignal
-         
+
          ; clear RECV_PENDING flag set by irq
          bclr     #HWB_RECV_PENDING,hwb_Flags(a2)
 
