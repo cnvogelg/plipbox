@@ -84,7 +84,7 @@ static int __asm __saveds MemCopy(register __a0 UBYTE *to,
 
 /* open sana device */
 static BOOL open_device(char *name, ULONG unit, ULONG flags)
-{ 
+{
   static ULONG sana_tags[] = {
     S2_CopyToBuff, (ULONG)MemCopy,
     S2_CopyFromBuff, (ULONG)MemCopy,
@@ -151,8 +151,8 @@ static void sana_error(void)
 {
   UWORD error = sana_req->ios2_Req.io_Error;
   UWORD wire_error = sana_req->ios2_WireError;
-  Printf("IO failed: cmd=%04lx -> error=%d, wire_error=%d\n", 
-         sana_req->ios2_Req.io_Command, error, wire_error);  
+  Printf("IO failed: cmd=%04lx -> error=%d, wire_error=%d\n",
+         sana_req->ios2_Req.io_Command, error, wire_error);
 }
 
 static BOOL sana_cmd(UWORD cmd)
@@ -177,6 +177,39 @@ static BOOL sana_offline(void)
   return sana_cmd(S2_OFFLINE);
 }
 
+static void dump_line(const UBYTE *ptr, ULONG offset, ULONG size)
+{
+  ULONG i;
+
+  Printf("%08x: ", offset);
+  for(i=0;i<size;i++) {
+    Printf("%02lx ", (ULONG)*ptr);
+    ptr++;
+  }
+  PutStr("\n");
+}
+
+static void dump_packet(ULONG data_length)
+{
+  ULONG lines,i;
+  ULONG remainder;
+  UBYTE *ptr = pkt_buf;
+  ULONG offset = 0;
+
+  Printf("packet: %ld/$%lx\n", data_length, data_length);
+  lines = data_length / 16;
+  remainder = data_length % 16;
+
+  for(i=0;i<lines;i++) {
+    dump_line(ptr, offset, 16);
+    ptr+=16;
+    offset+=16;
+  }
+  if(remainder > 0) {
+    dump_line(ptr, offset, remainder);
+  }
+}
+
 static void reply_loop(void)
 {
   ULONG wmask;
@@ -192,7 +225,7 @@ static void reply_loop(void)
     sana_req->ios2_Data = pkt_buf;
     BeginIO((struct IORequest *)sana_req);
     wmask = Wait(SIGBREAKF_CTRL_C | (1UL << msg_port->mp_SigBit));
-    
+
     /* user break */
     if(wmask & SIGBREAKF_CTRL_C) {
       AbortIO((struct IORequest *)sana_req);
@@ -208,7 +241,8 @@ static void reply_loop(void)
       break;
     } else {
       if(verbose) {
-        PutStr("+\n");
+        PutStr("rx\n");
+        dump_packet(sana_req->ios2_DataLength);
       }
 
       /* inconmig dst will be new src */
@@ -222,7 +256,7 @@ static void reply_loop(void)
         break;
       } else {
         if(verbose) {
-          PutStr("-\n");
+          PutStr("tx\n");
         }
       }
     }
