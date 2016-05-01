@@ -18,7 +18,7 @@ export AMIGA_DIR
 # config vamos
 VAMOS=vamos
 VAMOS_OPTS=-c vamosrc
-RUN=$(VAMOS) $(VAMOS_OPTS)
+RUN=$(VAMOS) $(VAMOS_OPTS) $(VAMOS_EXTRA)
 
 # device file
 include ../../version.mk

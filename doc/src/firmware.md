@@ -4,9 +4,23 @@ plipbox: Firmware Documentation
 1. Flash Firmware
 -----------------
 
+Depending on your AVR hardware and the bootloader it contains when shipped you
+can either use the bootloader to flash the device (e.g. via serial) or you
+have to use an AVR in-system-programmer (ISP) to flash the device without
+running the bootloader.
+
+Serial flashing is described in section 1.1 and 1.2 while ISP flashing is
+found in section 1.3
+
+Here is a quick overview of devices and their required flash methods:
+
+  * Pollin.de AVR-NET-IO: needs ISP
+  * Custom ATmega 328 boards: needs ISP
+  * Arduino 2009 or Arduino Nano: has Bootloader with Serial Flash Support
+
 ### 1.1 Find plipbox Serial Port
 
-You can connect your plipbox typically via the USB port to your Mac or PC 
+You can connect your plipbox typically via the USB port to your Mac or PC
 and this will install a "virtual" serial port. Other plipbox devices have the
 serial port available on 2 pins with +5V signals. Then you need an external
 USB-to-Serial device to convert the serial signals to a virtual serial device.
@@ -16,7 +30,7 @@ The virtual serial port is called differently depending on your OS:
  * Macs: `/dev/cu.usbserial-<serial>`
  * Linux: `/dev/ttyUSB<num>`
  * Windows: `COM1 ... COMx`
-  
+
 You can find out the port associated with your plipbox by looking at the
 registered devices before and after attaching the device.
 
@@ -41,7 +55,7 @@ Now open a shell/terminal/cmd.exe on your OS and call the firmware tool with:
 
         > avrdude -p m328p -P <your_serial_port> -b 57600 -c arduino -U flash:w:plipbox-0.x-57600-arduino-atmega328.hex
 
-This assumes that you have the plipbox firmware file called 
+This assumes that you have the plipbox firmware file called
 `plipbox-0.x-57600-arduino-atmega328.hex` in your current directory.
 In the release archive you can find it in the `avr/firmware` directory.
 
@@ -51,9 +65,9 @@ Ardiuno serial device found in section 1.1.
 If everything works well then you will see the following output:
 
         avrdude: AVR device initialized and ready to accept instructions
-        
+
         Reading | ################################################## | 100% 0.00s
-        
+
         avrdude: Device signature = 0x1e950f
         avrdude: NOTE: FLASH memory has been specified, an erase cycle will be performed
                  To disable this feature, specify the -D option.
@@ -61,37 +75,38 @@ If everything works well then you will see the following output:
         avrdude: reading input file "plipbox-0.x-57600-arduino-atmega328.hex"
         avrdude: input file plipbox-0.x-57600-arduino-atmega328.hex auto detected as Intel Hex
         avrdude: writing flash (16596 bytes):
-        
+
         Writing | ################################################## | 100% 4.67s
-        
+
         avrdude: 16596 bytes of flash written
         avrdude: verifying flash memory against plipbox-0.x-57600-arduino-atmega328.hex:
         avrdude: load data flash data from input file plipbox-0.x-57600-arduino-atmega328.hex:
         avrdude: input file plipbox-0.x-57600-arduino-atmega328.hex auto detected as Intel Hex
         avrdude: input file plipbox-0.x-57600-arduino-atmega328.hex contains 16596 bytes
         avrdude: reading on-chip flash data:
-        
+
         Reading | ################################################## | 100% 3.37s
-        
+
         avrdude: verifying ...
         avrdude: 16596 bytes of flash verified
-        
+
         avrdude: safemode: Fuses OK
-        
+
         avrdude done.  Thank you.
 
-Now your device is fully operational and we use the serial link to communicate 
+Now your device is fully operational and we use the serial link to communicate
 with plipbox.
 
 ### 1.3 Flashing with ISP
 
 All AVR boards can be flashed with an In-System-Programmer (ISP) device. This
 device directly programs the flash ROM. The ISP is an external tool that
-is also typically connected via USB to your PC. I use the [USBasp][1] thats
+is also typically connected via USB to your PC. I use the [USBasp][ua] thats
 a cheap AVR ISP that is supported by avrdude and has a USB connector. You can
-build one yourself or buy a [kit][2].
+build one yourself or buy a [kit][uk]. You also find these devices on ebay
+and amazon.
 
-The AVR-NET-IO-Board from Pollin.de needs to be flashed via ISP and this 
+The AVR-NET-IO-Board from Pollin.de needs to be flashed via ISP and this
 firmware variant:
 
         plipbox-<version>-57600-avrnetio-atmega32.hex
@@ -104,33 +119,33 @@ follows:
 Please note the different flash adapter `usbasp` here and that you do not need
 a serial speed now.
 
-[1]: http://www.fischl.de/usbasp/
-[2]: http://www.fundf.net/usbasp/
+[ua]: http://www.fischl.de/usbasp/
+[uk]: http://www.fundf.net/usbasp/
 
 2. plipbox Configuration
 ------------------------
 
-The plipbox firmware uses the serial link available on your plipbox to show you 
+The plipbox firmware uses the serial link available on your plipbox to show you
 device information and allows you to configure the device in this terminal.
 
 Starting with version 0.3 the plipbox device is essentially a zero-config device,
-i.e. you don't have to alter any parameters for typical default operation. 
+i.e. you don't have to alter any parameters for typical default operation.
 
 Nevertheless, the firmware offers options to fine tune its behaviour and provides
-commands for statistics and diagnosis. 
+commands for statistics and diagnosis.
 
 ### 2.1 Setup your terminal program
 
 On your Mac/PC you will need a terminal program to talk via the serial link.
-If you haven't got a favorite one then have a look at [CoolTerm][1] for Mac OSX
-or [TeraTerm][2] for Windows. Linux users might try [minicom][3] or [picocom][4].
+If you haven't got a favorite one then have a look at [CoolTerm][ct] for Mac OSX
+or [TeraTerm][tt] for Windows. Linux users might try [minicom][mc] or [picocom][pc].
 
-[1]: http://freeware.the-meiers.org/
-[2]: http://www.ayera.com/teraterm/
-[3]: http://alioth.debian.org/projects/minicom/
-[4]: http://code.google.com/p/picocom/
+[ct]: http://freeware.the-meiers.org/
+[tt]: http://www.ayera.com/teraterm/
+[mc]: http://alioth.debian.org/projects/minicom/
+[pc]: http://code.google.com/p/picocom/
 
-Run your terminal program and select the serial port of your plipbox (see 
+Run your terminal program and select the serial port of your plipbox (see
 section 1.1). For the serial port select the following parameters:
 
   * 8 N 1 = 8 data bits, no parity, 1 stop bit
@@ -139,7 +154,7 @@ section 1.1). For the serial port select the following parameters:
 
 ### 2.2 Entering/Leaving Command Mode
 
-If everything went well you will see the startup message of the plipbox 
+If everything went well you will see the startup message of the plipbox
 firmware after a reset of the device:
 
         Welcome to plipbox <version> <date>
@@ -160,7 +175,7 @@ operation.
 Command mode is shown with a command prompt "> " in the beginning of a line.
 
 If you enter **q** and **Return** you give the *quit* command to leave the
-command mode and the device returns to active mode. 
+command mode and the device returns to active mode.
 
 If you enter **?** and **Return** a help text will be displayed. It shows
 you all the commands that are available.
@@ -211,7 +226,7 @@ A command is always finished by pressing **Return**.
 
   - **m nn:nn:nn:nn:nn:nn:nn** (Mac Address)
     - Set the mac address of the plipbox device.
-    - Always ensure that the firmware uses the same value as the 
+    - Always ensure that the firmware uses the same value as the
       plipbox.device driver!
     - Normally you don't need to alter the mac address via this parameter.
       The driver will automatically push the mac address to the firmware on
@@ -222,7 +237,7 @@ A command is always finished by pressing **Return**.
       set to one then full duplex mode is enabled. Note: the duplex mode can
       only be switched after a reset of the device. So set your desired value
       with this command then save the parameters with **ps** and reset the
-      device with **r** to test the new setup. 
+      device with **r** to test the new setup.
 
   - **fc [nn]** (Flow Control)
     - Toggle the use of Ethernet flow control to limit the rate
@@ -232,11 +247,11 @@ A command is always finished by pressing **Return**.
 #### 2.3.4 Statistics Commands
 
   - **sd** (Dump Statistics)
-    - Dump the statistics information. The plipbox records a number of 
+    - Dump the statistics information. The plipbox records a number of
       typical network statistics including sent packets, send bytes, transfer
       errors and so on for each direction. This command prints the currently
       accumulated values.
-    
+
   - **sr** (Reset Statistics)
     - Reset the statistics counters.
 
@@ -278,7 +293,7 @@ keys to trigger actions on the device:
     - Dump the current statistics.
     - Similar to **sd** command.
   - **S** (Reset Statistics)
-    - Reset statistics counters. 
+    - Reset statistics counters.
     - Similar to **sr** command.
 
 #### 2.4.3 Diagnosis
@@ -376,14 +391,14 @@ UDP Packet Round Trip of Test:
       +-----------+                 +---------+                 +--------------+
 
 Tested Components:
-  
+
 - local network (link PC <-> plipbox)
 - plipbox Bridge Mode
 - plipbox.device in normal operation
 - TCP/IP Stack on Amiga
 
 Test Setup:
-  
+
 - On plipbox:
     - Make sure mode is Bridge (key **1**)
 - On Amiga:
@@ -424,7 +439,7 @@ UDP Packet Round Trip of Test:
       +-----------+                 +---------+                 +--------------+
 
 Tested Components:
-  
+
 - local network (link PC <-> plipbox)
 - plipbox Bridge Mode
 - plipbox.device in normal operation
@@ -467,7 +482,7 @@ UDP Packet Round Trip of Test:
       +-----------+                 +---------+                 +--------------+
 
 Tested Components:
-  
+
 - local network (link PC <-> plipbox)
 - plipbox Bridge Mode
 - plipbox.device internal loopback
@@ -529,14 +544,14 @@ packet transfer is initiated by the plipbox and then retrieved and replied with
 plipbox.device's internal loopback.
 
 You need to open the plipbox.device and set it to online with a tool like
-[sanautil][1] or dev_test from this release.
+[sanautil][su] or dev_test from this release.
 
 This mode is suitable to estimate the raw transfer speed of packet sent across
 the parallel port and measures the performance of the current plipbox protocol
 implementation.
 
 Tested Components:
-  
+
 - plipbox protocol
 - parallel port transfer speed
 
@@ -557,7 +572,7 @@ Test Setup:
             - Press key **a** again to stop test
             - Press key **s** for final stats or **S** to reset stats
 
-[1]: http://aminet.net/package/comm/net/sanautil
+[su]: http://aminet.net/package/comm/net/sanautil
 
 ### 3.6 PC Test Tools
 
@@ -600,7 +615,7 @@ All received packets are simply bounced and sent back with almost no modificatio
 Only source and target address and UDP port are swapped.
 
         dev_test -D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S
-        
+
         -D=DEVICE       SANA-II device file to be used (default: plipbox.device)
         -U=UNIT         Unit of device that will be opened (default: 0)
         -M=MTU          Maximum size of packets to be received
@@ -615,7 +630,7 @@ on the given port. Any packet that arrives on this port is simply bounced and se
 back to the sender.
 
         udp_test -V=VERBOSE/S,-P=PORT/K/N
-        
+
         -P=PORT         UDP Port to be opened (default: 6800)
         -V=VERBOSE      Be more verbose
 
