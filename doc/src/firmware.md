@@ -527,11 +527,7 @@ Test Setup:
         - IP address and UDP port (`ti`, `tp`)
         - Test mode ist set to **0** (`tm`)
 - On PC:
-    - Make sure you can reach the plipbox by pinging its address:
-
-    > ping 192.168.2.42
-
-    - Now launch the test program and give the plipbox's IP
+    - Launch the test program and give the plipbox's IP
 
     > python27 pio_test -a 192.168.2.42 -c 1000
 

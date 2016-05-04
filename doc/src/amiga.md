@@ -44,23 +44,39 @@ The following network stacks have been successfully tested with plipbox:
  - For a very simple setup you can use the [Network Boot Disk for Amiga][nwbd]
    and start with this one. You have to modify the vanilla disk as it does
    not contain the plipdox drivers, yet.
+
+#### Initial Setup
+
  - Insert this disk into your favorite Amiga emulator and perform the following
    steps to prepare the disk:
- - Copy `plipbox.device` on the disk to `devs:networks` (see section 2.1)
- - Edit the file `AmiTCP/db/interfaces` and add:
+ - Initial boot enters setup of the disk. Follow steps to install but cancel
+   the selection of a network driver as we will add the plipbox driver later.
+ - Use the setup to configure your IP, netmask, gateway, and DNS server.
+ - Finally reboot to finish setup.
 
-        plipbox dev=devs:networks/plipbox.device
+#### Add plipbox Driver
+
+ - Copy `plipbox.device` on the disk to `devs:networks` (see section 2.1). I
+   recommend to mount a host directory as a virtual harddisk and take the
+   driver from there (my disk is called `shared`)
+
+        copy shared:plipbox.device devs:networks/
+ - Edit the file `AmiTCP/db/interfaces` and add a line for the plipbox:
+
+        echo "plipbox dev=devs:networks/plipbox.device" >> df0:AmiTCP/db/interfaces
  - Edit `df0:Prefs/Env-Archive/nbddriver` (aka `EnvARC:nbddriver`) and
-   set `plipbox0`.
+   set `plipbox0` as the network device:
+
+        echo plipbox0 > df0:Prefs/Env-Archive/nbddriver
  - In `EnvARC:sana2/` directory you can place an optional configuration file
    called `plipbox.config`. For options see the plipbox documentation.
    A sample file is available in directory `amiga/src` of this release.
- - Correctly set your Amiga's IP to match your network environment.
-   In the network boot disk use `EnvARC:nbdip` to set the Amiga's IP and
-   use `EnvARC:nbdgw` to set the gateway of your network.
- - Do not forget to configure the correct DNS server otherwise you won't be
-   able to resolve non-numeric IP addresses. Store the IPv4 address of your
-   DNS server in the `EnvARC:nbdns` file.
+   Example:
+
+        echo "NOBURST" > df0:Prefs/Env-Archive/sana2/plipbox.config
+ - Now reboot to activate changes
+ - Use `ifconfig plipbox0` to check the status of your network interface.
+   It should be UP and RUNNING.
 
 [nwbd]: http://jpv.wmhost.com/NetworkBootDisk/
 
