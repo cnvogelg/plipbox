@@ -520,7 +520,7 @@ static u08 enc28j60_send(const u08 *data, u16 size)
 
 // ---------- recv ----------
 
-inline static void next_pkt(void)
+static inline void next_pkt(void)
 {
   if (gNextPacketPtr - 1 > RXSTOP_INIT)
       writeReg(ERXRDPT, RXSTOP_INIT);

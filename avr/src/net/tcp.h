@@ -51,12 +51,12 @@
 #define TCP_FLAGS_CWR     0x080
 #define TCP_FLAGS_NS      0x100
 
-inline const u08 *tcp_get_data_ptr(const u08 *tcp_buf) { return tcp_buf + (tcp_buf[TCP_DATA_SIZE_OFF] >> 4) * 4; }
-inline u16  tcp_get_src_port(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_SRC_PORT_OFF); }
-inline u16  tcp_get_tgt_port(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_TGT_PORT_OFF); }
-inline u32  tcp_get_seq_num(const u08 *tcp_buf) { return net_get_long(tcp_buf + TCP_SEQ_NUM_OFF); }
-inline u32  tcp_get_ack_num(const u08 *tcp_buf) { return net_get_long(tcp_buf + TCP_ACK_NUM_OFF); }
-inline u16  tcp_get_flags(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_FLAGS_OFF) & 0x1ff; }
-inline u16  tcp_get_window_size(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_WINDOW_OFF); }
+static inline const u08 *tcp_get_data_ptr(const u08 *tcp_buf) { return tcp_buf + (tcp_buf[TCP_DATA_SIZE_OFF] >> 4) * 4; }
+static inline u16  tcp_get_src_port(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_SRC_PORT_OFF); }
+static inline u16  tcp_get_tgt_port(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_TGT_PORT_OFF); }
+static inline u32  tcp_get_seq_num(const u08 *tcp_buf) { return net_get_long(tcp_buf + TCP_SEQ_NUM_OFF); }
+static inline u32  tcp_get_ack_num(const u08 *tcp_buf) { return net_get_long(tcp_buf + TCP_ACK_NUM_OFF); }
+static inline u16  tcp_get_flags(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_FLAGS_OFF) & 0x1ff; }
+static inline u16  tcp_get_window_size(const u08 *tcp_buf) { return net_get_word(tcp_buf + TCP_WINDOW_OFF); }
   
 #endif

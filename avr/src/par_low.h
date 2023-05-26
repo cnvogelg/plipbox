@@ -187,13 +187,13 @@ extern void par_low_data_set_output(void);
 extern void par_low_data_set_input(void);
 
 #ifdef HAVE_arduino
-inline void par_low_data_out(u08 d)
+static inline void par_low_data_out(u08 d)
 {
   PAR_DATA_LO_PORT = (d & PAR_DATA_LO_MASK) | (PAR_DATA_LO_PIN & ~PAR_DATA_LO_MASK);
   PAR_DATA_HI_PORT = (d & PAR_DATA_HI_MASK) | (PAR_DATA_HI_PIN & ~PAR_DATA_HI_MASK);
 }
 
-inline u08 par_low_data_in(void)
+static inline u08 par_low_data_in(void)
 {
   u08 d1 = PAR_DATA_LO_PIN & PAR_DATA_LO_MASK;
   u08 d2 = PAR_DATA_HI_PIN & PAR_DATA_HI_MASK;
@@ -201,12 +201,12 @@ inline u08 par_low_data_in(void)
 }
 #else
 #ifdef HAVE_avrnetio
-inline void par_low_data_out(u08 d)
+static inline void par_low_data_out(u08 d)
 {
   PAR_DATA_PORT = d;
 }
 
-inline u08 par_low_data_in(void)
+static inline u08 par_low_data_in(void)
 {
   return PAR_DATA_PIN;
 }
@@ -217,12 +217,12 @@ inline u08 par_low_data_in(void)
 
 // /ACK (OUT)
 
-inline void par_low_set_ack_lo(void)
+static inline void par_low_set_ack_lo(void)
 {
   PAR_ACK_PORT &= ~PAR_ACK_MASK;
 }
 
-inline void par_low_set_ack_hi(void)
+static inline void par_low_set_ack_hi(void)
 {
   PAR_ACK_PORT |= PAR_ACK_MASK;
 }
@@ -231,33 +231,33 @@ extern void par_low_pulse_ack(u08 delay);
 
 // BUSY (OUT)
 
-inline void par_low_set_busy_lo(void)
+static inline void par_low_set_busy_lo(void)
 {
   PAR_BUSY_PORT &= ~PAR_BUSY_MASK;
 }
 
-inline void par_low_set_busy_hi(void)
+static inline void par_low_set_busy_hi(void)
 {
   PAR_BUSY_PORT |= PAR_BUSY_MASK;
 }
 
 // STROBE (IN)
 
-inline u08 par_low_get_strobe(void)
+static inline u08 par_low_get_strobe(void)
 {
   return (PAR_STROBE_PIN & PAR_STROBE_MASK) == PAR_STROBE_MASK;
 }
 
 // SELECT (IN)
 
-inline u08 par_low_get_select(void)
+static inline u08 par_low_get_select(void)
 {
   return (PAR_SELECT_PIN & PAR_SELECT_MASK) == PAR_SELECT_MASK;
 }
 
 // POUT (IN)
 
-inline u08 par_low_get_pout(void)
+static inline u08 par_low_get_pout(void)
 {
   return (PAR_POUT_PIN & PAR_POUT_MASK) == PAR_POUT_MASK;
 }

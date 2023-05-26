@@ -50,7 +50,7 @@ extern void stats_dump_all(void);
 extern void stats_dump(u08 pb, u08 pio);
 extern void stats_update_ok(u08 id, u16 size, u16 rate);
 
-inline stats_t *stats_get(u08 id)
+static inline stats_t *stats_get(u08 id)
 {
   return &stats[id];
 }

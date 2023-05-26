@@ -55,48 +55,48 @@ typedef const pio_dev_t *pio_dev_ptr_t;
 
 /* access device data from PROGMEM pio_dev_t */
 
-inline const PGM_P pio_dev_name(pio_dev_ptr_t pd)
+static inline const PGM_P pio_dev_name(pio_dev_ptr_t pd)
 { 
   return (PGM_P)pgm_read_word(&pd->name);
 }
 
-inline u08 pio_dev_init(pio_dev_ptr_t pd, const u08 mac[6], u08 flags)
+static inline u08 pio_dev_init(pio_dev_ptr_t pd, const u08 mac[6], u08 flags)
 {
   pio_dev_init_t init_f = (pio_dev_init_t)pgm_read_word(&pd->init_f);
   return init_f(mac, flags);
 }
 
-inline void pio_dev_exit(pio_dev_ptr_t pd)
+static inline void pio_dev_exit(pio_dev_ptr_t pd)
 {
   pio_dev_exit_t exit_f = (pio_dev_exit_t)pgm_read_word(&pd->exit_f);
   exit_f();
 }
 
-inline u08 pio_dev_send(pio_dev_ptr_t pd, const u08 *buf, u16 size)
+static inline u08 pio_dev_send(pio_dev_ptr_t pd, const u08 *buf, u16 size)
 {
   pio_dev_send_t send_f = (pio_dev_send_t)pgm_read_word(&pd->send_f);
   return send_f(buf, size);
 }
 
-inline u08 pio_dev_recv(pio_dev_ptr_t pd, u08 *buf, u16 max_size, u16 *got_size)
+static inline u08 pio_dev_recv(pio_dev_ptr_t pd, u08 *buf, u16 max_size, u16 *got_size)
 {
   pio_dev_recv_t recv_f = (pio_dev_recv_t)pgm_read_word(&pd->recv_f);
   return recv_f(buf, max_size, got_size);
 }
 
-inline u08 pio_dev_has_recv(pio_dev_ptr_t pd)
+static inline u08 pio_dev_has_recv(pio_dev_ptr_t pd)
 {
   pio_dev_has_recv_t has_recv_f = (pio_dev_has_recv_t)pgm_read_word(&pd->has_recv_f);
   return has_recv_f();
 }
 
-inline u08 pio_dev_status(pio_dev_ptr_t pd, u08 status_id, u08 *value)
+static inline u08 pio_dev_status(pio_dev_ptr_t pd, u08 status_id, u08 *value)
 {
   pio_dev_status_t status_f = (pio_dev_status_t)pgm_read_word(&pd->status_f);
   return status_f(status_id, value);
 }
 
-inline u08 pio_dev_control(pio_dev_ptr_t pd, u08 control_id, u08 value)
+static inline u08 pio_dev_control(pio_dev_ptr_t pd, u08 control_id, u08 value)
 {
   pio_dev_control_t control_f = (pio_dev_control_t)pgm_read_word(&pd->control_f);
   return control_f(control_id, value);

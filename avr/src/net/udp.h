@@ -38,10 +38,10 @@
 #define UDP_CHECKSUM_OFF  6
 #define UDP_DATA_OFF      8
 
-inline const u08 *udp_get_data_ptr(const u08 *udp_buf) { return udp_buf + UDP_DATA_OFF; }
-inline u16  udp_get_src_port(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_SRC_PORT_OFF); }
-inline u16  udp_get_tgt_port(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_TGT_PORT_OFF); }
-inline u16  udp_get_length(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_LENGTH_OFF); }
-inline u16  udp_get_checksum(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_CHECKSUM_OFF); }
+static inline const u08 *udp_get_data_ptr(const u08 *udp_buf) { return udp_buf + UDP_DATA_OFF; }
+static inline u16  udp_get_src_port(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_SRC_PORT_OFF); }
+static inline u16  udp_get_tgt_port(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_TGT_PORT_OFF); }
+static inline u16  udp_get_length(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_LENGTH_OFF); }
+static inline u16  udp_get_checksum(const u08 *udp_buf) { return net_get_word(udp_buf + UDP_CHECKSUM_OFF); }
   
 #endif
