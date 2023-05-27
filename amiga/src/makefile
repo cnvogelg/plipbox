@@ -9,10 +9,10 @@ AMI_BIN_DIR=base:bin
 
 # where do the amiga files reside?
 # expects the following dirs:
-# wb310          - HD install of workbench 3.1
+# wb             - HD install of workbench 3.1
 # sc             - install directory of SAS C 6.58 compiler
-# AmiTCP-SDK-4.3 - AmiTCP SDK installation
-AMIGA_DIR?=$(HOME)/amiga/shared
+# roadshow       - Roadshow SDK installation
+AMIGA_DIR?=$(HOME)/projects/amidev
 export AMIGA_DIR
 
 # config vamos

@@ -39,7 +39,6 @@
 #include <clib/dos_protos.h>
 #include <clib/alib_protos.h>
 #include <clib/socket_protos.h>
-#include <clib/netlib_protos.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -76,7 +75,7 @@ static ULONG pkt_buf_size;
 static void udp_main_loop(long fd)
 {
   struct sockaddr_in c_addr;
-  long c_addr_len = sizeof(c_addr);
+  socklen_t c_addr_len = sizeof(c_addr);
   fd_set fds;
 
   FD_ZERO(&fds);
@@ -104,7 +103,7 @@ static void udp_main_loop(long fd)
 
       /* show some infos if verbose */
       if(args_array[VERBOSE_ARG]) {
-        char *hostaddrp = inet_ntoa(c_addr.sin_addr);
+        char *hostaddrp = Inet_NtoA(c_addr.sin_addr.s_addr);
         Printf("Got %ld bytes from %s!\n", res, hostaddrp);
       }
 
@@ -137,7 +136,7 @@ static void udp_server(void)
 
     /* reuse sock addr option */
     if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 
-                  (caddr_t)&optval , sizeof(long)) == -1) {
+                  &optval , sizeof(long)) == -1) {
       PutStr("Warning: setsockopt failed?!\n");
     }
 

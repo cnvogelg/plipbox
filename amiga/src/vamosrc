@@ -1,20 +1,20 @@
 [volumes]
-wb310=${AMIGA_DIR}/wb310
+wb=${AMIGA_DIR}/wb
 sc=${AMIGA_DIR}/sc
-net=${AMIGA_DIR}/AmiTCP-SDK-4.3
+net=${AMIGA_DIR}/roadshow
 base=..
 
 [assigns]
-include=sc:include
+include=sc:include,net:include
 lib=sc:lib
 t=root:tmp
-c=wb310:c
+c=wb:c
 netinclude=net:netinclude
 netlib=net:netlib
 includeasm=sc:include
 
 [path]
-path=sc:c,wb310:c
+path=sc:c,wb:c
 
 [vamos]
 quiet=True
