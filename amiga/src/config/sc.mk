@@ -1,0 +1,47 @@
+# mapped dir in vamos
+AMI_OBJ_DIR=base:obj
+AMI_BIN_DIR=base:bin
+# variables need AMI_ prefix
+PREFIX=AMI_
+
+# config vamos. sc is run via vamos
+VAMOS=vamos
+VAMOS_OPTS=-c vamosrc
+RUN=$(VAMOS) $(VAMOS_OPTS) $(VAMOS_EXTRA)
+
+# SAS C tools
+LD          = $(RUN) sc:c/slink
+CC          = $(RUN) sc:c/sc
+AS          = $(RUN) sc:c/sc
+
+# SAS C flags
+LIBS        = LIB lib:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
+CINCLUDES   = INCDIR="netinclude:" INCDIR="include:" INCDIR="$(DEVICE_NAME)"
+ASMINCLUDES = $(CINCLUDES) INCDIR="$(AMI_OBJ_DIR)/$(BUILD_DIR)"
+CPUCCOPT    = CPU=68$(CPUSUFFIX)
+OBJ_NAME    = OBJECTNAME
+
+# device constants available in source
+COMMON_DEFINES := DEFINE DEVICE_NAME=$(DEVICE_NAME)
+COMMON_DEFINES += DEFINE DEVICE_VERSION=$(DEVICE_VERSION)
+COMMON_DEFINES += DEFINE DEVICE_REVISION=$(DEVICE_REVISION)
+COMMON_DEFINES += DEFINE DEVICE_DATE=$(DEVICE_DATE)
+
+# shared flags
+CFLAGS_COMMON = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST \
+                NOSTKCHK NOCHKABORT \
+                SMALLCODE SMALLDATA VERBOSE NOICONS STRICT ANSI \
+                $(CPUCCOPT) $(COMMON_DEFINES)
+
+# build type flags
+CFLAGS_DEBUG = $(CFLAGS_COMMON)
+CFLAGS_RELEASE = $(CFLAGS_COMMON) \
+                 PARAMETERS=REGISTERS OPT OPTTIME OPTINLINE\
+                 OPTSCHEDULE STRINGMERGE STRUCTUREEQUIVALENCE
+
+# assembler
+ASMFLAGS = $(ASMINCLUDES) VERBOSE
+
+# linker
+LDFLAGS_DEBUG    = NOICONS SC  $(LIBS) TO
+LDFLAGS_RELEASE  = NOICONS SC SD ND $(LIBS) TO

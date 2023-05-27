@@ -3,10 +3,6 @@
 BIN_DIR=../bin
 OBJ_DIR=../obj
 
-# mapped dir in vamos
-AMI_OBJ_DIR=base:obj
-AMI_BIN_DIR=base:bin
-
 # where do the amiga files reside?
 # expects the following dirs:
 # wb             - HD install of workbench 3.1
@@ -14,11 +10,6 @@ AMI_BIN_DIR=base:bin
 # roadshow       - Roadshow SDK installation
 AMIGA_DIR?=$(HOME)/projects/amidev
 export AMIGA_DIR
-
-# config vamos
-VAMOS=vamos
-VAMOS_OPTS=-c vamosrc
-RUN=$(VAMOS) $(VAMOS_OPTS) $(VAMOS_EXTRA)
 
 # device file
 include ../../version.mk
@@ -28,44 +19,13 @@ DEVICE_REVISION = $(VERSION_MIN)
 DEVICE_DATE = $(shell date '+%d.%m.%Y')
 DEVICE_FILE = $(DEVICE_NAME).device_$(BUILD_TYPE)_$(CPUSUFFIX)
 
-# SAS C tools
-LD          = $(RUN) sc:c/slink
-CC          = $(RUN) sc:c/sc
-AS          = $(RUN) sc:c/sc
+include config/sc.mk
 
-# SAS C flags
-LIBS        = LIB lib:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
-CINCLUDES   = INCDIR="netinclude:" INCDIR="include:" INCDIR="$(DEVICE_NAME)"
-ASMINCLUDES = $(CINCLUDES) INCDIR="$(AMI_OBJ_DIR)/$(BUILD_DIR)"
+# build varian
 CPUSUFFIX   = 000
-CPUCCOPT    = CPU=68$(CPUSUFFIX)
 BUILD_TYPE  = DEBUG
 
-# device constants available in source
-COMMON_DEFINES := DEFINE DEVICE_NAME=$(DEVICE_NAME) 
-COMMON_DEFINES += DEFINE DEVICE_VERSION=$(DEVICE_VERSION)
-COMMON_DEFINES += DEFINE DEVICE_REVISION=$(DEVICE_REVISION)
-COMMON_DEFINES += DEFINE DEVICE_DATE=$(DEVICE_DATE)
-
-# shared flags
-CFLAGS_COMMON = $(CINCLUDES) NOMULTIPLEINCLUDES ERRREXX COMMENTNEST \
-                NOSTKCHK NOCHKABORT \
-                SMALLCODE SMALLDATA VERBOSE NOICONS STRICT ANSI \
-                $(CPUCCOPT) $(COMMON_DEFINES)
-
-# build type flags
-CFLAGS_DEBUG = $(CFLAGS_COMMON) 
-CFLAGS_RELEASE = $(CFLAGS_COMMON) \
-                 PARAMETERS=REGISTERS OPT OPTTIME OPTINLINE\
-                 OPTSCHEDULE STRINGMERGE STRUCTUREEQUIVALENCE
-
-# assembler
-ASMFLAGS = $(ASMINCLUDES) VERBOSE
 DEVINFO_INC = $(BUILD_PATH)/devinfo.i
-
-# linker
-LDFLAGS_DEBUG    = NOICONS SC  $(LIBS) TO
-LDFLAGS_RELEASE  = NOICONS SC SD ND $(LIBS) TO
 
 # output directory
 BUILD_DIR = build_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -132,15 +92,15 @@ dirs: $(BUILD_PATH) $(BIN_DIR)
 
 # --- compile ---
 $(BUILD_PATH)/%.o: %.c
-	$(CC) $(CFLAGS_$(BUILD_TYPE)) OBJECTNAME $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$@) $<
+	$(CC) $(CFLAGS_$(BUILD_TYPE)) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 
 # --- assemble ---
 $(BUILD_PATH)/%.o: %.asm
-	$(AS) $(ASMFLAGS) OBJECTNAME $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$@) $<
+	$(AS) $(ASMFLAGS) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 
 # --- link ---
 $(OUTPUT): $(OBJS)
-	$(LD) $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$(OBJS)) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
+	$(LD) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(OBJS)) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
 
 # --- dirs ---
 $(BIN_DIR):
