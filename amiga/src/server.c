@@ -1,5 +1,3 @@
-#define DEBUG 0 
-
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>

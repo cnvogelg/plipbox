@@ -25,6 +25,7 @@ include config/sc.mk
 # build varian
 CPUSUFFIX   = 000
 BUILD_TYPE  = DEBUG
+DEBUG_LEVEL = 1   # bitmask 1..8 max is 15
 
 # output directory
 BUILD_DIR = build_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -57,6 +58,9 @@ UDP_TEST_TOOL_OBJ = $(BUILD_PATH)/udp_test.o
 # add driver directory
 VPATH = .:$(DEVICE_NAME)
 
+# test dir
+TEST_DIR ?= $(HOME)/amiga/shared/devs
+
 # --- rules ---
 
 .PHONY: dev_test udp_test tools libsize all opt dist clean clean_obj clean_dist dirs
@@ -82,6 +86,9 @@ clean_dist:
 	rm -rf $(BIN_DIR) $(OBJ_DIR)
 
 dirs: $(BUILD_PATH) $(BIN_DIR)
+
+test: dirs $(OUTPUT)
+	cp $(OUTPUT) $(TEST_DIR)/plipbox.device
 
 # --- compile ---
 $(BUILD_PATH)/%.o: %.c

@@ -2,8 +2,6 @@
  * hw.c - hardware dependent part of driver
  */
 
-#define DEBUG 0
-
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
@@ -158,7 +156,7 @@ GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
   struct HWBase *hwb = &pb->pb_HWBase;
 #endif
   d(("timeOut %ld.%ld\n", hwb->hwb_TimeOutSecs, hwb->hwb_TimeOutMicros));
-  d(("burstSize %ld\n", (ULONG)hwb->hwb_BurstSize));
+  d(("burstMode %ld\n", (ULONG)hwb->hwb_BurstMode));
 }
 
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
