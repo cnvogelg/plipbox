@@ -12,16 +12,9 @@
 #  define ASM     __asm              /* define registers for function args */
 #  define REG(x)  register __ ## x   /* specify a register in arglist */
 #  define INLINE  __inline           /* inline this function */
-#  define STDARGS __stdargs          /* pass args to this function on stack */
 #  define REGARGS __regargs          /* pass args to this function in regs */
 #  define SAVEDS  __saveds           /* setup data segment reg. on entry */
 #  define FAR     __far              /* reference this object in far mode */
-#  define MIN     __builtin_min      /* min{} function */
-#  define MAX     __builtin_max      /* max{} function */
-#  define PUTREG __builtin_putreg    /* set a register to a certain value */
-#  define REG_D0 0                   /* reg. number for PUTREG() */
-#  define REG_D1 1                   /* reg. number for PUTREG() */
-extern void PUTREG(int, long);       /* prototype */
 #  define PUBLIC                     /* define a globally visible function */
 #  define PRIVATE static             /* define a locally visible function */
 #else
