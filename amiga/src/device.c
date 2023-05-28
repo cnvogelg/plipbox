@@ -106,7 +106,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    /*
    ** initialise device
    */
-/*F*/ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0) BASEPTR, REG(a0) BPTR seglist, REG(a6) struct Library *_SysBase)
+/*F*/ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0,BASEPTR), REG(a0,BPTR seglist), REG(a6,struct Library *_SysBase))
 {
    BOOL ok;
    UBYTE *p;
@@ -181,7 +181,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    /*
    ** open device
    */
-/*F*/ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1) struct IOSana2Req *ios2, REG(d0) ULONG unit, REG(d1) ULONG flags, REG(a6) BASEPTR)
+/*F*/ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG unit), REG(d1,ULONG flags), REG(a6,BASEPTR))
 {
    BOOL ok = FALSE;
    struct BufferManagement *bm;
@@ -344,7 +344,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    /*
    ** close device
    */
-/*F*/ PUBLIC ASM SAVEDS BPTR DevClose(REG(a1) struct IOSana2Req *ior, REG(a6) BASEPTR)
+/*F*/ PUBLIC ASM SAVEDS BPTR DevClose(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR))
 {
    BPTR seglist;
    struct BufferManagement *bm;
@@ -381,7 +381,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 /*E*/
 
 
-/*F*/ PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6) BASEPTR)
+/*F*/ PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6,BASEPTR))
 {
    BPTR seglist;
    ULONG sigb;
@@ -466,7 +466,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
       ios2->ios2_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 }
 /*E*/
-/*F*/ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1) struct IOSana2Req *ios2, REG(a6) BASEPTR)
+/*F*/ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPTR))
 {
    ULONG mtu;
    
@@ -710,7 +710,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    /*
    ** stop io-command
    */
-/*F*/ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1) struct IOSana2Req *ior, REG(a6) BASEPTR)
+/*F*/ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR))
 {
    BOOL is;
    LONG rc = 0;

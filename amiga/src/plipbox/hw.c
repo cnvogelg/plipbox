@@ -74,17 +74,17 @@
 /*E*/
 
 /* externs in asm code */
-GLOBAL VOID ASM interrupt(REG(a1) struct HWB *hwb);
-GLOBAL USHORT ASM CRC16(REG(a0) UBYTE *, REG(d0) SHORT);
-GLOBAL BOOL ASM hwsend(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
-GLOBAL BOOL ASM hwrecv(REG(a0) struct HWBase *hwb, REG(a1) struct HWFrame *frame);
-GLOBAL BOOL ASM hwburstsend(REG(a0) struct HWBase *, REG(a1) struct HWFrame *);
-GLOBAL BOOL ASM hwburstrecv(REG(a0) struct HWBase *, REG(a1) struct HWFrame *);
+GLOBAL VOID ASM interrupt(REG(a1,struct HWB *hwb));
+GLOBAL USHORT ASM CRC16(REG(a0,UBYTE *), REG(d0,SHORT));
+GLOBAL BOOL ASM hwsend(REG(a0,struct HWBase *hwb), REG(a1,struct HWFrame *frame));
+GLOBAL BOOL ASM hwrecv(REG(a0,struct HWBase *hwb), REG(a1,struct HWFrame *frame));
+GLOBAL BOOL ASM hwburstsend(REG(a0,struct HWBase *), REG(a1,struct HWFrame *));
+GLOBAL BOOL ASM hwburstrecv(REG(a0,struct HWBase *), REG(a1,struct HWFrame *));
 
    /* amiga.lib provides for these symbols */
 GLOBAL FAR volatile struct CIA ciaa,ciab;
 
-PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBase *hwb);
+PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0,ULONG sigmask), REG(a1,struct PLIPBase *hwb));
 
 /* CIA access macros & functions */
 #define CLEARINT        SetICR(CIAABase, CIAICRF_FLG)
@@ -352,7 +352,7 @@ GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb)
    hwb->hwb_AllocFlags = 0;
 }
 
-PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0) ULONG sigmask, REG(a1) struct PLIPBase *pb)
+PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0,ULONG sigmask), REG(a1,struct PLIPBase *pb))
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    

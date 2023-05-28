@@ -49,7 +49,7 @@ struct TrackRec {
 /****************************************************************************/
 
 
-typedef BOOL (* ASM BMFunc)(REG(a0) void *, REG(a1) void *, REG(d0) LONG);
+typedef BOOL (* ASM BMFunc)(REG(a0,void *), REG(a1,void *), REG(d0,LONG));
 
 struct BufferManagement
 {
