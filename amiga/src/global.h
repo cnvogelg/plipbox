@@ -137,26 +137,22 @@ struct PLIPBase
    ULONG                       pb_MTU;
 };
 
-#ifdef __SASC
      /*
      ** redirect all shared library bases to our device base.
      */
-#  define SysBase      pb->pb_SysBase
-#  define DOSBase      pb->pb_DOSBase
-#  define UtilityBase  pb->pb_UtilityBase
+#define SysBase      pb->pb_SysBase
+#define DOSBase      pb->pb_DOSBase
+#define UtilityBase  pb->pb_UtilityBase
      /*
      ** This macro declares a local variable which temporary gets
      ** SysBase directly from AbsExecBase.
      */
-#  define LOCALSYSBASE struct { void *pb_SysBase; } *pb = (void*)0x4
+#define LOCALSYSBASE struct { void *pb_SysBase; } *pb = (void*)0x4
      /*
      ** Use this macro as argument for all functions which need to
      ** have access to your data base.
      */
-#  define BASEPTR      struct PLIPBase *pb
-#else
-#  error Please define library bases for your compiler
-#endif
+#define BASEPTR      struct PLIPBase *pb
 
    /*
    ** Values for PLIPBase->pb_Flags

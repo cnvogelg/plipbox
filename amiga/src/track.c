@@ -1,7 +1,7 @@
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
-#include <pragmas/exec_sysbase_pragmas.h>
+#include <proto/exec.h>
 #endif
 
 #ifndef EXEC_MEMORY_H
@@ -31,7 +31,7 @@
 PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
 PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
 PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
-PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, APTR info);
+PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
 PUBLIC VOID freetracktypes(BASEPTR);
 /*E*/
 /*F*/ /* private */

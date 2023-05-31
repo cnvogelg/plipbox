@@ -1,32 +1,30 @@
-#define DEBUG 0
-
 /*F*/ /* includes */
 #ifndef CLIB_ALIB_PROTOS_H
 #include <clib/alib_protos.h>
 #endif
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
-#include <pragmas/exec_sysbase_pragmas.h>
+#include <proto/exec.h>
 #endif
 #ifndef CLIB_DOS_PROTOS_H
 #include <clib/dos_protos.h>
-#include <pragmas/dos_pragmas.h>
+#include <proto/dos.h>
 #endif
 #ifndef CLIB_CIA_PROTOS_H
 #include <clib/cia_protos.h>
-#include <pragmas/cia_pragmas.h>
+#include <proto/cia.h>
 #endif
 #ifndef CLIB_MISC_PROTOS_H
 #include <clib/misc_protos.h>
-#include <pragmas/misc_pragmas.h>
+#include <proto/misc.h>
 #endif
 #ifndef CLIB_UTILITY_PROTOS_H
 #include <clib/utility_protos.h>
-#include <pragmas/utility_pragmas.h>
+#include <proto/utility.h>
 #endif
 #ifndef CLIB_TIME_PROTOS_H
 #include <clib/timer_protos.h>
-#include <pragmas/timer_pragmas.h>
+#include <proto/timer.h>
 #endif
 #ifndef DEVICES_SANA2_H
 #include <devices/sana2.h>
@@ -72,7 +70,6 @@ PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
 PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
 PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
 PUBLIC VOID freetracktypes(BASEPTR);
-#define min __builtin_min
 /*E*/
 /*F*/ /* exports */
 /*E*/
@@ -234,18 +231,18 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          ** since we want to allow several protocol stacks to use PLIP
          ** simultaneously.
          */
-         if (bm = AllocVec(sizeof(struct BufferManagement),MEMF_CLEAR|MEMF_PUBLIC))
+         if (bm = (struct BufferManagement *)AllocVec(sizeof(struct BufferManagement),MEMF_CLEAR|MEMF_PUBLIC))
          {
             /*
             ** We don't care if there actually are buffer management functions,
             ** because there might be openers who just want some statistics
             ** from us.
             */
-#if defined(__SASC) && (__VERSION__ == 6) && (__REVISION__ >= 56)
+#if !defined(__SASC) || (defined(__SASC) && (__VERSION__ == 6) && (__REVISION__ >= 56))
             /* Jippieee! */
-            bm->bm_CopyToBuffer = (BMFunc)GetTagData(S2_CopyToBuff, NULL,
+            bm->bm_CopyToBuffer = (BMFunc)GetTagData(S2_CopyToBuff, 0,
                               (struct TagItem *)ios2->ios2_BufferManagement);
-            bm->bm_CopyFromBuffer = (BMFunc)GetTagData(S2_CopyFromBuff, NULL,
+            bm->bm_CopyFromBuffer = (BMFunc)GetTagData(S2_CopyFromBuff, 0,
                               (struct TagItem *)ios2->ios2_BufferManagement);
 #else
             /*

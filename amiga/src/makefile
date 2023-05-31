@@ -3,12 +3,19 @@
 BIN_DIR=../bin
 OBJ_DIR=../obj
 
+# build varian
+CPUSUFFIX   = 000
+BUILD_TYPE  = DEBUG
+DEBUG_LEVEL = 1   # bitmask 1..8 max is 15
+COMPILER    ?= vbcc
+
 # where do the amiga files reside?
 # expects the following dirs:
 # wb             - HD install of workbench 3.1
 # sc             - install directory of SAS C 6.58 compiler
 # roadshow       - Roadshow SDK installation
 AMIGA_DIR?=$(HOME)/projects/amidev
+NETINC=$(AMIGA_DIR)/roadshow
 export AMIGA_DIR
 
 # device file
@@ -20,12 +27,16 @@ DEVICE_DATE = $(shell date '+%d.%m.%Y')
 DEVICE_FILE = $(DEVICE_NAME).device_$(BUILD_TYPE)_$(CPUSUFFIX)
 DEVICE_ID = $(DEVICE_NAME) $(DEVICE_VERSION).$(DEVICE_REVISION) ($(DEVICE_DATE))
 
+# include compiler setup
+ifeq "$(COMPILER)" "vbcc"
+include config/vbcc.mk
+else
+ifeq "$(COMPILER)" "sc"
 include config/sc.mk
-
-# build varian
-CPUSUFFIX   = 000
-BUILD_TYPE  = DEBUG
-DEBUG_LEVEL = 1   # bitmask 1..8 max is 15
+else
+$(error Invalid compiler $(COMPILER))
+endif
+endif
 
 # output directory
 BUILD_DIR = build_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -96,12 +107,18 @@ $(BUILD_PATH)/%.o: %.c
 
 # --- assemble ---
 $(BUILD_PATH)/%.o: %.asm
-	$(AS) $(ASMFLAGS) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
+	$(AS) $(ASFLAGS) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 
 # --- link ---
 $(OUTPUT): $(OBJS)
-	$(LD) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(OBJS)) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@) \
+ifeq "$(LDFLAGS_HAS_MAP)" "1"
+	$(LD) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(OBJS)) \
+	 	$(LDFLAGS_DEV) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@) \
 		$(LDFLAGS_MAP) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@.map)$(LDFLAGS_MAP_POST)
+else
+	$(LD) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(OBJS)) \
+		$(LDFLAGS_DEV) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
+endif
 
 # --- dirs ---
 $(BIN_DIR):
@@ -117,10 +134,12 @@ tools: dev_test udp_test
 dev_test: $(DEV_TEST_TOOL)
 
 $(DEV_TEST_TOOL): $(DEV_TEST_TOOL_OBJ)
-	$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
+	$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$<) \
+	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
 
 # --- udp test tool ---
 udp_test: $(UDP_TEST_TOOL)
 
 $(UDP_TEST_TOOL): $(UDP_TEST_TOOL_OBJ)
-	$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$(AMI_OBJ_DIR),$<) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$(AMI_BIN_DIR),$@)
+	$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$<) \
+	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)

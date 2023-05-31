@@ -1,11 +1,11 @@
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
-#include <pragmas/exec_sysbase_pragmas.h>
+#include <proto/exec.h>
 #endif
 #ifndef CLIB_DOS_PROTOS_H
 #include <clib/dos_protos.h>
-#include <pragmas/dos_pragmas.h>
+#include <proto/dos.h>
 #endif
 
 #ifndef EXEC_MEMORY_H
@@ -18,7 +18,7 @@
 
 #ifndef CLIB_TIME_PROTOS_H
 #include <clib/timer_protos.h>
-#include <pragmas/timer_pragmas.h>
+#include <proto/timer.h>
 #endif
 
 #ifndef _STRING_H

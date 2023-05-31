@@ -5,27 +5,27 @@
 /*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
-#include <pragmas/exec_sysbase_pragmas.h>
+#include <proto/exec.h>
 #endif
 #ifndef CLIB_DOS_PROTOS_H
 #include <clib/dos_protos.h>
-#include <pragmas/dos_pragmas.h>
+#include <proto/dos.h>
 #endif
 #ifndef CLIB_CIA_PROTOS_H
 #include <clib/cia_protos.h>
-#include <pragmas/cia_pragmas.h>
+#include <proto/cia.h>
 #endif
 #ifndef CLIB_MISC_PROTOS_H
 #include <clib/misc_protos.h>
-#include <pragmas/misc_pragmas.h>
+#include <proto/misc.h>
 #endif
 #ifndef CLIB_TIME_PROTOS_H
 #include <clib/timer_protos.h>
-#include <pragmas/timer_pragmas.h>
+#include <proto/timer.h>
 #endif
 #ifndef CLIB_UTILITY_PROTOS_H
 #include <clib/utility_protos.h>
-#include <pragmas/utility_pragmas.h>
+#include <proto/utility.h>
 #endif
 
 #ifndef EXEC_MEMORY_H
@@ -80,7 +80,7 @@ GLOBAL BOOL ASM hwburstsend(REG(a0,struct HWBase *), REG(a1,struct HWFrame *));
 GLOBAL BOOL ASM hwburstrecv(REG(a0,struct HWBase *), REG(a1,struct HWFrame *));
 
    /* amiga.lib provides for these symbols */
-GLOBAL FAR volatile struct CIA ciaa,ciab;
+extern FAR volatile struct CIA ciaa,ciab;
 
 PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0,ULONG sigmask), REG(a1,struct PLIPBase *hwb));
 

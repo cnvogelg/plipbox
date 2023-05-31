@@ -24,7 +24,6 @@
  *
  */
 
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -43,15 +42,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <pragmas/exec_sysbase_pragmas.h>
-#include <pragmas/dos_pragmas.h>
-#include <pragmas/socket_pragmas.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/socket.h>
 
 /* SAS stuff */
 extern struct ExecBase *SysBase;
 extern struct DosLibrary *DOSBase;
 struct Library *SocketBase;
-#define exit XCEXIT
 
 /* ---------- globals ---------------------------------------- */
 
@@ -141,7 +139,7 @@ static void udp_server(void)
     }
 
     /* setup address */
-    bzero(&s_addr, sizeof(s_addr));
+    memset(&s_addr, 0, sizeof(s_addr));
     s_addr.sin_family = AF_INET;
     s_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     s_addr.sin_port = htons((unsigned short)port);
@@ -163,7 +161,7 @@ static void udp_server(void)
 }
 
 /* ---------- main -------------------------------------------- */
-void __stdargs _main(char *cmdline)
+int main(void)
 {
   BOOL ok = TRUE;
 

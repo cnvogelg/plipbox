@@ -38,17 +38,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <pragmas/exec_sysbase_pragmas.h>
-#include <pragmas/dos_pragmas.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 #include <devices/sana2.h>
+
+#include "compiler.h"
 
 /* SAS stuff */
 extern struct ExecBase *SysBase;
 extern struct DosLibrary *DOSBase;
-#define exit XCEXIT
-void MemCleanup(void) {}
-#define ALIGNED __aligned
 
 /* ---------- globals ---------------------------------------- */
 
@@ -74,9 +73,9 @@ static LONG args_array[NUM_ARGS];
 /* ---------- helpers ----------------------------------------- */
 
 /* copy helper for SANA-II device */
-static int __asm __saveds MemCopy(register __a0 UBYTE *to,
-			   register __a1 UBYTE *from,
-			   register __d0 LONG len)
+static ASM SAVEDS int MemCopy(REG(a0,UBYTE *to),
+			   REG(a1,UBYTE *from),
+			   REG(d0,LONG len))
 {
   CopyMem(from, to, len);
   return 1;
@@ -230,7 +229,7 @@ static void reply_loop(void)
 }
 
 /* ---------- main ---------- */
-void __stdargs _main(char *cmdline)
+int main(void)
 {
   BOOL ok = TRUE;
   ULONG unit;

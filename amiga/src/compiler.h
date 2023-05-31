@@ -10,17 +10,27 @@
 #define FAR     __far              /* reference this object in far mode */
 #define PUBLIC                     /* define a globally visible function */
 #define PRIVATE static             /* define a locally visible function */
+
+#define min __builtin_min
+
 #else
 #ifdef __VBCC__
 #define ASM
 #define REG(r,t) __reg( #r ) t
 #define INLINE  inline
+#define REGARGS
 #define SAVEDS __saveds
 #define FAR    __far
-#define PUBLIC  extern
+#define PUBLIC
 #define PRIVATE static
+#undef  GLOBAL
+#define GLOBAL
+
+#define min(a,b) ((a < b)?(a):(b))
+
 #else
 #error Please define the above macros for your compiler
+#endif
 #endif
 
 #endif
