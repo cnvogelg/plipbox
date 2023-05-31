@@ -72,7 +72,7 @@
 /*E*/
 
 /* externs in asm code */
-GLOBAL VOID ASM interrupt(REG(a1,struct HWB *hwb));
+GLOBAL VOID ASM interrupt(REG(a1,struct HWBase *hwb));
 GLOBAL USHORT ASM CRC16(REG(a0,UBYTE *), REG(d0,SHORT));
 GLOBAL BOOL ASM hwsend(REG(a0,struct HWBase *hwb), REG(a1,struct HWFrame *frame));
 GLOBAL BOOL ASM hwrecv(REG(a0,struct HWBase *hwb), REG(a1,struct HWFrame *frame));
@@ -196,7 +196,7 @@ GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
 
          /* enter port address */
          hwb->hwb_TimeoutReq.tr_node.io_Message.mn_ReplyPort = hwb->hwb_TimeoutPort;
-         if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&hwb->hwb_TimeoutReq, 0))
+         if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest*)&hwb->hwb_TimeoutReq, 0))
          {
              TimerBase = (struct Library *)hwb->hwb_TimeoutReq.tr_node.io_Device;
 
@@ -263,19 +263,19 @@ GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
    d(("entered\n"));
 
    hwb->hwb_AllocFlags = 0;
-   if (MiscBase = OpenResource("misc.resource"))
+   if ((MiscBase = OpenResource((STRPTR)"misc.resource")) != NULL)
    {
-      if (CIAABase = OpenResource("ciaa.resource"))
+      if ((CIAABase = OpenResource((STRPTR)"ciaa.resource")) != NULL)
       {
          CiaBase = CIAABase;
 
          d(("ciabase is %lx\n",CiaBase));
 
          /* obtain exclusive access to the parallel hardware */
-         if (!AllocMiscResource(MR_PARALLELPORT, pb->pb_DevNode.lib_Node.ln_Name))
+         if (!AllocMiscResource(MR_PARALLELPORT, (STRPTR)pb->pb_DevNode.lib_Node.ln_Name))
          {
             hwb->hwb_AllocFlags |= 1;
-            if (!AllocMiscResource(MR_PARALLELBITS, pb->pb_DevNode.lib_Node.ln_Name))
+            if (!AllocMiscResource(MR_PARALLELBITS, (STRPTR)pb->pb_DevNode.lib_Node.ln_Name))
             {
                hwb->hwb_AllocFlags |= 2;
 

@@ -34,7 +34,11 @@ else
 ifeq "$(COMPILER)" "sc"
 include config/sc.mk
 else
+ifeq "$(COMPILER)" "gcc"
+include config/gcc.mk
+else
 $(error Invalid compiler $(COMPILER))
+endif
 endif
 endif
 

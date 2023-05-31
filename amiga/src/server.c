@@ -162,7 +162,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    ObtainSemaphore(&pb->pb_EventListSem );
    
    for(ior = (struct IOSana2Req *) pb->pb_EventList.lh_Head;
-       ior2 = (struct IOSana2Req *) ior->ios2_Req.io_Message.mn_Node.ln_Succ;
+       (ior2 = (struct IOSana2Req *) ior->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
        ior = ior2 )
    {
       if (ior->ios2_WireError & event)
@@ -229,7 +229,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    ObtainSemaphore(&pb->pb_WriteListSem);
 
    for(currentwrite = (struct IOSana2Req *)pb->pb_WriteList.lh_Head;
-       nextwrite = (struct IOSana2Req *) currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ;
+       (nextwrite = (struct IOSana2Req *) currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
        currentwrite = nextwrite )
    {
       if (hw_recv_pending(pb))
@@ -287,7 +287,7 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    int i;
    BOOL broadcast; 
    LONG datasize;
-   BYTE *frame_ptr;
+   UBYTE *frame_ptr;
    struct BufferManagement *bm;
    BOOL ok;
    
@@ -557,11 +557,11 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 
    hw_config_init(pb);
 
-   if (cfginput = Open(CONFIGFILE, MODE_OLDFILE))
+   if((cfginput = Open((STRPTR)CONFIGFILE, MODE_OLDFILE))!=0)
    {
       d(("opened cfg\n"));
       oldinput = SelectInput(cfginput);      
-      rda = ReadArgs(COMMON_TEMPLATE TEMPLATE, (LONG *)&args, NULL);
+      rda = ReadArgs((STRPTR)COMMON_TEMPLATE TEMPLATE, (LONG *)&args, NULL);
       if(rda)
       {
          d(("got args\n"));
@@ -664,7 +664,7 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 
    d(("server running\n"));
 
-   if (pb = startup())
+   if ((pb = startup()) != NULL)
    {      
          /* if we fail to allocate all resources, this flag reminds cleanup()
          ** to ReplyMsg() the startup message

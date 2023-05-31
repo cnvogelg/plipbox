@@ -93,14 +93,14 @@ static BOOL open_device(char *name, ULONG unit, ULONG flags)
   /* create msg port */
   msg_port = CreateMsgPort();
   if(msg_port == NULL) {
-  	PutStr("Error creating msg port!\n");
+  	PutStr((STRPTR)"Error creating msg port!\n");
   	return FALSE;
   }
 
   /* create IO request */
   sana_req = (struct IOSana2Req *)CreateIORequest(msg_port, sizeof(struct IOSana2Req));
   if(sana_req == NULL) {
-  	PutStr("Error creatio IO request!\n");
+  	PutStr((STRPTR)"Error creatio IO request!\n");
   	return FALSE;
   }
 
@@ -108,16 +108,16 @@ static BOOL open_device(char *name, ULONG unit, ULONG flags)
   sana_req->ios2_BufferManagement = sana_tags;
 
   /* open device */
-  if(OpenDevice(name, unit, (struct IORequest *)sana_req, flags) != 0) {
-  	Printf("Error opening device(%s,%lu)!\n", name, unit);
+  if(OpenDevice((STRPTR)name, unit, (struct IORequest *)sana_req, flags) != 0) {
+  	Printf((STRPTR)"Error opening device(%s,%lu)!\n", (ULONG)name, unit);
   	return FALSE;
   }
 
   sana_dev = sana_req->ios2_Req.io_Device;
 
   /* some device info */
-  Printf("[%s (%d.%d)]\n",
-         sana_dev->dd_Library.lib_IdString,
+  Printf((STRPTR)"[%s (%d.%d)]\n",
+         (ULONG)sana_dev->dd_Library.lib_IdString,
          sana_dev->dd_Library.lib_Version,
          sana_dev->dd_Library.lib_Revision);
 
@@ -150,7 +150,7 @@ static void sana_error(void)
 {
   UWORD error = sana_req->ios2_Req.io_Error;
   UWORD wire_error = sana_req->ios2_WireError;
-  Printf("IO failed: cmd=%04lx -> error=%d, wire_error=%d\n", 
+  Printf((STRPTR)"IO failed: cmd=%04lx -> error=%d, wire_error=%d\n",
          sana_req->ios2_Req.io_Command, error, wire_error);  
 }
 
@@ -181,7 +181,7 @@ static void reply_loop(void)
   ULONG wmask;
   ULONG verbose = args_array[VERBOSE_ARG];
 
-  PutStr("Waiting for incoming packets...\n");
+  PutStr((STRPTR)"Waiting for incoming packets...\n");
   for(;;) {
     /* read request */
     sana_req->ios2_Req.io_Command = S2_READORPHAN; /*CMD_READ;*/
@@ -196,7 +196,7 @@ static void reply_loop(void)
     if(wmask & SIGBREAKF_CTRL_C) {
       AbortIO((struct IORequest *)sana_req);
       WaitIO((struct IORequest *)sana_req);
-      PutStr("***Break\n");
+      PutStr((STRPTR)"***Break\n");
       break;
     }
 
@@ -207,7 +207,7 @@ static void reply_loop(void)
       break;
     } else {
       if(verbose) {
-        PutStr("+\n");
+        PutStr((STRPTR)"+\n");
       }
 
       /* inconmig dst will be new src */
@@ -221,7 +221,7 @@ static void reply_loop(void)
         break;
       } else {
         if(verbose) {
-          PutStr("-\n");
+          PutStr((STRPTR)"-\n");
         }
       }
     }
@@ -237,9 +237,9 @@ int main(void)
   char *dev_name;
 
   /* parse args */
-  args_rd = ReadArgs(args_template, args_array, NULL);
+  args_rd = ReadArgs((STRPTR)args_template, args_array, NULL);
   if(args_rd == NULL) {
-    PutStr("Error parsing arguments!\n");
+    PutStr((STRPTR)"Error parsing arguments!\n");
     exit(RETURN_ERROR);
   }
 
@@ -265,7 +265,7 @@ int main(void)
   pkt_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
   if(pkt_buf != NULL) {
     /* open device */
-    Printf("device: %s:%lu\n", dev_name, unit);
+    Printf((STRPTR)"device: %s:%lu\n", (ULONG)dev_name, unit);
     if(open_device(dev_name, unit, 0)) {
       /* set device online */
       if(sana_online()) {
@@ -274,10 +274,10 @@ int main(void)
 
         /* finally offline again */
         if(!sana_offline()) {
-          PutStr("Error going offline!\n");
+          PutStr((STRPTR)"Error going offline!\n");
         }
       } else {
-        PutStr("Error going online!\n");
+        PutStr((STRPTR)"Error going online!\n");
       }
     }
     close_device();
@@ -285,7 +285,7 @@ int main(void)
     /* free packet buffer */
     FreeMem(pkt_buf, pkt_buf_size);
   } else {
-    PutStr("Error allocating pkt_buf!\n");
+    PutStr((STRPTR)"Error allocating pkt_buf!\n");
   }
 
   /* free args */

@@ -75,7 +75,7 @@ PUBLIC VOID freetracktypes(BASEPTR);
 /*E*/
 /*F*/ /* private */
 PRIVATE BOOL isinlist(struct Node *n, struct List *l);
-PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
+PRIVATE VOID abort_req(BASEPTR, struct IOSana2Req *ior);
 /*E*/
 
    /*
@@ -91,7 +91,7 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    return FALSE;
 }
 /*E*/
-/*F*/ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior)
+/*F*/ PRIVATE VOID abort_req(BASEPTR, struct IOSana2Req *ior)
 {
    Remove((struct Node*)ior);
    ior->ios2_Req.io_Error = IOERR_ABORTED;
@@ -144,16 +144,16 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
 
    pb->pb_SpecialStats[S2SS_TXERRORS].Type = S2SS_PLIP_TXERRORS;
    pb->pb_SpecialStats[S2SS_TXERRORS].Count = 0;
-   pb->pb_SpecialStats[S2SS_TXERRORS].String = "TX Errors";
+   pb->pb_SpecialStats[S2SS_TXERRORS].String = (STRPTR)"TX Errors";
    pb->pb_SpecialStats[S2SS_COLLISIONS].Type = S2SS_PLIP_COLLISIONS;
    pb->pb_SpecialStats[S2SS_COLLISIONS].Count = 0;
-   pb->pb_SpecialStats[S2SS_COLLISIONS].String = "Collisions";
+   pb->pb_SpecialStats[S2SS_COLLISIONS].String = (STRPTR)"Collisions";
 
    ok = FALSE;
 
-   if (UtilityBase = OpenLibrary("utility.library", 37))
+   if (UtilityBase = OpenLibrary((STRPTR)"utility.library", 37))
    {
-      if (DOSBase = OpenLibrary("dos.library", 37))
+      if (DOSBase = OpenLibrary((STRPTR)"dos.library", 37))
       {
          ok = TRUE;
       }
@@ -231,37 +231,18 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
          ** since we want to allow several protocol stacks to use PLIP
          ** simultaneously.
          */
-         if (bm = (struct BufferManagement *)AllocVec(sizeof(struct BufferManagement),MEMF_CLEAR|MEMF_PUBLIC))
+         if ((bm = (struct BufferManagement *)AllocVec(sizeof(struct BufferManagement),MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
          {
             /*
             ** We don't care if there actually are buffer management functions,
             ** because there might be openers who just want some statistics
             ** from us.
             */
-#if !defined(__SASC) || (defined(__SASC) && (__VERSION__ == 6) && (__REVISION__ >= 56))
-            /* Jippieee! */
             bm->bm_CopyToBuffer = (BMFunc)GetTagData(S2_CopyToBuff, 0,
                               (struct TagItem *)ios2->ios2_BufferManagement);
             bm->bm_CopyFromBuffer = (BMFunc)GetTagData(S2_CopyFromBuff, 0,
                               (struct TagItem *)ios2->ios2_BufferManagement);
-#else
-            /*
-            ** The type casting below is very beautiful. This is a SAS/C bug:
-            ** I have to cast the ULONG that I got from GetTagData() to a
-            ** (void (*)(void)) function pointer. Now I may cast it to (BMFunc),
-            ** which defines the __asm and register stuff.
-            **
-            ** I would call this a cast with ``soft force'', as it seems that
-            ** I slowly have to make the ULONG being used to the fact of
-            ** becoming a pointer (``Look, old mathematical chap: didn't you
-            ** always want to be a pointer? Did you know how less it takes, how
-            ** mighty the dark side of the force really is?'').
-            */
-            bm->bm_CopyToBuffer = (BMFunc)((void (*)())(GetTagData(S2_CopyToBuff, NULL,
-                              (struct TagItem *)ios2->ios2_BufferManagement)));
-            bm->bm_CopyFromBuffer = (BMFunc)((void (*)())(GetTagData(S2_CopyFromBuff, NULL,
-                              (struct TagItem *)ios2->ios2_BufferManagement)));
-#endif
+
             d(("starting servertask\n"));
             if (!pb->pb_Server)
             {
@@ -271,8 +252,8 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
                if (port = CreateMsgPort())
                {
                   d(("starting server"));
-                  if (pb->pb_Server = CreateNewProcTags(NP_Entry, ServerTask, NP_Name,
-                                                                  SERVERTASKNAME, TAG_DONE))
+                  if (pb->pb_Server = CreateNewProcTags(NP_Entry, (ULONG)ServerTask, NP_Name,
+                                                                  (ULONG)SERVERTASKNAME, TAG_DONE))
                   {
                      ss.ss_Error = 1;
                      ss.ss_PLIPBase = pb;
@@ -715,22 +696,22 @@ PRIVATE VOID abort(BASEPTR, struct IOSana2Req *ior);
    d(("cmd = %ld\n",ior->ios2_Req.io_Command));
 
    ObtainSemaphore(&pb->pb_WriteListSem);
-   if (is = isinlist((struct Node*)ior, (struct List*)&pb->pb_WriteList)) abort(pb,ior);
+   if ((is = isinlist((struct Node*)ior, (struct List*)&pb->pb_WriteList))) abort_req(pb,ior);
    ReleaseSemaphore(&pb->pb_WriteListSem);
    if (is) goto leave;
 
    ObtainSemaphore(&pb->pb_ReadListSem);
-   if (is = isinlist((struct Node*)ior, (struct List*)&pb->pb_ReadList)) abort(pb,ior);
+   if ((is = isinlist((struct Node*)ior, (struct List*)&pb->pb_ReadList))) abort_req(pb,ior);
    ReleaseSemaphore(&pb->pb_ReadListSem);
    if (is) goto leave;
 
    ObtainSemaphore(&pb->pb_EventListSem);
-   if (is = isinlist((struct Node*)ior, (struct List*)&pb->pb_EventList)) abort(pb,ior);
+   if ((is = isinlist((struct Node*)ior, (struct List*)&pb->pb_EventList))) abort_req(pb,ior);
    ReleaseSemaphore(&pb->pb_EventListSem);
    if (is) goto leave;
 
    ObtainSemaphore(&pb->pb_ReadOrphanListSem);
-   if (is = isinlist((struct Node*)ior, (struct List*)&pb->pb_ReadOrphanList)) abort(pb,ior);
+   if ((is = isinlist((struct Node*)ior, (struct List*)&pb->pb_ReadOrphanList))) abort_req(pb,ior);
    ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
    if (is) goto leave;
 
@@ -740,4 +721,12 @@ leave:
    return rc;
 }
 /*E*/
+
+
+#ifdef __GNUC__
+extern void __restore_a4(void)
+{
+    __asm volatile("\tlea ___a4_init, a4");
+}
+#endif
 

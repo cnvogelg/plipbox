@@ -60,7 +60,7 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
    ObtainSemaphore(&pb->pb_TrackListSem);
    if (!(tr = findtracktype(pb, type)))
    {
-      if (tr = AllocVec(sizeof(*tr), MEMF_CLEAR))
+      if ((tr = AllocVec(sizeof(*tr), MEMF_CLEAR)) != NULL)
       {
          tr->tr_Count = 1;
          tr->tr_PacketType = type;
@@ -84,7 +84,7 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
    BOOL rv = FALSE;
 
    ObtainSemaphore( &pb->pb_TrackListSem );
-   if (tr = findtracktype(pb, type))
+   if ((tr = findtracktype(pb, type)) != NULL)
    {
       if (!(--tr->tr_Count))
       {
@@ -103,7 +103,7 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
    struct TrackRec * tr;
 
    ObtainSemaphore(&pb->pb_TrackListSem);
-   if (tr = findtracktype(pb, type))
+   if ((tr = findtracktype(pb, type)) != NULL)
    {
       tr->tr_Sana2PacketTypeStats.PacketsSent += ps;
       tr->tr_Sana2PacketTypeStats.PacketsReceived += pr;
@@ -120,7 +120,7 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
    BOOL rv = FALSE;
 
    ObtainSemaphoreShared( &pb->pb_TrackListSem );
-   if (tr = findtracktype(pb, type))
+   if ((tr = findtracktype(pb, type)) != NULL)
    {
       *info = tr->tr_Sana2PacketTypeStats;
       rv = TRUE;

@@ -29,7 +29,21 @@
 #define min(a,b) ((a < b)?(a):(b))
 
 #else
+#ifdef __GNUC__
+#define ASM
+#define REG(r,t) t __asm(#r)
+#define INLINE  __inline __attribute__((always_inline))
+#define REGARGS
+#define SAVEDS  __saveds
+#define FAR     __far
+#define PUBLIC
+#define PRIVATE static
+
+#define min(a,b) ((a < b)?(a):(b))
+
+#else
 #error Please define the above macros for your compiler
+#endif
 #endif
 #endif
 
