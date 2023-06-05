@@ -74,7 +74,7 @@ UDP_TEST_TOOL_OBJ = $(BUILD_PATH)/udp_test.o
 VPATH = .:$(DEVICE_NAME)
 
 # test dir
-TEST_DIR ?= $(HOME)/amiga/shared/devs
+TEST_DIR ?= $(HOME)/proj/plipbox
 
 # --- rules ---
 
@@ -102,8 +102,10 @@ clean_dist:
 
 dirs: $(BUILD_PATH) $(BIN_DIR)
 
-test: dirs $(OUTPUT)
+test: dirs $(OUTPUT) $(DEV_TEST_TOOL) $(UDP_TEST_TOOL)
 	cp $(OUTPUT) $(TEST_DIR)/plipbox.device
+	cp $(DEV_TEST_TOOL) $(TEST_DIR)/dev_test
+	cp $(UDP_TEST_TOOL) $(TEST_DIR)/udp_test
 
 # --- compile ---
 $(BUILD_PATH)/%.o: %.c

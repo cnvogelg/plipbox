@@ -47,7 +47,11 @@
 
 /* SAS stuff */
 extern struct ExecBase *SysBase;
+#ifdef __SASC
 extern struct DosLibrary *DOSBase;
+#else
+struct DosLibrary *DOSBase;
+#endif
 
 /* ---------- globals ---------------------------------------- */
 
@@ -236,6 +240,10 @@ int main(void)
   ULONG mtu;
   char *dev_name;
 
+#ifndef __SASC
+  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR)"dos.library", 0L);
+#endif
+
   /* parse args */
   args_rd = ReadArgs((STRPTR)args_template, args_array, NULL);
   if(args_rd == NULL) {
@@ -290,6 +298,10 @@ int main(void)
 
   /* free args */
   FreeArgs(args_rd);
+
+#ifndef __SASC
+  CloseLibrary((struct Library *)DOSBase);
+#endif
 
   /* return status */
   if(ok) {

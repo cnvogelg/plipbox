@@ -37,7 +37,7 @@ LIBS = -lamiga
 LDFLAGS_DEBUG = $(LDFLAGS) $(LIBS_debug) -g $(LIBS) -o
 LDFLAGS_RELEASE = $(LDFLAGS) $(LIBS) -o
 LDFLAGS_DEV = -nostdlib
-LDFLAGS_APP = -lauto
+LDFLAGS_APP =
 LDFLAGS_HAS_MAP = 0
 
 ASFLAGS = -Fhunk -quiet -phxass -m68$(CPUSUFFIX) -I$(NDK_INC_ASM)

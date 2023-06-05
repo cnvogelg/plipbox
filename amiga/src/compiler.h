@@ -34,7 +34,11 @@
 #define REG(r,t) t __asm(#r)
 #define INLINE  __inline __attribute__((always_inline))
 #define REGARGS
+#ifdef BASEREL
 #define SAVEDS  __saveds
+#else
+#define SAVEDS
+#endif
 #define FAR     __far
 #define PUBLIC
 #define PRIVATE static

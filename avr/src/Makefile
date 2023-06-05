@@ -65,7 +65,7 @@ F_CPU = 16000000
 MAX_SIZE = 30720
 MAX_SRAM = 2048
 UART_BAUD = 57600
-FLASHER = arduino
+FLASHER = isp
 
 # its a subclass of the Arduino board
 DEFINES += HAVE_arduino

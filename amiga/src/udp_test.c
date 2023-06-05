@@ -48,7 +48,11 @@
 
 /* SAS stuff */
 extern struct ExecBase *SysBase;
+#ifndef __SASC
+struct DosLibrary *DOSBase;
+#else
 extern struct DosLibrary *DOSBase;
+#endif
 struct Library *SocketBase;
 
 /* ---------- globals ---------------------------------------- */
@@ -165,6 +169,10 @@ int main(void)
 {
   BOOL ok = TRUE;
 
+#ifndef __SASC
+  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR)"dos.library", 0L);
+#endif
+
   /* open socket library */
   SocketBase = OpenLibrary((STRPTR)"bsdsocket.library", 3);
   if(SocketBase == NULL) {
@@ -193,6 +201,10 @@ int main(void)
     }
     CloseLibrary(SocketBase);
   }
+
+#ifndef __SASC
+  CloseLibrary((struct Library *)DOSBase);
+#endif
 
   /* return status */
   if(ok) {
