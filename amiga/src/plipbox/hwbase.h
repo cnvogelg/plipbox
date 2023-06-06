@@ -1,6 +1,6 @@
 /* hwbase.h - hardware specific part of driver structure */
-#ifndef __HWBASE_H
-#define __HWBASE_H
+#ifndef HWBASE_H
+#define HWBASE_H
 
 /* ----- base structure for hardware ----- */
 

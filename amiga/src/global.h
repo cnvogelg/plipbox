@@ -1,33 +1,16 @@
-#ifndef __GLOBAL_H
-#define __GLOBAL_H
+#ifndef GLOBAL_H
+#define GLOBAL_H
 
    /* system header files */
-#ifndef DEVICES_SANA2_H
 #include <devices/sana2.h>
-#endif
-#ifndef EXEC_SEMAPHORES_H
 #include <exec/semaphores.h>
-#endif
-#ifndef EXEC_LISTS_H
 #include <exec/lists.h>
-#endif
-#ifndef EXEC_INTERRUPTS_H
 #include <exec/interrupts.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
 #include <exec/libraries.h>
-#endif
-#ifndef DOS_DOS_H
 #include <dos/dos.h>
-#endif
 
-#ifndef __COMPILER_H
 #include "compiler.h"
-#endif
-#ifndef __HW_H
 #include "hw.h"
-#endif
-
 
 /****************************************************************************/
 

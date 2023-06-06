@@ -1,29 +1,13 @@
-#ifndef CLIB_EXEC_PROTOS_H
-#include <clib/exec_protos.h>
 #include <proto/exec.h>
-#endif
 
-#ifndef EXEC_MEMORY_H
 #include <exec/memory.h>
-#endif
-#ifndef EXEC_LISTS_H
 #include <exec/lists.h>
-#endif
-#ifndef EXEC_NODES_H
 #include <exec/nodes.h>
-#endif
 
-#ifndef _STRING_H
 #include <string.h>
-#endif
 
-#ifndef __GLOBAL_H
 #include "global.h"
-#endif
-
-#ifndef __DEBUG_H
 #include "debug.h"
-#endif
 
 PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
 PUBLIC BOOL remtracktype(BASEPTR, ULONG type);

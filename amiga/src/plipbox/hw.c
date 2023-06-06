@@ -2,74 +2,28 @@
  * hw.c - hardware dependent part of driver
  */
 
-/*F*/ /* includes */
-#ifndef CLIB_EXEC_PROTOS_H
-#include <clib/exec_protos.h>
 #include <proto/exec.h>
-#endif
-#ifndef CLIB_DOS_PROTOS_H
-#include <clib/dos_protos.h>
 #include <proto/dos.h>
-#endif
-#ifndef CLIB_CIA_PROTOS_H
-#include <clib/cia_protos.h>
 #include <proto/cia.h>
-#endif
-#ifndef CLIB_MISC_PROTOS_H
-#include <clib/misc_protos.h>
 #include <proto/misc.h>
-#endif
-#ifndef CLIB_TIME_PROTOS_H
-#include <clib/timer_protos.h>
 #include <proto/timer.h>
-#endif
-#ifndef CLIB_UTILITY_PROTOS_H
-#include <clib/utility_protos.h>
 #include <proto/utility.h>
-#endif
 
-#ifndef EXEC_MEMORY_H
 #include <exec/memory.h>
-#endif
-#ifndef EXEC_INTERRUPTS_H
 #include <exec/interrupts.h>
-#endif
-#ifndef EXEC_DEVICES_H
 #include <exec/devices.h>
-#endif
-#ifndef EXEC_IO_H
 #include <exec/io.h>
-#endif
 
-#ifndef DEVICES_SANA2_H
 #include <devices/sana2.h>
-#endif
-
-#ifndef HARDWARE_CIA_H
 #include <hardware/cia.h>
-#endif
-
-#ifndef RESOURCES_MISC_H
 #include <resources/misc.h>
-#endif
 
-#ifndef _STRING_H
 #include <string.h>
-#endif
 
-#ifndef __GLOBAL_H
 #include "global.h"
-#endif
-#ifndef __DEBUG_H
 #include "debug.h"
-#endif
-#ifndef __COMPILER_H
 #include "compiler.h"
-#endif
-#ifndef __HW_H
 #include "hw.h"
-#endif
-/*E*/
 
 /* externs in asm code */
 GLOBAL VOID ASM interrupt(REG(a1,struct HWBase *hwb));

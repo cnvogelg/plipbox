@@ -1,5 +1,5 @@
-#ifndef __COMPILER_H
-#define __COMPILER_H
+#ifndef COMPILER_H
+#define COMPILER_H
 
 #ifdef __SASC
 #define ASM     __asm              /* define registers for function args */

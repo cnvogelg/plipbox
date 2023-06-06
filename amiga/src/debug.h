@@ -1,5 +1,5 @@
-#ifndef __DEBUG_H
-#define __DEBUG_H
+#ifndef DEBUG_H
+#define DEBUG_H
 
 #if (DEBUG != 0)
 extern void KPrintF(char *, ...), KGetChar(void);

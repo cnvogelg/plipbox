@@ -1,42 +1,16 @@
-#ifndef CLIB_EXEC_PROTOS_H
-#include <clib/exec_protos.h>
 #include <proto/exec.h>
-#endif
-#ifndef CLIB_DOS_PROTOS_H
-#include <clib/dos_protos.h>
 #include <proto/dos.h>
-#endif
-
-#ifndef EXEC_MEMORY_H
-#include <exec/memory.h>
-#endif
-
-#ifndef DEVICES_SANA2_H
-#include <devices/sana2.h>
-#endif
-
-#ifndef CLIB_TIME_PROTOS_H
-#include <clib/timer_protos.h>
 #include <proto/timer.h>
-#endif
 
-#ifndef _STRING_H
+#include <exec/memory.h>
+#include <devices/sana2.h>
+
 #include <string.h>
-#endif
 
-#ifndef __GLOBAL_H
 #include "global.h"
-#endif
-#ifndef __DEBUG_H
 #include "debug.h"
-#endif
-#ifndef __COMPILER_H
 #include "compiler.h"
-#endif
-#ifndef __HW_H
 #include "hw.h"
-#endif
-
 
    /*
    ** return codes for write_frame()

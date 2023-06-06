@@ -1,6 +1,6 @@
 /* hw.h - hardware module of plihwbox.device */
-#ifndef __HW_H
-#define __HW_H
+#ifndef HW_H
+#define HW_H
 
 /* ----- hardware frame structure ----- */
 
