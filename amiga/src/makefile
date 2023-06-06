@@ -43,7 +43,7 @@ endif
 endif
 
 # output directory
-BUILD_DIR = build_$(BUILD_TYPE)_$(CPUSUFFIX)
+BUILD_DIR = build_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 BUILD_PATH = $(OBJ_DIR)/$(BUILD_DIR)
 
 # generic source files
