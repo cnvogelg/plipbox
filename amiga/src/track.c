@@ -1,4 +1,3 @@
-/*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
 #include <proto/exec.h>
@@ -26,19 +25,14 @@
 #include "debug.h"
 #endif
 
-/*E*/
-/*F*/ /* exports */
 PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
 PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
 PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
 PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
 PUBLIC VOID freetracktypes(BASEPTR);
-/*E*/
-/*F*/ /* private */
 PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
-/*E*/
 
-/*F*/ PRIVATE INLINE struct TrackRec *findtracktype(BASEPTR, ULONG type)
+PRIVATE INLINE struct TrackRec *findtracktype(BASEPTR, ULONG type)
 {
    struct TrackRec * tr;
 
@@ -51,8 +45,8 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
 
    return( NULL );
 }
-/*E*/
-/*F*/ PUBLIC BOOL addtracktype(BASEPTR, ULONG type)
+
+PUBLIC BOOL addtracktype(BASEPTR, ULONG type)
 {
    struct TrackRec *tr;
    BOOL rv = FALSE;
@@ -77,8 +71,8 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
 
    return rv;
 }
-/*E*/
-/*F*/ PUBLIC BOOL remtracktype(BASEPTR, ULONG type)
+
+PUBLIC BOOL remtracktype(BASEPTR, ULONG type)
 {
    struct TrackRec *tr;
    BOOL rv = FALSE;
@@ -97,8 +91,8 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
 
    return rv;
 }
-/*E*/
-/*F*/ PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd)
+
+PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd)
 {
    struct TrackRec * tr;
 
@@ -113,8 +107,8 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
    }
    ReleaseSemaphore(&pb->pb_TrackListSem);
 }
-/*E*/
-/*F*/ PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info)
+
+PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info)
 {
    struct TrackRec * tr;
    BOOL rv = FALSE;
@@ -129,8 +123,8 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
 
    return rv;
 }
-/*E*/
-/*F*/ PUBLIC VOID freetracktypes(BASEPTR)
+
+PUBLIC VOID freetracktypes(BASEPTR)
 {
    struct Node *tr;
 
@@ -139,5 +133,4 @@ PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
       FreeVec(tr);
    ReleaseSemaphore(&pb->pb_TrackListSem);
 }
-/*E*/
 

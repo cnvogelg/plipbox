@@ -1,4 +1,3 @@
-/*F*/ /* includes */
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
 #include <proto/exec.h>
@@ -37,25 +36,17 @@
 #ifndef __HW_H
 #include "hw.h"
 #endif
-/*E*/
 
-/*F*/ /* defines, types and enums */
 
    /*
    ** return codes for write_frame()
    */
 typedef enum { AW_OK, AW_BUFFER_ERROR, AW_ERROR } AW_RESULT;
 
-/*E*/
-/*F*/ /* imports */
    /* external functions */
 GLOBAL VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
 GLOBAL VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2);
-/*E*/
-/*F*/ /* exports */
 PUBLIC VOID SAVEDS ServerTask(void);
-/*E*/
-/*F*/ /* private */
 PRIVATE struct PLIPBase *startup(void);
 PRIVATE REGARGS VOID DoEvent(BASEPTR, long event);
 PRIVATE VOID readargs(BASEPTR);
@@ -66,12 +57,11 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2);
 PRIVATE REGARGS VOID dowritereqs(BASEPTR);
 PRIVATE REGARGS VOID doreadreqs(BASEPTR);
 PRIVATE REGARGS VOID dos2reqs(BASEPTR);
-/*E*/
 
    /*
    ** functions to go online/offline
    */
-/*F*/ PRIVATE REGARGS VOID rejectpackets(BASEPTR)
+PRIVATE REGARGS VOID rejectpackets(BASEPTR)
 {
    struct IOSana2Req *ios2;
 
@@ -102,9 +92,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    }
    ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
 }
-/*E*/
 
-/*F*/ PRIVATE REGARGS BOOL goonline(BASEPTR)
+PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
    BOOL rc = TRUE;
 
@@ -133,8 +122,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 
    return rc;
 }
-/*E*/
-/*F*/ PRIVATE REGARGS VOID gooffline(BASEPTR)
+
+PRIVATE REGARGS VOID gooffline(BASEPTR)
 {
    if (!(pb->pb_Flags & PLIPF_OFFLINE))
    {
@@ -148,12 +137,11 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    }
    d(("ok!\n"));
 }
-/*E*/
 
    /*
    ** SANA-2 Event management
    */
-/*F*/ PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
+PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
 {
    struct IOSana2Req *ior, *ior2;
 
@@ -174,12 +162,11 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
    
    ReleaseSemaphore(&pb->pb_EventListSem );
 }
-/*E*/
 
    /*
    ** writing packets
    */
-/*F*/ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
+PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
 {
    AW_RESULT rc;
    struct HWFrame *frame = pb->pb_Frame;
@@ -220,8 +207,8 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 
    return rc;
 }
-/*E*/
-/*F*/ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
+
+PRIVATE REGARGS VOID dowritereqs(BASEPTR)
 {
    struct IOSana2Req *currentwrite, *nextwrite;
    AW_RESULT code;
@@ -280,7 +267,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR);
 
    ReleaseSemaphore(&pb->pb_WriteListSem);
 }
-/*E*/
 
 PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 {
@@ -345,7 +331,7 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    /*
    ** reading packets
    */
-/*F*/ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
+PRIVATE REGARGS VOID doreadreqs(BASEPTR)
 {
    LONG datasize;
    struct IOSana2Req *got;
@@ -452,12 +438,11 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       }
    }
 }
-/*E*/
 
    /*
    ** 2nd level device command dispatcher (~SANA2IOF_QUICK)
    */
-/*F*/ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
+PRIVATE REGARGS VOID dos2reqs(BASEPTR)
 {
    struct IOSana2Req *ios2;
 
@@ -515,12 +500,11 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       if (ios2) DevTermIO(pb,ios2);
    }
 }
-/*E*/
 
    /*
    ** startup,initialisation and termination functions
    */
-/*F*/ PRIVATE struct PLIPBase *startup(void)
+PRIVATE struct PLIPBase *startup(void)
 {
    struct ServerStartup *ss;
    struct Process *we;
@@ -542,12 +526,11 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    */
    return base;
 }
-/*E*/
 
 #define PLIP_MINPRIORITY         -128
 #define PLIP_MAXPRIORITY         127
 
-/*F*/ PRIVATE VOID readargs(BASEPTR)
+PRIVATE VOID readargs(BASEPTR)
 {
    struct RDArgs *rda;
    struct TemplateConfig args = { 0 };
@@ -595,8 +578,8 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 
    d(("left\n"));
 }
-/*E*/
-/*F*/ PRIVATE BOOL init(BASEPTR)
+
+PRIVATE BOOL init(BASEPTR)
 {
    BOOL rc = FALSE;
 
@@ -631,8 +614,8 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 
    return rc;
 }
-/*E*/
-/*F*/ PRIVATE VOID cleanup(BASEPTR)
+
+PRIVATE VOID cleanup(BASEPTR)
 {
    struct BufferManagement *bm;
 
@@ -653,12 +636,11 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
       ReplyMsg((struct Message*)pb->pb_Startup);
    }
 }
-/*E*/
 
    /*
    ** entry point, mainloop
    */
-/*F*/ PUBLIC VOID SAVEDS ServerTask(void)
+PUBLIC VOID SAVEDS ServerTask(void)
 {
    BASEPTR;
 
@@ -745,5 +727,4 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
    else
       d(("no startup packet\n"));
 }
-/*E*/
 
