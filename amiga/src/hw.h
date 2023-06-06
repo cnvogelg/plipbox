@@ -4,12 +4,7 @@
 
 /* ----- hardware frame structure ----- */
 
-	/* magic packet types */
-#define HW_MAGIC_ONLINE    0xffff
-#define HW_MAGIC_OFFLINE   0xfffe
-#define HW_MAGIC_LOOPBACK  0xfffd
-
-   /* transport ethernet addresses */
+/* transport ethernet addresses */
 #define HW_ADDRFIELDSIZE         6
 
 #define HW_ETH_HDR_SIZE          14       /* ethernet header: dst, src, type */
@@ -46,8 +41,9 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
 GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb);
 
+GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
+
 GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
-GLOBAL REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic);
 
 GLOBAL REGARGS ULONG hw_recv_sigmask(struct PLIPBase *pb);
 GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb);

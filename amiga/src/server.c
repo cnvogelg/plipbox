@@ -82,12 +82,7 @@ PRIVATE REGARGS BOOL goonline(BASEPTR)
       }
       else
       {
-         struct HWBase *hwb = &pb->pb_HWBase;
-         
-         /* send magic */
-         hw_send_magic_pkt(pb, HW_MAGIC_ONLINE);
-
-         GetSysTime(&pb->pb_DevStats.LastStart);
+         hw_get_sys_time(pb, &pb->pb_DevStats.LastStart);
          pb->pb_Flags &= ~PLIPF_OFFLINE;
          DoEvent(pb, S2EVENT_ONLINE);
          d(("i'm now online!\n"));
@@ -101,8 +96,6 @@ PRIVATE REGARGS VOID gooffline(BASEPTR)
 {
    if (!(pb->pb_Flags & PLIPF_OFFLINE))
    {
-      hw_send_magic_pkt(pb, HW_MAGIC_OFFLINE);
-
       hw_detach(pb);
 
       pb->pb_Flags |= PLIPF_OFFLINE;
@@ -321,21 +314,6 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
       pb->pb_DevStats.PacketsReceived++;
 
       pkttyp = frame->hwf_Type;
-
-      /* perform internal loop back of magic packets of type 0xfffd */
-      if(pkttyp == HW_MAGIC_LOOPBACK) {
-         d(("loop back packet (size %ld)\n",frame->hwf_Size));
-         hw_send_frame(pb, frame);
-         return;
-      }
-
-      /* plipbox requests online magic (again) */
-      if(pkttyp == HW_MAGIC_ONLINE) {
-         d(("request online magic"));
-         hw_send_magic_pkt(pb, HW_MAGIC_ONLINE);
-         return;
-      }
-
       datasize = frame->hwf_Size - HW_ETH_HDR_SIZE;
 
       dotracktype(pb, pkttyp, 0, 1, 0, datasize, 0);

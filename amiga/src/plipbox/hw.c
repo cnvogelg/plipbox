@@ -25,6 +25,11 @@
 #include "compiler.h"
 #include "hw.h"
 
+/* magic packet types */
+#define HW_MAGIC_ONLINE    0xffff
+#define HW_MAGIC_OFFLINE   0xfffe
+#define HW_MAGIC_LOOPBACK  0xfffd
+
 /* externs in asm code */
 GLOBAL VOID ASM interrupt(REG(a1,struct HWBase *hwb));
 GLOBAL USHORT ASM CRC16(REG(a0,UBYTE *), REG(d0,SHORT));
@@ -59,7 +64,7 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0,ULONG sigmask), REG(a1,struct PLIPBas
 #define CLEARREQUEST(b) ciab.ciapra &= ~HS_REQ_MASK
 
 /* magic packet to tell plipbox firmware we go online and our MAC */
-GLOBAL REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic)
+static REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic)
 {
    BOOL rc;
 
@@ -74,6 +79,12 @@ GLOBAL REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic)
    
    rc = hw_send_frame(pb, frame) ? TRUE : FALSE;
    return rc;
+}
+
+GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
+{
+  struct HWBase *hwb = &pb->pb_HWBase;
+  GetSysTime(time);
 }
 
 #define PLIP_DEFTIMEOUT          (500*1000)
@@ -279,6 +290,12 @@ GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
    else
       d(("no misc resource\n"));
 
+   /* finally send magic packet to tell mcu to go online */
+   if(rc) {
+      d(("send magic packet %04lu\n", HW_MAGIC_ONLINE));
+      rc = hw_send_magic_pkt(pb, HW_MAGIC_ONLINE);
+   }
+
    return rc;
 }
 
@@ -289,6 +306,9 @@ GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
    
+   /* first tell mcu to go offline */
+   hw_send_magic_pkt(pb, HW_MAGIC_OFFLINE);
+
    if (hwb->hwb_AllocFlags & 4)
    {
       PAREXIT;
@@ -368,30 +388,52 @@ GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb)
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = &pb->pb_HWBase;
-   BOOL rc;
+   BOOL rc = TRUE;
+   ULONG pkttyp;
 
-   /* wait until I/O block is safe to be reused */
-   while(!hwb->hwb_TimeoutSet) Delay(1L);
-    
-   /* start new timeout timer */
-   hwb->hwb_TimeoutReq.tr_time.tv_secs    = hwb->hwb_TimeOutSecs;
-   hwb->hwb_TimeoutReq.tr_time.tv_micro   = hwb->hwb_TimeOutMicros;
-   hwb->hwb_TimeoutSet = 0;
-   SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+   while(1) {
+      /* wait until I/O block is safe to be reused */
+      while(!hwb->hwb_TimeoutSet) Delay(1L);
 
-   /* hw recv */
-   if(hwb->hwb_BurstMode) {
-     d8(("+rxb\n"));
-     rc = hwburstrecv(hwb, frame);
-   } else { 
-     d8(("+rx\n"));
-     rc = hwrecv(hwb, frame);
+      /* start new timeout timer */
+      hwb->hwb_TimeoutReq.tr_time.tv_secs    = hwb->hwb_TimeOutSecs;
+      hwb->hwb_TimeoutReq.tr_time.tv_micro   = hwb->hwb_TimeOutMicros;
+      hwb->hwb_TimeoutSet = 0;
+      SendIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+
+      /* hw recv */
+      if(hwb->hwb_BurstMode) {
+        d8(("+rxb\n"));
+        rc = hwburstrecv(hwb, frame);
+      } else {
+        d8(("+rx\n"));
+        rc = hwrecv(hwb, frame);
+      }
+      d8(("+rx: %s\n", rc ? "ok":"ERR"));
+
+      /* stop timeout timer */
+      AbortIO((struct IORequest*)&hwb->hwb_TimeoutReq);
+
+      /* error? */
+      if(!rc) {
+         break;
+      }
+
+      /* perform internal loop back of magic packets of type 0xfffd */
+      pkttyp = frame->hwf_Type;
+      if(pkttyp == HW_MAGIC_LOOPBACK) {
+         d(("loop back packet (size %ld)\n",frame->hwf_Size));
+         rc = hw_send_frame(pb, frame);
+      }
+      /* plipbox requests online magic (again) */
+      else if(pkttyp == HW_MAGIC_ONLINE) {
+         d(("request online magic"));
+         rc = hw_send_magic_pkt(pb, HW_MAGIC_ONLINE);
+      }
+      else {
+         break;
+      }
    }
-   d8(("+rx: %s\n", rc ? "ok":"ERR"));
-    
-   /* stop timeout timer */
-   AbortIO((struct IORequest*)&hwb->hwb_TimeoutReq);
-   
    return rc;
 }
 
