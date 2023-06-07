@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "compiler.h"
 #include "hw.h"
+#include "hwbase.h"
 
 /* magic packet types */
 #define HW_MAGIC_ONLINE    0xffff
@@ -83,7 +84,7 @@ static REGARGS BOOL hw_send_magic_pkt(struct PLIPBase *pb, USHORT magic)
 
 GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
 {
-  struct HWBase *hwb = &pb->pb_HWBase;
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   GetSysTime(time);
 }
 
@@ -91,19 +92,27 @@ GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
 #define PLIP_MINTIMEOUT          500
 #define PLIP_MAXTIMEOUT          (10000*1000)
 
-GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb)
+GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
+                                   STRPTR *template_str,
+                                   struct CommonConfig **cfg,
+                                   STRPTR *config_file)
 {
-  struct HWBase *hwb = &pb->pb_HWBase;
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
   hwb->hwb_TimeOutSecs = PLIP_DEFTIMEOUT / 1000000L;
   hwb->hwb_TimeOutMicros = PLIP_DEFTIMEOUT % 1000000L;
   hwb->hwb_BurstMode = 1;
+
+  *template_str = (STRPTR)TEMPLATE;
+  *config_file = (STRPTR)CONFIGFILE;
+  *cfg = (struct CommonConfig *)&hwb->hwb_Config;
 }
 
-GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig *args)
+GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb)
 {
-  struct HWBase *hwb = &pb->pb_HWBase;
-  
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  struct TemplateConfig *args = &hwb->hwb_Config;
+
   if (args->timeout) {
     LONG to = BOUNDS(*args->timeout, PLIP_MINTIMEOUT, PLIP_MAXTIMEOUT);
     hwb->hwb_TimeOutMicros = to % 1000000L;
@@ -118,7 +127,7 @@ GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb, struct TemplateConfig 
 GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
 {
 #if DEBUG & 1
-  struct HWBase *hwb = &pb->pb_HWBase;
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 #endif
   d(("timeOut %ld.%ld\n", hwb->hwb_TimeOutSecs, hwb->hwb_TimeOutMicros));
   d(("burstMode %ld\n", (ULONG)hwb->hwb_BurstMode));
@@ -126,16 +135,20 @@ GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
 
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
-   
    BOOL rc = FALSE;
+   struct HWBase *hwb = (struct HWBase *)AllocVec(sizeof(struct HWBase), MEMF_CLEAR|MEMF_ANY);
+   pb->pb_HWBase = hwb;
+   if(hwb == NULL) {
+     d(("no memory!\n"));
+     return FALSE;
+   }
    
    /* clone sys base, process */
    hwb->hwb_SysBase = pb->pb_SysBase;
    hwb->hwb_Server = pb->pb_Server;
    hwb->hwb_MaxFrameSize = (UWORD)pb->pb_MTU + HW_ETH_HDR_SIZE;
-   d2(("sysbase=%08lx, server=%08lx, hwb=%08lx, maxFrameSize=%ld\n",
-      hwb->hwb_SysBase, hwb->hwb_Server, hwb, (ULONG)hwb->hwb_MaxFrameSize));
+   d2(("hwb=%08lx, sysbase=%08lx, server=%08lx, hwb=%08lx, maxFrameSize=%ld\n",
+      hwb, hwb->hwb_SysBase, hwb->hwb_Server, hwb, (ULONG)hwb->hwb_MaxFrameSize));
    
    if ((hwb->hwb_IntSig = AllocSignal(-1)) != -1)
    {
@@ -192,7 +205,7 @@ GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
 
 GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    
    if (hwb->hwb_TimeoutPort)
    {
@@ -215,6 +228,9 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
    if (hwb->hwb_IntSig != -1) {
       FreeSignal(hwb->hwb_IntSig);
    }
+
+   FreeVec(hwb);
+   pb->pb_HWBase = NULL;
 }
 
 /*
@@ -222,10 +238,10 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
  */
 GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    BOOL rc = FALSE;
 
-   d(("entered\n"));
+   d(("hw_attach entered, hwb=%08lx\n", hwb));
 
    hwb->hwb_AllocFlags = 0;
    if ((MiscBase = OpenResource((STRPTR)"misc.resource")) != NULL)
@@ -304,7 +320,7 @@ GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
  */
 GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    
    /* first tell mcu to go offline */
    hw_send_magic_pkt(pb, HW_MAGIC_OFFLINE);
@@ -326,7 +342,7 @@ GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb)
 
 PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0,ULONG sigmask), REG(a1,struct PLIPBase *pb))
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    
    d8(("+ex\n"));
    
@@ -345,7 +361,7 @@ PRIVATE ULONG ASM SAVEDS exceptcode(REG(d0,ULONG sigmask), REG(a1,struct PLIPBas
 
 GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    BOOL rc;
 
    /* wait until I/O block is safe to be reused */
@@ -375,7 +391,7 @@ GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 
 GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    if ((hwb->hwb_Flags & HWF_RECV_PENDING) == HWF_RECV_PENDING) 
    {
       return TRUE;
@@ -387,9 +403,9 @@ GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb)
 
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
-   BOOL rc = TRUE;
    ULONG pkttyp;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   BOOL rc = TRUE;
 
    while(1) {
       /* wait until I/O block is safe to be reused */
@@ -439,6 +455,6 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 
 GLOBAL REGARGS ULONG hw_recv_sigmask(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = &pb->pb_HWBase;
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    return hwb->hwb_IntSigMask | hwb->hwb_CollSigMask;
 }

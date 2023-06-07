@@ -485,38 +485,40 @@ PRIVATE struct PLIPBase *startup(void)
 PRIVATE VOID readargs(BASEPTR)
 {
    struct RDArgs *rda;
-   struct TemplateConfig args = { 0 };
+   struct CommonConfig *args;
+   STRPTR template_string;
+   STRPTR config_file;
    BPTR cfginput, oldinput;
 
    d(("entered\n"));
 
-   hw_config_init(pb);
+   hw_config_init(pb, &template_string, &args, &config_file);
 
-   if((cfginput = Open((STRPTR)CONFIGFILE, MODE_OLDFILE))!=0)
+   if((cfginput = Open(config_file, MODE_OLDFILE))!=0)
    {
       d(("opened cfg\n"));
       oldinput = SelectInput(cfginput);      
-      rda = ReadArgs((STRPTR)COMMON_TEMPLATE TEMPLATE, (LONG *)&args, NULL);
+      rda = ReadArgs(template_string, (LONG *)args, NULL);
       if(rda)
       {
          d(("got args\n"));
 
          /* common options */
-         if (args.common.priority)
+         if (args->priority)
             SetTaskPri((struct Task*)pb->pb_Server,
-                  BOUNDS(*args.common.priority, PLIP_MINPRIORITY, PLIP_MAXPRIORITY));
+                  BOUNDS(*args->priority, PLIP_MINPRIORITY, PLIP_MAXPRIORITY));
 
-         if (args.common.nospecialstats)
+         if (args->nospecialstats)
             pb->pb_ExtFlags |= PLIPEF_NOSPECIALSTATS;
 
-         if(args.common.mtu)
-            pb->pb_MTU = *args.common.mtu;
+         if(args->mtu)
+            pb->pb_MTU = *args->mtu;
 
-         if(args.common.bps)
-            pb->pb_BPS = *args.common.bps;
+         if(args->bps)
+            pb->pb_BPS = *args->bps;
 
          /* special config */
-         hw_config_update(pb, &args);
+         hw_config_update(pb);
 
          FreeArgs(rda);
       }
@@ -526,6 +528,7 @@ PRIVATE VOID readargs(BASEPTR)
 
    /* dump default config options */
    d(("pri %ld, flags %08lx\n", (LONG)pb->pb_Server->pr_Task.tc_Node.ln_Pri, pb->pb_Flags));
+   d(("MTU %lu, BPS %lu\n", pb->pb_MTU, pb->pb_BPS));
    hw_config_dump(pb);
 
    d(("left\n"));
@@ -535,12 +538,13 @@ PRIVATE BOOL init(BASEPTR)
 {
    BOOL rc = FALSE;
 
-   readargs(pb);
-      
    if ((pb->pb_ServerPort = CreateMsgPort()))
    {  
       /* init hardware */
       if(hw_init(pb)) {
+
+         readargs(pb);
+
          ULONG size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
          d(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));
          if ((pb->pb_Frame = AllocVec(size, MEMF_CLEAR|MEMF_ANY)))

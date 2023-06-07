@@ -10,6 +10,7 @@
 #include <dos/dos.h>
 
 #include "compiler.h"
+#include "config.h"
 #include "hw.h"
 
 /****************************************************************************/
@@ -114,7 +115,7 @@ struct PLIPBase
    volatile UWORD              pb_ExtFlags;                    /* see below */
    UBYTE                       pb_CfgAddr[HW_ADDRFIELDSIZE];
    UBYTE                       pb_DefAddr[HW_ADDRFIELDSIZE];
-   struct HWBase               pb_HWBase;
+   APTR                        pb_HWBase;
    struct HWFrame        *     pb_Frame;
    ULONG                       pb_BPS;
    ULONG                       pb_MTU;
