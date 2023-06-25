@@ -19,7 +19,8 @@ VBCC_LIB = $(VBCC_TARGET_AMIGAOS)/lib
 
 CFLAGS = -c99 -cpu=68$(CPUSUFFIX) -Os -+ -sc
 CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
-CFLAGS += -I$(DEVICE_NAME) -I.
+CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/proto -I.
+CFLAGS += -I../../shared/include
 
 CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
 CFLAGS += -DDEVICE_VERSION=$(DEVICE_VERSION)

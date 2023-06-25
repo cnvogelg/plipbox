@@ -35,7 +35,6 @@
 #include "net/tcp.h"
 #include "param.h"
 #include "util.h"
-#include "pb_proto.h"
 
 void dump_eth_pkt(const u08 *eth_buf, u16 size)
 {
@@ -197,71 +196,4 @@ extern void dump_line(const u08 *eth_buf, u16 size)
     dump_ip_pkt(ip_buf);
     dump_ip_protocol(ip_buf);
   }
-}
-
-void dump_pb_cmd(const pb_proto_stat_t *ps)
-{
-  u08 buf[4];
-  
-  uart_send_time_stamp_spc();
-
-  // show command
-  u08 cmd = ps->cmd;
-  u08 is_valid = 1;
-  switch(cmd) {
-    case PBPROTO_CMD_SEND:
-    case PBPROTO_CMD_SEND_BURST:
-      break;
-    case PBPROTO_CMD_RECV:
-    case PBPROTO_CMD_RECV_BURST:
-      break;
-    default:
-      is_valid = 0;
-      break;
-  }
-
-  u08 status = ps->status;
-
-  // invalid command
-  if(!is_valid) {
-    uart_send_pstring(PSTR("cmd="));
-    uart_send_hex_byte(cmd);
-    uart_send_pstring(PSTR("?? ERR:"));
-    uart_send_hex_byte(status);
-    uart_send_crlf();
-    return;
-  }
-
-  PGM_P str = ps->is_send ? PSTR("[TX:") : PSTR("[RX:");
-  uart_send_pstring(str);
-  uart_send_hex_byte(cmd);
-
-  // result
-  if(status == PBPROTO_STATUS_OK) {
-    uart_send_pstring(PSTR("] ok"));
-  } else {
-    uart_send_pstring(PSTR("] ERR:"));
-    uart_send_hex_byte(status);
-  }
-
-  // packet size
-  uart_send_pstring(PSTR(" n="));
-  dword_to_dec(ps->size, buf, 4, 4);
-  uart_send_data(buf,4);
-
-  // packet delta
-  uart_send_pstring(PSTR(" d="));
-  dword_to_dec(ps->delta, buf, 4, 4);  
-  uart_send_data(buf,4);
-
-  // speed
-  uart_send_pstring(PSTR(" v="));
-  uart_send_rate_kbs(ps->rate);
-
-  // request delay
-  if(!ps->is_send) {
-    uart_send_pstring(PSTR("  +req="));
-    uart_send_delta(ps->recv_delta);
-  }
-  uart_send_crlf();
 }

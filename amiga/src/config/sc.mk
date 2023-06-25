@@ -16,7 +16,7 @@ AS          = $(RUN) sc:c/sc
 
 # SAS C flags
 LIBS        = LIB lib:amiga.lib LIB lib:sc.lib LIB lib:debug.lib
-CINCLUDES   = INCDIR="netinclude:" INCDIR="include:" INCDIR="$(DEVICE_NAME)"
+CINCLUDES   = INCDIR="netinclude:" INCDIR="include:" INCDIR="$(DEVICE_NAME)" INCDIR="$(DEVICE_NAME)/proto"
 ASMINCLUDES = $(CINCLUDES) INCDIR="$(AMI_OBJ_DIR)/$(BUILD_DIR)"
 CPUCCOPT    = CPU=68$(CPUSUFFIX)
 OBJ_NAME    = OBJECTNAME

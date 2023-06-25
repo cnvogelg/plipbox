@@ -63,12 +63,13 @@ static ULONG pkt_buf_size;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S";
+  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S";
 enum args_offset {
   DEVICE_ARG,
   UNIT_ARG,
   MTU_ARG,
   VERBOSE_ARG,
+  REPLY_ARG,
   NUM_ARGS
 };
 static struct RDArgs *args_rd = NULL;
@@ -180,10 +181,24 @@ static BOOL sana_offline(void)
   return sana_cmd(S2_OFFLINE);
 }
 
+static void send_packet(void)
+{
+  PutStr((STRPTR)"Send packet...\n");
+  /* write request */
+  sana_req->ios2_Req.io_Command = CMD_WRITE;
+  sana_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
+  sana_req->ios2_DataLength = pkt_buf_size;
+  /*sana_req->ios2_PacketType = type;*/
+  sana_req->ios2_Data = pkt_buf;
+  DoIO((struct IORequest *)sana_req);
+  PutStr((STRPTR)"Done\n");
+}
+
 static void reply_loop(void)
 {
   ULONG wmask;
   ULONG verbose = args_array[VERBOSE_ARG];
+  ULONG do_reply = 0; //args_array[REPLY_ARG];
 
   PutStr((STRPTR)"Waiting for incoming packets...\n");
   for(;;) {
@@ -214,19 +229,20 @@ static void reply_loop(void)
         PutStr((STRPTR)"+\n");
       }
 
-      /* inconmig dst will be new src */
-      memcpy(sana_req->ios2_SrcAddr, sana_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
+      if(do_reply) {
+        /* inconmig dst will be new src */
+        memcpy(sana_req->ios2_SrcAddr, sana_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
 
-      /* send packet back */
-      sana_req->ios2_Req.io_Command = CMD_WRITE;
-      sana_req->ios2_Req.io_Flags = 0;
-      if(DoIO((struct IORequest *)sana_req) != 0) {
-        sana_error();
-        break;
-      } else {
-        if(verbose) {
-          PutStr((STRPTR)"-\n");
+        /* send packet back */
+        sana_req->ios2_Req.io_Command = CMD_WRITE;
+        sana_req->ios2_Req.io_Flags = 0;
+        if(DoIO((struct IORequest *)sana_req) != 0) {
+          sana_error();
+          break;
         }
+      }
+      if(verbose) {
+        PutStr((STRPTR)"-\n");
       }
     }
   }
@@ -277,6 +293,8 @@ int main(void)
     if(open_device(dev_name, unit, 0)) {
       /* set device online */
       if(sana_online()) {
+
+        send_packet();
 
         reply_loop();
 

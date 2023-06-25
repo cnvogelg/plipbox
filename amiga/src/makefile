@@ -6,7 +6,7 @@ OBJ_DIR=../obj
 # build varian
 CPUSUFFIX   = 000
 BUILD_TYPE  = DEBUG
-DEBUG_LEVEL = 1   # bitmask 1..8 max is 15
+DEBUG_LEVEL = 9   # bitmask 1..8 max is 15
 COMPILER    ?= vbcc
 
 # where do the amiga files reside?
@@ -50,12 +50,13 @@ BUILD_PATH = $(OBJ_DIR)/$(BUILD_DIR)
 CSRC=rt.c device.c server.c track.c
 
 # driver specific source files
-CSRC_$(DRIVER_NAME) = hw.c
-ASRC_$(DRIVER_NAME) = hwpar.asm
+CSRC_$(DRIVER_NAME) += proto_env.c proto_atom.c proto_cmd.c timer.c pario.c proto_low_cfg.c
+CSRC_$(DRIVER_NAME) += hw.c
+ASRC_$(DRIVER_NAME) += proto_low.s pario_irq.s
 
 # object files
 OBJS+=$(patsubst %.c,$(BUILD_PATH)/%.o,$(CSRC) $(CSRC_$(DRIVER_NAME)))
-OBJS+=$(patsubst %.asm,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
+OBJS+=$(patsubst %.s,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
 
 # output device
 DEVICE = $(BIN_DIR)/$(DEVICE_FILE)
@@ -71,7 +72,7 @@ UDP_TEST_TOOL = $(BIN_DIR)/$(UDP_TEST_TOOL_NAME)
 UDP_TEST_TOOL_OBJ = $(BUILD_PATH)/udp_test.o
 
 # add driver directory
-VPATH = .:$(DEVICE_NAME)
+VPATH = .:$(DEVICE_NAME):plipbox/proto
 
 # test dir
 TEST_DIR ?= $(HOME)/proj/plipbox
@@ -120,9 +121,9 @@ clean_dist:
 dirs: $(BUILD_PATH) $(BIN_DIR)
 
 test: dirs $(DEVICE) $(DEV_TEST_TOOL) $(UDP_TEST_TOOL)
-	$(H)cp $(DEVICE) $(TEST_DIR)/plipbox.device
-	$(H)cp $(DEV_TEST_TOOL) $(TEST_DIR)/dev_test
-	$(H)cp $(UDP_TEST_TOOL) $(TEST_DIR)/udp_test
+	cp $(DEVICE) $(TEST_DIR)/plipbox.device
+	cp $(DEV_TEST_TOOL) $(TEST_DIR)/dev_test
+	cp $(UDP_TEST_TOOL) $(TEST_DIR)/udp_test
 
 # --- compile ---
 $(BUILD_PATH)/%.o: %.c
@@ -130,7 +131,7 @@ $(BUILD_PATH)/%.o: %.c
 	$(H)$(CC) $(CFLAGS_$(BUILD_TYPE)) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 
 # --- assemble ---
-$(BUILD_PATH)/%.o: %.asm
+$(BUILD_PATH)/%.o: %.s
 	@echo "  ASM $<"
 	$(H)$(AS) $(ASFLAGS) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 

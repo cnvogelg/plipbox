@@ -9,6 +9,7 @@
 
 #define HW_ETH_HDR_SIZE          14       /* ethernet header: dst, src, type */
 #define HW_ETH_MTU               1500
+#define HW_ETH_FRAME_SIZE        1514
 
 /* reported BPS (bits! per second) for this device */
 #define HW_BPS (60 * 1024 * 8) /* 50 KiB/s */

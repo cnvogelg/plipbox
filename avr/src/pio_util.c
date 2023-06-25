@@ -31,7 +31,6 @@
 #include "uartutil.h"
 #include "stats.h"
 #include "pkt_buf.h"
-#include "main.h"
 #include "param.h"
 
 #include "net/net.h"
@@ -54,17 +53,16 @@ u08 pio_util_get_init_flags()
   return flags;
 }
 
-u08 pio_util_recv_packet(u16 *size)
+u08 pio_util_recv_packet(u16 size)
 {
   // measure packet receive
   timer_hw_reset();
-  u08 result = pio_recv(pkt_buf, PKT_BUF_SIZE, size);
+  u08 result = pio_recv(pkt_buf, size);
   u16 delta = timer_hw_get();
 
-  u16 s = *size;
-  u16 rate = timer_hw_calc_rate_kbs(s, delta);
+  u16 rate = timer_hw_calc_rate_kbs(size, delta);
   if(result == PIO_OK) {
-    stats_update_ok(STATS_ID_PIO_RX, s, rate);
+    stats_update_ok(STATS_ID_PIO_RX, size, rate);
   } else {
     stats_get(STATS_ID_PIO_RX)->err++;
   }
@@ -79,7 +77,7 @@ u08 pio_util_recv_packet(u16 *size)
 
       // size
       uart_send_pstring(PSTR(" n="));
-      uart_send_hex_word(s);
+      uart_send_hex_word(size);
       uart_send_crlf();
     } else {
       uart_send_pstring(PSTR("ERROR="));

@@ -71,13 +71,13 @@ PRIVATE REGARGS BOOL goonline(BASEPTR)
 {
    BOOL rc = TRUE;
 
-   d(("trying to go online\n"));
+   d2(("online\n"));
 
    if (pb->pb_Flags & PLIPF_OFFLINE)
    {
       if (!hw_attach(pb))
       {
-         d(("error going online\n"));
+         d(("online: ERROR!\n"));
          rc = FALSE;
       }
       else
@@ -85,7 +85,7 @@ PRIVATE REGARGS BOOL goonline(BASEPTR)
          hw_get_sys_time(pb, &pb->pb_DevStats.LastStart);
          pb->pb_Flags &= ~PLIPF_OFFLINE;
          DoEvent(pb, S2EVENT_ONLINE);
-         d(("i'm now online!\n"));
+         d2(("online: ok!\n"));
       }
    }
 
@@ -94,6 +94,7 @@ PRIVATE REGARGS BOOL goonline(BASEPTR)
 
 PRIVATE REGARGS VOID gooffline(BASEPTR)
 {
+   d2(("offline\n"));
    if (!(pb->pb_Flags & PLIPF_OFFLINE))
    {
       hw_detach(pb);
@@ -102,7 +103,7 @@ PRIVATE REGARGS VOID gooffline(BASEPTR)
 
       DoEvent(pb, S2EVENT_OFFLINE);
    }
-   d(("ok!\n"));
+   d2(("offline: ok!\n"));
 }
 
    /*
@@ -112,7 +113,7 @@ PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
 {
    struct IOSana2Req *ior, *ior2;
 
-   d(("event is %lx\n",event));
+   d2(("event: do=%lx\n",event));
 
    ObtainSemaphore(&pb->pb_EventListSem );
    
@@ -128,6 +129,8 @@ PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
    }
    
    ReleaseSemaphore(&pb->pb_EventListSem );
+
+   d2(("event: done=%lx\n",event));
 }
 
    /*
@@ -140,7 +143,7 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
    struct BufferManagement *bm;
    UBYTE *frame_ptr;
    
-   d(("write: type %08lx, size %ld\n",ios2->ios2_PacketType,
+   d2(("write: type %08lx, size %ld\n",ios2->ios2_PacketType,
                                       ios2->ios2_DataLength));
 
    /* copy raw frame: simply overwrite ethernet frame part of plip packet */
@@ -164,11 +167,11 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
    }
    else
    {
-      d8(("+hw_send\n"));
+      d2(("+hw_send\n"));
       rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
-      d8(("-hw_send\n"));
-#if DEBUG&8
-      if(rc==AW_ERROR) d8(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->hwf_Size));
+      d2(("-hw_send\n"));
+#if DEBUG&2
+      if(rc==AW_ERROR) d2(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->hwf_Size));
 #endif
    }
 
@@ -188,7 +191,7 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
    {
       if (hw_recv_pending(pb))
       {
-         d(("incoming data!"));
+         d2(("incoming data!"));
          break;
       }
 
@@ -222,7 +225,7 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
       }
       else /*if (code == AW_OK)*/                             /* well done! */
       {
-         d(("packet transmitted successfully\n"));
+         d2(("packet transmitted successfully\n"));
          pb->pb_DevStats.PacketsSent++;
          dotracktype(pb, (ULONG) pb->pb_Frame->hwf_Type, 1, 0, currentwrite->ios2_DataLength, 0, 0);
          currentwrite->ios2_Req.io_Error = S2ERR_NO_ERROR;
@@ -306,9 +309,9 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
    BOOL rv;
    struct HWFrame *frame = pb->pb_Frame;
 
-   d8(("+hw_recv\n"));
+   d2(("+hw_recv\n"));
    rv = hw_recv_frame(pb, frame);
-   d8(("-hw_recv\n"));
+   d2(("-hw_recv\n"));
    if (rv)
    {
       pb->pb_DevStats.PacketsReceived++;
@@ -318,7 +321,7 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
 
       dotracktype(pb, pkttyp, 0, 1, 0, datasize, 0);
 
-      d(("packet %08lx, size %ld received\n",pkttyp,datasize));
+      d2(("read: packet %08lx, size %ld received\n",pkttyp,datasize));
 
       ObtainSemaphore(&pb->pb_ReadListSem);
 
@@ -340,7 +343,7 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
                DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
             }
 
-            d(("packet received, satisfying S2Request\n"));
+            d2(("packet received, satisfying S2Request\n"));
             DevTermIO(pb, got);
             got = NULL;
             break;
@@ -351,7 +354,7 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
    }
    else
    {
-      d8(("Error receiving (%ld. len=%ld)\n", rv, frame->hwf_Size));
+      d(("Error receiving (%ld. len=%ld)\n", rv, frame->hwf_Size));
       /* something went wrong during receipt */
       DoEvent(pb, S2EVENT_HARDWARE | S2EVENT_ERROR | S2EVENT_RX);
       got = NULL;
@@ -364,7 +367,7 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
       */
    if (got)
    {
-      d(("unknown packet\n"));
+      d2(("unknown packet\n"));
 
       pb->pb_DevStats.UnknownTypesReceived++;
       
@@ -379,14 +382,14 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
             DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
          }
 
-         d(("orphan read\n"));
+         d2(("orphan read\n"));
 
          DevTermIO(pb, got);
       }
       else
       {
          dotracktype(pb, pkttyp, 0, 0, 0, 0, 1);
-         d(("packet thrown away...\n"));
+         d2(("packet thrown away...\n"));
       }
    }
 }
@@ -410,11 +413,11 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
    {
       if (hw_recv_pending(pb))
       {
-         d(("incoming data!"));
+         d2(("incoming data!"));
          break;
       }
 
-      d(("sana2req %ld from serverport\n", ios2->ios2_Req.io_Command));
+      d2(("sana2req %ld from serverport\n", ios2->ios2_Req.io_Command));
 
       switch (ios2->ios2_Req.io_Command)
       {
@@ -465,12 +468,12 @@ PRIVATE struct PLIPBase *startup(void)
 
    we = (struct Process*)FindTask(NULL);
 
-   d(("waiting for startup msg...\n"));
+   d2(("waiting for startup msg...\n"));
    WaitPort(&we->pr_MsgPort);
    ss = (struct ServerStartup *)GetMsg(&we->pr_MsgPort);
    base = ss->ss_PLIPBase;
    base->pb_Startup = ss;
-   d(("go startup msg at %lx, PLIPBase is %lx\n", ss, ss->ss_PLIPBase));
+   d2(("go startup msg at %lx, PLIPBase is %lx\n", ss, ss->ss_PLIPBase));
 
    /* we will keep the startup message, to inform mother if we
    ** really could come up or if we failed to obtain some
@@ -490,18 +493,18 @@ PRIVATE VOID readargs(BASEPTR)
    STRPTR config_file;
    BPTR cfginput, oldinput;
 
-   d(("entered\n"));
+   d2(("args: entered\n"));
 
    hw_config_init(pb, &template_string, &args, &config_file);
 
    if((cfginput = Open(config_file, MODE_OLDFILE))!=0)
    {
-      d(("opened cfg\n"));
+      d2(("args: opened cfg\n"));
       oldinput = SelectInput(cfginput);      
       rda = ReadArgs(template_string, (LONG *)args, NULL);
       if(rda)
       {
-         d(("got args\n"));
+         d2(("args: got args\n"));
 
          /* common options */
          if (args->priority)
@@ -527,11 +530,11 @@ PRIVATE VOID readargs(BASEPTR)
    }
 
    /* dump default config options */
-   d(("pri %ld, flags %08lx\n", (LONG)pb->pb_Server->pr_Task.tc_Node.ln_Pri, pb->pb_Flags));
-   d(("MTU %lu, BPS %lu\n", pb->pb_MTU, pb->pb_BPS));
+   d(("args: pri %ld, flags %08lx\n", (LONG)pb->pb_Server->pr_Task.tc_Node.ln_Pri, pb->pb_Flags));
+   d(("args: MTU %lu, BPS %lu\n", pb->pb_MTU, pb->pb_BPS));
    hw_config_dump(pb);
 
-   d(("left\n"));
+   d2(("args: done\n"));
 }
 
 PRIVATE BOOL init(BASEPTR)
@@ -542,31 +545,32 @@ PRIVATE BOOL init(BASEPTR)
    {  
       /* init hardware */
       if(hw_init(pb)) {
+         ULONG size;
 
          readargs(pb);
 
-         ULONG size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
-         d(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));
+         size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
+         d2(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));
          if ((pb->pb_Frame = AllocVec(size, MEMF_CLEAR|MEMF_ANY)))
          {
             rc = TRUE;
          }
          else
          {
-            d(("couldn't allocate frame buffer\n"));
+            d(("ERROR: couldn't allocate frame buffer\n"));
          }
       }
       else
       {
-         d(("hw init failed\n"));
+         d(("ERROR: hw init failed\n"));
       }
    }
    else
    {
-      d(("no server port\n"));
+      d(("ERROR: no server port\n"));
    }
 
-   d(("left %ld\n",rc));
+   d2(("init done: %ld\n",rc));
 
    return rc;
 }
@@ -574,6 +578,8 @@ PRIVATE BOOL init(BASEPTR)
 PRIVATE VOID cleanup(BASEPTR)
 {
    struct BufferManagement *bm;
+
+   d2(("cleanup\n"));
 
    gooffline(pb);
 
@@ -591,6 +597,8 @@ PRIVATE VOID cleanup(BASEPTR)
       Forbid();
       ReplyMsg((struct Message*)pb->pb_Startup);
    }
+
+   d2(("cleanup: done\n"));
 }
 
    /*
@@ -600,7 +608,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
 {
    BASEPTR;
 
-   d(("server running\n"));
+   d2(("task: server running\n"));
 
    if ((pb = startup()) != NULL)
    {      
@@ -627,10 +635,10 @@ PUBLIC VOID SAVEDS ServerTask(void)
          wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | portsigmask | recvsigmask;
 
          /* main loop of server task */
-         d(("--- server main loop: %08lx ---\n", wmask));
+         d2(("--- server main loop: %08lx ---\n", wmask));
          for(running=TRUE;running;)
          {
-            d4(("** wmask is 0x%08lx\n", wmask));
+            d2(("** wmask is 0x%08lx\n", wmask));
 
             /* if no recv is pending then wait for incoming signals */
             if (!hw_recv_pending(pb)) {
@@ -655,22 +663,22 @@ PUBLIC VOID SAVEDS ServerTask(void)
             /* handle SANA-II send requests */
             if (recv & portsigmask)
             {
-               d(("SANA-II request(s)\n"));
+               d2(("SANA-II request(s)\n"));
                dos2reqs(pb);
             }
 
             /* stop server task */
             if (recv & SIGBREAKF_CTRL_C)
             {
-               d(("received break signal\n"));
+               d2(("received break signal\n"));
                running = FALSE;
             }
          }
       }
       else
-         d(("init() failed\n"));
+         d(("task: init() failed\n"));
 
-      d(("--- server exit main loop ---\n"));
+      d2(("--- server exit main loop ---\n"));
       cleanup(pb);
 
             /* Exec will enable it's scheduler after we're dead. */
@@ -681,6 +689,6 @@ PUBLIC VOID SAVEDS ServerTask(void)
       pb->pb_Flags |= PLIPF_SERVERSTOPPED;
    }
    else
-      d(("no startup packet\n"));
+      d(("ERROR: no startup packet\n"));
 }
 

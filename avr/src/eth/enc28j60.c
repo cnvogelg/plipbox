@@ -544,7 +544,7 @@ static u08 read_hdr(u16 *got_size)
   return header.status;
 }
 
-static u08 enc28j60_recv(u08 *data, u16 max_size, u16 *got_size)
+static u08 enc28j60_recv_size(u16 *got_size)
 {
   writeReg(ERDPT, gNextPacketPtr);
 
@@ -557,19 +557,16 @@ static u08 enc28j60_recv(u08 *data, u16 max_size, u16 *got_size)
     return PIO_IO_ERR;
   }
 
-  // check size
-  u16 len = *got_size;
-  u08 result = PIO_OK;
-  if(len > max_size) {
-    len = max_size;
-    result = PIO_TOO_LARGE;
-  }
+  return PIO_OK;
+}
 
+static u08 enc28j60_recv(u08 *data, u16 size)
+{
   // read packet
-  readBuf(len, data);
+  readBuf(size, data);
 
   next_pkt();
-  return result;
+  return PIO_OK;
 }
 
 // ---------- has_recv ----------
@@ -683,6 +680,7 @@ const pio_dev_t PROGMEM pio_dev_enc28j60 = {
   .init_f = enc28j60_init,
   .exit_f = enc28j60_exit,
   .send_f = enc28j60_send,
+  .recv_size_f = enc28j60_recv_size,
   .recv_f = enc28j60_recv,
   .has_recv_f = enc28j60_has_recv,
   .status_f = enc28j60_status,

@@ -37,7 +37,7 @@ extern u08 pio_util_get_init_flags(void);
    only call if pio_has_recv() ist not 0!
    returns packet size and pio status.
 */
-extern u08 pio_util_recv_packet(u16 *size);
+extern u08 pio_util_recv_packet(u16 size);
 
 /* send packet to current PIO from pkt_buf
    aöso updates stats and is verbose if enabled.

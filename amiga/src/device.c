@@ -57,7 +57,7 @@ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0,BASEPTR), REG(a0,BPTR seglist), 
    UBYTE *p;
    UWORD i;
 
-   d(("entered device, initialising PLIPBase...\n"));
+   d2(("dev_init\n"));
 
    device_init(&pb->pb_DevNode);
 
@@ -107,17 +107,17 @@ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0,BASEPTR), REG(a0,BPTR seglist), 
       }
       else
       {
-         d(("no dos\n"));
+         d(("ERROR: no dos lib\n"));
       }
 
       if (!ok) CloseLibrary(UtilityBase);
    }
    else
    {
-      d(("no utility\n"));
+      d(("ERROR: no utility\n"));
    }
 
-   d(("left %ld\n",ok));
+   d2(("dev_init: res=%ld\n",ok));
 
    return (struct Device *)(ok ? pb : NULL);
 }
@@ -131,7 +131,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG uni
    struct BufferManagement *bm;
    LONG rv;
 
-   d(("entered\n"));
+   d2(("dev_open: entered\n"));
 
    /* Make sure our open remains single-threaded. */
    ObtainSemaphore(&pb->pb_Lock);
@@ -190,7 +190,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG uni
             bm->bm_CopyFromBuffer = (BMFunc)GetTagData(S2_CopyFromBuff, 0,
                               (struct TagItem *)ios2->ios2_BufferManagement);
 
-            d(("starting servertask\n"));
+            d2(("task: setup\n"));
             if (!pb->pb_Server)
             {
                volatile struct ServerStartup ss;
@@ -198,7 +198,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG uni
 
                if (port = CreateMsgPort())
                {
-                  d(("starting server"));
+                  d2(("task: start"));
                   if (pb->pb_Server = CreateNewProcTags(NP_Entry, (ULONG)ServerTask, NP_Name,
                                                                   (ULONG)SERVERTASKNAME, TAG_DONE))
                   {
@@ -206,7 +206,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG uni
                      ss.ss_PLIPBase = pb;
                      ss.ss_Msg.mn_Length = sizeof(ss);
                      ss.ss_Msg.mn_ReplyPort = port;
-                     d(("passing startup msg, pb is %lx\n", pb));
+                     d2(("task: passing startup msg, pb is %lx\n", pb));
                      PutMsg(&pb->pb_Server->pr_MsgPort, (struct Message*)&ss);
                      WaitPort(port);
 
@@ -214,18 +214,18 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG uni
                         ok = TRUE;
                      else
                      {
-                        d(("server task failed\n"));
+                        d(("ERROR: server task failed\n"));
                      }
                   }
                   else
                   {
-                     d(("couldn't launch server task\n"));
+                     d(("ERROR: couldn't launch server task\n"));
                   }
                   DeleteMsgPort(port);
                }
                else
                {
-                  d(("no temp-message port for server startup\n"));
+                  d(("ERROR: no temp-message port for server startup\n"));
                }
             }
             else ok = TRUE;
@@ -273,7 +273,7 @@ PUBLIC ASM SAVEDS BPTR DevClose(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR))
    BPTR seglist;
    struct BufferManagement *bm;
 
-   d2(("entered\n"));
+   d2(("dev_close\n"));
 
    ObtainSemaphore(&pb->pb_Lock);
 
@@ -300,6 +300,8 @@ PUBLIC ASM SAVEDS BPTR DevClose(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR))
    else
       seglist = 0;
 
+   d2(("dev_close: done\n"));
+
    return seglist;
 }
 
@@ -309,7 +311,7 @@ PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6,BASEPTR))
    BPTR seglist;
    ULONG sigb;
 
-   d2(("entered\n"));
+   d2(("dev_expunge\n"));
 
    if (pb->pb_DevNode.lib_OpenCnt)
    {
@@ -360,6 +362,8 @@ PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6,BASEPTR))
          (ULONG)(pb->pb_DevNode.lib_PosSize + pb->pb_DevNode.lib_NegSize));
    }
 
+   d2(("dev_expunge: done\n"));
+
    return seglist;
 }
 
@@ -368,15 +372,16 @@ PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6,BASEPTR))
    */
 static INLINE VOID DevForwardIO(BASEPTR, struct IOSana2Req *ios2)
 {
-   d(("forwarding request %ld\n", ios2->ios2_Req.io_Command));
+   d2(("forwarding request %ld\n", ios2->ios2_Req.io_Command));
 
    /* request is no longer of type "quick i/o" */
    ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
    PutMsg(pb->pb_ServerPort, (struct Message*)ios2);
 }
+
 PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
 {
-   d(("cmd = %ld, error = %ld, wireerror = %ld\n", ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error,ios2->ios2_WireError));
+   d2(("dev_termio: cmd=%ld, error=%ld, wireerror=%ld\n", ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error,ios2->ios2_WireError));
 
                   /* if this command was done asynchonously, we must
                   ** reply the request
@@ -386,6 +391,7 @@ PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
    else           /* otherwise just mark it as done */
       ios2->ios2_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 }
+
 PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPTR))
 {
    ULONG mtu;
@@ -395,7 +401,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
    ios2->ios2_Req.io_Error = S2ERR_NO_ERROR;
    ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
 
-   d(("cmd = %ld\n",ios2->ios2_Req.io_Command));
+   d2(("dev_beginio: cmd=%ld\n",ios2->ios2_Req.io_Command));
 
       /*
       ** 1st level command dispatcher
@@ -623,6 +629,8 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
 
    if (ios2) DevTermIO(pb, ios2);
 
+   d2(("dev_beginio: cmd=%ld done\n",ios2->ios2_Req.io_Command));
+
    return;
 }
 
@@ -634,7 +642,7 @@ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR
    BOOL is;
    LONG rc = 0;
 
-   d(("cmd = %ld\n",ior->ios2_Req.io_Command));
+   d2(("dev_abortio: cmd=%ld\n",ior->ios2_Req.io_Command));
 
    ObtainSemaphore(&pb->pb_WriteListSem);
    if ((is = isinlist((struct Node*)ior, (struct List*)&pb->pb_WriteList))) abort_req(pb,ior);
@@ -659,6 +667,7 @@ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR
    rc = -1;
 
 leave:
+   d2(("dev_abortio: cmd=%ld res=%ld\n",ior->ios2_Req.io_Command, rc));
    return rc;
 }
 

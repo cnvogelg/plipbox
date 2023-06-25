@@ -1,5 +1,5 @@
 /*
- * main.c - main loop
+ * main.c - main loop of plipbox
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,91 +24,89 @@
  *
  */
 
-#include <util/delay.h>
-
 #include "global.h"
 #include "board.h"
 #include "uart.h"
 #include "uartutil.h"
 #include "timer.h"
-#include "par_low.h"
 #include "param.h"
 #include "cmd.h"
 
-#include "pb_test.h"
-#include "pio_test.h"
-#include "bridge_test.h"
+#include "pio.h"
+#include "pio_util.h"
 #include "bridge.h"
-#include "main.h"
 
-u08 run_mode = RUN_MODE_BRIDGE;
+#include "pkt_buf.h"
+
+#include "proto_cmd.h"
+#include "proto_cmd_shared.h"
+
+// global switches
 u08 global_verbose = 0;
 
-static void init_hw(void)
+int main(void)
 {
   // board init. e.g. switch off watchdog
-  board_init();  
+  board_init();
   // setup timer
   timer_init();
   // setup serial
   uart_init();
-  // setup par
-  par_low_init();
-}
-
-static void loop(void)
-{
-  init_hw();
   
   // send welcome
   uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION " " BUILD_DATE "\r\n"));
   uart_send_pstring(PSTR("by lallafa (http://www.lallafa.de/blog)\r\n\r\n"));
-  
+    // help info
+  uart_send_pstring(PSTR("Press <return> to enter command mode or <?> for key help\r\n"));
+
   // param init
   param_init();  
   param_dump();
   uart_send_crlf();
 
-  // help info
-  uart_send_pstring(PSTR("Press <return> to enter command mode or <?> for key help\r\n"));
-
 #ifdef DEBUG
   uart_send_free_stack();
 #endif
 
-  // select main loop depending on current run mode
+  // parallel proto init
+  uart_send_pstring(PSTR("proto "));
+  proto_cmd_init();
+
+  // packet i/o adapter init (eth)
+  uart_send_pstring(PSTR("pio"));
+  u08 ok = pio_init(param.mac_addr, pio_util_get_init_flags());
+  if(ok == PIO_OK) {
+    uart_send_pstring(PSTR("ok"));
+  } else {
+    uart_send_hex_byte(ok);
+    uart_send_pstring(PSTR(" ERROR!"));
+  }
+    uart_send_crlf();
+
+  bridge_init(ok == PIO_OK);
+
+  // main loop
   while(1) {
-    u08 result = CMD_WORKER_IDLE;
-    switch(run_mode) {
-      case RUN_MODE_PB_TEST:
-        result = pb_test_loop();
-        break;
-      case RUN_MODE_PIO_TEST:
-        result = pio_test_loop();
-        break;
-      case RUN_MODE_BRIDGE_TEST:
-        result = bridge_test_loop();
-        break;
-      case RUN_MODE_BRIDGE:
-      default:
-        result = bridge_loop();
-        break;
+    // handle parallel port commands and dispatch to proto_cmd_api_*
+    u08 res = proto_cmd_handle();
+    if(res == PROTO_CMD_HANDLE_RESET) {
+      break;
     }
-    // exit loop to perform reset
-    if(result == CMD_WORKER_RESET) {
+
+    // handle bridge/pio stuff
+    bridge_handle();
+
+    // handle commands
+    res = cmd_worker();
+    if(res & CMD_WORKER_RESET) {
       break;
     }
   }
 
-  // wait a bit
+  // wait a bit and reset
   uart_send_pstring(PSTR("resetting...\r\n"));
-  _delay_ms(100);
-}
+  board_reset();
 
-int main(void)
-{
-  while(1) {
-    loop();
-  }
+  // never reach this
   return 0;
-} 
+}

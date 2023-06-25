@@ -47,4 +47,6 @@ typedef   signed long long s64;
 //#define F_CPU        3686400               		// 3.69MHz processor
 #define CYCLES_PER_US ((F_CPU+500000)/1000000) 	// cpu cycles per microsecond
 
+extern u08 global_verbose;
+
 #endif

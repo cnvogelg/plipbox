@@ -100,9 +100,14 @@ u08 pio_send(const u08 *buf, u16 size)
   return pio_dev_send(cur_dev, buf, size);
 }
 
-u08 pio_recv(u08 *buf, u16 max_size, u16 *got_size)
+u08 pio_recv_size(u16 *size)
 {
-  return pio_dev_recv(cur_dev, buf, max_size, got_size);
+  return pio_dev_recv_size(cur_dev, size);
+}
+
+u08 pio_recv(u08 *buf, u16 size)
+{
+  return pio_dev_recv(cur_dev, buf, size);
 }
 
 u08 pio_has_recv(void)

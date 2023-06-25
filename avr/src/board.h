@@ -30,5 +30,6 @@
 #include "global.h"
 
 extern void board_init(void);
+extern void board_reset(void);
 
 #endif

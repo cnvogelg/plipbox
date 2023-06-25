@@ -45,6 +45,7 @@ DEV_ENC28J60 ?= 1
 ifeq "$(BOARD)" "arduino"
 
 MCU = atmega328
+PLATFORM = avr
 FLASH_MCU = m328p
 F_CPU = 16000000
 #MAX_SIZE = 14336
@@ -60,6 +61,7 @@ else
 ifeq "$(BOARD)" "nano"
 
 MCU = atmega328
+PLATFORM = avr
 FLASH_MCU = m328p
 F_CPU = 16000000
 MAX_SIZE = 30720
@@ -70,14 +72,12 @@ FLASHER = isp
 # its a subclass of the Arduino board
 DEFINES += HAVE_arduino
 BOARDFILE = arduino.c
-ifeq "$(DEBUG)" "1"
-DEFINES += DEBUG
-endif
 
 else
 ifeq "$(BOARD)" "avrnetio"
 
 MCU = atmega32
+PLATFORM = avr
 FLASH_MCU = m32
 F_CPU = 16000000
 MAX_SIZE = 32768
@@ -138,24 +138,24 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:board:eth:base
+VPATH = .:net:board:eth:base:proto
 
 # source files
 BOARDFILE ?= $(BOARD).c
-SRC := $(BOARDFILE)
-SRC += util.c uart.c uartutil.c timer.c
-SRC += par_low.c pb_proto.c
-SRC += pkt_buf.c param.c
-SRC += net.c arp.c
+SRC := $(BOARDFILE) $(PLATFORM)_common.c
+SRC += cmd.c cmdkey_table.c cmd_table.c
+SRC += util.c uart.c uartutil.c timer.c param.c
+SRC += pkt_buf.c net.c arp.c
 SRC += dump.c stats.c
 ifdef DEV_ENC28J60
 DEFINES += DEV_ENC28J60
 SRC += spi.c enc28j60.c
 endif
-SRC += pio.c pio_util.c pio_test.c
-SRC += pb_util.c pb_test.c bridge.c bridge_test.c
-SRC += cmd.c cmd_table.c cmdkey_table.c
-SRC += main.c
+SRC += pio.c pio_util.c
+SRC += proto_atom.c proto_cmd.c hw_timer.c
+SRC += main.c bridge.c
+
+ASRC = proto_low_asm.S
 
 # output format
 FORMAT = ihex
@@ -168,6 +168,7 @@ OUTDIR = $(BUILD)
 
 # target files
 OBJ = $(patsubst %.c,$(OBJDIR)/%.o,$(SRC))
+OBJ += $(patsubst %.S,$(OBJDIR)/%.o,$(ASRC))
 
 # compiler switches
 CFLAGS = -g -std=gnu99 -fno-common
@@ -176,19 +177,30 @@ CFLAGS += -Os
 #CFLAGS += -fno-inline
 CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
-CFLAGS += -mmcu=$(MCU) -I. -Ibase -Ieth
+CFLAGS += -mmcu=$(MCU) -I. -Ibase -Ieth -Iproto/$(BOARD) -Iproto -I../../shared/include
+CFLAGS += -ffunction-sections -fdata-sections
  
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
 CFLAGS_LOCAL += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(DEPDIR)/$(@F:.o=.d)
 CFLAGS_LOCAL += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
 CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
 CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
-CFLAGS_LOCAL += -DF_CPU=$(F_CPU)
+CFLAGS_LOCAL += -DF_CPU=$(F_CPU) -DCONFIG_PTR_BITS=16
+# debug
+ifeq "$(DEBUG)" "1"
+#CFLAGS_LOCAL += -DDEBUG_PROTO_ATOM
+CFLAGS_LOCAL += -DDEBUG_PROTO_CMD
+endif
+
 CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))
+
+ASFLAGS = $(CFLAGS)
+ASFLAGS += -Wa,-gstabs -x assembler-with-cpp
 
 # linker switches
 LDFLAGS = -Wl,-Map=$(OUTPUT).map,--cref
 LDFLAGS += -lm -lc
+LDFLAGS += -Wl,--gc-sections
 
 # Define programs and commands.
 SHELL = sh
@@ -318,6 +330,11 @@ dist_int: build_all
 $(OBJDIR)/%.o : %.c
 	@echo "  compiling $<"
 	$(HIDE)$(CC) -c $(CFLAGS) $(CFLAGS_LOCAL) $< -o $@ 
+
+# compile
+$(OBJDIR)/%.o : %.S
+	@echo "  compiling $<"
+	$(HIDE)$(CC) -c $(ASFLAGS) $< -o $@
 
 # include dependencies
 -include $(shell mkdir -p $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*.d)

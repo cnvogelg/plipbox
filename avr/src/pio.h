@@ -32,8 +32,7 @@
 /* result values */
 #define PIO_OK            0
 #define PIO_NOT_FOUND     1
-#define PIO_TOO_LARGE     2
-#define PIO_IO_ERR        3
+#define PIO_IO_ERR        2
 
 /* init flags */
 #define PIO_INIT_FULL_DUPLEX    1
@@ -55,7 +54,8 @@ extern u08 pio_init(const u08 mac[6],u08 flags);
 extern void pio_exit(void);
 
 extern u08 pio_send(const u08 *buf, u16 size);
-extern u08 pio_recv(u08 *buf, u16 max_size, u16 *got_size);
+extern u08 pio_recv_size(u16 *got_size);
+extern u08 pio_recv(u08 *buf, u16 size);
 extern u08 pio_has_recv(void);
 extern u08 pio_status(u08 status_id, u08 *value);
 extern u08 pio_control(u08 control_id, u08 value);

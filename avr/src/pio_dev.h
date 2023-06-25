@@ -34,7 +34,8 @@
 typedef u08  (*pio_dev_init_t)(const u08 mac[6],u08 flags);
 typedef void (*pio_dev_exit_t)(void);
 typedef u08  (*pio_dev_send_t)(const u08 *buf, u16 size);
-typedef u08  (*pio_dev_recv_t)(u08 *buf, u16 max_size, u16 *got_size);
+typedef u08  (*pio_dev_recv_size_t)(u16 *got_size);
+typedef u08  (*pio_dev_recv_t)(u08 *buf, u16 size);
 typedef u08  (*pio_dev_has_recv_t)(void);
 typedef u08  (*pio_dev_status_t)(u08 status_id, u08 *value);
 typedef u08  (*pio_dev_control_t)(u08 control_id, u08 value);
@@ -45,6 +46,7 @@ typedef struct {
   pio_dev_init_t      init_f;
   pio_dev_exit_t      exit_f;
   pio_dev_send_t      send_f;
+  pio_dev_recv_size_t recv_size_f;
   pio_dev_recv_t      recv_f;
   pio_dev_has_recv_t  has_recv_f;
   pio_dev_status_t    status_f;
@@ -78,10 +80,16 @@ static inline u08 pio_dev_send(pio_dev_ptr_t pd, const u08 *buf, u16 size)
   return send_f(buf, size);
 }
 
-static inline u08 pio_dev_recv(pio_dev_ptr_t pd, u08 *buf, u16 max_size, u16 *got_size)
+static inline u08 pio_dev_recv_size(pio_dev_ptr_t pd, u16 *got_size)
+{
+  pio_dev_recv_size_t recv_size_f = (pio_dev_recv_size_t)pgm_read_word(&pd->recv_size_f);
+  return recv_size_f(got_size);
+}
+
+static inline u08 pio_dev_recv(pio_dev_ptr_t pd, u08 *buf, u16 size)
 {
   pio_dev_recv_t recv_f = (pio_dev_recv_t)pgm_read_word(&pd->recv_f);
-  return recv_f(buf, max_size, got_size);
+  return recv_f(buf, size);
 }
 
 static inline u08 pio_dev_has_recv(pio_dev_ptr_t pd)

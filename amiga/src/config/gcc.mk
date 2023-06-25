@@ -18,7 +18,7 @@ BASEREL = -fbaserel -DBASEREL
 CFLAGS = -Wall -Werror -noixemul -mcrt=clib2
 CFLAGS += -mcpu=68$(CPUSUFFIX) $(BASEREL) -Os
 CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
-CFLAGS += -I$(DEVICE_NAME) -I.
+CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/proto -I.
 
 CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
 CFLAGS += -DDEVICE_VERSION=$(DEVICE_VERSION)
