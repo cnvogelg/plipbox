@@ -76,6 +76,7 @@ VPATH = .:$(DEVICE_NAME):plipbox/proto
 
 # test dir
 TEST_DIR ?= $(HOME)/proj/plipbox
+TEST_FILES = ../test/plipbox ../test/test-on ../test/test-off
 
 # show compile
 ifeq "$(V)" "1"
@@ -86,7 +87,7 @@ endif
 
 # --- rules ---
 
-.PHONY: dev_test udp_test tools libsize all opt dist clean clean_obj clean_dist dirs
+.PHONY: dev_test udp_test tools libsize all opt dist clean clean_obj clean_dist dirs rtest
 
 all: dirs $(DEVICE) tools
 
@@ -120,10 +121,14 @@ clean_dist:
 
 dirs: $(BUILD_PATH) $(BIN_DIR)
 
+rtest:
+	$(MAKE) BUILD_TYPE=RELEASE test
+
 test: dirs $(DEVICE) $(DEV_TEST_TOOL) $(UDP_TEST_TOOL)
 	cp $(DEVICE) $(TEST_DIR)/plipbox.device
 	cp $(DEV_TEST_TOOL) $(TEST_DIR)/dev_test
 	cp $(UDP_TEST_TOOL) $(TEST_DIR)/udp_test
+	cp $(TEST_FILES) $(TEST_DIR)/
 
 # --- compile ---
 $(BUILD_PATH)/%.o: %.c

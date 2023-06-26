@@ -77,7 +77,7 @@ int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWO
   d8(("proto_cmd_recv_frame: %lu\n", (ULONG)max_bytes));
 
   res = proto_atom_read_word(proto, PROTO_CMD_RX_SIZE, num_bytes);
-  d8(("-> size=%ld res=%ld\n", (LONG)num_bytes, (LONG)res));
+  d8(("-> size=%ld res=%ld\n", (LONG)*num_bytes, (LONG)res));
   if(res != PROTO_RET_OK) {
     return res;
   }

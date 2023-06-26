@@ -1,0 +1,13 @@
+; test-on: disable running roadshow and setup roadshow with plipbox.device
+echo "Flush devices"
+avail flush
+
+echo "Copy plipbox.device"
+copy proj:plipbox/plipbox.device ram:
+copy proj:plipbox/plipbox ram:
+
+echo "Shutting down Roadshow"
+NetShutdown
+
+echo "Add plipbox.device"
+AddNetInterface ram:plipbox

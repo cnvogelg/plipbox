@@ -55,21 +55,27 @@ struct DosLibrary *DOSBase;
 
 /* ---------- globals ---------------------------------------- */
 
-static struct MsgPort *msg_port = NULL;
-static struct IOSana2Req *sana_req = NULL;
+static struct MsgPort *write_port = NULL;
+static struct IOSana2Req *write_req = NULL;
+static struct MsgPort *read_port = NULL;
+static struct IOSana2Req *read_req = NULL;
+
 static struct Device *sana_dev = NULL;
-static UBYTE *pkt_buf = NULL;
+static UBYTE *write_buf = NULL;
+static UBYTE *read_buf = NULL;
 static ULONG pkt_buf_size;
+static ULONG data_offset = 0;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S";
+  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K";
 enum args_offset {
   DEVICE_ARG,
   UNIT_ARG,
   MTU_ARG,
   VERBOSE_ARG,
   REPLY_ARG,
+  DELAY_ARG,
   NUM_ARGS
 };
 static struct RDArgs *args_rd = NULL;
@@ -79,8 +85,8 @@ static LONG args_array[NUM_ARGS];
 
 /* copy helper for SANA-II device */
 static ASM SAVEDS int MemCopy(REG(a0,UBYTE *to),
-			   REG(a1,UBYTE *from),
-			   REG(d0,LONG len))
+         REG(a1,UBYTE *from),
+         REG(d0,LONG len))
 {
   CopyMem(from, to, len);
   return 1;
@@ -88,37 +94,56 @@ static ASM SAVEDS int MemCopy(REG(a0,UBYTE *to),
 
 /* open sana device */
 static BOOL open_device(char *name, ULONG unit, ULONG flags)
-{ 
+{
   static ULONG sana_tags[] = {
     S2_CopyToBuff, (ULONG)MemCopy,
     S2_CopyFromBuff, (ULONG)MemCopy,
     TAG_DONE, 0
   };
 
-  /* create msg port */
-  msg_port = CreateMsgPort();
-  if(msg_port == NULL) {
-  	PutStr((STRPTR)"Error creating msg port!\n");
-  	return FALSE;
+  /* create write port */
+  write_port = CreateMsgPort();
+  if(write_port == NULL) {
+    PutStr((STRPTR)"Error creating write port!\n");
+    return FALSE;
+  }
+
+  /* create read port */
+  read_port = CreateMsgPort();
+  if(read_port == NULL) {
+    PutStr((STRPTR)"Error creating read port!\n");
   }
 
   /* create IO request */
-  sana_req = (struct IOSana2Req *)CreateIORequest(msg_port, sizeof(struct IOSana2Req));
-  if(sana_req == NULL) {
-  	PutStr((STRPTR)"Error creatio IO request!\n");
-  	return FALSE;
+  write_req = (struct IOSana2Req *)CreateIORequest(write_port, sizeof(struct IOSana2Req));
+  if(write_req == NULL) {
+    PutStr((STRPTR)"Error creatio IO write request!\n");
+    return FALSE;
+  }
+
+  /* create IO request */
+  read_req = (struct IOSana2Req *)CreateIORequest(read_port, sizeof(struct IOSana2Req));
+  if(read_req == NULL) {
+    PutStr((STRPTR)"Error creatio IO read request!\n");
+    return FALSE;
   }
 
   /* store copy buffer pointers */
-  sana_req->ios2_BufferManagement = sana_tags;
+  write_req->ios2_BufferManagement = sana_tags;
 
   /* open device */
-  if(OpenDevice((STRPTR)name, unit, (struct IORequest *)sana_req, flags) != 0) {
-  	Printf((STRPTR)"Error opening device(%s,%lu)!\n", (ULONG)name, unit);
-  	return FALSE;
+  if(OpenDevice((STRPTR)name, unit, (struct IORequest *)write_req, flags) != 0) {
+    Printf((STRPTR)"Error opening device(%s,%lu)!\n", (ULONG)name, unit);
+    return FALSE;
   }
 
-  sana_dev = sana_req->ios2_Req.io_Device;
+  /* clone request */
+  CopyMem(write_req, read_req, sizeof(struct IOSana2Req));
+  /* restore msg port */
+  read_req->ios2_Req.io_Message.mn_ReplyPort = read_port;
+
+  /* fetch device */
+  sana_dev = write_req->ios2_Req.io_Device;
 
   /* some device info */
   Printf((STRPTR)"[%s (%d.%d)]\n",
@@ -133,25 +158,37 @@ static BOOL open_device(char *name, ULONG unit, ULONG flags)
 static void close_device(void)
 {
   /* close device */
-	if(sana_dev != NULL) {
-    CloseDevice((struct IORequest *)sana_req);
+  if(sana_dev != NULL) {
+    CloseDevice((struct IORequest *)write_req);
     sana_dev = NULL;
-	}
+  }
 
   /* free IO request */
-  if(sana_req != NULL) {
-    DeleteIORequest(sana_req);
-    sana_req = NULL;
+  if(write_req != NULL) {
+    DeleteIORequest(write_req);
+    write_req = NULL;
+  }
+
+  /* free IO request */
+  if(read_req != NULL) {
+    DeleteIORequest(read_req);
+    read_req = NULL;
   }
 
   /* free msg port */
-  if(msg_port != NULL) {
-    DeleteMsgPort(msg_port);
-    msg_port = NULL;
+  if(write_port != NULL) {
+    DeleteMsgPort(write_port);
+    write_port = NULL;
+  }
+
+  /* free msg port */
+  if(read_port != NULL) {
+    DeleteMsgPort(read_port);
+    read_port = NULL;
   }
 }
 
-static void sana_error(void)
+static void sana_error(struct IOSana2Req *sana_req)
 {
   UWORD error = sana_req->ios2_Req.io_Error;
   UWORD wire_error = sana_req->ios2_WireError;
@@ -159,12 +196,12 @@ static void sana_error(void)
          sana_req->ios2_Req.io_Command, error, wire_error);  
 }
 
-static BOOL sana_cmd(UWORD cmd)
+static BOOL sana_cmd(struct IOSana2Req *sana_req, UWORD cmd)
 {
   sana_req->ios2_Req.io_Command = cmd;
 
   if(DoIO((struct IORequest *)sana_req) != 0) {
-    sana_error();
+    sana_error(sana_req);
     return FALSE;
   } else {
     return TRUE;
@@ -173,24 +210,43 @@ static BOOL sana_cmd(UWORD cmd)
 
 static BOOL sana_online(void)
 {
-  return sana_cmd(S2_ONLINE);
+  return sana_cmd(write_req, S2_ONLINE);
 }
 
 static BOOL sana_offline(void)
 {
-  return sana_cmd(S2_OFFLINE);
+  return sana_cmd(write_req, S2_OFFLINE);
+}
+
+static void fill_packet(void)
+{
+  /* fill packet */
+  for(ULONG i=0;i<pkt_buf_size;i++) {
+    UBYTE ch = (UBYTE)((i + data_offset) & 0xff);
+    write_buf[i] = ch;
+  }
+}
+
+static void check_packet(void)
+{
+  for(ULONG i=0;i<pkt_buf_size;i++) {
+    UBYTE ch = (UBYTE)((i + data_offset) & 0xff);
+    if(ch != read_buf[i]) {
+      Printf("Mismatch: @%04lx: got=%02lx want=%02lx\n", i, (ULONG)read_buf[i], (ULONG)write_buf[i]);
+    }
+  }
 }
 
 static void send_packet(void)
 {
   PutStr((STRPTR)"Send packet...\n");
   /* write request */
-  sana_req->ios2_Req.io_Command = CMD_WRITE;
-  sana_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
-  sana_req->ios2_DataLength = pkt_buf_size;
+  write_req->ios2_Req.io_Command = CMD_WRITE;
+  write_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
+  write_req->ios2_DataLength = pkt_buf_size;
   /*sana_req->ios2_PacketType = type;*/
-  sana_req->ios2_Data = pkt_buf;
-  DoIO((struct IORequest *)sana_req);
+  write_req->ios2_Data = write_buf;
+  DoIO((struct IORequest *)write_req);
   PutStr((STRPTR)"Done\n");
 }
 
@@ -198,51 +254,75 @@ static void reply_loop(void)
 {
   ULONG wmask;
   ULONG verbose = args_array[VERBOSE_ARG];
-  ULONG do_reply = 0; //args_array[REPLY_ARG];
+  ULONG do_reply = args_array[REPLY_ARG];
+  ULONG delay = 50;
+  if(args_array[DELAY_ARG] != 0) {
+    delay = *((ULONG *)args_array[DELAY_ARG]);
+  }
+
+  fill_packet();
+  send_packet();
 
   PutStr((STRPTR)"Waiting for incoming packets...\n");
+  if(do_reply) {
+    Printf((STRPTR)"With reply after %ld ticks\n", delay);
+  }
+
   for(;;) {
     /* read request */
-    sana_req->ios2_Req.io_Command = S2_READORPHAN; /*CMD_READ;*/
-    sana_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
-    sana_req->ios2_DataLength = pkt_buf_size;
-    /*sana_req->ios2_PacketType = type;*/
-    sana_req->ios2_Data = pkt_buf;
-    BeginIO((struct IORequest *)sana_req);
-    wmask = Wait(SIGBREAKF_CTRL_C | (1UL << msg_port->mp_SigBit));
+    read_req->ios2_Req.io_Command = S2_READORPHAN; /*CMD_READ;*/
+    read_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
+    read_req->ios2_DataLength = pkt_buf_size;
+    /*read_req->ios2_PacketType = type;*/
+    read_req->ios2_Data = read_buf;
+    BeginIO((struct IORequest *)read_req);
+    wmask = Wait(SIGBREAKF_CTRL_C | (1UL << read_port->mp_SigBit));
     
     /* user break */
     if(wmask & SIGBREAKF_CTRL_C) {
-      AbortIO((struct IORequest *)sana_req);
-      WaitIO((struct IORequest *)sana_req);
+      AbortIO((struct IORequest *)read_req);
+      WaitIO((struct IORequest *)read_req);
       PutStr((STRPTR)"***Break\n");
       break;
     }
 
     /* got a packet? */
-    if(WaitIO((struct IORequest *)sana_req) != 0)
+    if(WaitIO((struct IORequest *)read_req) != 0)
     {
-      sana_error();
+      sana_error(read_req);
       break;
     } else {
+
+      check_packet();
+
       if(verbose) {
-        PutStr((STRPTR)"+\n");
+        PutStr((STRPTR)"Recv\n");
       }
 
       if(do_reply) {
-        /* inconmig dst will be new src */
-        memcpy(sana_req->ios2_SrcAddr, sana_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
+        /* swap adresses */
+        CopyMem(read_req->ios2_SrcAddr, write_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
+        CopyMem(read_req->ios2_DstAddr, write_req->ios2_SrcAddr, SANA2_MAX_ADDR_BYTES);
+
+        Delay(delay);
+
+        data_offset++;
+        fill_packet();
+
+        if(verbose) {
+          PutStr((STRPTR)"Send\n");
+        }
 
         /* send packet back */
-        sana_req->ios2_Req.io_Command = CMD_WRITE;
-        sana_req->ios2_Req.io_Flags = 0;
-        if(DoIO((struct IORequest *)sana_req) != 0) {
-          sana_error();
+        write_req->ios2_Req.io_Command = CMD_WRITE;
+        write_req->ios2_Req.io_Flags = 0;
+        write_req->ios2_DataLength = pkt_buf_size;
+        /*write_req->ios2_PacketType = type;*/
+        write_req->ios2_Data = write_buf;
+        if(DoIO((struct IORequest *)write_req) != 0) {
+          sana_error(write_req);
           break;
         }
-      }
-      if(verbose) {
-        PutStr((STRPTR)"-\n");
       }
     }
   }
@@ -286,32 +366,35 @@ int main(void)
 
   /* alloc buffer */
   pkt_buf_size = mtu;
-  pkt_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
-  if(pkt_buf != NULL) {
-    /* open device */
-    Printf((STRPTR)"device: %s:%lu\n", (ULONG)dev_name, unit);
-    if(open_device(dev_name, unit, 0)) {
-      /* set device online */
-      if(sana_online()) {
+  write_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
+  if(write_buf != NULL) {
+    read_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
+    if(read_buf != NULL) {
+      /* open device */
+      Printf((STRPTR)"device: %s:%lu\n", (ULONG)dev_name, unit);
+      if(open_device(dev_name, unit, 0)) {
+        /* set device online */
+        if(sana_online()) {
 
-        send_packet();
+          reply_loop();
 
-        reply_loop();
-
-        /* finally offline again */
-        if(!sana_offline()) {
-          PutStr((STRPTR)"Error going offline!\n");
+          /* finally offline again */
+          if(!sana_offline()) {
+            PutStr((STRPTR)"Error going offline!\n");
+          }
+        } else {
+          PutStr((STRPTR)"Error going online!\n");
         }
-      } else {
-        PutStr((STRPTR)"Error going online!\n");
       }
-    }
-    close_device();
+      close_device();
 
-    /* free packet buffer */
-    FreeMem(pkt_buf, pkt_buf_size);
+      /* free packet buffer */
+      FreeMem(read_buf, pkt_buf_size);
+    } else {
+      PutStr((STRPTR)"Error allocating read_buf!\n");
+    }
   } else {
-    PutStr((STRPTR)"Error allocating pkt_buf!\n");
+    PutStr((STRPTR)"Error allocating write_buf!\n");
   }
 
   /* free args */
