@@ -20,7 +20,7 @@ VBCC_LIB = $(VBCC_TARGET_AMIGAOS)/lib
 CFLAGS = -c99 -cpu=68$(CPUSUFFIX) -Os -+ -sc
 CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
 CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/proto -I.
-CFLAGS += -I../../shared/include
+CFLAGS += -I../../../shared/include -I../include
 
 CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
 CFLAGS += -DDEVICE_VERSION=$(DEVICE_VERSION)
@@ -32,7 +32,7 @@ CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG=$(DEBUG_LEVEL)
 CFLAGS_RELEASE = $(CFLAGS)
 
 LDFLAGS = -cpu=68$(CPUSUFFIX) -sc -L$(VBCC_LIB) -L$(NDK_LIB)
-LDFLAGS += -lvc -Os
+LDFLAGS += -lvc
 LIBS_debug = -ldebug
 LIBS = -lamiga
 LDFLAGS_DEBUG = $(LDFLAGS) $(LIBS_debug) -g $(LIBS) -o

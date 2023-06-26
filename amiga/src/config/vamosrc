@@ -2,7 +2,7 @@
 wb=${AMIGA_DIR}/wb
 sc=${AMIGA_DIR}/sc
 net=${AMIGA_DIR}/roadshow
-base=..
+base=../..
 
 [assigns]
 include=sc:include,net:include

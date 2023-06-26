@@ -6,7 +6,7 @@ PREFIX=AMI_
 
 # config vamos. sc is run via vamos
 VAMOS=vamos
-VAMOS_OPTS=-c vamosrc
+VAMOS_OPTS=-c ../config/vamosrc
 RUN=$(VAMOS) $(VAMOS_OPTS) $(VAMOS_EXTRA)
 
 # SAS C tools
