@@ -42,8 +42,12 @@
 #include <proto/dos.h>
 
 #include <devices/sana2.h>
+#include <devices/plipbox.h>
 
 #include "compiler.h"
+
+typedef UBYTE mac_t[6];
+#define MAC_SIZE 6
 
 /* SAS stuff */
 extern struct ExecBase *SysBase;
@@ -218,6 +222,37 @@ static BOOL sana_offline(void)
   return sana_cmd(write_req, S2_OFFLINE);
 }
 
+static BOOL sana_get_station_address(mac_t cur_mac, mac_t def_mac)
+{
+  BOOL ok = sana_cmd(write_req, S2_GETSTATIONADDRESS);
+  if(ok) {
+    CopyMem(write_req->ios2_SrcAddr, cur_mac, MAC_SIZE);
+    CopyMem(write_req->ios2_DstAddr, def_mac, MAC_SIZE);
+  }
+  return ok;
+}
+
+static BOOL plipbox_set_mac(mac_t new_mac)
+{
+  CopyMem(new_mac, write_req->ios2_SrcAddr, MAC_SIZE);
+  return sana_cmd(write_req, S2PB_SET_MAC);
+}
+
+static BOOL plipbox_set_mode(UWORD mode)
+{
+  write_req->ios2_WireError = mode;
+  return sana_cmd(write_req, S2PB_SET_MODE);
+}
+
+static BOOL plipbox_get_mode(UWORD *mode)
+{
+  BOOL ok = sana_cmd(write_req, S2PB_GET_MODE);
+  if(ok) {
+    *mode = write_req->ios2_WireError;
+  }
+  return ok;
+}
+
 static void fill_packet(void)
 {
   /* fill packet */
@@ -248,6 +283,17 @@ static void send_packet(void)
   write_req->ios2_Data = write_buf;
   DoIO((struct IORequest *)write_req);
   PutStr((STRPTR)"Done\n");
+}
+
+static void dump_mac(STRPTR msg, mac_t mac)
+{
+  Printf("%s: %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", msg,
+    (ULONG)mac[0],
+    (ULONG)mac[1],
+    (ULONG)mac[2],
+    (ULONG)mac[3],
+    (ULONG)mac[4],
+    (ULONG)mac[5]);
 }
 
 static void reply_loop(void)
@@ -373,6 +419,22 @@ int main(void)
       /* open device */
       Printf((STRPTR)"device: %s:%lu\n", (ULONG)dev_name, unit);
       if(open_device(dev_name, unit, 0)) {
+
+        /* set custom mac */
+        mac_t my_mac = { 0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe };
+        plipbox_set_mac(my_mac);
+
+        mac_t cur_mac, def_mac;
+        sana_get_station_address(cur_mac, def_mac);
+        dump_mac("cur_mac", cur_mac);
+        dump_mac("def_mac", def_mac);
+
+        /* set mode */
+        plipbox_set_mode(S2PB_MODE_LOOPBACK_BUF);
+        UWORD mode;
+        plipbox_get_mode(&mode);
+        Printf("mode:%ld\n", (ULONG)mode);
+
         /* set device online */
         if(sana_online()) {
 

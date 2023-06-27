@@ -1,4 +1,4 @@
-#include "types.h"
+#include "global.h"
 
 #ifdef DEBUG_PROTO_ATOM
 #define DEBUG

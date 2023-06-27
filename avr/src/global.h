@@ -36,6 +36,9 @@ typedef   signed long  s32;
 typedef unsigned long long u64;
 typedef   signed long long s64;
 
+typedef u08 mac_t[6];
+#define MAC_SIZE 6
+
 // project/system dependent defines
 
 // CPU clock speed -> now defined in Makefile

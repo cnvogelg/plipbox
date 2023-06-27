@@ -450,6 +450,10 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
                ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
             }
          break;
+
+         default:
+          hw_handle_special_cmd(pb, ios2, pb->pb_Flags & PLIPF_OFFLINE);
+          break;
       }
 
       if (ios2) DevTermIO(pb,ios2);
@@ -548,6 +552,9 @@ PRIVATE BOOL init(BASEPTR)
          ULONG size;
 
          readargs(pb);
+
+         /* refresh macs */
+         hw_get_macs(pb, pb->pb_CfgAddr, pb->pb_DefAddr);
 
          size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
          d2(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));

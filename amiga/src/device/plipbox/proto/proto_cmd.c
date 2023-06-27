@@ -37,6 +37,62 @@ int proto_cmd_get_status(proto_handle_t *proto, UWORD *status)
   return res;
 }
 
+int proto_cmd_set_mode(proto_handle_t *proto, UWORD mode)
+{
+  int res;
+
+  d8(("proto_cmd_set_mode:%ld\n", (ULONG)mode));
+  res = proto_atom_write_word(proto, PROTO_CMD_SET_MODE, mode);
+  d8(("-> res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_get_mode(proto_handle_t *proto, UWORD *mode)
+{
+  int res;
+
+  d8(("proto_cmd_get_mode:\n"));
+  res = proto_atom_read_word(proto, PROTO_CMD_GET_MODE, mode);
+  d8(("-> mode=%04lx res=%ld\n", (ULONG)*mode, (LONG)res));
+  return res;
+}
+
+int proto_cmd_set_mac(proto_handle_t *proto, mac_t mac)
+{
+  int res;
+
+  d8(("proto_cmd_set_mac:%02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n",
+    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+  res = proto_atom_write_block(proto, PROTO_CMD_SET_MAC, mac, MAC_SIZE);
+  d8(("-> res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_get_mac(proto_handle_t *proto, mac_t mac)
+{
+  int res;
+
+  d8(("proto_cmd_get_mac:"));
+  res = proto_atom_read_block(proto, PROTO_CMD_GET_MAC, mac, MAC_SIZE);
+  d8(("-> res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
+    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+  return res;
+}
+
+int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac)
+{
+  int res;
+
+  d8(("proto_cmd_get_def_mac:\n"));
+  res = proto_atom_read_block(proto, PROTO_CMD_GET_DEF_MAC, mac, MAC_SIZE);
+  d8(("-> res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
+    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+  return res;
+}
+
 int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes)
 {
   int res;

@@ -18,6 +18,8 @@
 #define DW(x)  uart_send_hex_word(x)
 // debug long
 #define DL(x)  uart_send_hex_long(x)
+// mac
+#define DM(x)  uart_send_hex_mac(x)
 
 // pointer
 #if CONFIG_PTR_BITS == 16

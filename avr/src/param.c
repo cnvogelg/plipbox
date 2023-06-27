@@ -151,6 +151,30 @@ void param_reset(void)
   }
 }
 
+void param_get_def_mac(mac_t mac)
+{
+  // restore default param
+  u08 *out = mac;
+  const u08 *in = default_param.mac_addr;
+  for(u08 i=0;i<sizeof(mac_t);i++) {
+    *(out++) = pgm_read_byte_near(in++);
+  }
+}
+
+void param_get_mac(mac_t mac)
+{
+  for(u08 i=0;i<sizeof(mac_t);i++) {
+    mac[i] = param.mac_addr[i];
+  }
+}
+
+void param_set_mac(const mac_t mac)
+{
+  for(u08 i=0;i<sizeof(mac_t);i++) {
+    param.mac_addr[i] = mac[i];
+  }
+}
+
 void param_init(void)
 {
   if(param_load()!=PARAM_OK)

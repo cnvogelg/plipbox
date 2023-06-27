@@ -13,6 +13,7 @@
 #include "hwbase.h"
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
+#include "devices/plipbox.h"
 
 GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
 {
@@ -121,6 +122,72 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
    d(("free hw base\n"));
    FreeVec(hwb);
    pb->pb_HWBase = NULL;
+}
+
+GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac)
+{
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   int ok = proto_cmd_get_mac(hwb->proto, cur_mac);
+   if(ok == PROTO_RET_OK) {
+      ok = proto_cmd_get_def_mac(hwb->proto, def_mac);
+   }
+   return ok == PROTO_RET_OK;
+}
+
+GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
+{
+  switch(cmd) {
+    case S2PB_SET_MAC:
+    case S2PB_SET_MODE:
+    case S2PB_GET_MODE:
+      return TRUE;
+    default:
+      return FALSE;
+  }
+}
+
+GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)
+{
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   int res = PROTO_RET_OK;
+
+   /* commands need offline mode */
+   if(!offline) {
+      req->ios2_Req.io_Error = S2ERR_BAD_STATE;
+      req->ios2_WireError = S2WERR_UNIT_ONLINE;
+      return;
+   }
+
+   switch(req->ios2_Req.io_Command) {
+    case S2PB_SET_MAC:
+      res = proto_cmd_set_mac(hwb->proto, req->ios2_SrcAddr);
+      /* read and update mac */
+      if(res == PROTO_RET_OK) {
+        mac_t mac;
+        res = proto_cmd_get_mac(hwb->proto, mac);
+        if(res == PROTO_RET_OK) {
+          CopyMem(pb->pb_CfgAddr, mac, MAC_SIZE);
+        }
+      }
+      break;
+    case S2PB_SET_MODE:
+      res = proto_cmd_set_mode(hwb->proto, (UWORD)req->ios2_WireError);
+      break;
+    case S2PB_GET_MODE: {
+      UWORD mode;
+      res = proto_cmd_get_mode(hwb->proto, &mode);
+      req->ios2_WireError = mode;
+      break;
+    }
+    default:
+      break;
+   }
+
+   /* update error in req */
+   if(res != PROTO_RET_OK) {
+      req->ios2_Req.io_Error = S2ERR_TX_FAILURE;
+      req->ios2_WireError = S2WERR_GENERIC_ERROR;
+   }
 }
 
 /*

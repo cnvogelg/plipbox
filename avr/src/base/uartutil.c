@@ -128,6 +128,16 @@ void uart_send_hex_dword(u32 data)
   uart_send_data(buf,8);
 }
 
+void uart_send_hex_mac(mac_t mac)
+{
+  for(u08 i=0;i<6;i++) {
+    uart_send_hex_byte(mac[i]);
+    if(i<5) {
+      uart_send(':');
+    }
+  }
+}
+
 #ifdef DEBUG
 void uart_send_free_stack(void)
 {

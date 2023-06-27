@@ -29,6 +29,7 @@
 #include "debug.h"
 #include "uartutil.h"
 #include "bridge.h"
+#include "param.h"
 
 #include "pkt_buf.h"
 #include "pio_util.h"
@@ -37,11 +38,12 @@
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
 
-static u08 mode = BRIDGE_MODE_LOOPBACK_BUF;
-static u08 transfer = BRIDGE_TRANSFER_BUF;
+static u08 mode = PROTO_CMD_MODE_BRIDGE;
+static u08 transfer = PROTO_CMD_MODE_BUF_TRANSFER;
 static u08 rx_notified = 0;
 static u08 tx_done = 0;
 static u16 loopback_size = 0;
+static u08 status = 0;
 
 // ----- implement API of proto_cmd -----
 
@@ -51,7 +53,7 @@ void proto_cmd_api_attach(void)
   uart_send_pstring(PSTR("attach"));
   uart_send_crlf();
 
-  proto_cmd_set_status_mask(PROTO_CMD_STATUS_ATTACHED, 0);
+  status |= PROTO_CMD_STATUS_ATTACHED;
 }
 
 void proto_cmd_api_detach(void)
@@ -60,7 +62,12 @@ void proto_cmd_api_detach(void)
   uart_send_pstring(PSTR("detach"));
   uart_send_crlf();
 
-  proto_cmd_clr_status_mask(PROTO_CMD_STATUS_ATTACHED, 0);
+  status &= ~PROTO_CMD_STATUS_ATTACHED;
+}
+
+u16 proto_cmd_api_get_status(void)
+{
+  return status;
 }
 
 // ----- tx packet from parallel port to pio -----
@@ -85,7 +92,7 @@ u08 proto_cmd_api_tx_end(u16 size)
   if(pio_res == PIO_OK) {
 
     // loopback?
-    if(mode != BRIDGE_MODE_FORWARD) {
+    if(mode != PROTO_CMD_MODE_BRIDGE) {
       tx_done = 1;
       loopback_size = size;
     }
@@ -102,7 +109,7 @@ u08 proto_cmd_api_rx_size(u16 *size)
 {
   u08 pio_res = PIO_OK;
   DS("rx size ");
-  if(mode == BRIDGE_MODE_FORWARD) {
+  if(mode == PROTO_CMD_MODE_BRIDGE) {
     pio_res = pio_recv_size(size);
   } else {
     *size = loopback_size;
@@ -114,7 +121,7 @@ u08 proto_cmd_api_rx_size(u16 *size)
   rx_notified = 0;
 
   // clear status mask
-  proto_cmd_clr_status_mask(PROTO_CMD_STATUS_RX_PENDING, 0);
+  status &= ~PROTO_CMD_STATUS_RX_PENDING;
 
   if(pio_res != PIO_OK) {
     return PROTO_CMD_RESULT_ERROR;
@@ -127,7 +134,7 @@ u08 *proto_cmd_api_rx_begin(u16 size)
   DS("rx begin");
   DNL;
 
-  if(mode == BRIDGE_MODE_FORWARD) {
+  if(mode == PROTO_CMD_MODE_BRIDGE) {
     pio_util_recv_packet(size);
   }
 
@@ -142,38 +149,54 @@ u08 proto_cmd_api_rx_end(u16 size)
   return PROTO_CMD_RESULT_OK;
 }
 
-// ----- handler -----
+// ----- proto_cmd config -----
 
-u08 bridge_get_mode(void)
+void proto_cmd_api_set_mode(u16 new_mode)
+{
+  // make sure we are not attached
+  if(status & PROTO_CMD_STATUS_ATTACHED) {
+    return;
+  }
+
+  mode = new_mode & PROTO_CMD_MODE_MASK;
+  transfer = new_mode & PROTO_CMD_MODE_TRANSFER_MASK;
+}
+
+u16 proto_cmd_api_get_mode(void)
 {
   return mode;
 }
 
-void bridge_set_mode(u08 new_mode)
+void proto_cmd_api_set_mac(mac_t mac)
 {
-  mode = new_mode;
+  param_set_mac(mac);
 }
 
-u08 bridge_get_transfer(void)
+void proto_cmd_api_get_mac(mac_t mac)
 {
-  return transfer;
+  param_get_mac(mac);
 }
 
-void bridge_set_transfer(u08 new_transfer)
+void proto_cmd_api_get_def_mac(mac_t mac)
 {
-  transfer = new_transfer;
+  param_get_def_mac(mac);
 }
+
+// ----- handler -----
+
 
 void bridge_init(u08 pio_ok)
 {
   // set status flag
-  proto_cmd_set_status_mask(PROTO_CMD_STATUS_HW_INIT, 0);
+  if(pio_ok) {
+    status |= PROTO_CMD_STATUS_HW_INIT;
+  }
 }
 
 static u08 has_packet(void)
 {
   // normal operation
-  if(mode == BRIDGE_MODE_FORWARD) {
+  if(mode == PROTO_CMD_MODE_BRIDGE) {
     // check for pending packets and pio device
     u08 n = pio_has_recv();
     return (n > 0);
@@ -193,7 +216,8 @@ void bridge_handle(void)
 {
   if(!rx_notified && has_packet()) {
     DS("RX_PENDING!"); DNL;
-    proto_cmd_set_status_mask(PROTO_CMD_STATUS_RX_PENDING, 1);
+    status |= PROTO_CMD_STATUS_RX_PENDING;
+    proto_cmd_trigger_status();
     rx_notified = 1;
   }
 }

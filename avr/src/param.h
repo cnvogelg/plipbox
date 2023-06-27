@@ -30,7 +30,7 @@
 #include "global.h"
 
 typedef struct {
-  u08 mac_addr[6];
+  mac_t mac_addr;
 
   u08 flow_ctl;
   u08 full_duplex;
@@ -59,5 +59,9 @@ u08 param_load(void);
 void param_reset(void);
 // show params
 void param_dump(void);
+
+void param_get_def_mac(mac_t mac);
+void param_get_mac(mac_t mac);
+void param_set_mac(const mac_t mac);
 
 #endif

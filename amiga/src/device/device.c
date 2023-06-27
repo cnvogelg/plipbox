@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "compiler.h"
 #include "device.h"
+#include "hw.h"
 
 PUBLIC VOID SAVEDS ServerTask(VOID);
 PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
@@ -165,13 +166,6 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1,struct IOSana2Req *ios2), REG(d0,ULONG uni
          */
          if (pb->pb_DevNode.lib_OpenCnt == 1)
             pb->pb_Unit = unit;
-
-         /* setup default mac */
-         {
-            unsigned char addr[6] = { 0x1a,0x11,0xaf,0xa0,0x47,0x11};
-            memcpy(pb->pb_CfgAddr, addr, HW_ADDRFIELDSIZE);
-            memcpy(pb->pb_DefAddr, addr, HW_ADDRFIELDSIZE);
-         }
 
          /*
          ** Each opnener get's it's own BufferManagement. This is neccessary
@@ -395,6 +389,7 @@ PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
 PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPTR))
 {
    ULONG mtu;
+   UWORD oldWire = ios2->ios2_WireError;
    
       /* mark request as active */
    ios2->ios2_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
@@ -484,8 +479,8 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_GETSTATIONADDRESS:
-         memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE); /* current */
-         memcpy(ios2->ios2_DstAddr, pb->pb_DefAddr, HW_ADDRFIELDSIZE); /* default */
+         memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
+         memcpy(ios2->ios2_DstAddr, pb->pb_DefAddr, HW_ADDRFIELDSIZE);
       break;
          
       case S2_DEVICEQUERY:
@@ -621,9 +616,18 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       /*case S2_ADDMULTICASTADDRESS:*/
       /*case S2_DELMULTICASTADDRESS:*/
       /*case S2_MULTICAST:*/
-      default:
-         ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
-         ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+      default: {
+        /* ask hw driver if its a special command */
+        BOOL is_cmd = hw_can_handle_special_cmd(pb, ios2->ios2_Req.io_Command);
+        if(is_cmd) {
+           ios2->ios2_WireError = oldWire;
+           DevForwardIO(pb, ios2);
+           ios2 = NULL;
+        } else {
+           ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
+           ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
+        }
+      }
       break;
    }
 

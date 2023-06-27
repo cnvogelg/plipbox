@@ -29,21 +29,7 @@
 
 #include "global.h"
 
-// bridge modes
-#define BRIDGE_MODE_FORWARD           0 // normal forwarding via pkt_buf
-#define BRIDGE_MODE_LOOPBACK_BUF      1 // copy to pkt_buf and back
-#define BRIDGE_MODE_LOOPBACK_DEV_BUF  2 // copy to pkt_buf and then to dev
-
-// bridge transfer
-#define BRIDGE_TRANSFER_BUF           0
-#define BRIDGE_TRANSFER_SPI           1
-
 extern void bridge_init(u08 pio_ok);
 extern void bridge_handle(void);
-
-extern u08 bridge_get_mode(void);
-extern void bridge_set_mode(u08 mode);
-extern u08 bridge_get_transfer(void);
-extern void bridge_set_transfer(u08 mode);
 
 #endif

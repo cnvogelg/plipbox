@@ -26,7 +26,7 @@
 
 #include <avr/interrupt.h>
 
-#include "types.h"
+#include "global.h"
 #include "hw_timer.h"
 
 volatile hw_timer_ms_t  timer_ms;
