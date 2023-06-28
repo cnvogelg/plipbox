@@ -166,7 +166,7 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
         mac_t mac;
         res = proto_cmd_get_mac(hwb->proto, mac);
         if(res == PROTO_RET_OK) {
-          CopyMem(pb->pb_CfgAddr, mac, MAC_SIZE);
+          CopyMem(mac, pb->pb_CfgAddr, MAC_SIZE);
         }
       }
       break;

@@ -74,7 +74,7 @@ static ULONG data_offset = 0;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K";
+  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K,-M=MODE/N/K";
 enum args_offset {
   DEVICE_ARG,
   UNIT_ARG,
@@ -82,6 +82,7 @@ enum args_offset {
   VERBOSE_ARG,
   REPLY_ARG,
   DELAY_ARG,
+  MODE_ARG,
   NUM_ARGS
 };
 static struct RDArgs *args_rd = NULL;
@@ -401,6 +402,7 @@ int main(void)
   BOOL ok = TRUE;
   ULONG unit;
   ULONG mtu;
+  ULONG mode;
   char *dev_name;
 
 #ifndef __SASC
@@ -430,6 +432,11 @@ int main(void)
   } else {
     mtu = 1500;
   }
+  if(args_array[MODE_ARG] != 0) {
+    mode = *((ULONG *)args_array[MODE_ARG]);
+  } else {
+    mode = S2PB_MODE_LOOPBACK_BUF;
+  }
 
   /* alloc buffer */
   pkt_buf_size = mtu;
@@ -454,10 +461,10 @@ int main(void)
           dump_mac("def_mac", def_mac);
 
           /* set mode */
-          plipbox_set_mode(S2PB_MODE_LOOPBACK_BUF);
-          UWORD mode;
-          plipbox_get_mode(&mode);
-          Printf("mode:%ld\n", (ULONG)mode);
+          UWORD pb_mode = (UWORD)mode;
+          plipbox_set_mode(pb_mode);
+          plipbox_get_mode(&pb_mode);
+          Printf("mode:%ld\n", (ULONG)pb_mode);
 
           /* set device online */
           if(sana_online()) {
