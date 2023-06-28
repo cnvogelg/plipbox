@@ -3,7 +3,8 @@ include ../config/define.mk
 # the plipbox test tool
 DEV_TEST_TOOL_NAME = dev_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 DEV_TEST_TOOL = $(BIN_DIR)/$(DEV_TEST_TOOL_NAME)
-DEV_TEST_TOOL_OBJ = $(BUILD_PATH)/dev_test.o
+DEV_TEST_TOOL_SRC = dev_test.c atimer.c
+DEV_TEST_TOOL_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(DEV_TEST_TOOL_SRC))
 
 # the udp test tool
 UDP_TEST_TOOL_NAME = udp_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -31,7 +32,7 @@ dev_test: $(DEV_TEST_TOOL)
 
 $(DEV_TEST_TOOL): $(DEV_TEST_TOOL_OBJ)
 	@echo "  LNK $@"
-	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$<) \
+	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(DEV_TEST_TOOL_OBJ)) \
 	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
 
 # --- udp test tool ---

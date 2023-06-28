@@ -45,6 +45,7 @@
 #include <devices/plipbox.h>
 
 #include "compiler.h"
+#include "atimer.h"
 
 typedef UBYTE mac_t[6];
 #define MAC_SIZE 6
@@ -63,6 +64,7 @@ static struct MsgPort *write_port = NULL;
 static struct IOSana2Req *write_req = NULL;
 static struct MsgPort *read_port = NULL;
 static struct IOSana2Req *read_req = NULL;
+static atimer_handle_t *atimer;
 
 static struct Device *sana_dev = NULL;
 static UBYTE *write_buf = NULL;
@@ -296,6 +298,23 @@ static void dump_mac(STRPTR msg, mac_t mac)
     (ULONG)mac[5]);
 }
 
+static atime_stamp_t ts_begin;
+
+static void timing_begin(void) {
+  atimer_eclock_get(atimer, &ts_begin);
+}
+
+static void timing_end(ULONG bytes) {
+  atime_stamp_t ts_end;
+  atime_stamp_t delta;
+  atimer_eclock_get(atimer, &ts_end);
+  atimer_eclock_delta(&ts_end, &ts_begin, &delta);
+  ULONG us = atimer_eclock_to_us(atimer, delta.lo);
+  ULONG kBps = atimer_eclock_to_kBps(atimer, delta.lo, bytes);
+  Printf("Speed: bytes=%lu eclk=%lu us=%lu kBps=%lu\n", bytes, delta.lo, us, kBps);
+}
+
+
 static void reply_loop(void)
 {
   ULONG wmask;
@@ -319,7 +338,7 @@ static void reply_loop(void)
     read_req->ios2_Req.io_Command = S2_READORPHAN; /*CMD_READ;*/
     read_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
     read_req->ios2_DataLength = pkt_buf_size;
-    /*read_req->ios2_PacketType = type;*/
+    read_req->ios2_PacketType = 0x800;
     read_req->ios2_Data = read_buf;
     BeginIO((struct IORequest *)read_req);
     wmask = Wait(SIGBREAKF_CTRL_C | (1UL << read_port->mp_SigBit));
@@ -363,12 +382,14 @@ static void reply_loop(void)
         write_req->ios2_Req.io_Command = CMD_WRITE;
         write_req->ios2_Req.io_Flags = 0;
         write_req->ios2_DataLength = pkt_buf_size;
-        /*write_req->ios2_PacketType = type;*/
+        write_req->ios2_PacketType = 0x800;
         write_req->ios2_Data = write_buf;
+        timing_begin();
         if(DoIO((struct IORequest *)write_req) != 0) {
           sana_error(write_req);
           break;
         }
+        timing_end(pkt_buf_size);
       }
     }
   }
@@ -419,33 +440,41 @@ int main(void)
       /* open device */
       Printf((STRPTR)"device: %s:%lu\n", (ULONG)dev_name, unit);
       if(open_device(dev_name, unit, 0)) {
+        atimer = atimer_init((struct Library *)SysBase);
+        if(atimer != NULL) {
 
-        /* set custom mac */
-        mac_t my_mac = { 0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe };
-        plipbox_set_mac(my_mac);
+          /* set custom mac */
+          mac_t my_mac = { 0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe };
+          plipbox_set_mac(my_mac);
 
-        mac_t cur_mac, def_mac;
-        sana_get_station_address(cur_mac, def_mac);
-        dump_mac("cur_mac", cur_mac);
-        dump_mac("def_mac", def_mac);
+          /* get mac again */
+          mac_t cur_mac, def_mac;
+          sana_get_station_address(cur_mac, def_mac);
+          dump_mac("cur_mac", cur_mac);
+          dump_mac("def_mac", def_mac);
 
-        /* set mode */
-        plipbox_set_mode(S2PB_MODE_LOOPBACK_BUF);
-        UWORD mode;
-        plipbox_get_mode(&mode);
-        Printf("mode:%ld\n", (ULONG)mode);
+          /* set mode */
+          plipbox_set_mode(S2PB_MODE_LOOPBACK_BUF);
+          UWORD mode;
+          plipbox_get_mode(&mode);
+          Printf("mode:%ld\n", (ULONG)mode);
 
-        /* set device online */
-        if(sana_online()) {
+          /* set device online */
+          if(sana_online()) {
 
-          reply_loop();
+            reply_loop();
 
-          /* finally offline again */
-          if(!sana_offline()) {
-            PutStr((STRPTR)"Error going offline!\n");
+            /* finally offline again */
+            if(!sana_offline()) {
+              PutStr((STRPTR)"Error going offline!\n");
+            }
+          } else {
+            PutStr((STRPTR)"Error going online!\n");
           }
+
+          atimer_exit(atimer);
         } else {
-          PutStr((STRPTR)"Error going online!\n");
+          PutStr((STRPTR)"Error opening timer!\n");
         }
       }
       close_device();
