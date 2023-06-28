@@ -44,6 +44,7 @@
 #define DB(x)
 #define DW(x)
 #define DL(x)
+#define DM(x)
 #define DP(x)
 #define DNL
 #define DSPC

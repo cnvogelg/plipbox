@@ -39,7 +39,6 @@ DIST_BOARDS= arduino avrnetio nano
 
 # select board
 BOARD ?= nano
-DEBUG ?= 1
 DEV_ENC28J60 ?= 1
 
 ifeq "$(BOARD)" "arduino"
@@ -129,9 +128,10 @@ endif
 PROJECT = plipbox
 include ../../version.mk
 BUILD_DATE = $(shell date '+%Y%m%d')
+BUILD_TYPE ?= DEBUG
 
 # basename of output
-BASENAME = $(PROJECT)-$(VERSION)-$(UART_BAUD)-$(BOARD)-$(MCU)
+BASENAME = $(PROJECT)-$(VERSION)-$(UART_BAUD)-$(BOARD)-$(MCU)-$(BUILD_TYPE)
 # project
 OUTPUT = $(OUTDIR)/$(BASENAME)
 # dist dir
@@ -187,7 +187,7 @@ CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
 CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
 CFLAGS_LOCAL += -DF_CPU=$(F_CPU) -DCONFIG_PTR_BITS=16
 # debug
-ifeq "$(DEBUG)" "1"
+ifeq "$(BUILD_TYPE)" "DEBUG"
 #CFLAGS_LOCAL += -DDEBUG_PROTO_ATOM
 CFLAGS_LOCAL += -DDEBUG_PROTO_CMD
 endif
@@ -290,14 +290,10 @@ build_all: clean
 	$(MAKE) build BOARD=arduino MCU=atmega328
 
 dist:
-	$(MAKE) DEBUG=0 dist_int
+	$(MAKE) BUILD_TYPE=RELEASE
 
-dist_int: build_all
-	@rm -rf $(DISTDIR)
-	@mkdir -p $(DISTDIR)
-	@cp $(BUILD)/*.hex $(DISTDIR)
-	@rm -rf $(BUILD)
-	@ls -la $(DISTDIR)
+rprog:
+	$(MAKE) BUILD_TYPE=RELEASE prog
 
 # ----- Helper Rules -----
 
