@@ -106,8 +106,13 @@ int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes)
     return res;
   }
 
+  /* align size to be even */
+  if(num_bytes & 1) {
+    num_bytes++;
+  }
+
   res = proto_atom_write_block(proto, PROTO_CMD_TX_BUF, buf, num_bytes);
-  d8(("-> block: res=%ld\n", (LONG)res));
+  d8(("-> block: size=%lu res=%ld\n", (ULONG)num_bytes, (LONG)res));
   if(res != PROTO_RET_OK) {
     return res;
   }
@@ -139,14 +144,21 @@ int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWO
   }
 
   /* check max size */
-  if(*num_bytes > max_bytes) {
+  UWORD rx_bytes = *num_bytes;
+  if(rx_bytes > max_bytes) {
     return PROTO_RET_RX_TOO_LARGE;
   }
 
   /* anything to read? */
-  if(*num_bytes > 0) {
-    res = proto_atom_read_block(proto, PROTO_CMD_RX_BUF, buf, *num_bytes);
-    d8(("-> block %ld\n", (LONG)res));
+  if(rx_bytes > 0) {
+
+    /* align size to be even */
+    if(rx_bytes & 1) {
+      rx_bytes++;
+    }
+
+    res = proto_atom_read_block(proto, PROTO_CMD_RX_BUF, buf, rx_bytes);
+    d8(("-> block: size=%lu res=%ld\n", (ULONG)rx_bytes, (LONG)res));
     if(res != PROTO_RET_OK) {
       return res;
     }

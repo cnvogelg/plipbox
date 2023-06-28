@@ -70,11 +70,12 @@ static struct Device *sana_dev = NULL;
 static UBYTE *write_buf = NULL;
 static UBYTE *read_buf = NULL;
 static ULONG pkt_buf_size;
+static UWORD frame_len = 0;
 static ULONG data_offset = 0;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K,-M=MODE/N/K";
+  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K,-M=MODE/N/K,-F=FRAMELEN/N/K";
 enum args_offset {
   DEVICE_ARG,
   UNIT_ARG,
@@ -83,6 +84,7 @@ enum args_offset {
   REPLY_ARG,
   DELAY_ARG,
   MODE_ARG,
+  FRAME_LEN_ARG,
   NUM_ARGS
 };
 static struct RDArgs *args_rd = NULL;
@@ -259,7 +261,7 @@ static BOOL plipbox_get_mode(UWORD *mode)
 static void fill_packet(void)
 {
   /* fill packet */
-  for(ULONG i=0;i<pkt_buf_size;i++) {
+  for(ULONG i=0;i<frame_len;i++) {
     UBYTE ch = (UBYTE)((i + data_offset) & 0xff);
     write_buf[i] = ch;
   }
@@ -267,7 +269,7 @@ static void fill_packet(void)
 
 static void check_packet(void)
 {
-  for(ULONG i=0;i<pkt_buf_size;i++) {
+  for(ULONG i=0;i<frame_len;i++) {
     UBYTE ch = (UBYTE)((i + data_offset) & 0xff);
     if(ch != read_buf[i]) {
       Printf("Mismatch: @%04lx: got=%02lx want=%02lx\n", i, (ULONG)read_buf[i], (ULONG)write_buf[i]);
@@ -277,12 +279,12 @@ static void check_packet(void)
 
 static void send_packet(void)
 {
-  PutStr((STRPTR)"Send packet...\n");
+  Printf((STRPTR)"Send packet... %lu bytes\n", (ULONG)frame_len);
   /* write request */
   write_req->ios2_Req.io_Command = CMD_WRITE;
   write_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
-  write_req->ios2_DataLength = pkt_buf_size;
-  /*sana_req->ios2_PacketType = type;*/
+  write_req->ios2_DataLength = frame_len;
+  write_req->ios2_PacketType = 0x800;
   write_req->ios2_Data = write_buf;
   DoIO((struct IORequest *)write_req);
   PutStr((STRPTR)"Done\n");
@@ -362,7 +364,7 @@ static void reply_loop(void)
       check_packet();
 
       if(verbose) {
-        PutStr((STRPTR)"Recv\n");
+        Printf((STRPTR)"Recv: size=%lu\n", read_req->ios2_DataLength);
       }
 
       if(do_reply) {
@@ -382,7 +384,7 @@ static void reply_loop(void)
         /* send packet back */
         write_req->ios2_Req.io_Command = CMD_WRITE;
         write_req->ios2_Req.io_Flags = 0;
-        write_req->ios2_DataLength = pkt_buf_size;
+        write_req->ios2_DataLength = frame_len;
         write_req->ios2_PacketType = 0x800;
         write_req->ios2_Data = write_buf;
         timing_begin();
@@ -390,7 +392,7 @@ static void reply_loop(void)
           sana_error(write_req);
           break;
         }
-        timing_end(pkt_buf_size);
+        timing_end(frame_len);
       }
     }
   }
@@ -436,6 +438,11 @@ int main(void)
     mode = *((ULONG *)args_array[MODE_ARG]);
   } else {
     mode = S2PB_MODE_LOOPBACK_BUF;
+  }
+  if(args_array[FRAME_LEN_ARG] != 0) {
+    frame_len = *((ULONG *)args_array[FRAME_LEN_ARG]);
+  } else {
+    frame_len = mtu;
   }
 
   /* alloc buffer */
