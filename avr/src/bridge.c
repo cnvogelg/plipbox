@@ -50,19 +50,21 @@ static u08 status = 0;
 void proto_cmd_api_attach(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("attach"));
+  uart_send_pstring(PSTR("proto: attach"));
   uart_send_crlf();
 
   status |= PROTO_CMD_STATUS_ATTACHED;
+  pio_enable_rx();
 }
 
 void proto_cmd_api_detach(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("detach"));
+  uart_send_pstring(PSTR("proto: detach"));
   uart_send_crlf();
 
   status &= ~PROTO_CMD_STATUS_ATTACHED;
+  pio_disable_rx();
 }
 
 u16 proto_cmd_api_get_status(void)
@@ -170,6 +172,7 @@ u16 proto_cmd_api_get_mode(void)
 void proto_cmd_api_set_mac(mac_t mac)
 {
   param_set_mac(mac);
+  pio_set_mac(mac);
 }
 
 void proto_cmd_api_get_mac(mac_t mac)
@@ -191,6 +194,9 @@ void bridge_init(u08 pio_ok)
   if(pio_ok) {
     status |= PROTO_CMD_STATUS_HW_INIT;
   }
+
+  // setup pio mac
+  pio_set_mac(param.mac_addr);
 }
 
 static u08 has_packet(void)

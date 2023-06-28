@@ -69,20 +69,12 @@ int main(void)
 #endif
 
   // parallel proto init
-  uart_send_pstring(PSTR("proto "));
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("proto: init\r\n"));
   proto_cmd_init();
 
   // packet i/o adapter init (eth)
-  uart_send_pstring(PSTR("pio"));
-  u08 ok = pio_init(param.mac_addr, pio_util_get_init_flags());
-  if(ok == PIO_OK) {
-    uart_send_pstring(PSTR("ok"));
-  } else {
-    uart_send_hex_byte(ok);
-    uart_send_pstring(PSTR(" ERROR!"));
-  }
-    uart_send_crlf();
-
+  u08 ok = pio_init(pio_util_get_init_flags());
   bridge_init(ok == PIO_OK);
 
   // main loop

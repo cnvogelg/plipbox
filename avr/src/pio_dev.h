@@ -31,24 +31,37 @@
 #include "global.h"
 
 /* function pointers */
-typedef u08  (*pio_dev_init_t)(const u08 mac[6],u08 flags);
+typedef u08  (*pio_dev_init_t)(u08 flags);
 typedef void (*pio_dev_exit_t)(void);
+
+typedef void (*pio_dev_set_mac_t)(const u08 mac_addr[6]);
+typedef void (*pio_dev_enable_rx_t)(void);
+typedef void (*pio_dev_disable_rx_t)(void);
+
 typedef u08  (*pio_dev_send_t)(const u08 *buf, u16 size);
 typedef u08  (*pio_dev_recv_size_t)(u16 *got_size);
 typedef u08  (*pio_dev_recv_t)(u08 *buf, u16 size);
 typedef u08  (*pio_dev_has_recv_t)(void);
+
 typedef u08  (*pio_dev_status_t)(u08 status_id, u08 *value);
 typedef u08  (*pio_dev_control_t)(u08 control_id, u08 value);
 
 /* device structure */
 typedef struct {
   const char         *name;
+
   pio_dev_init_t      init_f;
   pio_dev_exit_t      exit_f;
+
+  pio_dev_set_mac_t    set_mac_f;
+  pio_dev_enable_rx_t  enable_rx_f;
+  pio_dev_disable_rx_t disable_rx_f;
+
   pio_dev_send_t      send_f;
   pio_dev_recv_size_t recv_size_f;
   pio_dev_recv_t      recv_f;
   pio_dev_has_recv_t  has_recv_f;
+
   pio_dev_status_t    status_f;
   pio_dev_control_t   control_f;
 } pio_dev_t;
@@ -62,16 +75,34 @@ static inline const PGM_P pio_dev_name(pio_dev_ptr_t pd)
   return (PGM_P)pgm_read_word(&pd->name);
 }
 
-static inline u08 pio_dev_init(pio_dev_ptr_t pd, const u08 mac[6], u08 flags)
+static inline u08 pio_dev_init(pio_dev_ptr_t pd, u08 flags)
 {
   pio_dev_init_t init_f = (pio_dev_init_t)pgm_read_word(&pd->init_f);
-  return init_f(mac, flags);
+  return init_f(flags);
 }
 
 static inline void pio_dev_exit(pio_dev_ptr_t pd)
 {
   pio_dev_exit_t exit_f = (pio_dev_exit_t)pgm_read_word(&pd->exit_f);
   exit_f();
+}
+
+static inline void pio_dev_set_mac(pio_dev_ptr_t pd, const u08 mac[6])
+{
+  pio_dev_set_mac_t set_mac_f = (pio_dev_set_mac_t)pgm_read_word(&pd->set_mac_f);
+  set_mac_f(mac);
+}
+
+static inline void pio_dev_enable_rx(pio_dev_ptr_t pd)
+{
+  pio_dev_enable_rx_t enable_rx_f = (pio_dev_enable_rx_t)pgm_read_word(&pd->enable_rx_f);
+  enable_rx_f();
+}
+
+static inline void pio_dev_disable_rx(pio_dev_ptr_t pd)
+{
+  pio_dev_disable_rx_t disable_rx_f = (pio_dev_disable_rx_t)pgm_read_word(&pd->disable_rx_f);
+  disable_rx_f();
 }
 
 static inline u08 pio_dev_send(pio_dev_ptr_t pd, const u08 *buf, u16 size)

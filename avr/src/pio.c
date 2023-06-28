@@ -55,7 +55,7 @@ u08 pio_set_device(u08 id)
   return 0;
 }
 
-u08 pio_init(const u08 mac[6],u08 flags)
+u08 pio_init(u08 flags)
 {
   // get current device
   cur_dev = (pio_dev_ptr_t)pgm_read_word(devices + dev_id);
@@ -67,11 +67,9 @@ u08 pio_init(const u08 mac[6],u08 flags)
   uart_send_pstring(name);
 
   // call init
-  u08 result = pio_dev_init(cur_dev, mac, flags);
+  u08 result = pio_dev_init(cur_dev, flags);
   if(result == PIO_OK) {
-    uart_send_pstring(PSTR(": ok! mac="));
-    net_dump_mac(mac);
-    uart_send_pstring(PSTR(" flags="));
+    uart_send_pstring(PSTR(": ok! flags="));
     uart_send_hex_byte(flags);
     // show revision
     u08 rev;
@@ -92,7 +90,34 @@ void pio_exit(void)
 {
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("pio: exit\r\n"));
+
   pio_dev_exit(cur_dev);
+}
+
+void pio_set_mac(const u08 mac[6])
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("pio: set_mac: "));
+  uart_send_hex_mac(mac);
+  uart_send_crlf();
+
+  pio_dev_set_mac(cur_dev, mac);
+}
+
+void pio_enable_rx(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("pio: enable_rx\r\n"));
+
+  pio_dev_enable_rx(cur_dev);
+}
+
+void pio_disable_rx(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("pio: disable_rx\r\n"));
+
+  pio_dev_disable_rx(cur_dev);
 }
 
 u08 pio_send(const u08 *buf, u16 size)

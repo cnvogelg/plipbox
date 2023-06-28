@@ -56,7 +56,7 @@ void uart_send_hex_word(u16 data);
 void uart_send_hex_dword(u32 data); 
 
 // send mac
-void uart_send_hex_mac(mac_t mac);
+void uart_send_hex_mac(const mac_t mac);
 
 #ifdef DEBUG
 // send free stack

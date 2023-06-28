@@ -336,7 +336,7 @@ static inline void enc28j60_disable_broadcast ( void )
   writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
 }
 
-static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
+static u08 enc28j60_init(u08 flags)
 {
   spi_init();
   spi_disable_eth();
@@ -413,6 +413,14 @@ static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
   // there is no B8 out yet
   if (rev > 5) ++rev;
 
+  SetBank(ECON1);
+  writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
+
+  return PIO_OK;
+}
+
+static void enc28j60_set_mac(const u08 macaddr[6])
+{
   // set mac    
   writeRegByte(MAADR5, macaddr[0]);
   writeRegByte(MAADR4, macaddr[1]);
@@ -420,20 +428,27 @@ static u08 enc28j60_init(const u08 macaddr[6], u08 flags)
   writeRegByte(MAADR2, macaddr[3]);
   writeRegByte(MAADR1, macaddr[4]);
   writeRegByte(MAADR0, macaddr[5]);
-  
-  SetBank(ECON1);
-  writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
-  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+}
 
-  return PIO_OK;
+static void enc28j60_enable_rx(void)
+{
+  SetBank(ECON1);
+  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+}
+
+static void enc28j60_disable_rx(void)
+{
+  SetBank(ECON1);
+  writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);
 }
 
 // ---------- exit ----------
 
 static void enc28j60_exit(void)
 {
-  SetBank(ECON1);
-  writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_RXEN);    
+  // soft reset cpu
+  writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
+  _delay_ms(2); // errata B7/2
 }
 
 // ---------- control ----------
@@ -677,12 +692,19 @@ uint8_t enc28j60_do_BIST ( void )
 static const char PROGMEM dev_name[] = "enc28j60";
 const pio_dev_t PROGMEM pio_dev_enc28j60 = {
   .name = dev_name,
+
   .init_f = enc28j60_init,
   .exit_f = enc28j60_exit,
+
+  .set_mac_f = enc28j60_set_mac,
+  .enable_rx_f = enc28j60_enable_rx,
+  .disable_rx_f = enc28j60_disable_rx,
+
   .send_f = enc28j60_send,
   .recv_size_f = enc28j60_recv_size,
   .recv_f = enc28j60_recv,
   .has_recv_f = enc28j60_has_recv,
+
   .status_f = enc28j60_status,
   .control_f = enc28j60_control
 };

@@ -128,7 +128,7 @@ void uart_send_hex_dword(u32 data)
   uart_send_data(buf,8);
 }
 
-void uart_send_hex_mac(mac_t mac)
+void uart_send_hex_mac(const mac_t mac)
 {
   for(u08 i=0;i<6;i++) {
     uart_send_hex_byte(mac[i]);

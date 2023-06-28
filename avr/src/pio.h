@@ -50,8 +50,12 @@
 /* --- API --- */
 
 extern u08 pio_set_device(u08 id);
-extern u08 pio_init(const u08 mac[6],u08 flags);
+extern u08 pio_init(u08 flags);
 extern void pio_exit(void);
+
+extern void pio_set_mac(const u08 mac[6]);
+extern void pio_enable_rx(void);
+extern void pio_disable_rx(void);
 
 extern u08 pio_send(const u08 *buf, u16 size);
 extern u08 pio_recv_size(u16 *got_size);
