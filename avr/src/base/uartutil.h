@@ -58,6 +58,11 @@ void uart_send_hex_dword(u32 data);
 // send mac
 void uart_send_hex_mac(const mac_t mac);
 
+// send hex line
+void uart_send_hex_line(u16 addr, const u08 *data, u08 size);
+// send hex buf
+void uart_send_hex_buf(u16 addr, const u08 *data, u16 size);
+
 #ifdef DEBUG
 // send free stack
 void uart_send_free_stack(void);

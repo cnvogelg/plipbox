@@ -38,6 +38,8 @@
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
 
+#include "dump.h"
+
 static u08 mode = PROTO_CMD_MODE_BRIDGE;
 static u08 transfer = PROTO_CMD_MODE_BUF_TRANSFER;
 static u08 rx_notified = 0;
@@ -54,7 +56,6 @@ void proto_cmd_api_attach(void)
   uart_send_crlf();
 
   status |= PROTO_CMD_STATUS_ATTACHED;
-  pio_enable_rx();
 }
 
 void proto_cmd_api_detach(void)
@@ -64,7 +65,6 @@ void proto_cmd_api_detach(void)
   uart_send_crlf();
 
   status &= ~PROTO_CMD_STATUS_ATTACHED;
-  pio_disable_rx();
 }
 
 u16 proto_cmd_api_get_status(void)
@@ -88,6 +88,12 @@ u08 proto_cmd_api_tx_end(u16 size)
 {
   DS("tx end");
   DNL;
+
+#ifdef DEBUG_DUMP_FRAMES
+  dump_eth_pkt(pkt_buf, size);
+  uart_send_crlf();
+  uart_send_hex_buf(0, pkt_buf, size);
+#endif
 
   // send pkt_buf via pio
   u08 pio_res = pio_util_send_packet(size);
@@ -139,6 +145,12 @@ u08 *proto_cmd_api_rx_begin(u16 size)
   if(mode == PROTO_CMD_MODE_BRIDGE) {
     pio_util_recv_packet(size);
   }
+
+#ifdef DEBUG_DUMP_FRAMES
+  dump_eth_pkt(pkt_buf, size);
+  uart_send_crlf();
+  uart_send_hex_buf(0, pkt_buf, size);
+#endif
 
   return pkt_buf;
 }
@@ -197,6 +209,7 @@ void bridge_init(u08 pio_ok)
 
   // setup pio mac
   pio_set_mac(param.mac_addr);
+  pio_enable_rx();
 }
 
 static u08 has_packet(void)

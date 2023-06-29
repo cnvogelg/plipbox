@@ -1,9 +1,9 @@
 device=ram:plipbox.device
 #unit=0
 
-#address=192.168.0.1
-#netmask=255.255.255.0
-configure=dhcp
+address=10.1.1.42
+netmask=255.255.255.0
+#configure=dhcp
 
 #configure=auto
 #configure=fastauto

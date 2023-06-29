@@ -138,6 +138,34 @@ void uart_send_hex_mac(const mac_t mac)
   }
 }
 
+void uart_send_hex_line(u16 addr, const u08 *data, u08 size)
+{
+  if(size > 16) {
+    size = 16;
+  }
+  uart_send_hex_word(addr);
+  uart_send_pstring(PSTR(": "));
+  for(u08 i=00;i<size;i++) {
+    uart_send_hex_byte(data[i]);
+    uart_send(' ');
+  }
+  uart_send_crlf();
+}
+
+void uart_send_hex_buf(u16 addr, const u08 *data, u16 size)
+{
+  while(size > 0) {
+    u08 line = 16;
+    if(size < 16) {
+      line = (u08)size;
+    }
+    uart_send_hex_line(addr, data, line);
+    size -= line;
+    data += line;
+    addr += line;
+  }
+}
+
 #ifdef DEBUG
 void uart_send_free_stack(void)
 {
