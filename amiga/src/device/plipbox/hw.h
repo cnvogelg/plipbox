@@ -42,10 +42,11 @@ GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb);
 GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
 
 GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
-
-GLOBAL REGARGS ULONG hw_recv_sigmask(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb);
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
+
+GLOBAL REGARGS ULONG hw_status_get_sigmask(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL  hw_status_is_rx_pending(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL  hw_status_update(struct PLIPBase *pb);
 
 GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
                                    STRPTR *template_str,

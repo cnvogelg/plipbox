@@ -34,6 +34,8 @@
 #define DNL    uart_send_crlf()
 // debug space
 #define DSPC   uart_send(' ')
+// timestamp
+#define DT     uart_send_time_stamp_spc()
 
 #else
 // debug output is disabled
@@ -48,6 +50,7 @@
 #define DP(x)
 #define DNL
 #define DSPC
+#define DT
 
 #endif
 

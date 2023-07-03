@@ -11,8 +11,10 @@ extern void KPrintF(char *, ...), KGetChar(void);
 #else
 #define d(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
 #endif
+#define dr(x) do { KPrintF x; } while(0)
 #else
 #define d(x)
+#define dr(x)
 #endif
 
 #if (DEBUG & 2)
@@ -21,8 +23,10 @@ extern void KPrintF(char *, ...), KGetChar(void);
 #else
 #define d2(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
 #endif
+#define d2r(x) do { KPrintF x; } while(0)
 #else
 #define d2(x)
+#define d2r(x)
 #endif
 
 #if (DEBUG & 4)
@@ -31,8 +35,10 @@ extern void KPrintF(char *, ...), KGetChar(void);
 #else
 #define d4(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
 #endif
+#define d4r(x) do { KPrintF x; } while(0)
 #else
 #define d4(x)
+#define d4r(x)
 #endif
 
 #if (DEBUG & 8)
@@ -41,8 +47,10 @@ extern void KPrintF(char *, ...), KGetChar(void);
 #else
 #define d8(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
 #endif
+#define d8r(x) do { KPrintF x; } while(0)
 #else
 #define d8(x)
+#define d8r(x)
 #endif
 
 #endif

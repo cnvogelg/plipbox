@@ -23,9 +23,12 @@
 #define PROTO_CMD_GET_DEF_MAC     0x74 // read_block [6]
 
 // bitmask of status
+#define PROTO_CMD_STATUS_IDLE          0x00
 #define PROTO_CMD_STATUS_HW_INIT       0x01
 #define PROTO_CMD_STATUS_ATTACHED      0x02
 #define PROTO_CMD_STATUS_RX_PENDING    0x04
+#define PROTO_CMD_STATUS_RX_ERROR      0x40  // only set with RX_RESULT
+#define PROTO_CMD_STATUS_TX_ERROR      0x80  // only set with TX_RESULT
 
 // mode
 #define PROTO_CMD_MODE_BRIDGE          0x00

@@ -21,6 +21,7 @@ struct HWBase
    proto_handle_t *            proto;
 
    UWORD                       hwb_MaxFrameSize;
+   UWORD                       hwb_DeviceStatus;
 
    /* config options */
    ULONG                       hwb_TimeOutMicros;

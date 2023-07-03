@@ -26,6 +26,10 @@
 
 #include "global.h"
 
+#ifdef DEBUG_BRIDGE
+#define DEBUG
+#endif
+
 #include "debug.h"
 #include "uartutil.h"
 #include "bridge.h"
@@ -42,10 +46,46 @@
 
 static u08 mode = PROTO_CMD_MODE_BRIDGE;
 static u08 transfer = PROTO_CMD_MODE_BUF_TRANSFER;
-static u08 rx_notified = 0;
 static u08 tx_done = 0;
 static u16 loopback_size = 0;
 static u08 status = 0;
+
+static u08 update_rx_pending_status(void)
+{
+  u08 num_pending = 0;
+
+  // normal operation
+  if(mode == PROTO_CMD_MODE_BRIDGE) {
+    // check for pending packets and pio device
+    num_pending = pio_has_recv();
+  }
+  // loopback operation
+  else {
+    if(tx_done) {
+      tx_done = 0;
+      num_pending = 1;
+    }
+  }
+
+  // rx pending not yet set...
+  if((status & PROTO_CMD_STATUS_RX_PENDING) == 0) {
+    // but pio has packets... so set flag
+    if(num_pending > 0) {
+      status |= PROTO_CMD_STATUS_RX_PENDING;
+      DT; DS("RX++"); DNL;
+      return 1;
+    }
+  }
+  // rx pending is set
+  else {
+    // pio has no packets... clear flag
+    if(num_pending == 0) {
+      status &= ~PROTO_CMD_STATUS_RX_PENDING;
+      DT; DS("RX--"); DNL;
+    }
+  }
+  return 0;
+}
 
 // ----- implement API of proto_cmd -----
 
@@ -67,6 +107,7 @@ void proto_cmd_api_detach(void)
   status &= ~PROTO_CMD_STATUS_ATTACHED;
 }
 
+// async poll of status
 u16 proto_cmd_api_get_status(void)
 {
   return status;
@@ -96,19 +137,20 @@ u08 proto_cmd_api_tx_end(u16 size)
 #endif
 
   // send pkt_buf via pio
+  u08 tx_status = PROTO_CMD_STATUS_IDLE;
   u08 pio_res = pio_util_send_packet(size);
   if(pio_res == PIO_OK) {
-
     // loopback?
     if(mode != PROTO_CMD_MODE_BRIDGE) {
       tx_done = 1;
       loopback_size = size;
     }
-
-    return PROTO_CMD_RESULT_OK;
   } else {
-    return PROTO_CMD_RESULT_ERROR;
+    tx_status = PROTO_CMD_STATUS_TX_ERROR;
   }
+
+  update_rx_pending_status();
+  return status | tx_status;
 }
 
 // ----- rx packet from pio and send to parallel port -----
@@ -125,16 +167,15 @@ u08 proto_cmd_api_rx_size(u16 *size)
   DW(*size);
   DNL;
 
-  // reset rx notified
-  rx_notified = 0;
-
-  // clear status mask
-  status &= ~PROTO_CMD_STATUS_RX_PENDING;
-
+  u08 rx_status = PROTO_CMD_STATUS_IDLE;
   if(pio_res != PIO_OK) {
-    return PROTO_CMD_RESULT_ERROR;
+    uart_send_pstring(PSTR("RX ERR!\r\n"));
+    *size = 0;
+    rx_status = PROTO_CMD_STATUS_RX_ERROR;
+    update_rx_pending_status();
   }
-  return PROTO_CMD_RESULT_OK;
+
+  return rx_status | status;
 }
 
 u08 *proto_cmd_api_rx_begin(u16 size)
@@ -160,7 +201,8 @@ u08 proto_cmd_api_rx_end(u16 size)
   DS("rx end");
   DNL;
 
-  return PROTO_CMD_RESULT_OK;
+  update_rx_pending_status();
+  return status;
 }
 
 // ----- proto_cmd config -----
@@ -212,31 +254,15 @@ void bridge_init(u08 pio_ok)
   pio_enable_rx();
 }
 
-static u08 has_packet(void)
-{
-  // normal operation
-  if(mode == PROTO_CMD_MODE_BRIDGE) {
-    // check for pending packets and pio device
-    u08 n = pio_has_recv();
-    return (n > 0);
-  }
-  // loopback operation
-  else {
-    if(tx_done) {
-      tx_done = 0;
-      return 1;
-    } else {
-      return 0;
-    }
-  }
-}
-
 void bridge_handle(void)
 {
-  if(!rx_notified && has_packet()) {
-    DS("RX_PENDING!"); DNL;
-    status |= PROTO_CMD_STATUS_RX_PENDING;
-    proto_cmd_trigger_status();
-    rx_notified = 1;
+  // if not in a tx/rx phase then check for incoming packets
+  if(proto_cmd_get_state() == PROTO_CMD_STATE_IDLE) {
+    // check for rx pending
+    u08 is_pending = update_rx_pending_status();
+    if(is_pending) {
+      // send async trigger to host -> will check status
+      proto_cmd_trigger_status();
+    }
   }
 }

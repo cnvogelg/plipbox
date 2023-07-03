@@ -189,7 +189,7 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
        (nextwrite = (struct IOSana2Req *) currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
        currentwrite = nextwrite )
    {
-      if (hw_recv_pending(pb))
+      if (hw_status_is_rx_pending(pb))
       {
          d2(("incoming data!"));
          break;
@@ -411,7 +411,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
    */
    while(ios2 = (struct IOSana2Req *)GetMsg(pb->pb_ServerPort))
    {
-      if (hw_recv_pending(pb))
+      if (hw_status_is_rx_pending(pb))
       {
          d2(("incoming data!"));
          break;
@@ -626,7 +626,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
 
       if (init(pb))
       {
-         ULONG recv=0, portsigmask, recvsigmask, wmask;
+         ULONG got_sigmask=0, port_sigmask, status_sigmask, full_sigmask;
          BOOL running;
 
          /* Ok, we are fine and will tell this mother personally :-) */
@@ -636,26 +636,32 @@ PUBLIC VOID SAVEDS ServerTask(void)
          pb->pb_Flags &= ~PLIPF_REPLYSS;
          ReplyMsg((struct Message*)pb->pb_Startup);
 
-         portsigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
-         recvsigmask = hw_recv_sigmask(pb);
+         port_sigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
+         status_sigmask = hw_status_get_sigmask(pb);
       
-         wmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | portsigmask | recvsigmask;
+         full_sigmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | port_sigmask | status_sigmask;
 
          /* main loop of server task */
-         d2(("--- server main loop: %08lx ---\n", wmask));
+         d2(("--- server main loop: %08lx ---\n", full_sigmask));
          for(running=TRUE;running;)
          {
-            d2(("** wmask is 0x%08lx\n", wmask));
+            d2(("** full sigmask is 0x%08lx\n", full_sigmask));
 
             /* if no recv is pending then wait for incoming signals */
-            if (!hw_recv_pending(pb)) {
+            if (!hw_status_is_rx_pending(pb)) {
                d2(("**> wait\n"));
-               recv = Wait(wmask);
-               d2(("**> wait: got 0x%08lx\n", recv));
+               got_sigmask = Wait(full_sigmask);
+               d2(("**> wait: got 0x%08lx\n", got_sigmask));
+            }
+
+            /* update hw status */
+            if(got_sigmask & status_sigmask) {
+              d2(("** update hw_status\n"));
+              hw_status_update(pb);
             }
 
             /* accept pending receive and start reading */
-            if (hw_recv_pending(pb))
+            if (hw_status_is_rx_pending(pb))
             {
                d2(("*+ do_read\n"));
                doreadreqs(pb);
@@ -668,14 +674,14 @@ PUBLIC VOID SAVEDS ServerTask(void)
             d2(("*- do_write\n"));
             
             /* handle SANA-II send requests */
-            if (recv & portsigmask)
+            if (got_sigmask & port_sigmask)
             {
                d2(("SANA-II request(s)\n"));
                dos2reqs(pb);
             }
 
             /* stop server task */
-            if (recv & SIGBREAKF_CTRL_C)
+            if (got_sigmask & SIGBREAKF_CTRL_C)
             {
                d2(("received break signal\n"));
                running = FALSE;

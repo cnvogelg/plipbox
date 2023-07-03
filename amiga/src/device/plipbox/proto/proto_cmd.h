@@ -15,8 +15,8 @@ extern int proto_cmd_detach(proto_handle_t *proto);
 
 extern int proto_cmd_get_status(proto_handle_t *proto, UWORD *status);
 
-extern int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes);
-extern int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWORD *num_bytes);
+extern int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWORD *status);
+extern int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWORD *num_bytes, UWORD *status);
 
 extern int proto_cmd_set_mode(proto_handle_t *proto, UWORD mode);
 extern int proto_cmd_get_mode(proto_handle_t *proto, UWORD *mode);

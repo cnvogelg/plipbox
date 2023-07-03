@@ -213,22 +213,19 @@ GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    UBYTE *buf = ((UBYTE *)frame) + 2;
-   int ok = proto_cmd_send_frame(hwb->proto, buf, frame->hwf_Size);
-   return ok == PROTO_RET_OK;
-}
-
-GLOBAL REGARGS BOOL hw_recv_pending(struct PLIPBase *pb)
-{
-   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
-   int ok;
-   UWORD status;
-
-   ok = proto_cmd_get_status(hwb->proto, &status);
-   if(ok != PROTO_RET_OK) {
+   UWORD status = 0;
+   int ok = proto_cmd_send_frame(hwb->proto, buf, frame->hwf_Size, &status);
+   if(ok == PROTO_RET_OK) {
+      /* device transfer ok... check status */
+      hwb->hwb_DeviceStatus = status;
+      if(status & PROTO_CMD_STATUS_TX_ERROR) {
+        return FALSE;
+      } else {
+        return TRUE;
+      }
+   } else {
       return FALSE;
    }
-
-   return (status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING;
 }
 
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
@@ -236,14 +233,49 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
    ULONG pkttyp;
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    UBYTE *buf = ((UBYTE *)frame) + 2;
-   int ok = proto_cmd_recv_frame(hwb->proto, buf, HW_ETH_FRAME_SIZE, &frame->hwf_Size);
-   return ok == PROTO_RET_OK;
+   UWORD status = 0;
+   int ok = proto_cmd_recv_frame(hwb->proto, buf, HW_ETH_FRAME_SIZE, &frame->hwf_Size, &status);
+   if(ok == PROTO_RET_OK) {
+      /* device transfer ok... check status */
+      hwb->hwb_DeviceStatus = status;
+      if(status & PROTO_CMD_STATUS_RX_ERROR) {
+        return FALSE;
+      } else {
+        return TRUE;
+      }
+   } else {
+      return FALSE;
+   }
 }
 
-GLOBAL REGARGS ULONG hw_recv_sigmask(struct PLIPBase *pb)
+GLOBAL REGARGS ULONG hw_status_get_sigmask(struct PLIPBase *pb)
 {
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    ULONG sigmask = proto_env_get_trigger_sigmask(hwb->env);
-   d(("hw_recv_sigmask: %lx\n", sigmask));
+   d(("hw_status_get_sigmask: %lx\n", sigmask));
    return sigmask;
+}
+
+GLOBAL REGARGS BOOL hw_status_is_rx_pending(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   UWORD status = hwb->hwb_DeviceStatus;
+   d(("hw_status_is_rx_pending: status=%lx\n", (ULONG)status));
+   return (status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING;
+}
+
+GLOBAL REGARGS BOOL hw_status_update(struct PLIPBase *pb)
+{
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   int ok;
+   UWORD status;
+
+   ok = proto_cmd_get_status(hwb->proto, &status);
+   d(("hw_status_update: status=%lx ok=%lx", (ULONG)status, (ULONG)ok));
+   if(ok != PROTO_RET_OK) {
+      return FALSE;
+   }
+
+   hwb->hwb_DeviceStatus = status;
+   return TRUE;
 }
