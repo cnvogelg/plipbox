@@ -168,6 +168,7 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
    else
    {
       d2(("+hw_send\n"));
+      d4r(("-t-"));
       rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
       d2(("-hw_send\n"));
 #if DEBUG&2
@@ -310,6 +311,7 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
    struct HWFrame *frame = pb->pb_Frame;
 
    d2(("+hw_recv\n"));
+   d4r(("+r+"));
    rv = hw_recv_frame(pb, frame);
    d2(("-hw_recv\n"));
    if (rv)
@@ -650,6 +652,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
             /* if no recv is pending then wait for incoming signals */
             if (!hw_status_is_rx_pending(pb)) {
                d2(("**> wait\n"));
+               d4r(("\nX"));
                got_sigmask = Wait(full_sigmask);
                d2(("**> wait: got 0x%08lx\n", got_sigmask));
             }
@@ -658,17 +661,20 @@ PUBLIC VOID SAVEDS ServerTask(void)
             if(got_sigmask & status_sigmask) {
               d2(("** update hw_status\n"));
               hw_status_update(pb);
+              d4r(("U"));
             }
 
             /* accept pending receive and start reading */
             if (hw_status_is_rx_pending(pb))
             {
+               d4r(("R"));
                d2(("*+ do_read\n"));
                doreadreqs(pb);
                d2(("*- do_read\n"));
             }
             
             /* send packets if any */
+            d4r(("W"));
             d2(("*+ do_write\n"));
             dowritereqs(pb);
             d2(("*- do_write\n"));
@@ -676,6 +682,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
             /* handle SANA-II send requests */
             if (got_sigmask & port_sigmask)
             {
+               d4r(("S"));
                d2(("SANA-II request(s)\n"));
                dos2reqs(pb);
             }

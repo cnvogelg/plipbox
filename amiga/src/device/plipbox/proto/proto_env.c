@@ -151,6 +151,11 @@ ULONG proto_env_wait_event(proto_env_handle_t *ph,
   return got;
 }
 
+void proto_env_confirm_trigger(proto_env_handle_t *ph)
+{
+  pario_confirm_ack_irq(ph->pario);
+}
+
 ULONG proto_env_get_trigger_sigmask(proto_env_handle_t *ph)
 {
   return ph->ack_irq_sigmask;

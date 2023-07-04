@@ -270,6 +270,8 @@ GLOBAL REGARGS BOOL hw_status_update(struct PLIPBase *pb)
    int ok;
    UWORD status;
 
+   proto_env_confirm_trigger(hwb->env);
+
    ok = proto_cmd_get_status(hwb->proto, &status);
    d(("hw_status_update: status=%lx ok=%lx", (ULONG)status, (ULONG)ok));
    if(ok != PROTO_RET_OK) {

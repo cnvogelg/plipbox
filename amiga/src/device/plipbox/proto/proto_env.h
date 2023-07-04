@@ -34,5 +34,6 @@ ULONG proto_env_get_trigger_sigmask(proto_env_handle_t *ph);
 ULONG proto_env_get_timer_sigmask(proto_env_handle_t *ph);
 UWORD proto_env_get_num_triggers(proto_env_handle_t *ph);
 UWORD proto_env_get_num_trigger_signals(proto_env_handle_t *ph);
+void  proto_env_confirm_trigger(proto_env_handle_t *ph);
 
 #endif

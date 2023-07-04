@@ -34,6 +34,7 @@
 #include "uartutil.h"
 #include "bridge.h"
 #include "param.h"
+#include "hw_timer.h"
 
 #include "pkt_buf.h"
 #include "pio_util.h"
@@ -46,9 +47,11 @@
 
 static u08 mode = PROTO_CMD_MODE_BRIDGE;
 static u08 transfer = PROTO_CMD_MODE_BUF_TRANSFER;
-static u08 tx_done = 0;
+static u16 loopback_timeout = 0;
 static u16 loopback_size = 0;
+static u08 loopback_trigger = 0;
 static u08 status = 0;
+static hw_timer_ms_t loopback_start = 0;
 
 static u08 update_rx_pending_status(void)
 {
@@ -61,8 +64,7 @@ static u08 update_rx_pending_status(void)
   }
   // loopback operation
   else {
-    if(tx_done) {
-      tx_done = 0;
+    if(loopback_trigger) {
       num_pending = 1;
     }
   }
@@ -117,19 +119,12 @@ u16 proto_cmd_api_get_status(void)
 
 u08 *proto_cmd_api_tx_begin(u16 size)
 {
-  DS("tx begin ");
-  DW(size);
-  DNL;
-
   // receive packet into pkt_buf
   return pkt_buf;
 }
 
 u08 proto_cmd_api_tx_end(u16 size)
 {
-  DS("tx end");
-  DNL;
-
 #ifdef DEBUG_DUMP_FRAMES
   dump_eth_pkt(pkt_buf, size);
   uart_send_crlf();
@@ -142,7 +137,8 @@ u08 proto_cmd_api_tx_end(u16 size)
   if(pio_res == PIO_OK) {
     // loopback?
     if(mode != PROTO_CMD_MODE_BRIDGE) {
-      tx_done = 1;
+      loopback_timeout = 200;
+      loopback_start = hw_timer_millis();
       loopback_size = size;
     }
   } else {
@@ -158,14 +154,14 @@ u08 proto_cmd_api_tx_end(u16 size)
 u08 proto_cmd_api_rx_size(u16 *size)
 {
   u08 pio_res = PIO_OK;
-  DS("rx size ");
   if(mode == PROTO_CMD_MODE_BRIDGE) {
     pio_res = pio_recv_size(size);
   } else {
     *size = loopback_size;
   }
-  DW(*size);
-  DNL;
+
+  // clear loopback state
+  loopback_trigger = 0;
 
   u08 rx_status = PROTO_CMD_STATUS_IDLE;
   if(pio_res != PIO_OK) {
@@ -180,9 +176,6 @@ u08 proto_cmd_api_rx_size(u16 *size)
 
 u08 *proto_cmd_api_rx_begin(u16 size)
 {
-  DS("rx begin");
-  DNL;
-
   if(mode == PROTO_CMD_MODE_BRIDGE) {
     pio_util_recv_packet(size);
   }
@@ -198,9 +191,6 @@ u08 *proto_cmd_api_rx_begin(u16 size)
 
 u08 proto_cmd_api_rx_end(u16 size)
 {
-  DS("rx end");
-  DNL;
-
   update_rx_pending_status();
   return status;
 }
@@ -258,6 +248,16 @@ void bridge_handle(void)
 {
   // if not in a tx/rx phase then check for incoming packets
   if(proto_cmd_get_state() == PROTO_CMD_STATE_IDLE) {
+
+    // handle loopback
+    if(loopback_timeout > 0) {
+      if(hw_timer_millis_timed_out(loopback_start, loopback_timeout)) {
+        loopback_timeout = 0;
+        loopback_trigger = 1;
+        DT; DS("loop."); DNL;
+      }
+    }
+
     // check for rx pending
     u08 is_pending = update_rx_pending_status();
     if(is_pending) {

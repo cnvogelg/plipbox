@@ -4,7 +4,7 @@ OBJ_DIR=../../obj
 # build varian
 CPUSUFFIX   = 000
 BUILD_TYPE  = DEBUG
-DEBUG_LEVEL = 9   # bitmask 1..8 max is 15
+DEBUG_LEVEL = 4   # bitmask 1..8 max is 15
 COMPILER    ?= vbcc
 
 # output directory

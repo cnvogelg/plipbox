@@ -29,6 +29,7 @@
 #include "uart.h"
 #include "uartutil.h"
 #include "timer.h"
+#include "hw_timer.h"
 #include "param.h"
 #include "cmd.h"
 
@@ -50,6 +51,7 @@ int main(void)
   board_init();
   // setup timer
   timer_init();
+  hw_timer_init();
   // setup serial
   uart_init();
   

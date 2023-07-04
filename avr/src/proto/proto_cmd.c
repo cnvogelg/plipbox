@@ -98,7 +98,7 @@ u08 proto_cmd_handle(void)
       DS("tx_buf:"); DW(tx_size); DC('_'); DW(size); DC(','); DP(buf); DNL;
       proto_atom_write_block(buf, size);
       tx_status = proto_cmd_api_tx_end(tx_size);
-      DS("tx_bufe:"); DB(tx_status); DNL;
+      DT; DS("tx_bufe:"); DB(tx_status); DNL;
       break;
     }
     case PROTO_CMD_TX_RESULT:
@@ -127,7 +127,7 @@ u08 proto_cmd_handle(void)
       DS("rx_buf:"); DW(rx_size); DC('_'); DW(size); DC(','); DP(buf); DNL;
       proto_atom_read_block(buf, size);
       rx_status = proto_cmd_api_rx_end(rx_size);
-      DS("rx_bufe:"); DB(rx_status); DNL;
+      DT; DS("rx_bufe:"); DB(rx_status); DNL;
       break;
     }
     case PROTO_CMD_RX_RESULT:
