@@ -197,6 +197,11 @@ u08 proto_cmd_api_rx_end(u16 size)
 
 // ----- proto_cmd config -----
 
+u16 proto_cmd_api_get_version(void)
+{
+  return VERSION_MAJ << 8 | VERSION_MIN;
+}
+
 void proto_cmd_api_set_mode(u16 new_mode)
 {
   // make sure we are not attached

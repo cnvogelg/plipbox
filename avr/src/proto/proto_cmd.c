@@ -138,6 +138,12 @@ u08 proto_cmd_handle(void)
       break;
 
     // ----- config -----
+    case PROTO_CMD_GET_VERSION: {
+      u16 version = proto_cmd_api_get_version();
+      proto_atom_read_word(version);
+      DS("get_version:"); DW(version); DNL;
+      break;
+    }
     case PROTO_CMD_SET_MODE: {
       CHECK_STATE(PROTO_CMD_STATE_IDLE);
       u16 mode = proto_atom_write_word();

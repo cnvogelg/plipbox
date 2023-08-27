@@ -136,7 +136,9 @@ GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_
 
 GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
 {
+  /* register all special comamnds here! */
   switch(cmd) {
+    case S2PB_GET_VERSION:
     case S2PB_SET_MAC:
     case S2PB_SET_MODE:
     case S2PB_GET_MODE:
@@ -159,6 +161,13 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
    }
 
    switch(req->ios2_Req.io_Command) {
+    case S2PB_GET_VERSION: {
+      UWORD version = 0;
+      res = proto_cmd_get_version(hwb->proto, &version);
+      /* set both device and driver version */
+      req->ios2_WireError = version | DEVICE_VERSION << 24 | DEVICE_REVISION << 16;
+      break;
+    }
     case S2PB_SET_MAC:
       res = proto_cmd_set_mac(hwb->proto, req->ios2_SrcAddr);
       /* read and update mac */
@@ -174,7 +183,7 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
       res = proto_cmd_set_mode(hwb->proto, (UWORD)req->ios2_WireError);
       break;
     case S2PB_GET_MODE: {
-      UWORD mode;
+      UWORD mode = 0;
       res = proto_cmd_get_mode(hwb->proto, &mode);
       req->ios2_WireError = mode;
       break;

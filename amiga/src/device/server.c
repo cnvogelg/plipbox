@@ -645,6 +645,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
 
          /* main loop of server task */
          d2(("--- server main loop: %08lx ---\n", full_sigmask));
+         d4r(("\nhi!\n"));
          for(running=TRUE;running;)
          {
             d2(("** full sigmask is 0x%08lx\n", full_sigmask));
@@ -698,6 +699,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
       else
          d(("task: init() failed\n"));
 
+      d4r(("\nbye!\n"));
       d2(("--- server exit main loop ---\n"));
       cleanup(pb);
 

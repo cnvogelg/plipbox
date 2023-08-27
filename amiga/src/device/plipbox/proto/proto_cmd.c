@@ -37,6 +37,16 @@ int proto_cmd_get_status(proto_handle_t *proto, UWORD *status)
   return res;
 }
 
+int proto_cmd_get_version(proto_handle_t *proto, UWORD *version)
+{
+  int res;
+
+  d8(("proto_cmd_get_version:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_GET_VERSION, version);
+  d8r((" version=%lx res=%ld\n", (ULONG)*version, (LONG)res));
+  return res;
+}
+
 int proto_cmd_set_mode(proto_handle_t *proto, UWORD mode)
 {
   int res;

@@ -29,6 +29,8 @@ extern u08  proto_cmd_api_rx_end(u16 size);
 extern u08 *proto_cmd_api_tx_begin(u16 size);
 extern u08  proto_cmd_api_tx_end(u16 size);
 
+extern u16  proto_cmd_api_get_version(void);
+
 extern void proto_cmd_api_set_mode(u16 mode);
 extern u16  proto_cmd_api_get_mode(void);
 

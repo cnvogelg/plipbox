@@ -3,6 +3,8 @@
 
 #define PROTO_CMD_RESET           0x01
 
+#define PROTO_CMD_GET_VERSION     0x39 // read_word
+
 #define PROTO_CMD_ATTACH          0x40 // action
 #define PROTO_CMD_DETACH          0x41 // action
 #define PROTO_CMD_GET_STATUS      0x42 // read_word
