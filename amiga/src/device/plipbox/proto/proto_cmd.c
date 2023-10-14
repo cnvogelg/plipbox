@@ -67,6 +67,26 @@ int proto_cmd_get_mode(proto_handle_t *proto, UWORD *mode)
   return res;
 }
 
+int proto_cmd_set_flags(proto_handle_t *proto, UWORD flags)
+{
+  int res;
+
+  d8(("proto_cmd_set_flags:%ld", (ULONG)flags));
+  res = proto_atom_write_word(proto, PROTO_CMD_SET_FLAGS, flags);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_get_flags(proto_handle_t *proto, UWORD *flags)
+{
+  int res;
+
+  d8(("proto_cmd_get_flags:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_GET_FLAGS, flags);
+  d8r((" mode=%04lx res=%ld\n", (ULONG)*flags, (LONG)res));
+  return res;
+}
+
 int proto_cmd_set_mac(proto_handle_t *proto, mac_t mac)
 {
   int res;
@@ -100,6 +120,36 @@ int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac)
   d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
     (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
     (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+  return res;
+}
+
+int proto_cmd_reset_prefs(proto_handle_t *proto)
+{
+  int res;
+
+  d8(("proto_cmd_reset_prefs:"));
+  res = proto_atom_action(proto, PROTO_CMD_RESET_PREFS);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_load_prefs(proto_handle_t *proto, UWORD *status)
+{
+  int res;
+
+  d8(("proto_cmd_load_prefs:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_LOAD_PREFS, status);
+  d8r((" status=%04lx res=%ld\n", (ULONG)*status, (LONG)res));
+  return res;
+}
+
+int proto_cmd_save_prefs(proto_handle_t *proto, UWORD *status)
+{
+  int res;
+
+  d8(("proto_cmd_save_prefs:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_SAVE_PREFS, status);
+  d8r((" status=%04lx res=%ld\n", (ULONG)*status, (LONG)res));
   return res;
 }
 

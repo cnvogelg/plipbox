@@ -3,7 +3,7 @@
 
 #define PROTO_CMD_RESET           0x01
 
-#define PROTO_CMD_GET_VERSION     0x39 // read_word
+#define PROTO_CMD_GET_VERSION     0x30 // read_word
 
 #define PROTO_CMD_ATTACH          0x40 // action
 #define PROTO_CMD_DETACH          0x41 // action
@@ -20,9 +20,16 @@
 #define PROTO_CMD_SET_MODE        0x70 // write_word
 #define PROTO_CMD_GET_MODE        0x71 // read_word
 
-#define PROTO_CMD_SET_MAC         0x72 // write_block [6]
-#define PROTO_CMD_GET_MAC         0x73 // read_block [6]
-#define PROTO_CMD_GET_DEF_MAC     0x74 // read_block [6]
+#define PROTO_CMD_SET_FLAGS       0x72 // write_word
+#define PROTO_CMD_GET_FLAGS       0x73 // read_word
+
+#define PROTO_CMD_SET_MAC         0x74 // write_block [6]
+#define PROTO_CMD_GET_MAC         0x75 // read_block [6]
+#define PROTO_CMD_GET_DEF_MAC     0x76 // read_block [6]
+
+#define PROTO_CMD_RESET_PREFS     0x77 // action
+#define PROTO_CMD_LOAD_PREFS      0x78 // read_word
+#define PROTO_CMD_SAVE_PREFS      0x79 // read_word
 
 // bitmask of status
 #define PROTO_CMD_STATUS_IDLE          0x00
@@ -32,15 +39,19 @@
 #define PROTO_CMD_STATUS_RX_ERROR      0x40  // only set with RX_RESULT
 #define PROTO_CMD_STATUS_TX_ERROR      0x80  // only set with TX_RESULT
 
-// mode
-#define PROTO_CMD_MODE_BRIDGE          0x00
-#define PROTO_CMD_MODE_LOOPBACK_BUF    0x01
-#define PROTO_CMD_MODE_LOOPBACK_DEV    0x02
-#define PROTO_CMD_MODE_MASK            0x03
-// mask for transfer type
-#define PROTO_CMD_MODE_BUF_TRANSFER    0x00
-#define PROTO_CMD_MODE_SPI_TRANSFER    0x80
-#define PROTO_CMD_MODE_TRANSFER_MASK   0x80
+// operation mode
+#define PROTO_CMD_MODE_OP_BRIDGE       0x00
+#define PROTO_CMD_MODE_OP_LOOPBACK_BUF 0x01
+#define PROTO_CMD_MODE_OP_LOOPBACK_DEV 0x02
+#define PROTO_CMD_MODE_OP_MASK         0x0f
+// transfer mode
+#define PROTO_CMD_MODE_TRANSFER_RAM    0x00
+#define PROTO_CMD_MODE_TRANSFER_SPI    0x80
+#define PROTO_CMD_MODE_TRANSFER_MASK   0xf0
+
+// flags
+#define PROTO_CMD_FLAGS_FULL_DUPLEX    0x01
+#define PROTO_CMD_FLAGS_FLOW_CONTROL   0x02
 
 // result values for RX/TX RESULT
 #define PROTO_CMD_RESULT_OK        0

@@ -142,6 +142,11 @@ GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
     case S2PB_SET_MAC:
     case S2PB_SET_MODE:
     case S2PB_GET_MODE:
+    case S2PB_SET_FLAGS:
+    case S2PB_GET_FLAGS:
+    case S2PB_RESET_PREFS:
+    case S2PB_LOAD_PREFS:
+    case S2PB_SAVE_PREFS:
       return TRUE;
     default:
       return FALSE;
@@ -186,6 +191,30 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
       UWORD mode = 0;
       res = proto_cmd_get_mode(hwb->proto, &mode);
       req->ios2_WireError = mode;
+      break;
+    }
+    case S2PB_SET_FLAGS:
+      res = proto_cmd_set_flags(hwb->proto, (UWORD)req->ios2_WireError);
+      break;
+    case S2PB_GET_FLAGS: {
+      UWORD mode = 0;
+      res = proto_cmd_get_flags(hwb->proto, &mode);
+      req->ios2_WireError = mode;
+      break;
+    }
+    case S2PB_RESET_PREFS:
+      res = proto_cmd_reset_prefs(hwb->proto);
+      break;
+    case S2PB_LOAD_PREFS: {
+      UWORD status = 0;
+      res = proto_cmd_load_prefs(hwb->proto, &status);
+      req->ios2_WireError = status;
+      break;
+    }
+    case S2PB_SAVE_PREFS: {
+      UWORD status = 0;
+      res = proto_cmd_save_prefs(hwb->proto, &status);
+      req->ios2_WireError = status;
       break;
     }
     default:

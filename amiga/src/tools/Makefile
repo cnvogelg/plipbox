@@ -19,12 +19,12 @@ UDP_TEST_SRC = udp_test.c
 UDP_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(UDP_TEST_SRC))
 
 OBJS = $(DEV_TEST_BJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ)
-TOOL_NAMES = $(PLIPTOOL_NAME) $(DEV_TEST_NAME) $(UDP_TEST_NAME)
+TOOL_PATHS = $(PLIPTOOL_PATH) $(DEV_TEST_PATH) $(UDP_TEST_PATH)
 
 # ----- tools -----
-.PHONY: all $(TOOL_NAMES)
+.PHONY: all $(TOOL_PATHS)
 
-all: dirs $(TOOL_NAMES)
+all: dirs $(TOOL_PATHS)
 
 include ../config/rule.mk
 

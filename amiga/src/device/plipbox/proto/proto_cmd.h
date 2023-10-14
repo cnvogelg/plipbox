@@ -23,8 +23,15 @@ extern int proto_cmd_get_version(proto_handle_t *proto, UWORD *version);
 extern int proto_cmd_set_mode(proto_handle_t *proto, UWORD mode);
 extern int proto_cmd_get_mode(proto_handle_t *proto, UWORD *mode);
 
+extern int proto_cmd_set_flags(proto_handle_t *proto, UWORD flags);
+extern int proto_cmd_get_flags(proto_handle_t *proto, UWORD *flags);
+
 extern int proto_cmd_set_mac(proto_handle_t *proto, mac_t mac);
 extern int proto_cmd_get_mac(proto_handle_t *proto, mac_t mac);
 extern int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac);
+
+extern int proto_cmd_reset_prefs(proto_handle_t *proto);
+extern int proto_cmd_load_prefs(proto_handle_t *proto, UWORD *status);
+extern int proto_cmd_save_prefs(proto_handle_t *proto, UWORD *status);
 
 #endif

@@ -126,7 +126,7 @@ BOOL sanadev_cmd_get_station_address(sanadev_handle_t *sh, sanadev_mac_t cur_mac
 }
 
 /* special plipbox commands */
-BOOL sanadev_cmd_get_version(sanadev_handle_t *sh, UWORD *dev_version, UWORD *fw_version)
+BOOL sanadev_cmd_plipbox_get_version(sanadev_handle_t *sh, UWORD *dev_version, UWORD *fw_version)
 {
   BOOL ok = do_cmd(sh->cmd_req, S2PB_GET_VERSION);
   if(ok) {
@@ -158,6 +158,113 @@ BOOL sanadev_cmd_plipbox_get_mode(sanadev_handle_t *sh, UWORD *mode)
   return ok;
 }
 
+BOOL sanadev_cmd_plipbox_set_flags(sanadev_handle_t *sh, UWORD flags)
+{
+  sh->cmd_req->ios2_WireError = flags;
+  return do_cmd(sh->cmd_req, S2PB_SET_FLAGS);
+}
+
+BOOL sanadev_cmd_plipbox_get_flags(sanadev_handle_t *sh, UWORD *flags)
+{
+  BOOL ok = do_cmd(sh->cmd_req, S2PB_GET_FLAGS);
+  if(ok) {
+    *flags = sh->cmd_req->ios2_WireError;
+  }
+  return ok;
+}
+
+BOOL sanadev_cmd_plipbox_reset_prefs(sanadev_handle_t *sh, UWORD *status)
+{
+  BOOL ok =do_cmd(sh->cmd_req, S2PB_RESET_PREFS);
+  if(ok) {
+    *status = sh->cmd_req->ios2_WireError;
+  }
+  return TRUE;
+}
+
+BOOL sanadev_cmd_plipbox_load_prefs(sanadev_handle_t *sh, UWORD *status)
+{
+  BOOL ok =do_cmd(sh->cmd_req, S2PB_LOAD_PREFS);
+  if(ok) {
+    *status = sh->cmd_req->ios2_WireError;
+  }
+  return TRUE;
+}
+
+BOOL sanadev_cmd_plipbox_save_prefs(sanadev_handle_t *sh, UWORD *status)
+{
+  BOOL ok =do_cmd(sh->cmd_req, S2PB_SAVE_PREFS);
+  if(ok) {
+    *status = sh->cmd_req->ios2_WireError;
+  }
+  return TRUE;
+}
+
+BOOL sanadev_plipbox_read_param(sanadev_handle_t *sh, sanadev_plipbox_param_t *param)
+{
+  BOOL ok;
+
+  /* retrieve mac adresses */
+  ok = sanadev_cmd_get_station_address(sh, param->cur_mac, param->def_mac);
+  if(!ok) {
+    return FALSE;
+  }
+
+  /* retrieve mode */
+  ok = sanadev_cmd_plipbox_get_mode(sh, &param->mode);
+  if(!ok) {
+    return FALSE;
+  }
+
+  /* retrieve flags */
+  ok = sanadev_cmd_plipbox_get_flags(sh, &param->flags);
+  if(!ok) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+BOOL sanadev_plipbox_write_param(sanadev_handle_t *sh, sanadev_plipbox_param_t *param, UWORD update_mask)
+{
+  BOOL ok;
+
+  if(update_mask & SANADEV_UPDATE_MAC) {
+    ok = sanadev_cmd_plipbox_set_mac(sh, param->cur_mac);
+    if(!ok) {
+      return FALSE;
+    }
+  }
+
+  if(update_mask & SANADEV_UPDATE_MODE) {
+    ok = sanadev_cmd_plipbox_set_mode(sh, param->mode);
+    if(!ok) {
+      return FALSE;
+    }
+  }
+
+  if(update_mask & SANADEV_UPDATE_FLAGS) {
+    ok = sanadev_cmd_plipbox_set_flags(sh, param->flags);
+    if(!ok) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+void sanadev_plipbox_print_param(sanadev_plipbox_param_t *param)
+{
+  Printf("\nMAC Addresses\n  current: ");
+  sanadev_print_mac(param->cur_mac);
+  Printf("\n  default: ");
+  sanadev_print_mac(param->def_mac);
+  PutStr("\n");
+
+  Printf("Mode:  %04lx\n", (ULONG)param->mode);
+  Printf("Flags: %04lx\n", (ULONG)param->flags);
+}
+
 static void get_error(struct IOSana2Req *sana_req, UWORD *error, UWORD *wire_error)
 {
   *error = sana_req->ios2_Req.io_Error;
@@ -187,4 +294,22 @@ void sanadev_print_mac(sanadev_mac_t mac)
   Printf("%02lx:%02lx:%02lx:%02lx:%02lx:%02lx",
     (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
     (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]);
+}
+
+BOOL sanadev_parse_mac(const char *str, sanadev_mac_t mac)
+{
+  // TODO
+  return FALSE;
+}
+
+BOOL sanadev_parse_mode(const char *str, UWORD *mode)
+{
+  // TODO
+  return FALSE;
+}
+
+BOOL sanadev_parse_flags(const char *str, UWORD *flagds)
+{
+  // TODO
+  return FALSE;
 }

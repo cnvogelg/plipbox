@@ -6,6 +6,11 @@
 #define S2PB_SET_MAC      (S2_END+1)
 #define S2PB_SET_MODE     (S2_END+2)
 #define S2PB_GET_MODE     (S2_END+3)
+#define S2PB_SET_FLAGS    (S2_END+4)
+#define S2PB_GET_FLAGS    (S2_END+5)
+#define S2PB_RESET_PREFS  (S2_END+6)
+#define S2PB_LOAD_PREFS   (S2_END+7)
+#define S2PB_SAVE_PREFS   (S2_END+8)
 
 /*
   S2PB_GET_VERSION
@@ -34,7 +39,7 @@
 
     Set a new current MAC address in plipbox.
 
-  S2PB_SET_MODE
+  S2PB_SET_MODE/FLAGS
 
     in:
       ios_WireError: new mode
@@ -44,16 +49,24 @@
 
     Set operation mode of plipbox.
 
-  S2PB_GET_MODE
+  S2PB_GET_MODE/FLAGS
 
     in:
       -
     out:
-      ios_WireError: current mode
+      ios2_WireError: current mode
       ios2_Req.io_Error
-      ios2_WireError
 
     Get operation mode of plipbox.
+
+  S2PB_RESET_PREFS
+  S2PB_LOAD_PREFS
+  S2PB_SAVE_PREFS
+
+    in:
+      -
+    out:
+      ios2_WireError: result code
 */
 
 // mode
