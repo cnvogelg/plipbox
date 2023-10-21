@@ -32,6 +32,7 @@
 typedef struct {
   mac_t mac_addr;
   u08   mode;
+  u08   flags;
 } param_t;
   
 // param result
@@ -53,6 +54,10 @@ void param_dump(void);
 // mode parameter
 void param_set_mode(u08 mode);
 u08  param_get_mode(void);
+
+// flags parameter
+void param_set_flags(u08 flags);
+u08  param_get_flags(void);
 
 // MAC parameter
 void param_get_def_mac(mac_t mac);

@@ -35,6 +35,9 @@ extern u16  proto_cmd_api_get_version(void);
 extern void proto_cmd_api_set_mode(u16 mode);
 extern u16  proto_cmd_api_get_mode(void);
 
+extern void proto_cmd_api_set_flags(u16 flags);
+extern u16  proto_cmd_api_get_flags(void);
+
 extern void proto_cmd_api_set_mac(mac_t mac);
 extern void proto_cmd_api_get_mac(mac_t mac);
 extern void proto_cmd_api_get_def_mac(mac_t mac);

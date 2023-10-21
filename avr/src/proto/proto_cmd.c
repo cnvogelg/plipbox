@@ -158,6 +158,20 @@ u08 proto_cmd_handle(void)
       DS("get_mode:"); DW(mode); DNL;
       break;
     }
+    case PROTO_CMD_SET_FLAGS: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 flags = proto_atom_write_word();
+      DS("set_flags:"); DW(flags); DNL;
+      proto_cmd_api_set_flags(flags);
+      break;
+    }
+    case PROTO_CMD_GET_FLAGS: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 flags = proto_cmd_api_get_flags();
+      proto_atom_read_word(flags);
+      DS("get_flags:"); DW(flags); DNL;
+      break;
+    }
     case PROTO_CMD_SET_MAC: {
       CHECK_STATE(PROTO_CMD_STATE_IDLE);
       mac_t mac;

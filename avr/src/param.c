@@ -44,7 +44,8 @@ uint16_t eeprom_crc16 EEMEM;
 // default 
 static const param_t PROGMEM default_param = {
   .mac_addr = { 0x1a,0x11,0xaf,0xa0,0x47,0x11},
-  .mode = 0
+  .mode = 0,
+  .flags = 0
 };
 
 static void dump_byte(PGM_P str, const u08 val)
@@ -141,6 +142,16 @@ void param_set_mode(u08 mode)
 u08 param_get_mode(void)
 {
   return param.mode;
+}
+
+void param_set_flags(u08 flags)
+{
+  param.flags = flags;
+}
+
+u08 param_get_flags(void)
+{
+  return param.flags;
 }
 
 void param_get_def_mac(mac_t mac)

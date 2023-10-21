@@ -22,6 +22,16 @@ u16 proto_cmd_api_get_mode(void)
   return param_get_mode();
 }
 
+void proto_cmd_api_set_flags(u16 new_flags)
+{
+  param_set_flags(new_flags);
+}
+
+u16 proto_cmd_api_get_flags(void)
+{
+  return param_get_flags();
+}
+
 void proto_cmd_api_set_mac(mac_t mac)
 {
   param_set_mac(mac);
