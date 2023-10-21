@@ -112,8 +112,8 @@ u08 proto_cmd_handle(void)
     case PROTO_CMD_RX_SIZE: {
       CHECK_STATE(PROTO_CMD_STATE_IDLE);
       cmd_state = PROTO_CMD_STATE_RX;
-      rx_status = proto_cmd_api_rx_size(&rx_size);
-      DS("rx_size:"); DB(rx_status); DC(','); DW(rx_size); DNL;
+      rx_size = proto_cmd_api_rx_size();
+      DS("rx_size:"); DW(rx_size); DNL;
       proto_atom_read_word(rx_size);
       break;
     }
@@ -180,6 +180,26 @@ u08 proto_cmd_handle(void)
       proto_cmd_api_get_def_mac(mac);
       DS("get_def_mac:"); DM(mac); DNL;
       proto_atom_read_block(mac, MAC_SIZE);
+      break;
+    }
+    case PROTO_CMD_RESET_PREFS:
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      proto_cmd_api_reset_prefs();
+      proto_atom_action();
+      DS("reset_prefs"); DNL;
+      break;
+    case PROTO_CMD_LOAD_PREFS: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 status = proto_cmd_api_load_prefs();
+      proto_atom_read_word(status);
+      DS("load_prefs:"); DW(status); DNL;
+      break;
+    }
+    case PROTO_CMD_SAVE_PREFS: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 status = proto_cmd_api_save_prefs();
+      proto_atom_read_word(status);
+      DS("save_prefs:"); DW(status); DNL;
       break;
     }
 

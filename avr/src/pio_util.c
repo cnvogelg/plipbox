@@ -42,14 +42,14 @@
 u08 pio_util_get_init_flags()
 {
   u08 flags = PIO_INIT_BROAD_CAST;
-  
+#if 0
   if(param.flow_ctl) {
     flags |= PIO_INIT_FLOW_CONTROL;
   }
   if(param.full_duplex) {
     flags |= PIO_INIT_FULL_DUPLEX;
   }
-
+#endif
   return flags;
 }
 
@@ -122,6 +122,7 @@ u08 pio_util_send_packet(u16 size)
   return result;
 }
 
+#if 0
 u08 pio_util_handle_arp(u16 size)
 {
   u16 type = eth_get_pkt_type(pkt_buf);
@@ -198,5 +199,5 @@ u08 pio_util_handle_udp_test(u16 size)
  	return 0;
  }
 }
-
+#endif
 

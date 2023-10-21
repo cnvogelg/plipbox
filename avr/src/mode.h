@@ -1,5 +1,5 @@
 /*
- * param.h - handle device parameters
+ * mode.h - handle operation mode of plipbox
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,39 +24,26 @@
  *
  */
 
-#ifndef _PARAM_H
-#define _PARAM_H
+#ifndef MODE_H
+#define MODE_H
 
-#include "global.h"
+#define MODE_OK           0
+#define MODE_RX_PENDING   1
+#define MODE_ERROR        2
 
-typedef struct {
-  mac_t mac_addr;
-  u08   mode;
-} param_t;
-  
-// param result
-#define PARAM_OK                  0
-#define PARAM_EEPROM_NOT_READY    1
-#define PARAM_EEPROM_CRC_MISMATCH 2
+void mode_init(void);
 
-// init parameters. try to load from eeprom or use default
-void param_init(void);
-// save param to eeprom (returns param result) 
-u08 param_save(void);
-// load param from eeprom (returns param result)
-u08 param_load(void);
-// reset param
-void param_reset(void);
-// show params
-void param_dump(void);
+u08  mode_get_proto_status(void);
+void mode_attach(void);
+void mode_detach(void);
 
-// mode parameter
-void param_set_mode(u08 mode);
-u08  param_get_mode(void);
+u08 *mode_tx_begin(u16 size);
+u08  mode_tx_end(u16 size);
 
-// MAC parameter
-void param_get_def_mac(mac_t mac);
-void param_get_mac(mac_t mac);
-void param_set_mac(const mac_t mac);
+u16  mode_rx_size(void);
+u08 *mode_rx_begin(u16 size);
+u08  mode_rx_end(u16 size);
+
+void mode_handle(void);
 
 #endif

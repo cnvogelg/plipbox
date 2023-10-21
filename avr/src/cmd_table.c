@@ -82,6 +82,7 @@ COMMAND(cmd_param_reset)
 
 COMMAND(cmd_param_toggle)
 {
+#if 0
   u08 group = argv[0][0];
   u08 type = argv[0][1];
   u08 *val = 0;
@@ -89,7 +90,7 @@ COMMAND(cmd_param_toggle)
   
   if(group == 't') {
     switch(type) {
-      case 'm': val = &param.test_mode; break;
+      case 'm': val = &param.mode; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -116,19 +117,21 @@ COMMAND(cmd_param_toggle)
     }
   }
   return result;
+#else
+  return CMD_OK;
+#endif
 }
 
 COMMAND(cmd_param_word)
 {
+#if 0
   u08 group = argv[0][0];
   u08 type = argv[0][1];
   u16 *val = 0;
   
   if(group == 't') {
     switch(type) {
-      case 'l': val = &param.test_plen; break;
-      case 't': val = &param.test_ptype; break;
-      case 'p': val = &param.test_port; break;
+      case 'o': val = &param.mode; break;
       default: return CMD_PARSE_ERROR;
     }
   }
@@ -147,10 +150,14 @@ COMMAND(cmd_param_word)
     }
   }
   return CMD_OK;
+#else
+  return CMD_OK;
+#endif
 }
 
 COMMAND(cmd_param_mac_addr)
 {
+#if 0
   u08 mac[6];
 
   if(net_parse_mac(argv[1], mac)) {
@@ -159,18 +166,9 @@ COMMAND(cmd_param_mac_addr)
   } else {
     return CMD_PARSE_ERROR;
   }
-}
-
-COMMAND(cmd_param_ip_addr)
-{
-  u08 ip[4];
-
-  if(net_parse_ip(argv[1], ip)) {
-    net_copy_ip(ip, param.test_ip);
-    return CMD_OK;
-  } else {
-    return CMD_PARSE_ERROR;
-  }  
+#else
+  return CMD_OK;
+#endif
 }
 
 COMMAND(cmd_stats_dump)
@@ -202,11 +200,7 @@ CMD_NAME("m", cmd_gen_m, "mac address of device <mac>" );
 CMD_NAME("fd", cmd_gen_fd, "set full duple mode [on]" );
 CMD_NAME("fc", cmd_gen_fc, "set flow control [on]" );
   // test
-CMD_NAME("tl", cmd_gen_tl,  "test packet length <n>");
-CMD_NAME("tt", cmd_gen_tt, "test packet eth type <n>" );
-CMD_NAME("ti", cmd_gen_ti, "test IP address <ip>" );
-CMD_NAME("tp", cmd_gen_tp, "test UDP port <n>" );
-CMD_NAME("tm", cmd_gen_tm, "test mode [0|1]" );
+CMD_NAME("tm", cmd_gen_tm, "set mode" );
 
 // ----- Entries -----
 const cmd_table_t PROGMEM cmd_table[] = {
@@ -225,11 +219,7 @@ const cmd_table_t PROGMEM cmd_table[] = {
   CMD_ENTRY_NAME(cmd_param_mac_addr, cmd_gen_m),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fd),
   CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_fc),
-  // test
-  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tl),
-  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tt),
-  CMD_ENTRY_NAME(cmd_param_ip_addr, cmd_gen_ti),
-  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tp),
-  CMD_ENTRY_NAME(cmd_param_toggle, cmd_gen_tm),
+  // mode
+  CMD_ENTRY_NAME(cmd_param_word, cmd_gen_tm),
   { 0,0 } // last entry
 };

@@ -33,14 +33,9 @@
 #include "param.h"
 #include "cmd.h"
 
-#include "pio.h"
-#include "pio_util.h"
-#include "bridge.h"
-
-#include "pkt_buf.h"
-
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
+#include "mode.h"
 
 // global switches
 u08 global_verbose = 0;
@@ -75,9 +70,8 @@ int main(void)
   uart_send_pstring(PSTR("proto: init\r\n"));
   proto_cmd_init();
 
-  // packet i/o adapter init (eth)
-  u08 ok = pio_init(pio_util_get_init_flags());
-  bridge_init(ok == PIO_OK);
+  // mode init
+  mode_init();
 
   // main loop
   while(1) {
@@ -87,8 +81,8 @@ int main(void)
       break;
     }
 
-    // handle bridge/pio stuff
-    bridge_handle();
+    // handle current mode
+    mode_handle();
 
     // handle commands
     res = cmd_worker();

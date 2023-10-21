@@ -27,6 +27,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <stddef.h>
+
 typedef unsigned char  u08;
 typedef   signed char  s08;
 typedef unsigned short u16;

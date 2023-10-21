@@ -144,7 +144,7 @@ VPATH = .:net:board:eth:base:proto
 BOARDFILE ?= $(BOARD).c
 SRC := $(BOARDFILE) $(PLATFORM)_common.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
-SRC += util.c uart.c uartutil.c timer.c param.c
+SRC += util.c uart.c uartutil.c timer.c param.c param_cmd.c
 SRC += pkt_buf.c net.c arp.c
 SRC += dump.c stats.c
 ifdef DEV_ENC28J60
@@ -153,7 +153,7 @@ SRC += spi.c enc28j60.c
 endif
 SRC += pio.c pio_util.c
 SRC += proto_atom.c proto_cmd.c hw_timer.c
-SRC += main.c bridge.c
+SRC += main.c mode.c mode_mod.c mode_cmd.c loop_buf.c
 
 ASRC = proto_low_asm.S
 

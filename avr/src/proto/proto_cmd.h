@@ -22,13 +22,14 @@ extern void proto_cmd_api_detach(void);
 
 extern u16  proto_cmd_api_get_status(void);
 
-extern u08  proto_cmd_api_rx_size(u16 *size);
+extern u16  proto_cmd_api_rx_size(void);
 extern u08 *proto_cmd_api_rx_begin(u16 size);
 extern u08  proto_cmd_api_rx_end(u16 size);
 
 extern u08 *proto_cmd_api_tx_begin(u16 size);
 extern u08  proto_cmd_api_tx_end(u16 size);
 
+// ----- parameters -----
 extern u16  proto_cmd_api_get_version(void);
 
 extern void proto_cmd_api_set_mode(u16 mode);
@@ -37,5 +38,9 @@ extern u16  proto_cmd_api_get_mode(void);
 extern void proto_cmd_api_set_mac(mac_t mac);
 extern void proto_cmd_api_get_mac(mac_t mac);
 extern void proto_cmd_api_get_def_mac(mac_t mac);
+
+extern void proto_cmd_api_reset_prefs(void);
+extern u16  proto_cmd_api_load_prefs(void);
+extern u16  proto_cmd_api_save_prefs(void);
 
 #endif
