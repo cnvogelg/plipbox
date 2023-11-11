@@ -1,22 +1,40 @@
 /* SANA2 Extensions of the plipbox.device */
 
+#ifndef DEVICES_PLIPBOX_H
+#define DEVICES_PLIPBOX_H
+
 #include <devices/sana2.h>
 
-#define S2PB_GET_VERSION  (S2_END+0)
-#define S2PB_SET_MAC      (S2_END+1)
-#define S2PB_SET_MODE     (S2_END+2)
-#define S2PB_GET_MODE     (S2_END+3)
-#define S2PB_SET_FLAGS    (S2_END+4)
-#define S2PB_GET_FLAGS    (S2_END+5)
-#define S2PB_RESET_PREFS  (S2_END+6)
-#define S2PB_LOAD_PREFS   (S2_END+7)
-#define S2PB_SAVE_PREFS   (S2_END+8)
+#define S2PB_BASE             0x5000
+
+// plipbox extra commands
+#define S2PB_GET_VERSION      (S2PB_BASE+0)
+#define S2PB_PARAM_GET_NUM    (S2PB_BASE+1)
+#define S2PB_PARAM_FIND_TAG   (S2PB_BASE+2)
+#define S2PB_PARAM_GET_DEF    (S2PB_BASE+3)
+#define S2PB_PARAM_GET_VAL    (S2PB_BASE+4)
+#define S2PB_PARAM_SET_VAL    (S2PB_BASE+5)
+#define S2PB_PREFS_RESET      (S2PB_BASE+6)
+#define S2PB_PREFS_LOAD       (S2PB_BASE+7)
+#define S2PB_PREFS_SAVE       (S2PB_BASE+8)
+
+#define S2PB_NO_INDEX         0xffff
+
+struct s2pb_param_def {
+  UBYTE index;
+  UBYTE type;
+  UBYTE format;
+  UBYTE reserved;
+  UWORD size;
+  ULONG tag;
+};
+typedef struct s2pb_param_def s2pb_param_def_t;
 
 /*
   S2PB_GET_VERSION
 
     out:
-      ios2_Req.io_Error
+      ios2_Req.io_Error: S2ERR_NOERR
       ios2_WireError: on success its the version
 
     Check if a plipbox device is here and return its version
@@ -29,35 +47,67 @@
     VER_FW_MAJOR     15..8
     VER_FW_MINOR      7..0
 
-  S2PB_SET_MAC
+  ----- parameter handling -----
 
-    in:
-      ios_SrcAddr: new mac
-    out:
-      ios2_Req.io_Error
-      ios2_WireError
-
-    Set a new current MAC address in plipbox.
-
-  S2PB_SET_MODE/FLAGS
-
-    in:
-      ios_WireError: new mode
-    out:
-      ios2_Req.io_Error
-      ios2_WireError
-
-    Set operation mode of plipbox.
-
-  S2PB_GET_MODE/FLAGS
+  S2PB_PARAM_GET_NUM
 
     in:
       -
     out:
-      ios2_WireError: current mode
-      ios2_Req.io_Error
+      ios2_WireError: number of parameters on device
+       or
+      ios2_Req.io_Error: S2ERR_NOERR, S2ERR_BAD_STATE
+      ios2_WireError
 
-    Get operation mode of plipbox.
+    get the total number of configurable parameters
+
+  S2PB_PARAM_FIND_TAG
+
+    in:
+      ios2_WireError: tag
+    out:
+      ios2.WireError: parameter index or S2PB_NO_INDEX
+       or
+      ios2_Req.io_Error: S2ERR_NOERR, S2ERR_BAD_STATE, S2ERR_SOFTWARE
+      ios2_WireError: param error (S2ERR_SOFTWARE)
+
+  S2PB_PARAM_GET_DEF
+
+    in:
+      ios2_WireError: parameter index (0 .. PARAM_GET_NUM-1)
+      ios2_DataLength: sizeof(s2pb_param_def_t)
+      ios2_Data: pointer to s2pb_param_def_t
+    out:
+      ios2_Req.io_Error: S2ERR_NOERR, S2ERR_BAD_STATE, S2ERR_SOFTWARE
+      ios2_WireError: param error (S2ERR_SOFTWARE)
+
+    Get a parameter description from the device
+
+  S2PB_PARAM_GET_VAL
+
+    in:
+      ios2_WireError: parameter index (0 .. PARAM_GET_NUM-1)
+      ios2_DataLength: sizeof parameter (from param_def_t.size)
+      ios2_Data: pointer to parameter data (io_Length)
+    out:
+      ios2_Req.io_Error
+      ios2_WireError:
+
+    Get a parameter value
+
+  S2PB_PARAM_SET_VAL
+
+    in:
+      ios2_WireError: parameter index (0 .. PARAM_GET_NUM-1)
+      ios2_DataLength: sizeof parameter (from param_def_t.size)
+      ios2_Data: pointer to parameter data (io_Length)
+    out:
+      ios2_Req.io_Error
+      ios2_WireError:
+
+    Set a parameter value
+
+  ----- prefs -----
 
   S2PB_RESET_PREFS
   S2PB_LOAD_PREFS
@@ -66,15 +116,31 @@
     in:
       -
     out:
+      ios2_Req.io_Error
       ios2_WireError: result code
 */
 
-// mode
-#define S2PB_MODE_BRIDGE          0x00
-#define S2PB_MODE_LOOPBACK_BUF    0x01
-#define S2PB_MODE_LOOPBACK_DEV    0x02
-#define S2PB_MODE_MASK            0x03
-// mask for transfer type
-#define S2PB_MODE_BUF_TRANSFER    0x00
-#define S2PB_MODE_SPI_TRANSFER    0x80
-#define S2PB_MODE_TRANSFER_MASK   0x80
+struct plipbox_param_def {
+  UBYTE index;
+  UBYTE type;
+  UBYTE format;
+  UBYTE reserved;
+  UWORD size;
+  ULONG tag;
+};
+typedef struct plipbox_param_def plipbox_param_def_t;
+
+// param type
+#define S2PB_PARAM_TYPE_BYTE        1
+#define S2PB_PARAM_TYPE_WORD        2
+#define S2PB_PARAM_TYPE_LONG        3
+#define S2PB_PARAM_TYPE_BYTE_ARRAY  4
+#define S2PB_PARAM_TYPE_WORD_ARRAY  5
+#define S2PB_PARAM_TYPE_LONG_ARRAY  6
+
+// param format flags
+#define S2PB_PARAM_FORMAT_HEX  1 // default value base is 16 instead of 10
+#define S2PB_PARAM_FORMAT_BIN  2 // default value base is 2 instead of 10
+#define S2PB_PARAM_FORMAT_STR  4 // data is given as null terminated string
+
+#endif

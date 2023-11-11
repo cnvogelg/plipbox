@@ -3,7 +3,7 @@ include ../config/define.mk
 # the plipbox tool
 PLIPTOOL_NAME = pliptool_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 PLIPTOOL_PATH = $(BIN_DIR)/$(PLIPTOOL_NAME)
-PLIPTOOL_SRC = pliptool.c sanadev.c
+PLIPTOOL_SRC = pliptool.c sanadev.c param.c
 PLIPTOOL_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPTOOL_SRC))
 
 # the plipbox test tool

@@ -55,7 +55,8 @@ u08 proto_cmd_handle(void)
   u08 result = PROTO_CMD_HANDLE_DONE;
 
   switch(cmd) {
-    case PROTO_CMD_HANDLE_RESET:
+    case PROTO_CMD_RESET:
+      DS("RESET"); DNL;
       result = PROTO_CMD_HANDLE_RESET;
       break;
 

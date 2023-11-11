@@ -127,7 +127,7 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
 GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac)
 {
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
-   int ok = proto_cmd_get_mac(hwb->proto, cur_mac);
+   int ok = proto_cmd_get_cur_mac(hwb->proto, cur_mac);
    if(ok == PROTO_RET_OK) {
       ok = proto_cmd_get_def_mac(hwb->proto, def_mac);
    }
@@ -139,14 +139,14 @@ GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
   /* register all special comamnds here! */
   switch(cmd) {
     case S2PB_GET_VERSION:
-    case S2PB_SET_MAC:
-    case S2PB_SET_MODE:
-    case S2PB_GET_MODE:
-    case S2PB_SET_FLAGS:
-    case S2PB_GET_FLAGS:
-    case S2PB_RESET_PREFS:
-    case S2PB_LOAD_PREFS:
-    case S2PB_SAVE_PREFS:
+    case S2PB_PARAM_GET_NUM:
+    case S2PB_PARAM_FIND_TAG:
+    case S2PB_PARAM_GET_DEF:
+    case S2PB_PARAM_GET_VAL:
+    case S2PB_PARAM_SET_VAL:
+    case S2PB_PREFS_RESET:
+    case S2PB_PREFS_LOAD:
+    case S2PB_PREFS_SAVE:
       return TRUE;
     default:
       return FALSE;
@@ -173,47 +173,58 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
       req->ios2_WireError = version | DEVICE_VERSION << 24 | DEVICE_REVISION << 16;
       break;
     }
-    case S2PB_SET_MAC:
-      res = proto_cmd_set_mac(hwb->proto, req->ios2_SrcAddr);
-      /* read and update mac */
-      if(res == PROTO_RET_OK) {
-        mac_t mac;
-        res = proto_cmd_get_mac(hwb->proto, mac);
-        if(res == PROTO_RET_OK) {
-          CopyMem(mac, pb->pb_CfgAddr, MAC_SIZE);
-        }
+    // ----- param -----
+    case S2PB_PARAM_GET_NUM: {
+      UWORD num_param = 0;
+      res = proto_cmd_param_get_num(hwb->proto, &num_param);
+      req->ios2_WireError = num_param;
+      break;
+    }
+    case S2PB_PARAM_FIND_TAG: {
+      ULONG tag = req->ios2_WireError;
+      UWORD id = S2PB_NO_INDEX;
+      res = proto_cmd_param_find_tag(hwb->proto, tag, &id);
+      req->ios2_WireError = id;
+      break;
+    }
+    case S2PB_PARAM_GET_DEF: {
+      UWORD id = (UWORD)req->ios2_WireError;
+      if(req->ios2_DataLength != sizeof(proto_param_def_t)) {
+        req->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+      } else {
+        proto_param_def_t *def = (proto_param_def_t *)req->ios2_Data;
+        res = proto_cmd_param_get_def(hwb->proto, id, def);
       }
       break;
-    case S2PB_SET_MODE:
-      res = proto_cmd_set_mode(hwb->proto, (UWORD)req->ios2_WireError);
-      break;
-    case S2PB_GET_MODE: {
-      UWORD mode = 0;
-      res = proto_cmd_get_mode(hwb->proto, &mode);
-      req->ios2_WireError = mode;
+    }
+    case S2PB_PARAM_GET_VAL: {
+      UWORD id = (UWORD)req->ios2_WireError;
+      UWORD size = (UWORD)req->ios2_DataLength;
+      UBYTE *data = (UBYTE *)req->ios2_Data;
+      res = proto_cmd_param_get_val(hwb->proto, id, size, data);
       break;
     }
-    case S2PB_SET_FLAGS:
-      res = proto_cmd_set_flags(hwb->proto, (UWORD)req->ios2_WireError);
-      break;
-    case S2PB_GET_FLAGS: {
-      UWORD mode = 0;
-      res = proto_cmd_get_flags(hwb->proto, &mode);
-      req->ios2_WireError = mode;
+    case S2PB_PARAM_SET_VAL: {
+      UWORD id = (UWORD)req->ios2_WireError;
+      UWORD size = (UWORD)req->ios2_DataLength;
+      UBYTE *data = (UBYTE *)req->ios2_Data;
+      res = proto_cmd_param_set_val(hwb->proto, id, size, data);
       break;
     }
-    case S2PB_RESET_PREFS:
-      res = proto_cmd_reset_prefs(hwb->proto);
+    // ----- prefs -----
+    case S2PB_PREFS_RESET:
+      res = proto_cmd_prefs_reset(hwb->proto);
       break;
-    case S2PB_LOAD_PREFS: {
+    case S2PB_PREFS_LOAD: {
       UWORD status = 0;
-      res = proto_cmd_load_prefs(hwb->proto, &status);
+      res = proto_cmd_prefs_load(hwb->proto, &status);
       req->ios2_WireError = status;
       break;
     }
-    case S2PB_SAVE_PREFS: {
+    case S2PB_PREFS_SAVE: {
       UWORD status = 0;
-      res = proto_cmd_save_prefs(hwb->proto, &status);
+      res = proto_cmd_prefs_save(hwb->proto, &status);
       req->ios2_WireError = status;
       break;
     }

@@ -35,7 +35,7 @@ sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD 
 {
   sanadev_handle_t *sh;
 
-  sh = AllocMem(sizeof(struct sanadev_handle), MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
+  sh = AllocMem(sizeof(struct sanadev_handle), MEMF_ANY | MEMF_CLEAR);
   if(sh == NULL) {
     return NULL;
   }
@@ -137,133 +137,81 @@ BOOL sanadev_cmd_plipbox_get_version(sanadev_handle_t *sh, UWORD *dev_version, U
   return ok;
 }
 
-BOOL sanadev_cmd_plipbox_set_mac(sanadev_handle_t *sh, sanadev_mac_t new_mac)
-{
-  CopyMem(new_mac, sh->cmd_req->ios2_SrcAddr, SANADEV_MAC_SIZE);
-  return do_cmd(sh->cmd_req, S2PB_SET_MAC);
-}
+// ----- param -----
 
-BOOL sanadev_cmd_plipbox_set_mode(sanadev_handle_t *sh, UWORD mode)
+BOOL sanadev_cmd_plipbox_param_get_num(sanadev_handle_t *sh, UWORD *num)
 {
-  sh->cmd_req->ios2_WireError = mode;
-  return do_cmd(sh->cmd_req, S2PB_SET_MODE);
-}
-
-BOOL sanadev_cmd_plipbox_get_mode(sanadev_handle_t *sh, UWORD *mode)
-{
-  BOOL ok = do_cmd(sh->cmd_req, S2PB_GET_MODE);
+  BOOL ok = do_cmd(sh->cmd_req, S2PB_PARAM_GET_NUM);
   if(ok) {
-    *mode = sh->cmd_req->ios2_WireError;
+    *num = (UWORD)sh->cmd_req->ios2_WireError;
+  } else {
+    *num = 0;
   }
   return ok;
 }
 
-BOOL sanadev_cmd_plipbox_set_flags(sanadev_handle_t *sh, UWORD flags)
+BOOL sanadev_cmd_plipbox_param_find_tag(sanadev_handle_t *sh, ULONG tag, UWORD *id)
 {
-  sh->cmd_req->ios2_WireError = flags;
-  return do_cmd(sh->cmd_req, S2PB_SET_FLAGS);
-}
-
-BOOL sanadev_cmd_plipbox_get_flags(sanadev_handle_t *sh, UWORD *flags)
-{
-  BOOL ok = do_cmd(sh->cmd_req, S2PB_GET_FLAGS);
+  sh->cmd_req->ios2_WireError = tag;
+  BOOL ok = do_cmd(sh->cmd_req, S2PB_PARAM_FIND_TAG);
   if(ok) {
-    *flags = sh->cmd_req->ios2_WireError;
+    *id = (UWORD)sh->cmd_req->ios2_WireError;
+  } else {
+    *id = S2PB_NO_INDEX;
   }
   return ok;
 }
 
-BOOL sanadev_cmd_plipbox_reset_prefs(sanadev_handle_t *sh, UWORD *status)
+BOOL sanadev_cmd_plipbox_param_get_def(sanadev_handle_t *sh, UWORD id, s2pb_param_def_t *def)
 {
-  BOOL ok =do_cmd(sh->cmd_req, S2PB_RESET_PREFS);
+  sh->cmd_req->ios2_WireError = id;
+  sh->cmd_req->ios2_DataLength = sizeof(s2pb_param_def_t);
+  sh->cmd_req->ios2_Data = def;
+  return do_cmd(sh->cmd_req, S2PB_PARAM_GET_DEF);
+}
+
+BOOL sanadev_cmd_plipbox_param_get_val(sanadev_handle_t *sh, UWORD id, UWORD size, UBYTE *data)
+{
+  sh->cmd_req->ios2_WireError = id;
+  sh->cmd_req->ios2_DataLength = size;
+  sh->cmd_req->ios2_Data = data;
+  return do_cmd(sh->cmd_req, S2PB_PARAM_GET_VAL);
+}
+
+BOOL sanadev_cmd_plipbox_param_set_val(sanadev_handle_t *sh, UWORD id, UWORD size, UBYTE *data)
+{
+  sh->cmd_req->ios2_WireError = id;
+  sh->cmd_req->ios2_DataLength = size;
+  sh->cmd_req->ios2_Data = data;
+  return do_cmd(sh->cmd_req, S2PB_PARAM_SET_VAL);
+}
+
+// ----- prefs -----
+
+BOOL sanadev_cmd_plipbox_prefs_reset(sanadev_handle_t *sh)
+{
+  return do_cmd(sh->cmd_req, S2PB_PREFS_RESET);
+}
+
+BOOL sanadev_cmd_plipbox_prefs_load(sanadev_handle_t *sh, UWORD *status)
+{
+  BOOL ok =do_cmd(sh->cmd_req, S2PB_PREFS_LOAD);
   if(ok) {
     *status = sh->cmd_req->ios2_WireError;
   }
   return TRUE;
 }
 
-BOOL sanadev_cmd_plipbox_load_prefs(sanadev_handle_t *sh, UWORD *status)
+BOOL sanadev_cmd_plipbox_prefs_save(sanadev_handle_t *sh, UWORD *status)
 {
-  BOOL ok =do_cmd(sh->cmd_req, S2PB_LOAD_PREFS);
+  BOOL ok =do_cmd(sh->cmd_req, S2PB_PREFS_SAVE);
   if(ok) {
     *status = sh->cmd_req->ios2_WireError;
   }
   return TRUE;
 }
 
-BOOL sanadev_cmd_plipbox_save_prefs(sanadev_handle_t *sh, UWORD *status)
-{
-  BOOL ok =do_cmd(sh->cmd_req, S2PB_SAVE_PREFS);
-  if(ok) {
-    *status = sh->cmd_req->ios2_WireError;
-  }
-  return TRUE;
-}
-
-BOOL sanadev_plipbox_read_param(sanadev_handle_t *sh, sanadev_plipbox_param_t *param)
-{
-  BOOL ok;
-
-  /* retrieve mac adresses */
-  ok = sanadev_cmd_get_station_address(sh, param->cur_mac, param->def_mac);
-  if(!ok) {
-    return FALSE;
-  }
-
-  /* retrieve mode */
-  ok = sanadev_cmd_plipbox_get_mode(sh, &param->mode);
-  if(!ok) {
-    return FALSE;
-  }
-
-  /* retrieve flags */
-  ok = sanadev_cmd_plipbox_get_flags(sh, &param->flags);
-  if(!ok) {
-    return FALSE;
-  }
-
-  return TRUE;
-}
-
-BOOL sanadev_plipbox_write_param(sanadev_handle_t *sh, sanadev_plipbox_param_t *param, UWORD update_mask)
-{
-  BOOL ok;
-
-  if(update_mask & SANADEV_UPDATE_MAC) {
-    ok = sanadev_cmd_plipbox_set_mac(sh, param->cur_mac);
-    if(!ok) {
-      return FALSE;
-    }
-  }
-
-  if(update_mask & SANADEV_UPDATE_MODE) {
-    ok = sanadev_cmd_plipbox_set_mode(sh, param->mode);
-    if(!ok) {
-      return FALSE;
-    }
-  }
-
-  if(update_mask & SANADEV_UPDATE_FLAGS) {
-    ok = sanadev_cmd_plipbox_set_flags(sh, param->flags);
-    if(!ok) {
-      return FALSE;
-    }
-  }
-
-  return TRUE;
-}
-
-void sanadev_plipbox_print_param(sanadev_plipbox_param_t *param)
-{
-  Printf("\nMAC Addresses\n  current: ");
-  sanadev_print_mac(param->cur_mac);
-  Printf("\n  default: ");
-  sanadev_print_mac(param->def_mac);
-  PutStr("\n");
-
-  Printf("Mode:  %04lx\n", (ULONG)param->mode);
-  Printf("Flags: %04lx\n", (ULONG)param->flags);
-}
+// ----- misc -----
 
 static void get_error(struct IOSana2Req *sana_req, UWORD *error, UWORD *wire_error)
 {
@@ -292,24 +240,6 @@ void sanadev_cmd_print_error(sanadev_handle_t *sh)
 void sanadev_print_mac(sanadev_mac_t mac)
 {
   Printf("%02lx:%02lx:%02lx:%02lx:%02lx:%02lx",
-    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]);
-}
-
-BOOL sanadev_parse_mac(const char *str, sanadev_mac_t mac)
-{
-  // TODO
-  return FALSE;
-}
-
-BOOL sanadev_parse_mode(const char *str, UWORD *mode)
-{
-  // TODO
-  return FALSE;
-}
-
-BOOL sanadev_parse_flags(const char *str, UWORD *flagds)
-{
-  // TODO
-  return FALSE;
+     (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+     (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]);
 }

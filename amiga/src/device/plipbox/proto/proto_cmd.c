@@ -47,67 +47,15 @@ int proto_cmd_get_version(proto_handle_t *proto, UWORD *version)
   return res;
 }
 
-int proto_cmd_set_mode(proto_handle_t *proto, UWORD mode)
+int proto_cmd_get_cur_mac(proto_handle_t *proto, mac_t mac)
 {
   int res;
 
-  d8(("proto_cmd_set_mode:%ld", (ULONG)mode));
-  res = proto_atom_write_word(proto, PROTO_CMD_SET_MODE, mode);
-  d8r((" res=%ld\n", (LONG)res));
-  return res;
-}
-
-int proto_cmd_get_mode(proto_handle_t *proto, UWORD *mode)
-{
-  int res;
-
-  d8(("proto_cmd_get_mode:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_GET_MODE, mode);
-  d8r((" mode=%04lx res=%ld\n", (ULONG)*mode, (LONG)res));
-  return res;
-}
-
-int proto_cmd_set_flags(proto_handle_t *proto, UWORD flags)
-{
-  int res;
-
-  d8(("proto_cmd_set_flags:%ld", (ULONG)flags));
-  res = proto_atom_write_word(proto, PROTO_CMD_SET_FLAGS, flags);
-  d8r((" res=%ld\n", (LONG)res));
-  return res;
-}
-
-int proto_cmd_get_flags(proto_handle_t *proto, UWORD *flags)
-{
-  int res;
-
-  d8(("proto_cmd_get_flags:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_GET_FLAGS, flags);
-  d8r((" mode=%04lx res=%ld\n", (ULONG)*flags, (LONG)res));
-  return res;
-}
-
-int proto_cmd_set_mac(proto_handle_t *proto, mac_t mac)
-{
-  int res;
-
-  d8(("proto_cmd_set_mac:%02lx:%02lx:%02lx:%02lx:%02lx:%02lx",
-    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
-  res = proto_atom_write_block(proto, PROTO_CMD_SET_MAC, mac, MAC_SIZE);
-  d8r((" res=%ld\n", (LONG)res));
-  return res;
-}
-
-int proto_cmd_get_mac(proto_handle_t *proto, mac_t mac)
-{
-  int res;
-
-  d8(("proto_cmd_get_mac:"));
-  res = proto_atom_read_block(proto, PROTO_CMD_GET_MAC, mac, MAC_SIZE);
+  d8(("proto_cmd_get_cur_mac:"));
+  res = proto_atom_read_block(proto, PROTO_CMD_GET_CUR_MAC, mac, MAC_SIZE);
   d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
-    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+      (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+      (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
   return res;
 }
 
@@ -118,40 +66,128 @@ int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac)
   d8(("proto_cmd_get_def_mac:"));
   res = proto_atom_read_block(proto, PROTO_CMD_GET_DEF_MAC, mac, MAC_SIZE);
   d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
-    (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-    (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+      (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+      (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
   return res;
 }
 
-int proto_cmd_reset_prefs(proto_handle_t *proto)
+// ----- param -----
+
+int proto_cmd_param_get_num(proto_handle_t *proto, UWORD *num)
 {
   int res;
 
-  d8(("proto_cmd_reset_prefs:"));
-  res = proto_atom_action(proto, PROTO_CMD_RESET_PREFS);
+  d8(("proto_cmd_param_get_num:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_PARAM_GET_NUM, num);
+  d8r((" num=%ld res=%ld\n", (LONG)*num, (LONG)res));
+  return res;
+}
+
+int proto_cmd_param_find_tag(proto_handle_t *proto, ULONG tag, UWORD *id)
+{
+  int res;
+
+  d8(("proto_cmd_param_find_tag: tag=%lx", tag));
+  res = proto_atom_write_long(proto, PROTO_CMD_PARAM_FIND_TAG, tag);
+  d8r((" res=%ld, ", (LONG)res));
+
+  if(res != PROTO_RET_OK) {
+    return res;
+  }
+
+  d8r(("get_id:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_PARAM_GET_ID, id);
+  d8r((" id=%ld res=%ld\n", (ULONG)*id, (LONG)res));
+  return res;
+}
+
+int proto_cmd_param_get_def(proto_handle_t *proto, UWORD id, proto_param_def_t *def)
+{
+  int res;
+
+  d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
+  res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
+  d8r((" res=%ld\n", (LONG)res));
+
+  if(res != PROTO_RET_OK) {
+    return res;
+  }
+
+  d8r(("get_def[%ld]:", (LONG)sizeof(*def)));
+  res = proto_atom_read_block(proto, PROTO_CMD_PARAM_GET_DEF, (UBYTE *)def, (UWORD)sizeof(*def));
   d8r((" res=%ld\n", (LONG)res));
   return res;
 }
 
-int proto_cmd_load_prefs(proto_handle_t *proto, UWORD *status)
+int proto_cmd_param_get_val(proto_handle_t *proto, UWORD id, UWORD size, UBYTE *data)
 {
   int res;
 
-  d8(("proto_cmd_load_prefs:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_LOAD_PREFS, status);
+  d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
+  res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
+  d8r((" res=%ld\n", (LONG)res));
+
+  if(res != PROTO_RET_OK) {
+    return res;
+  }
+
+  d8r(("get_val[%ld]:", (LONG)size));
+  res = proto_atom_read_block(proto, PROTO_CMD_PARAM_GET_VAL, data, size);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_param_set_val(proto_handle_t *proto, UWORD id, UWORD size, UBYTE *data)
+{
+  int res;
+
+  d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
+  res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
+  d8r((" res=%ld\n", (LONG)res));
+
+  if(res != PROTO_RET_OK) {
+    return res;
+  }
+
+  d8r(("set_val:[%ld]", (LONG)size));
+  res = proto_atom_write_block(proto, PROTO_CMD_PARAM_SET_VAL, data, size);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+// ----- prefs -----
+
+int proto_cmd_prefs_reset(proto_handle_t *proto)
+{
+  int res;
+
+  d8(("proto_cmd_prefs_reset:"));
+  res = proto_atom_action(proto, PROTO_CMD_PREFS_RESET);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_prefs_load(proto_handle_t *proto, UWORD *status)
+{
+  int res;
+
+  d8(("proto_cmd_prefs_load:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_PREFS_LOAD, status);
   d8r((" status=%04lx res=%ld\n", (ULONG)*status, (LONG)res));
   return res;
 }
 
-int proto_cmd_save_prefs(proto_handle_t *proto, UWORD *status)
+int proto_cmd_prefs_save(proto_handle_t *proto, UWORD *status)
 {
   int res;
 
-  d8(("proto_cmd_save_prefs:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_SAVE_PREFS, status);
+  d8(("proto_cmd_prefs_save:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_PREFS_SAVE, status);
   d8r((" status=%04lx res=%ld\n", (ULONG)*status, (LONG)res));
   return res;
 }
+
+// ----- RX/TX -----
 
 int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWORD *status)
 {
