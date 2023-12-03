@@ -453,9 +453,15 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
             }
          break;
 
-         default:
-          hw_handle_special_cmd(pb, ios2, pb->pb_Flags & PLIPF_OFFLINE);
-          break;
+         default: {
+            int result = hw_handle_special_cmd(pb, ios2, pb->pb_Flags & PLIPF_OFFLINE);
+            if(result == HW_SPECIAL_CMD_PARAM_CHANGE) {
+               /* macs could have changed so update them */
+               d2(("update MAcs after param change\n"));
+               hw_get_macs(pb, pb->pb_CfgAddr, pb->pb_DefAddr);
+            }
+            break;
+         }       
       }
 
       if (ios2) DevTermIO(pb,ios2);
@@ -656,6 +662,8 @@ PUBLIC VOID SAVEDS ServerTask(void)
                d4r(("\nX"));
                got_sigmask = Wait(full_sigmask);
                d2(("**> wait: got 0x%08lx\n", got_sigmask));
+            } else {
+               got_sigmask = 0;
             }
 
             /* update hw status */

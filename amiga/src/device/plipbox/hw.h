@@ -27,6 +27,11 @@ struct HWFrame {
 
 struct PLIPBase;
 
+/* return value for hw_handle_special_cmd() */
+#define HW_SPECIAL_CMD_OK           0
+#define HW_SPECIAL_CMD_ERROR        1
+#define HW_SPECIAL_CMD_PARAM_CHANGE 2
+
 /* hw API */
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
@@ -34,7 +39,7 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
 GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac);
 
 GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd);
-GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline);
+GLOBAL REGARGS int  hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline);
 
 GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb);

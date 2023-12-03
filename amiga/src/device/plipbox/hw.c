@@ -153,16 +153,17 @@ GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
   }
 }
 
-GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)
+GLOBAL REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)
 {
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    int res = PROTO_RET_OK;
+   int return_value = HW_SPECIAL_CMD_OK;
 
    /* commands need offline mode */
    if(!offline) {
       req->ios2_Req.io_Error = S2ERR_BAD_STATE;
       req->ios2_WireError = S2WERR_UNIT_ONLINE;
-      return;
+      return HW_SPECIAL_CMD_ERROR;
    }
 
    switch(req->ios2_Req.io_Command) {
@@ -210,16 +211,19 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
       UWORD size = (UWORD)req->ios2_DataLength;
       UBYTE *data = (UBYTE *)req->ios2_Data;
       res = proto_cmd_param_set_val(hwb->proto, id, size, data);
+      return_value = HW_SPECIAL_CMD_PARAM_CHANGE;
       break;
     }
     // ----- prefs -----
     case S2PB_PREFS_RESET:
       res = proto_cmd_prefs_reset(hwb->proto);
+      return_value = HW_SPECIAL_CMD_PARAM_CHANGE;
       break;
     case S2PB_PREFS_LOAD: {
       UWORD status = 0;
       res = proto_cmd_prefs_load(hwb->proto, &status);
       req->ios2_WireError = status;
+      return_value = HW_SPECIAL_CMD_PARAM_CHANGE;
       break;
     }
     case S2PB_PREFS_SAVE: {
@@ -236,6 +240,9 @@ GLOBAL REGARGS void hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req
    if(res != PROTO_RET_OK) {
       req->ios2_Req.io_Error = S2ERR_TX_FAILURE;
       req->ios2_WireError = S2WERR_GENERIC_ERROR;
+      return HW_SPECIAL_CMD_ERROR;
+   } else {
+      return return_value;
    }
 }
 
@@ -307,14 +314,45 @@ GLOBAL REGARGS ULONG hw_status_get_sigmask(struct PLIPBase *pb)
 
 GLOBAL REGARGS BOOL hw_status_is_rx_pending(struct PLIPBase *pb)
 {
+   /* hw_statis_is_rx_pending() will be called at various points
+      in the driver to check if rx is ready. if yes then
+      ops are skipped and it returns to the read loop
+   */
+
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+
+   /* first check the status. if is was already set by a tx/rx op then
+      we have a valid status with pending rx
+   */
    UWORD status = hwb->hwb_DeviceStatus;
    d(("hw_status_is_rx_pending: status=%lx\n", (ULONG)status));
-   return (status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING;
+   if((status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING) {
+      return TRUE;
+   }
+
+   /* we also poll th signal to check if the ACK irq has arrived till then */
+   ULONG sigmask = proto_env_get_trigger_sigmask(hwb->env);
+   ULONG gotmask = SetSignal(0, sigmask);
+   if((gotmask & sigmask) == sigmask) {
+      if(hw_status_update(pb)) {
+         /* re-evaluate updated status */
+         status = hwb->hwb_DeviceStatus;
+         if((status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING) {
+            return TRUE;
+         }
+      }
+   }
+
+   /* nothing to do */
+   return FALSE;
 }
 
 GLOBAL REGARGS BOOL hw_status_update(struct PLIPBase *pb)
 {
+   /* hw_status_update() is called by the driver after receiving the 
+      signal of the hw.
+   */
+
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    int ok;
    UWORD status;

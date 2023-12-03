@@ -259,8 +259,6 @@ static int print_number(char *str, int base, ULONG num, int value_bytes, int pre
 {
   int len = 0;
 
-  Printf("NUMBER[%lu]", num);
-
   if(prefix) {
     if(base==16) {
       *(str++) = '$';
@@ -324,7 +322,7 @@ static ULONG get_val(const UBYTE *data, int value_bytes)
   else if(value_bytes == 2) {
     // note: endianess of device: little
     ULONG result;
-    result = (ULONG)data[0] 
+    result = (ULONG)data[0];
     result |= ((ULONG)data[1] << 8);
     return result;
   }
