@@ -24,24 +24,31 @@
  *
  */
 
-#ifndef _PARAM_H
-#define _PARAM_H
+#ifndef PARAM_H
+#define PARAM_H
 
-#include "global.h"
+#include "types.h"
 
-typedef struct {
-  mac_t mac_addr;
-  u08   mode;
-  u08   flags;
-} param_t;
-  
+struct param_def {
+  // --- shared via protocol
+  u08   index;
+  u08   type;
+  u08   format;
+  u16   size;
+  u32   tag;
+  // --- internal
+  u08  *data;
+  PGM_P desc;
+};
+typedef struct param_def param_def_t;
+
 // param result
 #define PARAM_OK                  0
 #define PARAM_EEPROM_NOT_READY    1
 #define PARAM_EEPROM_CRC_MISMATCH 2
 
 // init parameters. try to load from eeprom or use default
-void param_init(void);
+u08 param_init(void);
 // save param to eeprom (returns param result) 
 u08 param_save(void);
 // load param from eeprom (returns param result)
@@ -51,17 +58,14 @@ void param_reset(void);
 // show params
 void param_dump(void);
 
-// mode parameter
-void param_set_mode(u08 mode);
-u08  param_get_mode(void);
-
-// flags parameter
-void param_set_flags(u08 flags);
-u08  param_get_flags(void);
-
 // MAC parameter
 void param_get_def_mac(mac_t mac);
-void param_get_mac(mac_t mac);
-void param_set_mac(const mac_t mac);
+void param_get_cur_mac(mac_t mac);
+
+// generic param functions
+u08 param_get_num(void);
+u08 param_find_tag(u32 tag);
+void param_get_def(u08 index, param_def_t *def);
+u08 *param_get_data(u08 index);
 
 #endif

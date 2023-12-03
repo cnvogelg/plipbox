@@ -17,7 +17,7 @@
 // debug word
 #define DW(x)  uart_send_hex_word(x)
 // debug long
-#define DL(x)  uart_send_hex_long(x)
+#define DL(x)  uart_send_hex_dword(x)
 // mac
 #define DM(x)  uart_send_hex_mac(x)
 

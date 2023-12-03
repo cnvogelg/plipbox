@@ -2,7 +2,7 @@
   mode_cmd.c - implement the proto_cmd_api for module operation
 */
 
-#include "global.h"
+#include "types.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG

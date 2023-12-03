@@ -41,17 +41,7 @@ typedef   signed long long s64;
 typedef u08 mac_t[6];
 #define MAC_SIZE 6
 
-// project/system dependent defines
-
-// CPU clock speed -> now defined in Makefile
-//#define F_CPU        16000000               		// 16MHz processor
-//#define F_CPU        14745600               		// 14.745MHz processor
-//#define F_CPU        8000000               		// 8MHz processor
-//#define F_CPU        7372800               		// 7.37MHz processor
-//#define F_CPU        4000000               		// 4MHz processor
-//#define F_CPU        3686400               		// 3.69MHz processor
-#define CYCLES_PER_US ((F_CPU+500000)/1000000) 	// cpu cycles per microsecond
-
-extern u08 global_verbose;
+typedef u08 ip_addr_t[4];
+#define IP_ADDR_SIZE 4
 
 #endif

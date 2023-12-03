@@ -27,7 +27,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "global.h"
+#include "types.h"
 
 #include <avr/io.h>
 

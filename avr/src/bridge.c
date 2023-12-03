@@ -24,7 +24,7 @@
  *
  */
 
-#include "global.h"
+#include "types.h"
 
 #ifdef DEBUG_BRIDGE
 #define DEBUG

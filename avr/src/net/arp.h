@@ -27,7 +27,7 @@
 #ifndef ARP_H
 #define ARP_H
 
-#include "global.h"
+#include "types.h"
 #include "net.h"
 
 #define ARP_OFF_HW_TYPE   0

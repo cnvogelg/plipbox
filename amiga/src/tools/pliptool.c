@@ -184,13 +184,14 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // given by tag
   if(params.param_tag != NULL) {
     ULONG tag;
-    if(param_parse_tag(params.param_tag, &tag)) {
+    if(param_parse_tag(params.param_tag, &tag) == PARAM_OK) {
+      Printf("Searching tag '%s' (%04lx)\n", params.param_tag, tag);
       ok = sanadev_cmd_plipbox_param_find_tag(sh, tag, &index);
       if(!ok) {
         return FALSE;
       }
       if(index == S2PB_NO_INDEX) {
-        Printf("Tag not found: '%s'\n", params.param_tag);
+        PutStr("Tag not found!\n");
         return TRUE;
       }
     } else {

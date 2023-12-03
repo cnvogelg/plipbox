@@ -28,7 +28,7 @@
 #define MODE_MOD_H
 
 #include <avr/pgmspace.h>
-#include "global.h"
+#include "types.h"
 
 /* function pointers */
 typedef u08  (*mode_mod_attach_t)(void);

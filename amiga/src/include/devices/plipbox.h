@@ -18,7 +18,7 @@
 #define S2PB_PREFS_LOAD       (S2PB_BASE+7)
 #define S2PB_PREFS_SAVE       (S2PB_BASE+8)
 
-#define S2PB_NO_INDEX         0xffff
+#define S2PB_NO_INDEX         0xff
 
 struct s2pb_param_def {
   UBYTE index;
@@ -131,12 +131,11 @@ struct plipbox_param_def {
 typedef struct plipbox_param_def plipbox_param_def_t;
 
 // param type
-#define S2PB_PARAM_TYPE_BYTE        1
-#define S2PB_PARAM_TYPE_WORD        2
-#define S2PB_PARAM_TYPE_LONG        3
-#define S2PB_PARAM_TYPE_BYTE_ARRAY  4
-#define S2PB_PARAM_TYPE_WORD_ARRAY  5
-#define S2PB_PARAM_TYPE_LONG_ARRAY  6
+#define S2PB_PARAM_TYPE_WORD        1
+#define S2PB_PARAM_TYPE_LONG        2
+#define S2PB_PARAM_TYPE_BYTE_ARRAY  3
+#define S2PB_PARAM_TYPE_WORD_ARRAY  4
+#define S2PB_PARAM_TYPE_LONG_ARRAY  5
 
 // param format flags
 #define S2PB_PARAM_FORMAT_HEX  1 // default value base is 16 instead of 10

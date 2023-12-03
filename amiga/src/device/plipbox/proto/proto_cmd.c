@@ -6,6 +6,7 @@
 
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
+#include "param_shared.h"
 
 int proto_cmd_attach(proto_handle_t *proto)
 {
@@ -104,18 +105,40 @@ int proto_cmd_param_find_tag(proto_handle_t *proto, ULONG tag, UWORD *id)
 int proto_cmd_param_get_def(proto_handle_t *proto, UWORD id, proto_param_def_t *def)
 {
   int res;
+  UBYTE buf[PARAM_DEF_SIZE];
 
   d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
   res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
   d8r((" res=%ld\n", (LONG)res));
-
   if(res != PROTO_RET_OK) {
     return res;
   }
 
   d8r(("get_def[%ld]:", (LONG)sizeof(*def)));
-  res = proto_atom_read_block(proto, PROTO_CMD_PARAM_GET_DEF, (UBYTE *)def, (UWORD)sizeof(*def));
+  res = proto_atom_read_block(proto, PROTO_CMD_PARAM_GET_DEF, buf, PARAM_DEF_SIZE);
   d8r((" res=%ld\n", (LONG)res));
+  if(res != PROTO_RET_OK) {
+    return res;
+  }
+
+  // convert wire def
+  // param description
+  // +00 u08 index
+  // +01 u08 type
+  // +02 u08 format
+  // +03 u08 reserved
+  // +04 u16 size
+  // +06 u32 tag
+  // =10
+  def->index = buf[0];
+  def->type = buf[1];
+  def->format = buf[2];
+  def->size = *(UWORD *)&buf[4]; // is big endian
+  def->tag = *(ULONG *)&buf[6];
+  d8(("got def: index=%ld type=%ld format=%ld size=%ld tag=%lx",
+      (ULONG)def->index, (ULONG)def->type, (ULONG)def->format,
+      (ULONG)def->size, def->tag));
+
   return res;
 }
 

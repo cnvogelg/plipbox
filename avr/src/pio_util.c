@@ -67,7 +67,7 @@ u08 pio_util_recv_packet(u16 size)
     stats_get(STATS_ID_PIO_RX)->err++;
   }
 
-  if(global_verbose) {
+#if 0
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("pio rx: "));
     if(result == PIO_OK) {
@@ -84,7 +84,7 @@ u08 pio_util_recv_packet(u16 size)
       uart_send_hex_byte(result);
       uart_send_crlf();
     }
-  }
+#endif
   return result;
 }
 
@@ -101,7 +101,7 @@ u08 pio_util_send_packet(u16 size)
     stats_get(STATS_ID_PIO_TX)->err++;
   }
 
-  if(global_verbose) {
+#if 0
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("pio tx: "));
     if(result == PIO_OK) {
@@ -119,6 +119,7 @@ u08 pio_util_send_packet(u16 size)
       uart_send_crlf();
     }
   }
+#endif
   return result;
 }
 
@@ -142,22 +143,18 @@ u08 pio_util_handle_arp(u16 size)
     // is our IP?
     const u08 *tgt_ip = arp_get_tgt_ip(pl_buf);
 
-    if(global_verbose) {
       uart_send_time_stamp_spc();
       uart_send_pstring(PSTR("ARP REQ: IP="));
       net_dump_ip(tgt_ip);
       uart_send_crlf();
-    }
 
     if(net_compare_ip(tgt_ip, param.test_ip)) {
       arp_make_reply(pl_buf, param.mac_addr, param.test_ip);
       eth_make_bcast(pkt_buf, param.mac_addr);
       pio_util_send_packet(size);
 
-      if(global_verbose) {
         uart_send_time_stamp_spc();
         uart_send_pstring(PSTR("ARP REPLY!\r\n"));
-      }
     }
   }
 
@@ -174,12 +171,10 @@ u08 pio_util_handle_udp_test(u16 size)
 
   // for us?
   if(net_compare_ip(param.test_ip, dst_ip) && (dst_port == param.test_port)) {
-    if(global_verbose) {
       uart_send_time_stamp_spc();
       uart_send_pstring(PSTR("UDP: "));
       uart_send_hex_byte(*data_ptr);
       uart_send_crlf();
-    }
 
     // send UDP packet back again
     // flip IP/UDP

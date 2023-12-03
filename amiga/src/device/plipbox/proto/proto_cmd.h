@@ -14,7 +14,6 @@ struct proto_param_def {
   UBYTE index;
   UBYTE type;
   UBYTE format;
-  UBYTE reserved;
   UWORD size;
   ULONG tag;
 };

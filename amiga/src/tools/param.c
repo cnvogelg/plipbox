@@ -2,24 +2,25 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "param.h"
 
 /* convert string with 1..4 chars to tag ULONG */
 int param_parse_tag(const char *str, ULONG *tag)
 {
-  int n = strlen(str);
-  if((n < 1) || (n>4)) {
-    return PARAM_WRONG_TAG_SIZE;
-  }
-
   int bits = 24;
   ULONG res_tag = 0;
+  int num = 0;
   while(*str) {
     res_tag |= (ULONG)*str << bits;
     bits -= 8;
+    str++;
+    num++;
+    if(num > 4) {
+      return PARAM_WRONG_TAG_SIZE;
+    }
   }
 
   *tag = res_tag;
@@ -78,6 +79,15 @@ static int parse_number(const char *str, int base, ULONG *num, int *consumed)
   while(*str) {
     ULONG digit;
     int res = parse_digit(*str, base, &digit);
+    if(res == PARAM_NO_DIGIT_CHAR) {
+      // is a valid terminator for arrays?
+      if((*str == '.') || (*str == ':')) {
+        len++;
+        str++;
+        break;
+      }
+    }
+    // other error
     if(res != PARAM_OK) {
       return res;
     }
@@ -85,11 +95,6 @@ static int parse_number(const char *str, int base, ULONG *num, int *consumed)
     result |= digit;
     len++;
     str++;
-
-    // is a valid terminator for arrays?
-    if((*str == '.') || (*str == ':')) {
-      break;
-    }
   }
   *num = result;
   if(consumed != NULL) {
@@ -112,16 +117,19 @@ static int get_base(s2pb_param_def_t *def)
 
 static void set_value(UBYTE *data, ULONG number, int value_bytes)
 {
+  // to little endian
   if(value_bytes == 1) {
     *data = (UBYTE)number;
   }
   else if(value_bytes == 2) {
-    UWORD *ptr = (UWORD *)data;
-    *ptr = (UWORD)number;
+    data[0] = (UBYTE)(number & 0xff);
+    data[1] = (UBYTE)((number >> 8) & 0xff);
   }
   else if(value_bytes == 4) {
-    ULONG *ptr = (ULONG *)data;
-    *ptr = number;
+    data[0] = (UBYTE)(number & 0xff);
+    data[1] = (UBYTE)((number >> 8) & 0xff);
+    data[2] = (UBYTE)((number >> 16) & 0xff);
+    data[3] = (UBYTE)((number >> 24) & 0xff);
   }
 }
 
@@ -199,7 +207,7 @@ static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
 
     // store value
     count++;
-    if(count == def->size) {
+    if(count > def->size) {
       return PARAM_DATA_TOO_LONG;
     }
 
@@ -217,8 +225,6 @@ static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
 int param_parse_val(const char *str, s2pb_param_def_t *def, UBYTE *data)
 {
   switch(def->type) {
-    case S2PB_PARAM_TYPE_BYTE:
-      return parse_scalar(str, def, data, 1);
     case S2PB_PARAM_TYPE_WORD:
       return parse_scalar(str, def, data, 2);
     case S2PB_PARAM_TYPE_LONG:
@@ -242,27 +248,41 @@ static void print_binary(char *str, ULONG num, int value_bytes)
   int shift = digits - 1;
   ULONG mask = 1 << shift;
 
-  *str++ = '%';
-
   for(int i=0;i<digits;i++) {
     char ch = ((num & mask) == mask) ? '1' : '0';
-    *str++;
+    *str++ = ch;
     mask >>= 1;
   }
 }
 
-static int print_number(char *str, int base, ULONG num, int value_bytes, int *consumed)
+static int print_number(char *str, int base, ULONG num, int value_bytes, int prefix, int *consumed)
 {
   int len = 0;
+
+  Printf("NUMBER[%lu]", num);
+
+  if(prefix) {
+    if(base==16) {
+      *(str++) = '$';
+    }
+    else if(base==10) {
+      *(str++) = '!';
+    }
+    else {
+      *(str++) = '%';
+    }
+    len++;
+  }
+
   if(base == 16) {
     if(value_bytes == 1) {
-      len = sprintf(str, "$%02lx", num);
+      len = sprintf(str, "%02lx", num);
     }
     else if(value_bytes == 2) {
-      len = sprintf(str, "$%04lx", num);
+      len = sprintf(str, "%04lx", num);
     }
     else if(value_bytes == 4) {
-      len = sprintf(str, "$%08lx", num);
+      len = sprintf(str, "%08lx", num);
     }
   }
   else if(base == 10) {
@@ -270,7 +290,7 @@ static int print_number(char *str, int base, ULONG num, int value_bytes, int *co
   }
   else if(base == 2) {
     print_binary(str, num, value_bytes);
-    len = value_bytes * 8 + 1;
+    len = value_bytes * 8;
   }
   else {
     return PARAM_WRONG_BASE;
@@ -285,7 +305,15 @@ static int print_number(char *str, int base, ULONG num, int value_bytes, int *co
 
 static int print_def(char *str, s2pb_param_def_t *def)
 {
-  return sprintf(str, "#%03lu %-4s [%4lu]  ", (ULONG)def->index, (char *)&def->tag, (ULONG)def->size);
+  // convert tag
+  UBYTE tag[5];
+  tag[0] = (UBYTE)((def->tag >> 24) & 0xff);
+  tag[1] = (UBYTE)((def->tag >> 16) & 0xff);
+  tag[2] = (UBYTE)((def->tag >> 8) & 0xff);
+  tag[3] = (UBYTE)(def->tag & 0xff);
+  tag[4] = 0;
+
+  return sprintf(str, "#%03lu %-4s [%4lu]  ", (ULONG)def->index, tag, (ULONG)def->size);
 }
 
 static ULONG get_val(const UBYTE *data, int value_bytes)
@@ -294,12 +322,20 @@ static ULONG get_val(const UBYTE *data, int value_bytes)
     return (ULONG)*data;
   }
   else if(value_bytes == 2) {
-    UWORD *wptr = (UWORD *)data;
-    return *wptr;
+    // note: endianess of device: little
+    ULONG result;
+    result = (ULONG)data[0] 
+    result |= ((ULONG)data[1] << 8);
+    return result;
   }
   else if(value_bytes == 4) {
-    ULONG *lptr = (ULONG *)data;
-    return *lptr;
+    // note: endianess of device: little
+    ULONG result;
+    result = (ULONG)data[0];
+    result |= ((ULONG)data[1] << 8);
+    result |= ((ULONG)data[2] << 16);
+    result |= ((ULONG)data[3] << 24);
+    return result;
   }
   return 0;
 }
@@ -310,11 +346,17 @@ static int print_scalar(char *str, s2pb_param_def_t *def, const UBYTE *data, int
     return PARAM_WRONG_DATA_SIZE;
   }
 
-  print_def(str, def);
+  int len = print_def(str, def);
+  str += len;
 
   int base = get_base(def);
   ULONG number = get_val(data, value_bytes);
-  int res = print_number(str, base, number, value_bytes, NULL);
+  int consumed = 0;
+  int res = print_number(str, base, number, value_bytes, 0, &consumed);
+
+  str += consumed;
+  *(str++) = '\n';
+  *(str++) = '\0';
 
   return res;
 }
@@ -357,7 +399,7 @@ static int print_array(char *str, s2pb_param_def_t *def, const UBYTE *data, int 
     // print number
     int consumed = 0;
     ULONG number = get_val(ptr, value_bytes);
-    int res = print_number(str, base, number, value_bytes, &consumed);
+    int res = print_number(str, base, number, value_bytes, 0, &consumed);
     if(res != PARAM_OK) {
       return res;
     }
@@ -366,14 +408,15 @@ static int print_array(char *str, s2pb_param_def_t *def, const UBYTE *data, int 
     ptr += value_bytes;
   }
 
+  *(str++) = '\n';
+  *(str++) = '\0';
+
   return PARAM_OK;
 }
 
 int param_print_val(char *str, s2pb_param_def_t *def, const UBYTE *data)
 {
   switch(def->type) {
-    case S2PB_PARAM_TYPE_BYTE:
-      return print_scalar(str, def, data, 1);
     case S2PB_PARAM_TYPE_WORD:
       return print_scalar(str, def, data, 2);
     case S2PB_PARAM_TYPE_LONG:

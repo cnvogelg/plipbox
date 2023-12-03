@@ -24,7 +24,7 @@
  *
  */
 
-#include "global.h"
+#include "types.h"
 #include "board.h"
 #include "uart.h"
 #include "uartutil.h"
@@ -36,9 +36,6 @@
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
 #include "mode.h"
-
-// global switches
-u08 global_verbose = 0;
 
 int main(void)
 {
@@ -53,11 +50,15 @@ int main(void)
   // send welcome
   uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION " " BUILD_DATE "\r\n"));
   uart_send_pstring(PSTR("by lallafa (http://www.lallafa.de/blog)\r\n\r\n"));
-    // help info
-  uart_send_pstring(PSTR("Press <return> to enter command mode or <?> for key help\r\n"));
 
   // param init
-  param_init();  
+  u08 res = param_init();
+  uart_send_pstring(PSTR("Device parameters "));
+  if(res == PARAM_OK) {
+    uart_send_pstring(PSTR("loaded.\r\n\r\n"));
+  } else {
+    uart_send_pstring(PSTR("RESET!\r\n\r\n"));
+  }
   param_dump();
   uart_send_crlf();
 

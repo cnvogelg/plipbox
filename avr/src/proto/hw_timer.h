@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #include "arch.h"
-#include "global.h"
+#include "types.h"
 
 // unit of my timers
 typedef u16 hw_timer_ms_t;

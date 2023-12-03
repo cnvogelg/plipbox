@@ -27,7 +27,7 @@
 #ifndef ETH_H
 #define ETH_H
 
-#include "global.h"
+#include "types.h"
 #include "net.h"
 
 #define ETH_OFF_TGT_MAC   0

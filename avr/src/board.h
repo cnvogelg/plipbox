@@ -27,7 +27,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "global.h"
+#include "types.h"
 
 extern void board_init(void);
 extern void board_reset(void);

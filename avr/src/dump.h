@@ -27,7 +27,7 @@
 #ifndef DUMP_H
 #define DUMP_H
 
-#include "global.h"
+#include "types.h"
 
 extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
 extern void dump_arp_pkt(const u08 *arp_buf);

@@ -27,7 +27,7 @@
 #ifndef UDP_H
 #define UDP_H
 
-#include "global.h"
+#include "types.h"
 #include "net.h"
 #include "ip.h"
    

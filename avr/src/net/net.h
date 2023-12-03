@@ -27,7 +27,7 @@
 #ifndef NET_H
 #define NET_H
 
-#include "global.h"
+#include "types.h"
 
 /* typedefs for generic packet tx */
 typedef void (*net_tx_packet_func)(const u08 *buf, u16);

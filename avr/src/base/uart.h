@@ -27,7 +27,7 @@
 #ifndef UART_H
 #define UART_H
 
-#include "global.h"
+#include "types.h"
 
 // init uart and rts/cts
 void uart_init(void);

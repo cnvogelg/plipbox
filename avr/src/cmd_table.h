@@ -28,7 +28,7 @@
 #define CMD_TABLE_H
 
 #include <avr/pgmspace.h>
-#include "global.h"
+#include "types.h"
 
 #define CMD_OK            0x00
 #define CMD_QUIT          0x01

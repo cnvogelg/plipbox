@@ -31,19 +31,19 @@ extern u08  proto_cmd_api_tx_end(u16 size);
 
 // ----- parameters -----
 extern u16  proto_cmd_api_get_version(void);
-
-extern void proto_cmd_api_set_mode(u16 mode);
-extern u16  proto_cmd_api_get_mode(void);
-
-extern void proto_cmd_api_set_flags(u16 flags);
-extern u16  proto_cmd_api_get_flags(void);
-
-extern void proto_cmd_api_set_mac(mac_t mac);
-extern void proto_cmd_api_get_mac(mac_t mac);
+extern void proto_cmd_api_get_cur_mac(mac_t mac);
 extern void proto_cmd_api_get_def_mac(mac_t mac);
 
-extern void proto_cmd_api_reset_prefs(void);
-extern u16  proto_cmd_api_load_prefs(void);
-extern u16  proto_cmd_api_save_prefs(void);
+extern u08  proto_cmd_api_param_get_num(void);
+extern void proto_cmd_api_param_find_tag(u32 tag);
+extern u08  proto_cmd_api_param_get_id(void);
+extern void proto_cmd_api_param_set_id(u08 id);
+extern u08 *proto_cmd_api_param_get_def(u16 *size);
+extern u08 *proto_cmd_api_param_get_val(u16 *size);
+extern void proto_cmd_api_param_set_val(const u08 *buf, u16 size);
+
+extern void proto_cmd_api_prefs_reset(void);
+extern u16  proto_cmd_api_prefs_load(void);
+extern u16  proto_cmd_api_prefs_save(void);
 
 #endif

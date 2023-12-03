@@ -29,7 +29,7 @@
 
 #include <avr/io.h>
 
-#include "global.h"
+#include "types.h"
 
 // ----- conversion functions -----
 // convert nybble to hex char

@@ -27,7 +27,7 @@
 #ifndef tcp_H
 #define tcp_H
 
-#include "global.h"
+#include "types.h"
 #include "net.h"
 #include "ip.h"
    

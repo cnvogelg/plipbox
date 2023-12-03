@@ -24,7 +24,7 @@
  *
  */
 
-#include "global.h"
+#include "types.h"
 
 #include <avr/interrupt.h>
 

@@ -29,6 +29,7 @@
 #include "stats.h"
 #include "uartutil.h"
 #include "mode.h"
+#include "param.h"
 
 COMMAND_KEY(cmd_dump_stats)
 {
@@ -42,9 +43,6 @@ COMMAND_KEY(cmd_reset_stats)
 
 COMMAND_KEY(cmd_toggle_verbose)
 {
-  global_verbose = !global_verbose;
-  uart_send_pstring(PSTR("VERBOSE: "));
-  uart_send_pstring(global_verbose ? PSTR("ON\r\n") : PSTR("OFF\r\n"));
 }
 
 COMMAND_KEY(cmd_print_version)
@@ -62,12 +60,18 @@ COMMAND_KEY(cmd_detach)
   mode_detach();
 }
 
+COMMAND_KEY(cmd_dump_param)
+{
+  param_dump();
+}
+
 CMDKEY_HELP(cmd_dump_stats, "dump statistics");
 CMDKEY_HELP(cmd_reset_stats, "reset statistics");
 CMDKEY_HELP(cmd_toggle_verbose, "toggle verbose output");
 CMDKEY_HELP(cmd_print_version, "print version");
 CMDKEY_HELP(cmd_attach, "attach device");
 CMDKEY_HELP(cmd_detach, "detach device");
+CMDKEY_HELP(cmd_dump_param, "dump parameters");
 
 const cmdkey_table_t PROGMEM cmdkey_table[] = {
   CMDKEY_ENTRY('s', cmd_dump_stats),
@@ -76,5 +80,6 @@ const cmdkey_table_t PROGMEM cmdkey_table[] = {
   CMDKEY_ENTRY('V', cmd_print_version),
   CMDKEY_ENTRY('a', cmd_attach),
   CMDKEY_ENTRY('d', cmd_detach),
+  CMDKEY_ENTRY('p', cmd_dump_param),
   { 0,0 }
 };

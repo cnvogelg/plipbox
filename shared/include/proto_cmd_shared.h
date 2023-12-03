@@ -59,27 +59,4 @@
 #define PROTO_CMD_RESULT_OK        0
 #define PROTO_CMD_RESULT_ERROR     1
 
-// param description
-// +00 u08 index
-// +01 u08 type
-// +02 u08 format
-// +03 u08 reserved
-// +04 u16 size
-// +06 u32 tag
-// =10
-#define PROTO_PARAM_DEF_SIZE   10
-
-// param type
-#define PROTO_PARAM_TYPE_BYTE        1
-#define PROTO_PARAM_TYPE_WORD        2
-#define PROTO_PARAM_TYPE_LONG        3
-#define PROTO_PARAM_TYPE_BYTE_ARRAY  4
-#define PROTO_PARAM_TYPE_WORD_ARRAY  5
-#define PROTO_PARAM_TYPE_LONG_ARRAY  6
-
-// param format
-#define PROTO_PARAM_FORMAT_HEX  1 // hex data, like MACs
-#define PROTO_PARAM_FORMAT_BIN  2 // binary data for flags
-#define PROTO_PARAM_FORMAT_STR  4 // string, like SSID or password
-
 #endif

@@ -1,4 +1,4 @@
-#include "global.h"
+#include "types.h"
 
 #ifdef DEBUG_LOOP_BUF
 #define DEBUG

@@ -144,7 +144,8 @@ VPATH = .:net:board:eth:base:proto
 BOARDFILE ?= $(BOARD).c
 SRC := $(BOARDFILE) $(PLATFORM)_common.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
-SRC += util.c uart.c uartutil.c timer.c param.c param_cmd.c
+SRC += util.c uart.c uartutil.c timer.c 
+SRC += param_def.c param.c param_cmd.c
 SRC += pkt_buf.c net.c arp.c
 SRC += dump.c stats.c
 ifdef DEV_ENC28J60
@@ -192,6 +193,7 @@ ifeq "$(BUILD_TYPE)" "DEBUG"
 CFLAGS_LOCAL += -DDEBUG_PROTO_CMD
 #CFLAGS_LOCAL += -DDEBUG_DUMP_FRAMES
 CFLAGS_LOCAL += -DDEBUG_BRIDGE
+CFLAGS_LOCAL += -DDEBUG_PARAM
 endif
 
 CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))

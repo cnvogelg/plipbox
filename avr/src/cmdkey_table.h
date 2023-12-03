@@ -28,7 +28,7 @@
 #define CMDKEY_TABLE_H
 
 #include <avr/pgmspace.h>
-#include "global.h"
+#include "types.h"
 
 #define COMMAND_KEY(x) static void x (void)
 #define CMDKEY_HELP(x,y) static const char x ## _help[] PROGMEM = y 

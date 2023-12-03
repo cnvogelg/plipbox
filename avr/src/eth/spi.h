@@ -28,7 +28,7 @@
 #define SPI_H
 
 #include <avr/io.h>
-#include "global.h"
+#include "types.h"
 
 #ifdef HAVE_arduino
    

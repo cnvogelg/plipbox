@@ -389,7 +389,7 @@ PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
 PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPTR))
 {
    ULONG mtu;
-   UWORD oldWire = ios2->ios2_WireError;
+   ULONG oldWire = ios2->ios2_WireError;
    
       /* mark request as active */
    ios2->ios2_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;

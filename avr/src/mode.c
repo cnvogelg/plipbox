@@ -24,7 +24,7 @@
  *
  */
 
-#include "global.h"
+#include "types.h"
 
 #ifdef DEBUG_MODE
 #define DEBUG
@@ -99,7 +99,7 @@ void mode_attach(void)
   }
 
   // get current module index from param
-  u08 mod_index = param_get_mode();
+  u08 mod_index = 0; //param_get_mode();
   mode_mod_set_current(mod_index);
 
   u08 result = mode_mod_attach();

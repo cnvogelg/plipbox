@@ -26,7 +26,7 @@
 
 #include <avr/interrupt.h>
 
-#include "global.h"
+#include "types.h"
 #include "board.h"
 
 void board_init(void)

@@ -28,7 +28,7 @@
 #define PIO_DEV_H
 
 #include <avr/pgmspace.h>
-#include "global.h"
+#include "types.h"
 
 /* function pointers */
 typedef u08  (*pio_dev_init_t)(u08 flags);

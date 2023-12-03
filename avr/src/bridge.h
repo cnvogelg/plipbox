@@ -27,7 +27,7 @@
 #ifndef BRIDGE_H
 #define BRIDGE_H
 
-#include "global.h"
+#include "types.h"
 
 extern void bridge_init(u08 pio_ok);
 extern void bridge_handle(void);

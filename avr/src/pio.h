@@ -27,7 +27,7 @@
 #ifndef PIO_H
 #define PIO_H
 
-#include "global.h"
+#include "types.h"
 
 /* result values */
 #define PIO_OK            0

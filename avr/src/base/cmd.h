@@ -27,7 +27,7 @@
 #ifndef CMD_H
 #define CMD_H
 
-#include "global.h"
+#include "types.h"
 
 #define CMD_WORKER_IDLE     0
 #define CMD_WORKER_DONE     1

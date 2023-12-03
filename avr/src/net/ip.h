@@ -27,7 +27,7 @@
 #ifndef IP_H
 #define IP_H
 
-#include "global.h"
+#include "types.h"
 #include "net.h"
 
 /* list of IP protocol numbers */

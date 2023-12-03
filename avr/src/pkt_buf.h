@@ -27,7 +27,7 @@
 #ifndef PKT_BUF_H
 #define PKT_BUF_H
 
-#include "global.h"
+#include "types.h"
 
 #define PKT_BUF_SIZE    1514
 

@@ -27,7 +27,7 @@
 #ifndef PIO_UTIL_H
 #define PIO_UTIL_H
 
-#include "global.h"
+#include "types.h"
 
 /* get the configured init flags for PIO */
 extern u08 pio_util_get_init_flags(void);
