@@ -23,6 +23,15 @@ BOOL sanadev_cmd_online(sanadev_handle_t *sh);
 BOOL sanadev_cmd_offline(sanadev_handle_t *sh);
 BOOL sanadev_cmd_get_station_address(sanadev_handle_t *sh, sanadev_mac_t cur_mac, sanadev_mac_t def_mac);
 
+/* event handling */
+BOOL  sanadev_event_init(sanadev_handle_t *sh, UWORD *error);
+void  sanadev_event_exit(sanadev_handle_t *sh);
+void  sanadev_event_start(sanadev_handle_t *sh, ULONG event_mask);
+void  sanadev_event_stop(sanadev_handle_t *sh);
+ULONG sanadev_event_get_mask(sanadev_handle_t *sh);
+BOOL  sanadev_event_get_event(sanadev_handle_t *sh, ULONG *event_mask);
+BOOL  sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask);
+
 /* special plipbox commands */
 BOOL sanadev_cmd_plipbox_get_version(sanadev_handle_t *sh, UWORD *dev_version, UWORD *fw_version);
 /* params */

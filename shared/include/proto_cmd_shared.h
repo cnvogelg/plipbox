@@ -45,16 +45,6 @@
 #define PROTO_CMD_STATUS_RX_ERROR      0x40  // only set with RX_RESULT
 #define PROTO_CMD_STATUS_TX_ERROR      0x80  // only set with TX_RESULT
 
-// operation mode
-#define PROTO_CMD_MODE_OP_BRIDGE       0x00
-#define PROTO_CMD_MODE_OP_LOOPBACK_BUF 0x01
-#define PROTO_CMD_MODE_OP_LOOPBACK_DEV 0x02
-
-// flags
-#define PROTO_CMD_FLAGS_FULL_DUPLEX    0x01
-#define PROTO_CMD_FLAGS_FLOW_CONTROL   0x02
-#define PROTO_CMD_FLAGS_SPI_TRANSFER   0x04
-
 // result values for RX/TX RESULT
 #define PROTO_CMD_RESULT_OK        0
 #define PROTO_CMD_RESULT_ERROR     1

@@ -18,4 +18,10 @@ extern void atimer_eclock_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_
 extern ULONG atimer_eclock_to_us(atimer_handle_t *th, ULONG delta);
 extern ULONG atimer_eclock_to_kBps(atimer_handle_t *th, ULONG delta, ULONG bytes);
 
+extern BOOL atimer_sig_init(struct atimer_handle *th);
+extern ULONG atimer_sig_get_mask(struct atimer_handle *th);
+extern void atimer_sig_exit(struct atimer_handle *th);
+extern void atimer_sig_start(struct atimer_handle *th, ULONG secs, ULONG micros);
+extern void atimer_sig_stop(struct atimer_handle *th);
+
 #endif

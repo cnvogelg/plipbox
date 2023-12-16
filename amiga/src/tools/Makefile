@@ -1,10 +1,16 @@
 include ../config/define.mk
 
-# the plipbox tool
+# pliptool
 PLIPTOOL_NAME = pliptool_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 PLIPTOOL_PATH = $(BIN_DIR)/$(PLIPTOOL_NAME)
 PLIPTOOL_SRC = pliptool.c sanadev.c param.c
 PLIPTOOL_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPTOOL_SRC))
+
+# plipbench
+PLIPBENCH_NAME = plipbench_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
+PLIPBENCH_PATH = $(BIN_DIR)/$(PLIPBENCH_NAME)
+PLIPBENCH_SRC = plipbench.c sanadev.c param.c param_tag.c bench.c atimer.c
+PLIPBENCH_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPBENCH_SRC))
 
 # the plipbox test tool
 DEV_TEST_NAME = dev_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -18,8 +24,8 @@ UDP_TEST_PATH = $(BIN_DIR)/$(UDP_TEST_NAME)
 UDP_TEST_SRC = udp_test.c
 UDP_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(UDP_TEST_SRC))
 
-OBJS = $(DEV_TEST_BJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ)
-TOOL_PATHS = $(PLIPTOOL_PATH) $(DEV_TEST_PATH) $(UDP_TEST_PATH)
+OBJS = $(DEV_TEST_BJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ) $(PLIPBENCH_OBJ)
+TOOL_PATHS = $(PLIPTOOL_PATH) $(PLIPBENCH_PATH) $(DEV_TEST_PATH) $(UDP_TEST_PATH)
 
 # ----- tools -----
 .PHONY: all $(TOOL_PATHS)
@@ -35,6 +41,7 @@ test: dirs $(DEV_TEST_PATH) $(UDP_TEST_PATH) $(PLIPTOOL_PATH)
 	cp $(DEV_TEST_PATH) $(TEST_DIR)/dev_test
 	cp $(UDP_TEST_PATH) $(TEST_DIR)/udp_test
 	cp $(PLIPTOOL_PATH) $(TEST_DIR)/pliptool
+	cp $(PLIPBENCH_PATH) $(TEST_DIR)/plipbench
 
 # --- pliptool ---
 pliptool: $(PLIPTOOL_PATH)
@@ -42,6 +49,14 @@ pliptool: $(PLIPTOOL_PATH)
 $(PLIPTOOL_PATH): $(PLIPTOOL_OBJ)
 	@echo "  LNK $@"
 	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(PLIPTOOL_OBJ)) \
+	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
+
+# --- plipbench ---
+plipbench: $(PLIPBENCH_PATH)
+
+$(PLIPBENCH_PATH): $(PLIPBENCH_OBJ)
+	@echo "  LNK $@"
+	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(PLIPBENCH_OBJ)) \
 	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
 
 # --- dev_test tool ---

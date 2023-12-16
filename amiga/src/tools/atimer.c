@@ -10,9 +10,12 @@
 struct atimer_handle {
   struct Library *sysBase;
   struct MsgPort *timerPort;
+  struct MsgPort *sigTimerPort;
   struct timerequest timerReq;
+  struct timerequest sigTimerReq;
   struct Library *timerBase;
   ULONG           eClockFreq;
+  ULONG           timerSigMask;
 };
 
 atimer_handle_t *atimer_init(struct Library *SysBase)
@@ -99,3 +102,56 @@ ULONG atimer_eclock_to_kBps(atimer_handle_t *th, ULONG delta, ULONG bytes)
 {
   return (bytes * th->eClockFreq) / (delta * 1024UL);
 }
+
+BOOL atimer_sig_init(struct atimer_handle *th)
+{
+  th->sigTimerPort = CreateMsgPort();
+  if(th->sigTimerPort != NULL) {
+    th->sigTimerReq.tr_node.io_Message.mn_ReplyPort = th->sigTimerPort;
+    th->sigTimerReq.tr_node.io_Device = th->timerReq.tr_node.io_Device;
+    th->sigTimerReq.tr_node.io_Unit = th->timerReq.tr_node.io_Unit;
+    th->sigTimerReq.tr_node.io_Command = TR_ADDREQUEST;
+    th->sigTimerReq.tr_node.io_Flags = 0;
+
+    th->timerSigMask = 1UL << th->sigTimerPort->mp_SigBit;
+
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+}
+
+ULONG atimer_sig_get_mask(struct atimer_handle *th)
+{
+  if(th->sigTimerPort != NULL) {
+    return 1 << th->sigTimerPort->mp_SigBit;
+  } else {
+    return 0;
+  }
+}
+
+void atimer_sig_exit(struct atimer_handle *th)
+{
+  if(th->sigTimerPort != NULL) {
+    DeleteMsgPort(th->sigTimerPort);
+    th->sigTimerPort = NULL;
+  }
+}
+
+void atimer_sig_start(struct atimer_handle *th, ULONG secs, ULONG micros)
+{
+  th->sigTimerReq.tr_time.tv_secs = secs;
+  th->sigTimerReq.tr_time.tv_micro = micros;
+  SetSignal(0, th->timerSigMask);
+  SendIO((struct IORequest*)&th->sigTimerReq);
+}
+
+void atimer_sig_stop(struct atimer_handle *th)
+{
+  struct IORequest *req = (struct IORequest *)&th->sigTimerReq;
+  if(!CheckIO(req)) {
+    AbortIO(req);
+  }
+  WaitIO(req);
+}
+
