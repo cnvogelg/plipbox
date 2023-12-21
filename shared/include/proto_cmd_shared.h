@@ -3,7 +3,9 @@
 
 // ----- proto command bytes -----
 
-#define PROTO_CMD_RESET           0x01
+#define PROTO_CMD_INIT            0x20 // write_word
+#define PROTO_CMD_PING            0x21 // read_word
+#define PROTO_CMD_EXIT            0x22 // action
 
 #define PROTO_CMD_GET_VERSION     0x30 // read_word
 #define PROTO_CMD_GET_CUR_MAC     0x31 // read_block [6]

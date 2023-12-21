@@ -33,6 +33,9 @@ struct PLIPBase;
 #define HW_SPECIAL_CMD_PARAM_CHANGE 2
 
 /* hw API */
+GLOBAL REGARGS BOOL hw_base_alloc(struct PLIPBase *pb);
+GLOBAL REGARGS VOID hw_base_free(struct PLIPBase *pb);
+
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
 
@@ -49,9 +52,11 @@ GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
 GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
 
-GLOBAL REGARGS ULONG hw_status_get_sigmask(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL  hw_status_is_rx_pending(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL  hw_status_update(struct PLIPBase *pb);
+GLOBAL REGARGS ULONG hw_get_rx_sigmask(struct PLIPBase *pb);
+GLOBAL REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL  hw_is_rx_pending(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL  hw_handle_rx_signal(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL  hw_handle_extra_signal(struct PLIPBase *pb);
 
 GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
                                    STRPTR *template_str,

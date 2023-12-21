@@ -19,6 +19,10 @@ struct proto_param_def {
 };
 typedef struct proto_param_def proto_param_def_t;
 
+extern int proto_cmd_init(proto_handle_t *proto, UWORD token);
+extern int proto_cmd_ping(proto_handle_t *proto, UWORD *token);
+extern int proto_cmd_exit(proto_handle_t *proto);
+
 extern int proto_cmd_attach(proto_handle_t *proto);
 extern int proto_cmd_detach(proto_handle_t *proto);
 

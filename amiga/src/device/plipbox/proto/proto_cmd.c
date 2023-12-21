@@ -8,6 +8,36 @@
 #include "proto_cmd_shared.h"
 #include "param_shared.h"
 
+int proto_cmd_init(proto_handle_t *proto, UWORD token)
+{
+  int res;
+
+  d8(("proto_cmd_init: token=%lx", (ULONG)token));
+  res = proto_atom_write_word(proto, PROTO_CMD_INIT, token);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_ping(proto_handle_t *proto, UWORD *token)
+{
+  int res;
+
+  d8(("proto_cmd_ping:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_PING, token);
+  d8r((" token=%lx res=%ld\n", (ULONG)*token, (LONG)res));
+  return res;
+}
+
+int proto_cmd_exit(proto_handle_t *proto)
+{
+  int res;
+
+  d8(("proto_cmd_exit:"));
+  res = proto_atom_action(proto, PROTO_CMD_EXIT);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
 int proto_cmd_attach(proto_handle_t *proto)
 {
   int res;

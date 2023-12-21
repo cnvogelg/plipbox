@@ -14,6 +14,7 @@ static u16 rx_size;
 static u08 tx_status;
 static u08 rx_status;
 static u08 cmd_state = PROTO_CMD_STATE_IDLE;
+static u16 token = 0;
 
 void proto_cmd_init(void)
 {
@@ -23,6 +24,7 @@ void proto_cmd_init(void)
   tx_status = 0;
   rx_status = 0;
   cmd_state = PROTO_CMD_STATE_IDLE;
+  token = 0;
 }
 
 void proto_cmd_trigger_status(void)
@@ -55,9 +57,18 @@ u08 proto_cmd_handle(void)
   u08 result = PROTO_CMD_HANDLE_DONE;
 
   switch(cmd) {
-    case PROTO_CMD_RESET:
-      DS("RESET"); DNL;
-      result = PROTO_CMD_HANDLE_RESET;
+    case PROTO_CMD_INIT:
+      DS("INIT:");
+      token = proto_atom_write_word();
+      DW(token); DNL;
+      break;
+    case PROTO_CMD_PING:
+      DS("PING:"); DW(token); DNL;
+      proto_atom_read_word(token);
+      break;
+    case PROTO_CMD_EXIT:
+      DS("EXIT"); DNL;
+      proto_atom_action();
       break;
 
     case PROTO_CMD_ATTACH:

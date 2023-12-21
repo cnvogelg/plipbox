@@ -11,29 +11,35 @@
 struct TemplateConfig
 {
    struct CommonConfig common;
-   ULONG *timeout;
-   ULONG no_burst;
+   ULONG *io_timeout;
+   ULONG *tick_time;
 };
 
 struct HWBase
 {
    proto_env_handle_t *        env;
    proto_handle_t *            proto;
+   timer_handle_t *            timer;
+   UWORD                       token;
 
-   UWORD                       hwb_MaxFrameSize;
-   UWORD                       hwb_DeviceStatus;
+   /* internal state */
+   UWORD                       max_frame_size;
+   UWORD                       hw_status;
+   ULONG                       num_rx;
+   ULONG                       num_tx;
 
    /* config options */
-   ULONG                       hwb_TimeOutMicros;
-   ULONG                       hwb_TimeOutSecs;
-   UWORD                       hwb_BurstMode;
+   ULONG                       io_timeout_s;
+   ULONG                       io_timeout_us;
+   ULONG                       tick_time_s;
+   ULONG                       tick_time_us;
 
-   struct TemplateConfig       hwb_Config;
+   struct TemplateConfig       config;
 };
 
 /* ----- config ----- */
 
 #define CONFIGFILE "ENV:SANA2/plipbox.config"
-#define TEMPLATE "TIMEOUT/K/N,NOBURST/S"
+#define TEMPLATE "IO_TIMEOUT/K/N,TICK_TIME/K/N"
 
 #endif

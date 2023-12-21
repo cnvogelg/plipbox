@@ -22,9 +22,29 @@ GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
   timer_get_sys_time(th,(time_stamp_t *)time);
 }
 
-#define PLIP_DEFTIMEOUT          (500*1000)
-#define PLIP_MINTIMEOUT          500
-#define PLIP_MAXTIMEOUT          (10000*1000)
+#define IO_TIMEOUT_DEF          (500*1000) // 500ms
+#define IO_TIMEOUT_MIN          500        // 500us
+#define IO_TIMEOUT_MAX          (10000*1000) // 10s
+
+#define TICK_TIME_DEF           5000000UL // 5s
+#define TICK_TIME_MIN            100000UL // 100ms
+#define TICK_TIME_MAX          60000000UL // 60s
+
+GLOBAL REGARGS BOOL hw_base_alloc(struct PLIPBase *pb)
+{
+  struct HWBase *hwb = (struct HWBase *)AllocVec(sizeof(struct HWBase), MEMF_CLEAR|MEMF_ANY);
+  pb->pb_HWBase = hwb;
+  return (hwb != NULL);
+}
+
+GLOBAL REGARGS void hw_base_free(struct PLIPBase *pb)
+{
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  if(hwb != NULL) {
+    FreeVec(hwb);
+    pb->pb_HWBase = NULL;
+  }
+}
 
 GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
                                    STRPTR *template_str,
@@ -33,28 +53,31 @@ GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
-  hwb->hwb_TimeOutSecs = PLIP_DEFTIMEOUT / 1000000L;
-  hwb->hwb_TimeOutMicros = PLIP_DEFTIMEOUT % 1000000L;
-  hwb->hwb_BurstMode = 1;
+  hwb->io_timeout_s  = IO_TIMEOUT_DEF / 1000000UL;
+  hwb->io_timeout_us = IO_TIMEOUT_DEF % 1000000UL;
+
+  hwb->tick_time_s   = TICK_TIME_DEF / 1000000UL;
+  hwb->tick_time_us  = TICK_TIME_DEF % 1000000UL;
 
   *template_str = (STRPTR)TEMPLATE;
   *config_file = (STRPTR)CONFIGFILE;
-  *cfg = (struct CommonConfig *)&hwb->hwb_Config;
+  *cfg = (struct CommonConfig *)&hwb->config;
 }
 
 GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
-  struct TemplateConfig *args = &hwb->hwb_Config;
+  struct TemplateConfig *args = &hwb->config;
 
-  if (args->timeout) {
-    LONG to = BOUNDS(*args->timeout, PLIP_MINTIMEOUT, PLIP_MAXTIMEOUT);
-    hwb->hwb_TimeOutMicros = to % 1000000L;
-    hwb->hwb_TimeOutSecs = to / 1000000L;
+  if (args->io_timeout) {
+    ULONG to = BOUNDS(*args->io_timeout, IO_TIMEOUT_MIN, IO_TIMEOUT_MAX);
+    hwb->io_timeout_s = to / 1000000L;
+    hwb->io_timeout_us = to % 1000000L;
   }
-
-  if(args->no_burst) {
-    hwb->hwb_BurstMode = 0;
+  if (args->tick_time) {
+    ULONG to = BOUNDS(*args->tick_time, TICK_TIME_MIN, TICK_TIME_MAX);
+    hwb->tick_time_s = to / 1000000L;
+    hwb->tick_time_us = to % 1000000L;
   }
 }
 
@@ -63,65 +86,99 @@ GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
 #if DEBUG & 1
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 #endif
-  d(("timeOut %ld.%ld\n", hwb->hwb_TimeOutSecs, hwb->hwb_TimeOutMicros));
-  d(("burstMode %ld\n", (ULONG)hwb->hwb_BurstMode));
+  d(("IO_TIMEOUT %ld.%ld\n", hwb->io_timeout_s, hwb->io_timeout_us));
+  d(("TICK_TIME  %ld.%ld\n", hwb->tick_time_s, hwb->tick_time_us));
 }
 
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
 {
-   BOOL rc = FALSE;
-   int res = 0;
-   struct HWBase *hwb = (struct HWBase *)AllocVec(sizeof(struct HWBase), MEMF_CLEAR|MEMF_ANY);
-   pb->pb_HWBase = hwb;
-   if(hwb == NULL) {
-     d(("no memory!\n"));
-     return FALSE;
-   }
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  int res = 0;
 
-   /* open env */
-   hwb->env = proto_env_init(pb->pb_SysBase, &res);
-   if(hwb->env != NULL) {
-      res = proto_env_init_events(hwb->env);
-      if(res == PROTO_ENV_OK) {
-         /* open proto */
-         hwb->proto = proto_atom_init(hwb->env);
-         if(hwb->proto != NULL) {
-            d(("env & proto: OK\n"));
-            rc = TRUE;
-         } else {
-            d(("ERROR opening proto!\n"));
-         }
-      } else {
-         d(("ERROR init events\n"));
-      }
-   } else {
-      d(("ERROR opening env!\n"));
-   }
-    
-   return rc;
+  // open env
+  hwb->env = proto_env_init(pb->pb_SysBase, &res);
+  if(hwb->env == NULL) {
+    d(("ERROR: proto env failed! res=%ld\n", (LONG)res));
+    return FALSE;
+  }
+
+  // init events
+  res = proto_env_init_events(hwb->env);
+  if(res != PROTO_ENV_OK) {
+    d(("ERROR: proto env init events failed! res=%ld\n", (LONG)res));
+    return FALSE;
+  }
+
+  // setup timer signal
+  timer_handle_t *timer = proto_env_get_timer(hwb->env);
+  if(!timer_sig_init(timer)) {
+    d(("ERROR: timer setup!\n"));
+    return FALSE;
+  }
+  hwb->timer = timer;
+
+  // proto atom init
+  hwb->proto = proto_atom_init(hwb->env, hwb->io_timeout_s, hwb->io_timeout_us);
+  if(hwb->proto == NULL) {
+    d(("ERROR: opening proto!\n"));
+    return FALSE;
+  }
+
+  // set non-null (random) driver token
+  time_stamp_t ts;
+  timer_get_sys_time(timer, &ts);
+  hwb->token = (UWORD)(ts & 0xffffUL);
+
+  // send INIT with token to device
+  // check if device reacts to proto protocol and setup token on device
+  // the token allows to check later on with PING if the device was reset/or not
+  d(("send INIT: token=%lx\n", (ULONG)hwb->token));
+  res = proto_cmd_init(hwb->proto, hwb->token);
+  if(res != PROTO_RET_OK) {
+    d(("ERROR: cmd init failed! ret=%ld\n", (LONG)res));
+    return FALSE;
+  }
+
+  // fire tick timer
+  d(("start tick timer!\n"));
+  timer_sig_start(hwb->timer, hwb->tick_time_s, hwb->tick_time_us);
+  hwb->num_rx = 0;
+  hwb->num_tx = 0;
+
+  d(("init: OK!\n"));
+  return TRUE;
 }
 
 GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
 {
-   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  if(hwb == NULL) {
+    return;
+  }
 
-   if(hwb->proto != NULL) {
-      d(("proto exit.\n"));
-      proto_atom_exit(hwb->proto);
-      hwb->proto = NULL;
-   }
+  if(hwb->timer != NULL) {
+    d(("timer stop.\n"));
+    timer_sig_stop(hwb->timer);
+    d(("timer exit.\n"));
+    timer_sig_exit(hwb->timer);
+  }
 
-   if(hwb->env != NULL) {
-      d(("env events exit\n"));
-      proto_env_exit_events(hwb->env);
-      d(("env exit.\n"));
-      proto_env_exit(hwb->env);
-      hwb->env = NULL;
-   }
+  if(hwb->proto != NULL) {
+    d(("send EXIT\n"));
+    proto_cmd_exit(hwb->proto);
 
-   d(("free hw base\n"));
-   FreeVec(hwb);
-   pb->pb_HWBase = NULL;
+    d(("proto exit.\n"));
+    proto_atom_exit(hwb->proto);
+    hwb->proto = NULL;
+  }
+
+  if(hwb->env != NULL) {
+    d(("env events exit\n"));
+    proto_env_exit_events(hwb->env);
+    d(("env exit.\n"));
+    proto_env_exit(hwb->env);
+    hwb->env = NULL;
+  }
 }
 
 GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac)
@@ -273,7 +330,7 @@ GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
    int ok = proto_cmd_send_frame(hwb->proto, buf, frame->hwf_Size, &status);
    if(ok == PROTO_RET_OK) {
       /* device transfer ok... check status */
-      hwb->hwb_DeviceStatus = status;
+      hwb->hw_status = status;
       if(status & PROTO_CMD_STATUS_TX_ERROR) {
         return FALSE;
       } else {
@@ -293,7 +350,7 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
    int ok = proto_cmd_recv_frame(hwb->proto, buf, HW_ETH_FRAME_SIZE, &frame->hwf_Size, &status);
    if(ok == PROTO_RET_OK) {
       /* device transfer ok... check status */
-      hwb->hwb_DeviceStatus = status;
+      hwb->hw_status = status;
       if(status & PROTO_CMD_STATUS_RX_ERROR) {
         return FALSE;
       } else {
@@ -304,19 +361,29 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
    }
 }
 
-GLOBAL REGARGS ULONG hw_status_get_sigmask(struct PLIPBase *pb)
+GLOBAL REGARGS ULONG hw_get_rx_sigmask(struct PLIPBase *pb)
 {
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
    ULONG sigmask = proto_env_get_trigger_sigmask(hwb->env);
-   d(("hw_status_get_sigmask: %lx\n", sigmask));
+   d(("hw_get_rx_sigmask: %lx\n", sigmask));
    return sigmask;
 }
 
-GLOBAL REGARGS BOOL hw_status_is_rx_pending(struct PLIPBase *pb)
+GLOBAL REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb)
 {
-   /* hw_statis_is_rx_pending() will be called at various points
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   timer_handle_t *timer = hwb->timer;
+   ULONG sigmask = timer_sig_get_mask(timer);
+   d(("hw_get_extra_sigmask: %lx\n", sigmask));
+   return sigmask;
+}
+
+GLOBAL REGARGS BOOL hw_is_rx_pending(struct PLIPBase *pb)
+{
+   /* hw_is_rx_pending() will be called at various points
       in the driver to check if rx is ready. if yes then
-      ops are skipped and it returns to the read loop
+      ops (like write) are skipped and it returns to the read loop
+      to handle rx immediately
    */
 
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
@@ -324,19 +391,19 @@ GLOBAL REGARGS BOOL hw_status_is_rx_pending(struct PLIPBase *pb)
    /* first check the status. if is was already set by a tx/rx op then
       we have a valid status with pending rx
    */
-   UWORD status = hwb->hwb_DeviceStatus;
-   d(("hw_status_is_rx_pending: status=%lx\n", (ULONG)status));
+   UWORD status = hwb->hw_status;
+   d(("hw_is_rx_pending: status=%lx\n", (ULONG)status));
    if((status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING) {
       return TRUE;
    }
 
-   /* we also poll th signal to check if the ACK irq has arrived till then */
+   /* we also poll th signal mask to check if the ACK irq has arrived till then */
    ULONG sigmask = proto_env_get_trigger_sigmask(hwb->env);
    ULONG gotmask = SetSignal(0, sigmask);
    if((gotmask & sigmask) == sigmask) {
-      if(hw_status_update(pb)) {
+      if(hw_handle_rx_signal(pb)) {
          /* re-evaluate updated status */
-         status = hwb->hwb_DeviceStatus;
+         status = hwb->hw_status;
          if((status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING) {
             return TRUE;
          }
@@ -347,10 +414,10 @@ GLOBAL REGARGS BOOL hw_status_is_rx_pending(struct PLIPBase *pb)
    return FALSE;
 }
 
-GLOBAL REGARGS BOOL hw_status_update(struct PLIPBase *pb)
+GLOBAL REGARGS BOOL hw_handle_rx_signal(struct PLIPBase *pb)
 {
-   /* hw_status_update() is called by the driver after receiving the 
-      signal of the hw.
+   /* this is called by the driver after receiving the rx signal of the hw.
+      if prepares the upcoming hw_is_rx_pending() call
    */
 
    struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
@@ -360,11 +427,45 @@ GLOBAL REGARGS BOOL hw_status_update(struct PLIPBase *pb)
    proto_env_confirm_trigger(hwb->env);
 
    ok = proto_cmd_get_status(hwb->proto, &status);
-   d(("hw_status_update: status=%lx ok=%lx", (ULONG)status, (ULONG)ok));
+   d(("hw_handle_rx_signal: status=%lx ok=%lx", (ULONG)status, (ULONG)ok));
    if(ok != PROTO_RET_OK) {
       return FALSE;
    }
 
-   hwb->hwb_DeviceStatus = status;
+   hwb->hw_status = status;
    return TRUE;
 }
+
+GLOBAL REGARGS BOOL hw_handle_extra_signal(struct PLIPBase *pb)
+{
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+
+  /* timer ticked */
+  d(("timer!\n"));
+
+  // was there activity during tick time? no... do a ping
+  if((hwb->num_rx == 0) && (hwb->num_tx == 0)) {
+    d(("ping!\n"));
+    UWORD token = 0;
+    int res = proto_cmd_ping(hwb->proto, &token);
+    if(res != PROTO_RET_OK) {
+      d(("ping FAILED!\n"));
+      // ping failed ... hw has trouble...
+      return FALSE;
+    }
+    // check token. changed? hw seems to be reset?
+    if(token != hwb->token) {
+      d(("ping token CHANGED! %lx != %lx\n", (ULONG)token, (ULONG)hwb->token));
+      return FALSE;
+    }
+  }
+
+  hwb->num_tx = 0;
+  hwb->num_rx = 0;
+
+  /* refire timer */
+  timer_sig_start(hwb->timer, hwb->tick_time_s, hwb->tick_time_us);
+
+  return TRUE;
+}
+

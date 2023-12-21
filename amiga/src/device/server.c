@@ -190,7 +190,7 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
        (nextwrite = (struct IOSana2Req *) currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
        currentwrite = nextwrite )
    {
-      if (hw_status_is_rx_pending(pb))
+      if (hw_is_rx_pending(pb))
       {
          d2(("incoming data!"));
          break;
@@ -413,7 +413,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
    */
    while(ios2 = (struct IOSana2Req *)GetMsg(pb->pb_ServerPort))
    {
-      if (hw_status_is_rx_pending(pb))
+      if (hw_is_rx_pending(pb))
       {
          d2(("incoming data!"));
          break;
@@ -555,29 +555,42 @@ PRIVATE BOOL init(BASEPTR)
 
    if ((pb->pb_ServerPort = CreateMsgPort()))
    {  
-      /* init hardware */
-      if(hw_init(pb)) {
-         ULONG size;
+      // alloc hw base
+      if(hw_base_alloc(pb)) {
 
-         readargs(pb);
+        // parse args (also for hw)
+        readargs(pb);
 
-         /* refresh macs */
-         hw_get_macs(pb, pb->pb_CfgAddr, pb->pb_DefAddr);
+        /* init hardware */
+        if(hw_init(pb)) {
+           ULONG size;
 
-         size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
-         d2(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));
-         if ((pb->pb_Frame = AllocVec(size, MEMF_CLEAR|MEMF_ANY)))
-         {
-            rc = TRUE;
-         }
-         else
-         {
-            d(("ERROR: couldn't allocate frame buffer\n"));
-         }
+           /* refresh macs */
+           hw_get_macs(pb, pb->pb_CfgAddr, pb->pb_DefAddr);
+
+           size = (ULONG)sizeof(struct HWFrame) + pb->pb_MTU;
+           d2(("allocating 0x%lx/%ld bytes frame buffer\n",size,size));
+           if ((pb->pb_Frame = AllocVec(size, MEMF_CLEAR|MEMF_ANY)))
+           {
+              rc = TRUE;
+           }
+           else
+           {
+              d(("ERROR: couldn't allocate frame buffer\n"));
+              hw_cleanup(pb);
+              hw_base_free(pb);
+           }
+        }
+        else
+        {
+          d(("ERROR: hw init failed. cleaning up.\n"));
+          hw_cleanup(pb);
+          hw_base_free(pb);
+        }
       }
       else
       {
-         d(("ERROR: hw init failed\n"));
+        d(("ERROR: can't alloc hw base!\n"));
       }
    }
    else
@@ -604,6 +617,7 @@ PRIVATE VOID cleanup(BASEPTR)
    if (pb->pb_Frame) FreeVec(pb->pb_Frame);
 
    hw_cleanup(pb);
+   hw_base_free(pb);
 
    if (pb->pb_ServerPort) DeleteMsgPort(pb->pb_ServerPort);
 
@@ -634,7 +648,7 @@ PUBLIC VOID SAVEDS ServerTask(void)
 
       if (init(pb))
       {
-         ULONG got_sigmask=0, port_sigmask, status_sigmask, full_sigmask;
+         ULONG got_sigmask=0, port_sigmask, rx_sigmask, extra_sigmask, full_sigmask;
          BOOL running;
 
          /* Ok, we are fine and will tell this mother personally :-) */
@@ -645,9 +659,11 @@ PUBLIC VOID SAVEDS ServerTask(void)
          ReplyMsg((struct Message*)pb->pb_Startup);
 
          port_sigmask  = 1 << pb->pb_ServerPort->mp_SigBit;
-         status_sigmask = hw_status_get_sigmask(pb);
+         rx_sigmask = hw_get_rx_sigmask(pb);
+         extra_sigmask = hw_get_extra_sigmask(pb);
       
-         full_sigmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | port_sigmask | status_sigmask;
+         full_sigmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | port_sigmask
+            | rx_sigmask | extra_sigmask;
 
          /* main loop of server task */
          d2(("--- server main loop: %08lx ---\n", full_sigmask));
@@ -657,24 +673,31 @@ PUBLIC VOID SAVEDS ServerTask(void)
             d2(("** full sigmask is 0x%08lx\n", full_sigmask));
 
             /* if no recv is pending then wait for incoming signals */
-            if (!hw_status_is_rx_pending(pb)) {
+            if (!hw_is_rx_pending(pb)) {
                d2(("**> wait\n"));
-               d4r(("\nX"));
+               d4r(("\nW"));
                got_sigmask = Wait(full_sigmask);
                d2(("**> wait: got 0x%08lx\n", got_sigmask));
             } else {
                got_sigmask = 0;
             }
 
-            /* update hw status */
-            if(got_sigmask & status_sigmask) {
-              d2(("** update hw_status\n"));
-              hw_status_update(pb);
-              d4r(("U"));
+            /* handle rx signal of hw */
+            if(got_sigmask & rx_sigmask) {
+              d2(("** handle rx signal\n"));
+              hw_handle_rx_signal(pb);
+              d4r(("S"));
+            }
+
+            /* handle extra signal of hw */
+            if(got_sigmask & extra_sigmask) {
+              d2(("** handle extra signal\n"));
+              hw_handle_extra_signal(pb);
+              d4r(("X"));
             }
 
             /* accept pending receive and start reading */
-            if (hw_status_is_rx_pending(pb))
+            if (hw_is_rx_pending(pb))
             {
                d4r(("R"));
                d2(("*+ do_read\n"));

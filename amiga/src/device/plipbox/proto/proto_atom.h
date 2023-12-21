@@ -16,7 +16,7 @@ struct proto_handle;
 typedef struct proto_handle proto_handle_t;
 
 // init/exit of handle
-extern proto_handle_t *proto_atom_init(proto_env_handle_t *penv);
+extern proto_handle_t *proto_atom_init(proto_env_handle_t *penv,ULONG timeout_s, ULONG timeout_us);
 extern void proto_atom_exit(proto_handle_t *ph);
 extern proto_env_handle_t *proto_atom_get_env(proto_handle_t *ph);
 

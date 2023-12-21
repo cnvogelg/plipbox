@@ -152,8 +152,12 @@ void timer_start(struct timer_handle *th, ULONG secs, ULONG micros)
 
 void timer_stop(struct timer_handle *th)
 {
+  struct IORequest *req = (struct IORequest *)&th->timerReq;
   /* stop timeout timer */
-  AbortIO((struct IORequest*)&th->timerReq);
+  if(!CheckIO(req)) {
+    AbortIO(req);
+  }
+  WaitIO(req);
 }
 
 void timer_get_sys_time(struct timer_handle *th, time_stamp_t *val)
@@ -210,7 +214,7 @@ static ULONG ASM SAVEDS exc_handler(REG(d0,ULONG sigmask), REG(a1,struct timer_h
 }
 
 
-BYTE timer_sig_init(struct timer_handle *th)
+BOOL timer_sig_init(struct timer_handle *th)
 {
   th->sigTimerPort = CreateMsgPort();
   if(th->sigTimerPort != NULL) {
@@ -224,9 +228,9 @@ BYTE timer_sig_init(struct timer_handle *th)
 
     th->timerSigMask = 1UL << th->sigTimerPort->mp_SigBit;
 
-    return th->sigTimerPort->mp_SigBit;
+    return TRUE;
   } else {
-    return -1;
+    return FALSE;
   }
 }
 
