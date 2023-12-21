@@ -45,7 +45,35 @@ u08 proto_cmd_get_state(void)
 #define CHECK_STATE(state)
 #endif
 
-u08 proto_cmd_handle(void)
+u08 proto_cmd_handle_init(void)
+{
+  u08 cmd = proto_atom_get_cmd();
+  if(cmd == PROTO_NO_CMD) {
+    return PROTO_CMD_HANDLE_IDLE;
+  }
+
+  DT; DS("CMD:");
+  DB(cmd); DC(' ');
+  u08 result = PROTO_CMD_HANDLE_DONE;
+
+  // we are only waiting for an init command
+  switch(cmd) {
+    case PROTO_CMD_INIT:
+      DS("INIT:");
+      token = proto_atom_write_word();
+      DW(token); DNL;
+      result = PROTO_CMD_HANDLE_INIT;
+      break;
+    default:
+      DC('?'); DNL;
+      result = PROTO_CMD_HANDLE_UNKNOWN;
+      break;
+  }
+  return result;
+}
+
+
+u08 proto_cmd_handle_main(void)
 {
   u08 cmd = proto_atom_get_cmd();
   if(cmd == PROTO_NO_CMD) {
@@ -61,6 +89,7 @@ u08 proto_cmd_handle(void)
       DS("INIT:");
       token = proto_atom_write_word();
       DW(token); DNL;
+      result = PROTO_CMD_HANDLE_INIT;
       break;
     case PROTO_CMD_PING:
       DS("PING:"); DW(token); DNL;
@@ -69,6 +98,7 @@ u08 proto_cmd_handle(void)
     case PROTO_CMD_EXIT:
       DS("EXIT"); DNL;
       proto_atom_action();
+      result = PROTO_CMD_HANDLE_EXIT;
       break;
 
     case PROTO_CMD_ATTACH:
@@ -251,6 +281,7 @@ u08 proto_cmd_handle(void)
 
     default:
       DC('?'); DNL;
+      result = PROTO_CMD_HANDLE_UNKNOWN;
       break;
   }
 

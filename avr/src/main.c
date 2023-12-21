@@ -37,6 +37,61 @@
 #include "proto_cmd_shared.h"
 #include "mode.h"
 
+#define LOOP_DONE     0
+#define LOOP_RESET    1
+#define LOOP_RESTART  2
+
+static int init_loop(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("waiting for driver...\r\n"));
+
+  // main loop
+  while(1) {
+    // handle parallel port commands and dispatch to proto_cmd_api_*
+    u08 res = proto_cmd_handle_init();
+    if(res == PROTO_CMD_HANDLE_INIT) {
+      return LOOP_DONE;
+    }
+
+    // handle commands
+    res = cmd_worker();
+    if(res & CMD_WORKER_RESET) {
+      return LOOP_RESET;
+    }
+  }
+}
+
+static int main_loop(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("entering main loop...\r\n"));
+
+  mode_init();
+
+  // main loop
+  while(1) {
+    // handle parallel port commands and dispatch to proto_cmd_api_*
+    u08 res = proto_cmd_handle_main();
+    if(res == PROTO_CMD_HANDLE_EXIT) {
+      return LOOP_DONE;
+    }
+    if(res == PROTO_CMD_HANDLE_INIT) {
+      return LOOP_RESTART;
+    }
+
+    // handle current mode
+    mode_handle();
+
+    // handle commands
+    res = cmd_worker();
+    if(res & CMD_WORKER_RESET) {
+      return LOOP_RESET;
+    }
+  }
+}
+
+
 int main(void)
 {
   // board init. e.g. switch off watchdog
@@ -71,28 +126,24 @@ int main(void)
   uart_send_pstring(PSTR("proto: init\r\n"));
   proto_cmd_init();
 
-  // mode init
-  mode_init();
-
-  // main loop
+  // main ops: waiting for driver and main loop
+  int result = LOOP_DONE;
   while(1) {
-    // handle parallel port commands and dispatch to proto_cmd_api_*
-    u08 res = proto_cmd_handle();
-    if(res == PROTO_CMD_HANDLE_RESET) {
-      break;
+    if(result == LOOP_DONE) {
+      result = init_loop();
+      if(result == LOOP_RESET) {
+        break;
+      }
     }
 
-    // handle current mode
-    mode_handle();
-
-    // handle commands
-    res = cmd_worker();
-    if(res & CMD_WORKER_RESET) {
+    result = main_loop();
+    if(result == LOOP_RESET) {
       break;
     }
   }
 
   // wait a bit and reset
+  uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("resetting...\r\n"));
   board_reset();
 
