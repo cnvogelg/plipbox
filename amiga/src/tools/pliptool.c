@@ -6,6 +6,7 @@
 
 #include "sanadev.h"
 #include "param.h"
+#include "plipbox_cmd.h"
 
 #define LOG(x) do { if(params.verbose) { Printf x ; } } while(0)
 
@@ -57,7 +58,7 @@ static BOOL get_device_info(sanadev_handle_t *sh)
   sanadev_mac_t def_mac;
 
   /* retrieve and show device and firmware version */
-  ok = sanadev_cmd_plipbox_get_version(sh, &dev_version, &fw_version);
+  ok = plipbox_cmd_get_version(sh, &dev_version, &fw_version);
   if(!ok) {
     PutStr("Error retrieving version info from device! No plipbox device?\n");
     return FALSE;
@@ -87,7 +88,7 @@ static BOOL dump_param(sanadev_handle_t *sh, s2pb_param_def_t *def)
   }
 
   // get param
-  BOOL ok = sanadev_cmd_plipbox_param_get_val(sh, def->index, def->size, data);
+  BOOL ok = plipbox_cmd_param_get_val(sh, def->index, def->size, data);
   if(ok) {
     // print
     int res = param_print_val(print_buffer, def, data);
@@ -118,7 +119,7 @@ static BOOL set_param(sanadev_handle_t *sh, s2pb_param_def_t *def, const char *t
   int res = param_parse_val(txt, def, data);
   if(res == PARAM_OK) {
     // set param
-    ok = sanadev_cmd_plipbox_param_set_val(sh, def->index, def->size, data);
+    ok = plipbox_cmd_param_set_val(sh, def->index, def->size, data);
     if(!ok) {
       Printf("Error setting parameter #%ld!\n", (ULONG)def->index);
     }
@@ -136,7 +137,7 @@ static BOOL dump_params(sanadev_handle_t *sh)
 {
   UWORD i;
   UWORD num_param = 0;
-  BOOL ok = sanadev_cmd_plipbox_param_get_num(sh, &num_param);
+  BOOL ok = plipbox_cmd_param_get_num(sh, &num_param);
   if(!ok) {
     Printf("Error getting number of parameters from device!\n");
     return FALSE;
@@ -144,7 +145,7 @@ static BOOL dump_params(sanadev_handle_t *sh)
 
   for(i=0;i<num_param;i++) {
     s2pb_param_def_t def;
-    ok = sanadev_cmd_plipbox_param_get_def(sh, i, &def);
+    ok = plipbox_cmd_param_get_def(sh, i, &def);
     if(!ok) {
       Printf("Error getting param definition #%ld\n", (ULONG)i);
       return FALSE;
@@ -164,7 +165,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // do we need to load or reset the params from flash on device?
   if(params.prefs_load) {
     PutStr("Loading device parameters from flash...");
-    ok = sanadev_cmd_plipbox_prefs_load(sh, &status);
+    ok = plipbox_cmd_prefs_load(sh, &status);
     Printf("result=%lx\n", (ULONG)status);
     if(!ok) {
       return FALSE;
@@ -173,7 +174,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // or do we reset them to factory defaults?
   else if(params.prefs_reset) {
     PutStr("Reset device parameters to factory defaults...\n");
-    ok = sanadev_cmd_plipbox_prefs_reset(sh);
+    ok = plipbox_cmd_prefs_reset(sh);
     if(!ok) {
       return FALSE;
     }
@@ -186,7 +187,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
     ULONG tag;
     if(param_parse_tag(params.param_tag, &tag) == PARAM_OK) {
       Printf("Searching tag '%s' (%04lx)\n", params.param_tag, tag);
-      ok = sanadev_cmd_plipbox_param_find_tag(sh, tag, &index);
+      ok = plipbox_cmd_param_find_tag(sh, tag, &index);
       if(!ok) {
         return FALSE;
       }
@@ -203,7 +204,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   else if(params.param_id != NULL) {
     index = (UWORD)*params.param_id;
     UWORD num_param = 0;
-    ok = sanadev_cmd_plipbox_param_get_num(sh, &num_param);
+    ok = plipbox_cmd_param_get_num(sh, &num_param);
     if(!ok) {
       Printf("Error getting number of parameters from device!\n");
       return FALSE;
@@ -218,7 +219,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   if(index != S2PB_NO_INDEX) {
     // get param def
     s2pb_param_def_t param_def;
-    ok = sanadev_cmd_plipbox_param_get_def(sh, index, &param_def);
+    ok = plipbox_cmd_param_get_def(sh, index, &param_def);
     if(!ok) {
       Printf("Error getting param definition #%ld\n", (ULONG)index);
       return FALSE;
@@ -249,7 +250,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // do we need to persist changes?
   if(params.prefs_save) {
     PutStr("Saving device parameters to flash...");
-    ok = sanadev_cmd_plipbox_prefs_save(sh, &status);
+    ok = plipbox_cmd_prefs_save(sh, &status);
     Printf("result=%lx\n", (ULONG)status);
     if(!ok) {
       return FALSE;
