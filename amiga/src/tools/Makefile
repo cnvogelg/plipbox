@@ -37,9 +37,9 @@ all: dirs $(TOOL_PATHS)
 include ../config/rule.mk
 
 clean: clean_obj
-	rm -f $(DEV_TEST_PATH) $(UDP_TEST_PATH) $(PLIPTOOL_PATH)
+	rm -f $(TOOL_PATHS)
 
-test: dirs $(DEV_TEST_PATH) $(UDP_TEST_PATH) $(PLIPTOOL_PATH)
+test: dirs $(TOOL_PATHS)
 	cp $(DEV_TEST_PATH) $(TEST_DIR)/dev_test
 	cp $(UDP_TEST_PATH) $(TEST_DIR)/udp_test
 	cp $(PLIPTOOL_PATH) $(TEST_DIR)/pliptool

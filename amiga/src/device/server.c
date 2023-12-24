@@ -424,6 +424,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
       switch (ios2->ios2_Req.io_Command)
       {
          case S2_ONLINE:
+            d4r(("S2_ONLINE\n"));
             if (!goonline(pb))
             {
                ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -432,11 +433,13 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
          break;
 
          case S2_OFFLINE:
+            d4r(("S2_OFFLINE\n"));
             gooffline(pb);
             rejectpackets(pb); /* reject all pending requests */
          break;
 
          case S2_CONFIGINTERFACE:
+            d4r(("S2_CONFIGINTERFACE\n"));
             /* copy address from src addr */
             memcpy(pb->pb_CfgAddr, ios2->ios2_SrcAddr, HW_ADDRFIELDSIZE);
             
@@ -457,6 +460,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
          break;
 
          default: {
+            d4r(("S2PB_%lx\n", (ULONG)ios2->ios2_Req.io_Command));
             int result = hw_handle_special_cmd(pb, ios2, pb->pb_Flags & PLIPF_OFFLINE);
             if(result == HW_SPECIAL_CMD_PARAM_CHANGE) {
                /* macs could have changed so update them */

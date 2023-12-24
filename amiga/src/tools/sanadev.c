@@ -76,6 +76,8 @@ static void free_port_req(port_req_t *pr)
 static void clone_req(const port_req_t *src, port_req_t *dst)
 {
   CopyMem(src->req, dst->req, sizeof(struct IOSana2Req));
+  // restore reply port for req
+  dst->req->ios2_Req.io_Message.mn_ReplyPort = dst->port;
 }
 
 static ULONG get_port_req_mask(port_req_t *pr)
@@ -88,8 +90,9 @@ static ULONG get_port_req_mask(port_req_t *pr)
 
 static struct IOSana2Req *get_port_req_next_req(port_req_t *pr)
 {
-  if(pr == NULL) {}
-
+  if(pr == NULL) {
+    return NULL;
+  }
   return (struct IOSana2Req *)GetMsg(pr->port);
 }
 

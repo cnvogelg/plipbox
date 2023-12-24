@@ -375,7 +375,7 @@ static INLINE VOID DevForwardIO(BASEPTR, struct IOSana2Req *ios2)
 
 PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
 {
-   d2(("dev_termio: cmd=%ld, error=%ld, wireerror=%ld\n", ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error,ios2->ios2_WireError));
+   d2(("dev_termio: cmd=%ld, error=%ld, wireerror=%ld\n", (ULONG)ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error,ios2->ios2_WireError));
 
                   /* if this command was done asynchonously, we must
                   ** reply the request
@@ -396,7 +396,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
    ios2->ios2_Req.io_Error = S2ERR_NO_ERROR;
    ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
 
-   d2(("dev_beginio: cmd=%ld\n",ios2->ios2_Req.io_Command));
+   d2(("dev_beginio: cmd=%ld req=%lx\n",(ULONG)ios2->ios2_Req.io_Command,(ULONG)ios2));
 
       /*
       ** 1st level command dispatcher
@@ -415,6 +415,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
    switch(ios2->ios2_Req.io_Command)
    {
       case CMD_READ:
+         d4r(("CMD_READ\n"));
          if (pb->pb_Flags & PLIPF_OFFLINE)
          {
             ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
@@ -436,10 +437,12 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_BROADCAST:
+         d4r(("S2_BROADCAST\n"));
               /* set broadcast addr: ff:ff:ff:ff:ff:ff */
          memset(ios2->ios2_DstAddr, 0xff, HW_ADDRFIELDSIZE);
               /* fall through */
       case CMD_WRITE:
+         d4r(("CMD_WRITE\n"));
               /* determine max valid size */
          mtu = pb->pb_MTU;
          if(ios2->ios2_Req.io_Flags & SANA2IOF_RAW) {
@@ -479,12 +482,14 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_GETSTATIONADDRESS:
+         d4r(("S2_GETSTATIONADDRESS\n"));
          memcpy(ios2->ios2_SrcAddr, pb->pb_CfgAddr, HW_ADDRFIELDSIZE);
          memcpy(ios2->ios2_DstAddr, pb->pb_DefAddr, HW_ADDRFIELDSIZE);
       break;
          
       case S2_DEVICEQUERY:
       {
+         d4r(("S2_DEVICEQUERY\n"));
          struct Sana2DeviceQuery *devquery;
 
          devquery = ios2->ios2_StatData;
@@ -501,20 +506,21 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
          
       case S2_ONEVENT:
+         d4r(("S2_ONEVENT: %lx\n", oldWire));
          /* Two special cases. S2EVENT_ONLINE and S2EVENT_OFFLINE are supposed to
             retun immediately if we are already in the state that they are waiting
             for. */
-         if (((ios2->ios2_WireError & S2EVENT_ONLINE) && !(pb->pb_Flags & PLIPF_OFFLINE)) ||
-             ((ios2->ios2_WireError & S2EVENT_OFFLINE) && (pb->pb_Flags & PLIPF_OFFLINE)))
+         if (((oldWire & S2EVENT_ONLINE) && !(pb->pb_Flags & PLIPF_OFFLINE)) ||
+             ((oldWire & S2EVENT_OFFLINE) && (pb->pb_Flags & PLIPF_OFFLINE)))
          {
             ios2->ios2_Req.io_Error = 0;
-            ios2->ios2_WireError &= (S2EVENT_ONLINE|S2EVENT_OFFLINE);
+            ios2->ios2_WireError = oldWire & (S2EVENT_ONLINE|S2EVENT_OFFLINE);
             DevTermIO(pb,ios2);
             ios2 = NULL;
          }
-         else if ((ios2->ios2_WireError & (S2EVENT_ERROR|S2EVENT_TX|S2EVENT_RX|S2EVENT_ONLINE|
-                               S2EVENT_OFFLINE|S2EVENT_BUFF|S2EVENT_HARDWARE|S2EVENT_SOFTWARE))
-                  != ios2->ios2_WireError)
+         else if ((oldWire & (S2EVENT_ERROR|S2EVENT_TX|S2EVENT_RX|S2EVENT_ONLINE|
+                              S2EVENT_OFFLINE|S2EVENT_BUFF|S2EVENT_HARDWARE|S2EVENT_SOFTWARE))
+                  != oldWire)
          {
             /* we cannot handle such events */
             ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
@@ -524,6 +530,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
          {
             /* Queue anything else */
             ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
+            ios2->ios2_WireError = oldWire;
             ObtainSemaphore(&pb->pb_EventListSem);
             AddTail((struct List*)&pb->pb_EventList, (struct Node*)ios2);
             ReleaseSemaphore(&pb->pb_EventListSem);
@@ -534,6 +541,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       /* --------------- stats support ----------------------- */
 
       case S2_TRACKTYPE:
+         d4r(("S2_TRACKTYPE\n"));
          if (!addtracktype(pb, ios2->ios2_PacketType))
          {
             ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
@@ -541,6 +549,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_UNTRACKTYPE:
+         d4r(("S2_UNTRACKTYPE\n"));
          if (!remtracktype(pb, ios2->ios2_PacketType))
          {
             ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
@@ -549,6 +558,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_GETTYPESTATS:
+         d4r(("S2_GETTYPESTATS\n"));
          if (!gettrackrec(pb, ios2->ios2_PacketType, (struct Sana2PacketTypeStats *)ios2->ios2_StatData))
          {
             ios2->ios2_Req.io_Error = S2ERR_BAD_STATE;
@@ -557,6 +567,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_READORPHAN:
+         d4r(("S2_READORPHAN\n"));
          if (pb->pb_Flags & PLIPF_OFFLINE)
          {
             ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
@@ -578,11 +589,13 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       break;
 
       case S2_GETGLOBALSTATS:
+         d4r(("S2_GETGLOBALSTATS\n"));
          memcpy(ios2->ios2_StatData, &pb->pb_DevStats, sizeof(struct Sana2DeviceStats));
       break;
 
       case S2_GETSPECIALSTATS:
       {
+         d4r(("S2_GETSPECIALSTATS\n"));
          struct Sana2SpecialStatHeader *s2ssh = (struct Sana2SpecialStatHeader *)ios2->ios2_StatData;
 
          if (pb->pb_ExtFlags & PLIPEF_NOSPECIALSTATS)
@@ -608,6 +621,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
       case CMD_STOP:
       case CMD_START:
       case CMD_FLUSH:
+         d4r(("CMD_%lx -> NOCMD\n", (ULONG)ios2->ios2_Req.io_Command));
          ios2->ios2_Req.io_Error = IOERR_NOCMD;
          ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
       break;
@@ -624,6 +638,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
            DevForwardIO(pb, ios2);
            ios2 = NULL;
         } else {
+           d4r(("CMD_%lx -> NOT_SUPPORTED\n", (ULONG)ios2->ios2_Req.io_Command));
            ios2->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
            ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
         }
@@ -633,7 +648,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1,struct IOSana2Req *ios2), REG(a6,BASEPT
 
    if (ios2) DevTermIO(pb, ios2);
 
-   d2(("dev_beginio: cmd=%ld done\n",ios2->ios2_Req.io_Command));
+   d2(("dev_beginio: cmd=%ld req=%lx done\n",(ULONG)ios2->ios2_Req.io_Command, (ULONG)ios2));
 
    return;
 }
@@ -646,7 +661,7 @@ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR
    BOOL is;
    LONG rc = 0;
 
-   d2(("dev_abortio: cmd=%ld\n",ior->ios2_Req.io_Command));
+   d2(("dev_abortio: cmd=%ld\n",(ULONG)ior->ios2_Req.io_Command));
 
    ObtainSemaphore(&pb->pb_WriteListSem);
    if ((is = isinlist((struct Node*)ior, (struct List*)&pb->pb_WriteList))) abort_req(pb,ior);
@@ -671,7 +686,7 @@ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1,struct IOSana2Req *ior), REG(a6,BASEPTR
    rc = -1;
 
 leave:
-   d2(("dev_abortio: cmd=%ld res=%ld\n",ior->ios2_Req.io_Command, rc));
+   d2(("dev_abortio: cmd=%ld res=%ld\n",(ULONG)ior->ios2_Req.io_Command, rc));
    return rc;
 }
 

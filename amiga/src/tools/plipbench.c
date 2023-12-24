@@ -170,31 +170,34 @@ static int plipbench(const char *device, LONG unit)
         sanadev_cmd_print_error(sh);
       } else {
 
-#if 0
-        PutStr("waiting for online...\n"); Flush(Output());
+#if 1
+        PutStr("waiting for online...!\n"); Flush(Output());
         sanadev_event_start(sh, S2EVENT_ONLINE);
         atimer_sig_start(th, 5, 0);
         ULONG sana_mask = sanadev_event_get_mask(sh);
         ULONG timer_mask = atimer_sig_get_mask(th);
         ULONG mask = sana_mask | timer_mask | SIGBREAKF_CTRL_C;
+        Printf("sana_mask=%lx timer_mask=%lx\n", sana_mask, timer_mask);
         ULONG got_mask = Wait(mask);
-        atimer_sig_stop(th);
-        sanadev_event_stop(sh);
+        Printf("got_mask=%lx\n", got_mask);
 
         // got sana event
         if((got_mask & sana_mask) == sana_mask) {
           // wait for online event
           ULONG event;
-          sanadev_event_get_event(sh, &event);
+          BOOL ok = sanadev_event_get_event(sh, &event);
 
-          LOG(("Got event: %lx\n", event));
-          if((event & S2EVENT_ONLINE) == 0) {
+          LOG(("Got ok=%ld event: %lx\n", (ULONG)ok, event));
+          if((event & S2EVENT_ONLINE) == S2EVENT_ONLINE) {
             PutStr("we are online!\n");
 
             // we made it: enter main loop
             bench_loop(sh, &bench_opt);
           }
         }
+
+        atimer_sig_stop(th);
+        sanadev_event_stop(sh);
 #endif
 
         // finally go offline
