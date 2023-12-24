@@ -257,6 +257,15 @@ u08 proto_cmd_handle_main(void)
       proto_atom_read_block(mac, MAC_SIZE);
       break;
     }
+    case PROTO_CMD_SET_CUR_MAC: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      mac_t mac;
+      DS("set_def_mac:");
+      proto_atom_write_block(mac, MAC_SIZE);
+      DM(mac); DNL;
+      proto_cmd_api_set_cur_mac(mac);
+      break;
+    }
     // ----- prefs -----
     case PROTO_CMD_PREFS_RESET:
       CHECK_STATE(PROTO_CMD_STATE_IDLE);

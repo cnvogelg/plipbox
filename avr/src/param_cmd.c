@@ -30,6 +30,11 @@ void proto_cmd_api_get_def_mac(mac_t mac)
   param_get_def_mac(mac);
 }
 
+void proto_cmd_api_set_cur_mac(mac_t mac)
+{
+  param_set_cur_mac(mac);
+}
+
 // ----- param -----
 
 u08 proto_cmd_api_param_get_num(void)

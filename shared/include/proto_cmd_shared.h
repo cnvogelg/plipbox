@@ -10,6 +10,7 @@
 #define PROTO_CMD_GET_VERSION     0x30 // read_word
 #define PROTO_CMD_GET_CUR_MAC     0x31 // read_block [6]
 #define PROTO_CMD_GET_DEF_MAC     0x32 // read block [6]
+#define PROTO_CMD_SET_CUR_MAC     0x33 // write_block [6]
 
 #define PROTO_CMD_ATTACH          0x40 // action
 #define PROTO_CMD_DETACH          0x41 // action

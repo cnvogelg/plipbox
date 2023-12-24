@@ -36,6 +36,7 @@ extern u08  proto_cmd_api_tx_end(u16 size);
 extern u16  proto_cmd_api_get_version(void);
 extern void proto_cmd_api_get_cur_mac(mac_t mac);
 extern void proto_cmd_api_get_def_mac(mac_t mac);
+extern void proto_cmd_api_set_cur_mac(mac_t mac);
 
 extern u08  proto_cmd_api_param_get_num(void);
 extern void proto_cmd_api_param_find_tag(u32 tag);

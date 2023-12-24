@@ -40,6 +40,7 @@ GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
 
 GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac);
+GLOBAL REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac);
 
 GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd);
 GLOBAL REGARGS int  hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline);

@@ -191,6 +191,12 @@ GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_
    return ok == PROTO_RET_OK;
 }
 
+GLOBAL REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac)
+{
+   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+   return proto_cmd_set_cur_mac(hwb->proto, cur_mac);
+}
+
 GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
 {
   /* register all special comamnds here! */

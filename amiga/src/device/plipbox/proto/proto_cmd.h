@@ -34,6 +34,7 @@ extern int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_byt
 extern int proto_cmd_get_version(proto_handle_t *proto, UWORD *version);
 extern int proto_cmd_get_cur_mac(proto_handle_t *proto, mac_t mac);
 extern int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac);
+extern int proto_cmd_set_cur_mac(proto_handle_t *proto, mac_t mac);
 
 /* ----- param ----- */
 

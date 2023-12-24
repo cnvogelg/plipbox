@@ -278,6 +278,13 @@ void param_get_cur_mac(mac_t mac)
   }
 }
 
+void param_set_cur_mac(mac_t mac)
+{
+  for(u08 i=0;i<sizeof(mac_t);i++) {
+    param.mac_addr[i] = mac[i];
+  }
+}
+
 u08 param_init(void)
 {
   u08 res = param_load();

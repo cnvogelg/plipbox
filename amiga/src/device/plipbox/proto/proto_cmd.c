@@ -102,6 +102,18 @@ int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac)
   return res;
 }
 
+int proto_cmd_set_cur_mac(proto_handle_t *proto, mac_t mac)
+{
+  int res;
+
+  d8(("proto_cmd_set_cur_mac:"));
+  res = proto_atom_write_block(proto, PROTO_CMD_SET_CUR_MAC, mac, MAC_SIZE);
+  d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
+      (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+      (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
+  return res;
+}
+
 // ----- param -----
 
 int proto_cmd_param_get_num(proto_handle_t *proto, UWORD *num)

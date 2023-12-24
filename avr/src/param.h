@@ -61,6 +61,7 @@ void param_dump(void);
 // MAC parameter
 void param_get_def_mac(mac_t mac);
 void param_get_cur_mac(mac_t mac);
+void param_set_cur_mac(mac_t mac);
 
 // generic param functions
 u08 param_get_num(void);

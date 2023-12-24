@@ -445,6 +445,9 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
                gooffline(pb);
             }
             
+            // update mac
+            hw_set_mac(pb, pb->pb_CfgAddr);
+
             /* now go online */
             if (!goonline(pb))
             {
