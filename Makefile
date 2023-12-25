@@ -25,8 +25,8 @@
 
 include version.mk
 
-SUBDIRS := avr/src amiga/src doc/src
-DISTFILES := Makefile README.md ChangeLog.md COPYING contrib doc avr amiga hardware
+SUBDIRS := mcu/src amiga/src doc/src
+DISTFILES := Makefile README.md ChangeLog.md COPYING contrib doc mcu amiga hardware
 PROJECT := plipbox
 
 REVSION := $(shell git log -1 --pretty=format:%h)
