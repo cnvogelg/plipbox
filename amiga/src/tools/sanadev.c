@@ -8,40 +8,43 @@
 #include "compiler.h"
 #include "sanadev.h"
 
-struct port_req {
-  struct MsgPort    *port;
+struct port_req
+{
+  struct MsgPort *port;
   struct IOSana2Req *req;
 };
 typedef struct port_req port_req_t;
 
 /* private handle struct */
-struct sanadev_handle {
-  struct Device     *sana_dev;
-  port_req_t         cmd_pr;
-  port_req_t         event_pr;
+struct sanadev_handle
+{
+  struct Device *sana_dev;
+  port_req_t cmd_pr;
+  port_req_t event_pr;
 };
 
 /* copy helper for SANA-II device */
-static ASM SAVEDS int MemCopy(REG(a0,UBYTE *to),
-         REG(a1,UBYTE *from),
-         REG(d0,LONG len))
+static ASM SAVEDS int MemCopy(REG(a0, UBYTE *to),
+                              REG(a1, UBYTE *from),
+                              REG(d0, LONG len))
 {
   CopyMem(from, to, len);
   return 1;
 }
 
 static const ULONG sana_tags[] = {
-  S2_CopyToBuff, (ULONG)MemCopy,
-  S2_CopyFromBuff, (ULONG)MemCopy,
-  TAG_DONE, 0
-};
+    S2_CopyToBuff, (ULONG)MemCopy,
+    S2_CopyFromBuff, (ULONG)MemCopy,
+    TAG_DONE, 0};
 
 static BOOL alloc_port_req(port_req_t *pr, UWORD *error)
 {
   /* create read port */
   pr->port = CreateMsgPort();
-  if(pr->port == NULL) {
-    if(error != NULL) {
+  if (pr->port == NULL)
+  {
+    if (error != NULL)
+    {
       *error = SANADEV_ERROR_NO_PORT;
     }
     return FALSE;
@@ -49,8 +52,10 @@ static BOOL alloc_port_req(port_req_t *pr, UWORD *error)
 
   /* create IO request */
   pr->req = (struct IOSana2Req *)CreateIORequest(pr->port, sizeof(struct IOSana2Req));
-  if(pr->req == NULL) {
-    if(error != NULL) {
+  if (pr->req == NULL)
+  {
+    if (error != NULL)
+    {
       *error = SANADEV_ERROR_NO_IOREQ;
     }
     DeleteMsgPort(pr->port);
@@ -62,12 +67,14 @@ static BOOL alloc_port_req(port_req_t *pr, UWORD *error)
 
 static void free_port_req(port_req_t *pr)
 {
-  if(pr->port != NULL) {
+  if (pr->port != NULL)
+  {
     DeleteMsgPort(pr->port);
     pr->port = NULL;
   }
 
-  if(pr->req != NULL) {
+  if (pr->req != NULL)
+  {
     DeleteIORequest(pr->req);
     pr->req = NULL;
   }
@@ -82,7 +89,8 @@ static void clone_req(const port_req_t *src, port_req_t *dst)
 
 static ULONG get_port_req_mask(port_req_t *pr)
 {
-  if(pr->port == NULL) {
+  if (pr->port == NULL)
+  {
     return 0;
   }
   return 1UL << pr->port->mp_SigBit;
@@ -90,7 +98,8 @@ static ULONG get_port_req_mask(port_req_t *pr)
 
 static struct IOSana2Req *get_port_req_next_req(port_req_t *pr)
 {
-  if(pr == NULL) {
+  if (pr == NULL)
+  {
     return NULL;
   }
   return (struct IOSana2Req *)GetMsg(pr->port);
@@ -103,13 +112,15 @@ sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD 
   sanadev_handle_t *sh;
 
   sh = AllocMem(sizeof(struct sanadev_handle), MEMF_ANY | MEMF_CLEAR);
-  if(sh == NULL) {
+  if (sh == NULL)
+  {
     return NULL;
   }
   *error = SANADEV_OK;
 
   BOOL ok = alloc_port_req(&sh->cmd_pr, error);
-  if(!ok) {
+  if (!ok)
+  {
     goto fail;
   }
 
@@ -117,7 +128,8 @@ sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD 
   sh->cmd_pr.req->ios2_BufferManagement = sana_tags;
 
   /* open device */
-  if(OpenDevice((STRPTR)name, unit, (struct IORequest *)sh->cmd_pr.req, flags) != 0) {
+  if (OpenDevice((STRPTR)name, unit, (struct IORequest *)sh->cmd_pr.req, flags) != 0)
+  {
     *error = SANADEV_ERROR_OPEN_DEVICE;
     goto fail;
   }
@@ -135,7 +147,8 @@ fail:
 
 void sanadev_close(sanadev_handle_t *sh)
 {
-  if(sh->sana_dev != NULL) {
+  if (sh->sana_dev != NULL)
+  {
     CloseDevice((struct IORequest *)sh->cmd_pr.req);
   }
 
@@ -149,7 +162,8 @@ void sanadev_close(sanadev_handle_t *sh)
 BOOL sanadev_event_init(sanadev_handle_t *sh, UWORD *error)
 {
   BOOL ok = alloc_port_req(&sh->event_pr, error);
-  if(!ok) {
+  if (!ok)
+  {
     return FALSE;
   }
 
@@ -173,7 +187,8 @@ void sanadev_event_stop(sanadev_handle_t *sh)
 {
   struct IORequest *req = (struct IORequest *)sh->event_pr.req;
 
-  if(!CheckIO(req)) {
+  if (!CheckIO(req))
+  {
     AbortIO(req);
   }
   WaitIO(req);
@@ -187,10 +202,13 @@ ULONG sanadev_event_get_mask(sanadev_handle_t *sh)
 BOOL sanadev_event_get_event(sanadev_handle_t *sh, ULONG *event_mask)
 {
   struct IOSana2Req *req = get_port_req_next_req(&sh->event_pr);
-  if(req != NULL) {
+  if (req != NULL)
+  {
     *event_mask = sh->event_pr.req->ios2_WireError;
     return TRUE;
-  } else {
+  }
+  else
+  {
     return FALSE;
   }
 }
@@ -213,9 +231,12 @@ BOOL sanadev_cmd(sanadev_handle_t *sh, UWORD cmd)
   struct IOSana2Req *sana_req = sh->cmd_pr.req;
   sana_req->ios2_Req.io_Command = cmd;
 
-  if(DoIO((struct IORequest *)sana_req) != 0) {
+  if (DoIO((struct IORequest *)sana_req) != 0)
+  {
     return FALSE;
-  } else {
+  }
+  else
+  {
     return TRUE;
   }
 }
@@ -233,7 +254,8 @@ BOOL sanadev_cmd_offline(sanadev_handle_t *sh)
 BOOL sanadev_cmd_get_station_address(sanadev_handle_t *sh, sanadev_mac_t cur_mac, sanadev_mac_t def_mac)
 {
   BOOL ok = sanadev_cmd(sh, S2_GETSTATIONADDRESS);
-  if(ok) {
+  if (ok)
+  {
     CopyMem(sh->cmd_pr.req->ios2_SrcAddr, cur_mac, SANADEV_MAC_SIZE);
     CopyMem(sh->cmd_pr.req->ios2_DstAddr, def_mac, SANADEV_MAC_SIZE);
   }
@@ -250,7 +272,7 @@ static void get_error(struct IOSana2Req *sana_req, UWORD *error, UWORD *wire_err
 
 static void print_error(struct IOSana2Req *sana_req)
 {
-  Printf((STRPTR)"SANA-II IO failed: cmd=%04lx -> error=%ld, wire_error=%ld\n",
+  Printf((STRPTR) "SANA-II IO failed: cmd=%04lx -> error=%ld, wire_error=%ld\n",
          (ULONG)sana_req->ios2_Req.io_Command,
          (ULONG)sana_req->ios2_Req.io_Error,
          (ULONG)sana_req->ios2_WireError);
@@ -269,6 +291,6 @@ void sanadev_cmd_print_error(sanadev_handle_t *sh)
 void sanadev_print_mac(sanadev_mac_t mac)
 {
   Printf("%02lx:%02lx:%02lx:%02lx:%02lx:%02lx",
-     (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-     (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]);
+         (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
+         (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]);
 }

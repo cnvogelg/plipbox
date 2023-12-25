@@ -13,7 +13,8 @@
 BOOL plipbox_cmd_get_version(sanadev_handle_t *sh, UWORD *dev_version, UWORD *fw_version)
 {
   BOOL ok = sanadev_cmd(sh, S2PB_GET_VERSION);
-  if(ok) {
+  if (ok)
+  {
     struct IOSana2Req *req = sanadev_cmd_req(sh);
     ULONG ver = req->ios2_WireError;
     *dev_version = (UWORD)(ver >> 16);
@@ -27,10 +28,13 @@ BOOL plipbox_cmd_get_version(sanadev_handle_t *sh, UWORD *dev_version, UWORD *fw
 BOOL plipbox_cmd_param_get_num(sanadev_handle_t *sh, UWORD *num)
 {
   BOOL ok = sanadev_cmd(sh, S2PB_PARAM_GET_NUM);
-  if(ok) {
+  if (ok)
+  {
     struct IOSana2Req *req = sanadev_cmd_req(sh);
     *num = (UWORD)req->ios2_WireError;
-  } else {
+  }
+  else
+  {
     *num = 0;
   }
   return ok;
@@ -41,9 +45,12 @@ BOOL plipbox_cmd_param_find_tag(sanadev_handle_t *sh, ULONG tag, UWORD *id)
   struct IOSana2Req *req = sanadev_cmd_req(sh);
   req->ios2_WireError = tag;
   BOOL ok = sanadev_cmd(sh, S2PB_PARAM_FIND_TAG);
-  if(ok) {
+  if (ok)
+  {
     *id = (UWORD)req->ios2_WireError;
-  } else {
+  }
+  else
+  {
     *id = S2PB_NO_INDEX;
   }
   return ok;
@@ -86,7 +93,8 @@ BOOL plipbox_cmd_prefs_reset(sanadev_handle_t *sh)
 BOOL plipbox_cmd_prefs_load(sanadev_handle_t *sh, UWORD *status)
 {
   BOOL ok = sanadev_cmd(sh, S2PB_PREFS_LOAD);
-  if(ok) {
+  if (ok)
+  {
     struct IOSana2Req *req = sanadev_cmd_req(sh);
     *status = req->ios2_WireError;
   }
@@ -96,7 +104,8 @@ BOOL plipbox_cmd_prefs_load(sanadev_handle_t *sh, UWORD *status)
 BOOL plipbox_cmd_prefs_save(sanadev_handle_t *sh, UWORD *status)
 {
   BOOL ok = sanadev_cmd(sh, S2PB_PREFS_SAVE);
-  if(ok) {
+  if (ok)
+  {
     struct IOSana2Req *req = sanadev_cmd_req(sh);
     *status = req->ios2_WireError;
   }

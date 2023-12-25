@@ -59,8 +59,9 @@ struct Library *SocketBase;
 
 /* arg parsing */
 static char *args_template =
-  "-V=VERBOSE/S,-P=PORT/K/N";
-enum args_offset {
+    "-V=VERBOSE/S,-P=PORT/K/N";
+enum args_offset
+{
   VERBOSE_ARG,
   PORT_ARG,
   NUM_ARGS
@@ -83,42 +84,47 @@ static void udp_main_loop(long fd)
   FD_ZERO(&fds);
   FD_SET(fd, &fds);
 
-  while(1) {
+  while (1)
+  {
     /* wait for fd read or sigmask */
     ULONG bmask = SIGBREAKF_CTRL_C;
     long n = WaitSelect(fd + 1, &fds, NULL, NULL, NULL, &bmask);
 
     /* use break with Ctrl-C? */
-    if(bmask & SIGBREAKF_CTRL_C) {
-      PutStr((STRPTR)"***Break\n");
+    if (bmask & SIGBREAKF_CTRL_C)
+    {
+      PutStr((STRPTR) "***Break\n");
       break;
     }
 
     /* a packet was received */
-    if(n==1) {
+    if (n == 1)
+    {
       long res = recvfrom(fd, pkt_buf, pkt_buf_size, 0,
                           (struct sockaddr *)&c_addr, &c_addr_len);
-      if(res < 0) {
-        PutStr((STRPTR)"Error in recvfrom!\n");
+      if (res < 0)
+      {
+        PutStr((STRPTR) "Error in recvfrom!\n");
         break;
       }
 
       /* show some infos if verbose */
-      if(args_array[VERBOSE_ARG]) {
+      if (args_array[VERBOSE_ARG])
+      {
         STRPTR hostaddrp = Inet_NtoA(c_addr.sin_addr.s_addr);
-        Printf((STRPTR)"Got %ld bytes from %s!\n", res, (ULONG)hostaddrp);
+        Printf((STRPTR) "Got %ld bytes from %s!\n", res, (ULONG)hostaddrp);
       }
 
       /* send packet back */
-      res = sendto(fd, pkt_buf, res, 0, 
-                   (struct sockaddr *) &c_addr, c_addr_len);
-      if (res < 0) {
-        PutStr((STRPTR)"Error in sendto!\n");
+      res = sendto(fd, pkt_buf, res, 0,
+                   (struct sockaddr *)&c_addr, c_addr_len);
+      if (res < 0)
+      {
+        PutStr((STRPTR) "Error in sendto!\n");
         break;
       }
     }
   }
-
 }
 
 static void udp_server(void)
@@ -127,19 +133,22 @@ static void udp_server(void)
 
   /* open socket */
   long sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-  if(sockfd >= 0) {
+  if (sockfd >= 0)
+  {
     long port = 6800;
     long optval = 1;
 
     /* overwrite port? */
-    if(args_array[PORT_ARG] != 0) {
+    if (args_array[PORT_ARG] != 0)
+    {
       port = *((LONG *)args_array[PORT_ARG]);
     }
 
     /* reuse sock addr option */
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 
-                  &optval , sizeof(long)) == -1) {
-      PutStr((STRPTR)"Warning: setsockopt failed?!\n");
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+                   &optval, sizeof(long)) == -1)
+    {
+      PutStr((STRPTR) "Warning: setsockopt failed?!\n");
     }
 
     /* setup address */
@@ -149,18 +158,22 @@ static void udp_server(void)
     s_addr.sin_port = htons((unsigned short)port);
 
     /* bind */
-    if (bind(sockfd, (struct sockaddr *)&s_addr, sizeof(s_addr)) == 0) {
-      Printf((STRPTR)"Bound to port %ld\n", port);
+    if (bind(sockfd, (struct sockaddr *)&s_addr, sizeof(s_addr)) == 0)
+    {
+      Printf((STRPTR) "Bound to port %ld\n", port);
 
       udp_main_loop(sockfd);
-
-    } else {
-      PutStr((STRPTR)"Error binding socket!\n");
+    }
+    else
+    {
+      PutStr((STRPTR) "Error binding socket!\n");
     }
 
     CloseSocket(sockfd);
-  } else {
-    PutStr((STRPTR)"Error opening socket!\n");
+  }
+  else
+  {
+    PutStr((STRPTR) "Error opening socket!\n");
   }
 }
 
@@ -170,33 +183,42 @@ int main(void)
   BOOL ok = TRUE;
 
 #ifndef __SASC
-  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR)"dos.library", 0L);
+  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR) "dos.library", 0L);
 #endif
 
   /* open socket library */
-  SocketBase = OpenLibrary((STRPTR)"bsdsocket.library", 3);
-  if(SocketBase == NULL) {
-    PutStr((STRPTR)"Error opening 'bsdsocket.library'!\n");
+  SocketBase = OpenLibrary((STRPTR) "bsdsocket.library", 3);
+  if (SocketBase == NULL)
+  {
+    PutStr((STRPTR) "Error opening 'bsdsocket.library'!\n");
     ok = FALSE;
-  } else {
+  }
+  else
+  {
     /* parse args */
     args_rd = ReadArgs((STRPTR)args_template, args_array, NULL);
-    if(args_rd == NULL) {
-      PutStr((STRPTR)"Error parsing arguments!\n");
+    if (args_rd == NULL)
+    {
+      PutStr((STRPTR) "Error parsing arguments!\n");
       ok = FALSE;
-    } else {
+    }
+    else
+    {
       /* alloc data buffer */
       pkt_buf_size = 1500;
       pkt_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
-      if(pkt_buf != NULL) {
+      if (pkt_buf != NULL)
+      {
 
         udp_server();
 
         FreeMem(pkt_buf, pkt_buf_size);
-      } else {
-        PutStr((STRPTR)"Error allocating packet buffer!\n");
       }
-  
+      else
+      {
+        PutStr((STRPTR) "Error allocating packet buffer!\n");
+      }
+
       FreeArgs(args_rd);
     }
     CloseLibrary(SocketBase);
@@ -207,9 +229,12 @@ int main(void)
 #endif
 
   /* return status */
-  if(ok) {
+  if (ok)
+  {
     exit(RETURN_OK);
-  } else {
+  }
+  else
+  {
     exit(RETURN_ERROR);
   }
 }

@@ -75,8 +75,9 @@ static ULONG data_offset = 0;
 
 /* arg parsing */
 static char *args_template =
-  "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K,-M=MODE/N/K,-F=FRAMELEN/N/K";
-enum args_offset {
+    "-D=DEVICE/K,-U=UNIT/N/K,-M=MTU/N/K,-V=VERBOSE/S,-R=REPLY/S,-D=DELAY/N/K,-M=MODE/N/K,-F=FRAMELEN/N/K";
+enum args_offset
+{
   DEVICE_ARG,
   UNIT_ARG,
   MTU_ARG,
@@ -93,9 +94,9 @@ static LONG args_array[NUM_ARGS];
 /* ---------- helpers ----------------------------------------- */
 
 /* copy helper for SANA-II device */
-static ASM SAVEDS int MemCopy(REG(a0,UBYTE *to),
-         REG(a1,UBYTE *from),
-         REG(d0,LONG len))
+static ASM SAVEDS int MemCopy(REG(a0, UBYTE *to),
+                              REG(a1, UBYTE *from),
+                              REG(d0, LONG len))
 {
   CopyMem(from, to, len);
   return 1;
@@ -105,35 +106,38 @@ static ASM SAVEDS int MemCopy(REG(a0,UBYTE *to),
 static BOOL open_device(char *name, ULONG unit, ULONG flags)
 {
   static ULONG sana_tags[] = {
-    S2_CopyToBuff, (ULONG)MemCopy,
-    S2_CopyFromBuff, (ULONG)MemCopy,
-    TAG_DONE, 0
-  };
+      S2_CopyToBuff, (ULONG)MemCopy,
+      S2_CopyFromBuff, (ULONG)MemCopy,
+      TAG_DONE, 0};
 
   /* create write port */
   write_port = CreateMsgPort();
-  if(write_port == NULL) {
-    PutStr((STRPTR)"Error creating write port!\n");
+  if (write_port == NULL)
+  {
+    PutStr((STRPTR) "Error creating write port!\n");
     return FALSE;
   }
 
   /* create read port */
   read_port = CreateMsgPort();
-  if(read_port == NULL) {
-    PutStr((STRPTR)"Error creating read port!\n");
+  if (read_port == NULL)
+  {
+    PutStr((STRPTR) "Error creating read port!\n");
   }
 
   /* create IO request */
   write_req = (struct IOSana2Req *)CreateIORequest(write_port, sizeof(struct IOSana2Req));
-  if(write_req == NULL) {
-    PutStr((STRPTR)"Error creatio IO write request!\n");
+  if (write_req == NULL)
+  {
+    PutStr((STRPTR) "Error creatio IO write request!\n");
     return FALSE;
   }
 
   /* create IO request */
   read_req = (struct IOSana2Req *)CreateIORequest(read_port, sizeof(struct IOSana2Req));
-  if(read_req == NULL) {
-    PutStr((STRPTR)"Error creatio IO read request!\n");
+  if (read_req == NULL)
+  {
+    PutStr((STRPTR) "Error creatio IO read request!\n");
     return FALSE;
   }
 
@@ -141,8 +145,9 @@ static BOOL open_device(char *name, ULONG unit, ULONG flags)
   write_req->ios2_BufferManagement = sana_tags;
 
   /* open device */
-  if(OpenDevice((STRPTR)name, unit, (struct IORequest *)write_req, flags) != 0) {
-    Printf((STRPTR)"Error opening device(%s,%lu)!\n", (ULONG)name, unit);
+  if (OpenDevice((STRPTR)name, unit, (struct IORequest *)write_req, flags) != 0)
+  {
+    Printf((STRPTR) "Error opening device(%s,%lu)!\n", (ULONG)name, unit);
     return FALSE;
   }
 
@@ -155,7 +160,7 @@ static BOOL open_device(char *name, ULONG unit, ULONG flags)
   sana_dev = write_req->ios2_Req.io_Device;
 
   /* some device info */
-  Printf((STRPTR)"[%s (%d.%d)]\n",
+  Printf((STRPTR) "[%s (%d.%d)]\n",
          (ULONG)sana_dev->dd_Library.lib_IdString,
          sana_dev->dd_Library.lib_Version,
          sana_dev->dd_Library.lib_Revision);
@@ -167,31 +172,36 @@ static BOOL open_device(char *name, ULONG unit, ULONG flags)
 static void close_device(void)
 {
   /* close device */
-  if(sana_dev != NULL) {
+  if (sana_dev != NULL)
+  {
     CloseDevice((struct IORequest *)write_req);
     sana_dev = NULL;
   }
 
   /* free IO request */
-  if(write_req != NULL) {
+  if (write_req != NULL)
+  {
     DeleteIORequest(write_req);
     write_req = NULL;
   }
 
   /* free IO request */
-  if(read_req != NULL) {
+  if (read_req != NULL)
+  {
     DeleteIORequest(read_req);
     read_req = NULL;
   }
 
   /* free msg port */
-  if(write_port != NULL) {
+  if (write_port != NULL)
+  {
     DeleteMsgPort(write_port);
     write_port = NULL;
   }
 
   /* free msg port */
-  if(read_port != NULL) {
+  if (read_port != NULL)
+  {
     DeleteMsgPort(read_port);
     read_port = NULL;
   }
@@ -201,18 +211,21 @@ static void sana_error(struct IOSana2Req *sana_req)
 {
   UWORD error = sana_req->ios2_Req.io_Error;
   UWORD wire_error = sana_req->ios2_WireError;
-  Printf((STRPTR)"IO failed: cmd=%04lx -> error=%d, wire_error=%d\n",
-         sana_req->ios2_Req.io_Command, error, wire_error);  
+  Printf((STRPTR) "IO failed: cmd=%04lx -> error=%d, wire_error=%d\n",
+         sana_req->ios2_Req.io_Command, error, wire_error);
 }
 
 static BOOL sana_cmd(struct IOSana2Req *sana_req, UWORD cmd)
 {
   sana_req->ios2_Req.io_Command = cmd;
 
-  if(DoIO((struct IORequest *)sana_req) != 0) {
+  if (DoIO((struct IORequest *)sana_req) != 0)
+  {
     sana_error(sana_req);
     return FALSE;
-  } else {
+  }
+  else
+  {
     return TRUE;
   }
 }
@@ -230,7 +243,8 @@ static BOOL sana_offline(void)
 static BOOL sana_get_station_address(mac_t cur_mac, mac_t def_mac)
 {
   BOOL ok = sana_cmd(write_req, S2_GETSTATIONADDRESS);
-  if(ok) {
+  if (ok)
+  {
     CopyMem(write_req->ios2_SrcAddr, cur_mac, MAC_SIZE);
     CopyMem(write_req->ios2_DstAddr, def_mac, MAC_SIZE);
   }
@@ -252,7 +266,8 @@ static BOOL plipbox_set_mode(UWORD mode)
 static BOOL plipbox_get_mode(UWORD *mode)
 {
   BOOL ok = sana_cmd(write_req, S2PB_GET_MODE);
-  if(ok) {
+  if (ok)
+  {
     *mode = write_req->ios2_WireError;
   }
   return ok;
@@ -261,7 +276,8 @@ static BOOL plipbox_get_mode(UWORD *mode)
 static void fill_packet(void)
 {
   /* fill packet */
-  for(ULONG i=0;i<frame_len;i++) {
+  for (ULONG i = 0; i < frame_len; i++)
+  {
     UBYTE ch = (UBYTE)((i + data_offset) & 0xff);
     write_buf[i] = ch;
   }
@@ -269,9 +285,11 @@ static void fill_packet(void)
 
 static void check_packet(void)
 {
-  for(ULONG i=0;i<frame_len;i++) {
+  for (ULONG i = 0; i < frame_len; i++)
+  {
     UBYTE ch = (UBYTE)((i + data_offset) & 0xff);
-    if(ch != read_buf[i]) {
+    if (ch != read_buf[i])
+    {
       Printf("Mismatch: @%04lx: got=%02lx want=%02lx\n", i, (ULONG)read_buf[i], (ULONG)write_buf[i]);
     }
   }
@@ -279,7 +297,7 @@ static void check_packet(void)
 
 static void send_packet(void)
 {
-  Printf((STRPTR)"Send packet... %lu bytes\n", (ULONG)frame_len);
+  Printf((STRPTR) "Send packet... %lu bytes\n", (ULONG)frame_len);
   /* write request */
   write_req->ios2_Req.io_Command = CMD_WRITE;
   write_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
@@ -287,27 +305,29 @@ static void send_packet(void)
   write_req->ios2_PacketType = 0x800;
   write_req->ios2_Data = write_buf;
   DoIO((struct IORequest *)write_req);
-  PutStr((STRPTR)"Done\n");
+  PutStr((STRPTR) "Done\n");
 }
 
 static void dump_mac(STRPTR msg, mac_t mac)
 {
   Printf("%s: %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", msg,
-    (ULONG)mac[0],
-    (ULONG)mac[1],
-    (ULONG)mac[2],
-    (ULONG)mac[3],
-    (ULONG)mac[4],
-    (ULONG)mac[5]);
+         (ULONG)mac[0],
+         (ULONG)mac[1],
+         (ULONG)mac[2],
+         (ULONG)mac[3],
+         (ULONG)mac[4],
+         (ULONG)mac[5]);
 }
 
 static atime_stamp_t ts_begin;
 
-static void timing_begin(void) {
+static void timing_begin(void)
+{
   atimer_eclock_get(atimer, &ts_begin);
 }
 
-static void timing_end(ULONG bytes) {
+static void timing_end(ULONG bytes)
+{
   atime_stamp_t ts_end;
   atime_stamp_t delta;
   atimer_eclock_get(atimer, &ts_end);
@@ -317,57 +337,64 @@ static void timing_end(ULONG bytes) {
   Printf("Speed: bytes=%lu eclk=%lu us=%lu kBps=%lu\n", bytes, delta.lo, us, kBps);
 }
 
-
 static void reply_loop(void)
 {
   ULONG wmask;
   ULONG verbose = args_array[VERBOSE_ARG];
   ULONG do_reply = args_array[REPLY_ARG];
   ULONG delay = 50;
-  if(args_array[DELAY_ARG] != 0) {
+  if (args_array[DELAY_ARG] != 0)
+  {
     delay = *((ULONG *)args_array[DELAY_ARG]);
   }
 
   fill_packet();
   send_packet();
 
-  PutStr((STRPTR)"Waiting for incoming packets...\n");
-  if(do_reply) {
-    Printf((STRPTR)"With reply after %ld ticks\n", delay);
+  PutStr((STRPTR) "Waiting for incoming packets...\n");
+  if (do_reply)
+  {
+    Printf((STRPTR) "With reply after %ld ticks\n", delay);
   }
 
-  for(;;) {
+  for (;;)
+  {
     /* read request */
     read_req->ios2_Req.io_Command = S2_READORPHAN; /*CMD_READ;*/
-    read_req->ios2_Req.io_Flags = 0; /*SANA2IOF_RAW;*/
+    read_req->ios2_Req.io_Flags = 0;               /*SANA2IOF_RAW;*/
     read_req->ios2_DataLength = pkt_buf_size;
     read_req->ios2_PacketType = 0x800;
     read_req->ios2_Data = read_buf;
     BeginIO((struct IORequest *)read_req);
     wmask = Wait(SIGBREAKF_CTRL_C | (1UL << read_port->mp_SigBit));
-    
+
     /* user break */
-    if(wmask & SIGBREAKF_CTRL_C) {
+    if (wmask & SIGBREAKF_CTRL_C)
+    {
       AbortIO((struct IORequest *)read_req);
       WaitIO((struct IORequest *)read_req);
-      PutStr((STRPTR)"***Break\n");
+      PutStr((STRPTR) "***Break\n");
       break;
     }
 
     /* got a packet? */
-    if(WaitIO((struct IORequest *)read_req) != 0)
+    if (WaitIO((struct IORequest *)read_req) != 0)
     {
       sana_error(read_req);
       break;
-    } else {
+    }
+    else
+    {
 
       check_packet();
 
-      if(verbose) {
-        Printf((STRPTR)"Recv: size=%lu\n", read_req->ios2_DataLength);
+      if (verbose)
+      {
+        Printf((STRPTR) "Recv: size=%lu\n", read_req->ios2_DataLength);
       }
 
-      if(do_reply) {
+      if (do_reply)
+      {
         /* swap adresses */
         CopyMem(read_req->ios2_SrcAddr, write_req->ios2_DstAddr, SANA2_MAX_ADDR_BYTES);
         CopyMem(read_req->ios2_DstAddr, write_req->ios2_SrcAddr, SANA2_MAX_ADDR_BYTES);
@@ -377,8 +404,9 @@ static void reply_loop(void)
         data_offset++;
         fill_packet();
 
-        if(verbose) {
-          PutStr((STRPTR)"Send\n");
+        if (verbose)
+        {
+          PutStr((STRPTR) "Send\n");
         }
 
         /* send packet back */
@@ -388,7 +416,8 @@ static void reply_loop(void)
         write_req->ios2_PacketType = 0x800;
         write_req->ios2_Data = write_buf;
         timing_begin();
-        if(DoIO((struct IORequest *)write_req) != 0) {
+        if (DoIO((struct IORequest *)write_req) != 0)
+        {
           sana_error(write_req);
           break;
         }
@@ -408,57 +437,77 @@ int main(void)
   char *dev_name;
 
 #ifndef __SASC
-  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR)"dos.library", 0L);
+  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR) "dos.library", 0L);
 #endif
 
   /* parse args */
   args_rd = ReadArgs((STRPTR)args_template, args_array, NULL);
-  if(args_rd == NULL) {
-    PutStr((STRPTR)"Error parsing arguments!\n");
+  if (args_rd == NULL)
+  {
+    PutStr((STRPTR) "Error parsing arguments!\n");
     exit(RETURN_ERROR);
   }
 
   /* parse device name and unit number */
-  if(args_array[UNIT_ARG] != 0) {
+  if (args_array[UNIT_ARG] != 0)
+  {
     unit = *((ULONG *)args_array[UNIT_ARG]);
-  } else {
+  }
+  else
+  {
     unit = 0;
   }
-  if(args_array[DEVICE_ARG] != 0) {
+  if (args_array[DEVICE_ARG] != 0)
+  {
     dev_name = (char *)args_array[DEVICE_ARG];
-  } else {
+  }
+  else
+  {
     dev_name = "plipbox.device";
   }
-  if(args_array[MTU_ARG] != 0) {
+  if (args_array[MTU_ARG] != 0)
+  {
     mtu = *((ULONG *)args_array[MTU_ARG]);
-  } else {
+  }
+  else
+  {
     mtu = 1500;
   }
-  if(args_array[MODE_ARG] != 0) {
+  if (args_array[MODE_ARG] != 0)
+  {
     mode = *((ULONG *)args_array[MODE_ARG]);
-  } else {
+  }
+  else
+  {
     mode = S2PB_MODE_LOOPBACK_BUF;
   }
-  if(args_array[FRAME_LEN_ARG] != 0) {
+  if (args_array[FRAME_LEN_ARG] != 0)
+  {
     frame_len = *((ULONG *)args_array[FRAME_LEN_ARG]);
-  } else {
+  }
+  else
+  {
     frame_len = mtu;
   }
 
   /* alloc buffer */
   pkt_buf_size = mtu;
   write_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
-  if(write_buf != NULL) {
+  if (write_buf != NULL)
+  {
     read_buf = AllocMem(pkt_buf_size, MEMF_CLEAR);
-    if(read_buf != NULL) {
+    if (read_buf != NULL)
+    {
       /* open device */
-      Printf((STRPTR)"device: %s:%lu\n", (ULONG)dev_name, unit);
-      if(open_device(dev_name, unit, 0)) {
+      Printf((STRPTR) "device: %s:%lu\n", (ULONG)dev_name, unit);
+      if (open_device(dev_name, unit, 0))
+      {
         atimer = atimer_init((struct Library *)SysBase);
-        if(atimer != NULL) {
+        if (atimer != NULL)
+        {
 
           /* set custom mac */
-          mac_t my_mac = { 0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe };
+          mac_t my_mac = {0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe};
           plipbox_set_mac(my_mac);
 
           /* get mac again */
@@ -474,32 +523,42 @@ int main(void)
           Printf("mode:%ld\n", (ULONG)pb_mode);
 
           /* set device online */
-          if(sana_online()) {
+          if (sana_online())
+          {
 
             reply_loop();
 
             /* finally offline again */
-            if(!sana_offline()) {
-              PutStr((STRPTR)"Error going offline!\n");
+            if (!sana_offline())
+            {
+              PutStr((STRPTR) "Error going offline!\n");
             }
-          } else {
-            PutStr((STRPTR)"Error going online!\n");
+          }
+          else
+          {
+            PutStr((STRPTR) "Error going online!\n");
           }
 
           atimer_exit(atimer);
-        } else {
-          PutStr((STRPTR)"Error opening timer!\n");
+        }
+        else
+        {
+          PutStr((STRPTR) "Error opening timer!\n");
         }
       }
       close_device();
 
       /* free packet buffer */
       FreeMem(read_buf, pkt_buf_size);
-    } else {
-      PutStr((STRPTR)"Error allocating read_buf!\n");
     }
-  } else {
-    PutStr((STRPTR)"Error allocating write_buf!\n");
+    else
+    {
+      PutStr((STRPTR) "Error allocating read_buf!\n");
+    }
+  }
+  else
+  {
+    PutStr((STRPTR) "Error allocating write_buf!\n");
   }
 
   /* free args */
@@ -510,9 +569,12 @@ int main(void)
 #endif
 
   /* return status */
-  if(ok) {
+  if (ok)
+  {
     exit(RETURN_OK);
-  } else {
+  }
+  else
+  {
     exit(RETURN_ERROR);
   }
 }

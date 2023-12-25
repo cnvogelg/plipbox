@@ -15,7 +15,8 @@
 
 extern struct CIA ciaa, ciab;
 
-struct pario_handle {
+struct pario_handle
+{
   /* Note: the first three fields are used from assembler irq handler! */
   struct Library *sysBase; /* +0: sysBase */
   struct Task *sigTask;    /* +4: sigTask */
@@ -32,10 +33,10 @@ struct pario_handle {
 
   struct pario_port port;
 
-  UBYTE  old_data_port;
-  UBYTE  old_data_ddr;
-  UBYTE  old_ctrl_port;
-  UBYTE  old_ctrl_ddr;
+  UBYTE old_data_port;
+  UBYTE old_data_ddr;
+  UBYTE old_ctrl_port;
+  UBYTE old_ctrl_ddr;
 };
 
 #define MiscBase ph->miscBase
@@ -49,27 +50,27 @@ static void setup_port(pario_handle_t *ph)
 
   /* CIA A - Port B = Parallel Port */
   p->data_port = &ciaa.ciaprb;
-  p->data_ddr  = &ciaa.ciaddrb;
+  p->data_ddr = &ciaa.ciaddrb;
 
   /* CIA B - Port A = Control Lines */
   p->ctrl_port = &ciab.ciapra;
-  p->ctrl_ddr  = &ciab.ciaddra;
+  p->ctrl_ddr = &ciab.ciaddra;
 
-  p->busy_bit  = CIAB_PRTRBUSY;
-  p->pout_bit  = CIAB_PRTRPOUT;
-  p->sel_bit   = CIAB_PRTRSEL;
+  p->busy_bit = CIAB_PRTRBUSY;
+  p->pout_bit = CIAB_PRTRPOUT;
+  p->sel_bit = CIAB_PRTRSEL;
 
   p->busy_mask = CIAF_PRTRBUSY;
   p->pout_mask = CIAF_PRTRPOUT;
-  p->sel_mask  = CIAF_PRTRSEL;
+  p->sel_mask = CIAF_PRTRSEL;
 
-  p->all_mask  = p->busy_mask | p->pout_mask | p->sel_mask;
+  p->all_mask = p->busy_mask | p->pout_mask | p->sel_mask;
 
   /* save old values */
   ph->old_data_port = *p->data_port;
-  ph->old_data_ddr  = *p->data_ddr;
+  ph->old_data_ddr = *p->data_ddr;
   ph->old_ctrl_port = *p->ctrl_port & p->all_mask;
-  ph->old_ctrl_ddr  = *p->ctrl_ddr  & p->all_mask;
+  ph->old_ctrl_ddr = *p->ctrl_ddr & p->all_mask;
 }
 
 static void restore_port(pario_handle_t *ph)
@@ -77,14 +78,14 @@ static void restore_port(pario_handle_t *ph)
   struct pario_port *p = &ph->port;
 
   *p->data_port = ph->old_data_port;
-  *p->data_ddr  = ph->old_data_ddr;
+  *p->data_ddr = ph->old_data_ddr;
 
   /* restore only parport control bits */
   UBYTE other_mask = ~p->all_mask;
-  UBYTE ctrl_port  = *p->ctrl_port & other_mask;
-  UBYTE ctrl_ddr   = *p->ctrl_ddr  & other_mask;
+  UBYTE ctrl_port = *p->ctrl_port & other_mask;
+  UBYTE ctrl_ddr = *p->ctrl_ddr & other_mask;
   *p->ctrl_port = ctrl_port | ph->old_ctrl_port;
-  *p->ctrl_ddr  = ctrl_ddr  | ph->old_ctrl_ddr;
+  *p->ctrl_ddr = ctrl_ddr | ph->old_ctrl_ddr;
 }
 
 pario_handle_t *pario_init(struct Library *SysBase)
@@ -92,7 +93,8 @@ pario_handle_t *pario_init(struct Library *SysBase)
   /* alloc handle */
   struct pario_handle *ph;
   ph = AllocMem(sizeof(struct pario_handle), MEMF_CLEAR | MEMF_PUBLIC);
-  if(ph == NULL) {
+  if (ph == NULL)
+  {
     return NULL;
   }
   ph->sysBase = SysBase;
@@ -100,17 +102,21 @@ pario_handle_t *pario_init(struct Library *SysBase)
   /* get misc.resource */
   d(("OpenResouce(MISCNAME)\n"));
   MiscBase = OpenResource(MISCNAME);
-  if(MiscBase != NULL) {
+  if (MiscBase != NULL)
+  {
 
     /* get ciaa.resource */
     d(("OpenResource(CIANAME)\n"));
     CIAABase = OpenResource(CIAANAME);
-    if(CIAABase != NULL) {
+    if (CIAABase != NULL)
+    {
 
       /* obtain exclusive access to the parallel hardware */
-      if (!AllocMiscResource(MR_PARALLELPORT, pario_tag)) {
+      if (!AllocMiscResource(MR_PARALLELPORT, pario_tag))
+      {
         ph->initFlags = 1;
-        if (!AllocMiscResource(MR_PARALLELBITS, pario_tag)) {
+        if (!AllocMiscResource(MR_PARALLELBITS, pario_tag))
+        {
           ph->initFlags = 3;
 
           setup_port(ph);
@@ -131,17 +137,20 @@ pario_handle_t *pario_init(struct Library *SysBase)
 
 void pario_exit(pario_handle_t *ph)
 {
-  if(ph == NULL) {
+  if (ph == NULL)
+  {
     return;
   }
 
   restore_port(ph);
 
   /* free resources */
-  if(ph->initFlags & 1) {
+  if (ph->initFlags & 1)
+  {
     FreeMiscResource(MR_PARALLELPORT);
   }
-  if(ph->initFlags & 2) {
+  if (ph->initFlags & 2)
+  {
     FreeMiscResource(MR_PARALLELBITS);
   }
 
@@ -161,10 +170,10 @@ int pario_setup_ack_irq(pario_handle_t *ph, struct Task *sigTask, BYTE signal)
   int error = 0;
 
   ph->ackIrq.is_Node.ln_Type = NT_INTERRUPT;
-  ph->ackIrq.is_Node.ln_Pri  = 127;
+  ph->ackIrq.is_Node.ln_Pri = 127;
   ph->ackIrq.is_Node.ln_Name = (char *)pario_tag;
-  ph->ackIrq.is_Data         = (APTR)ph;
-  ph->ackIrq.is_Code         = pario_irq_handler;
+  ph->ackIrq.is_Data = (APTR)ph;
+  ph->ackIrq.is_Code = pario_irq_handler;
 
   ph->sigTask = sigTask;
   ph->sigMask = 1 << signal;
@@ -177,10 +186,13 @@ int pario_setup_ack_irq(pario_handle_t *ph, struct Task *sigTask, BYTE signal)
   SetSignal(0, ph->sigMask);
 
   Disable();
-  if (!AddICRVector(CIAABase, CIAICRB_FLG, &ph->ackIrq)) {
+  if (!AddICRVector(CIAABase, CIAICRB_FLG, &ph->ackIrq))
+  {
     /* disable pending irqs first */
     AbleICR(CIAABase, CIAICRF_FLG);
-  } else {
+  }
+  else
+  {
     error = 1;
   }
   Enable();
@@ -188,7 +200,8 @@ int pario_setup_ack_irq(pario_handle_t *ph, struct Task *sigTask, BYTE signal)
   d(("ack_irq_handler @%08lx  task @%08lx  sigmask %08lx\n",
      &pario_irq_handler, ph->sigTask, ph->sigMask));
 
-  if(!error) {
+  if (!error)
+  {
     /* clea irq flag */
     SetICR(CIAABase, CIAICRF_FLG);
     /* enable irq */
@@ -203,7 +216,8 @@ int pario_setup_ack_irq(pario_handle_t *ph, struct Task *sigTask, BYTE signal)
 
 void pario_cleanup_ack_irq(pario_handle_t *ph)
 {
-  if(ph->initFlags & 4 == 0) {
+  if (ph->initFlags & 4 == 0)
+  {
     return;
   }
 
@@ -235,4 +249,3 @@ void pario_confirm_ack_irq(pario_handle_t *ph)
   ph->sent_signal = 0;
   SetSignal(0, ph->sigMask);
 }
-

@@ -10,7 +10,15 @@
 #include "bench.h"
 #include "atimer.h"
 
-#define LOG(x) do { if(params.verbose) { Printf x ; Flush(Output()); } } while(0)
+#define LOG(x)          \
+  do                    \
+  {                     \
+    if (params.verbose) \
+    {                   \
+      Printf x;         \
+      Flush(Output());  \
+    }                   \
+  } while (0)
 
 /* lib bases */
 extern struct ExecBase *SysBase;
@@ -22,17 +30,17 @@ struct DosLibrary *DOSBase;
 
 /* params */
 static const char *TEMPLATE =
-  "-D=DEVICE/K,"
-  "-U=UNIT/N/K,"
-  "-V=VERBOSE/S,"
-  "LOOPBACK_BUF/S,"
-  "LOOPBACK_DEV/S,"
-  "LOOPBACK_MAC/S,"
-  "DIRECT_SPI/S,"
-  "LOOPS/N/K"
-  ;
-typedef struct {
-  char  *device;
+    "-D=DEVICE/K,"
+    "-U=UNIT/N/K,"
+    "-V=VERBOSE/S,"
+    "LOOPBACK_BUF/S,"
+    "LOOPBACK_DEV/S,"
+    "LOOPBACK_MAC/S,"
+    "DIRECT_SPI/S,"
+    "LOOPS/N/K";
+typedef struct
+{
+  char *device;
   ULONG *unit;
   ULONG verbose;
   ULONG loopback_buf;
@@ -52,39 +60,48 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
 
   // save old mode
   ok = param_tag_mode_get(sh, &old_mode);
-  if(!ok) {
+  if (!ok)
+  {
     return FALSE;
   }
   LOG(("Old Mode: %ld\n", (LONG)old_mode));
 
   // set new mode
   UWORD mode = 0;
-  if(params.loopback_buf) {
+  if (params.loopback_buf)
+  {
     LOG(("Mode: loopback with plipbox buffer\n"));
     mode = PARAM_MODE_LOOPBACK_BUF;
-  } else if(params.loopback_dev) {
+  }
+  else if (params.loopback_dev)
+  {
     LOG(("Mode: loopback with PIO buffer\n"));
     mode = PARAM_MODE_LOOPBACK_DEV;
-  } else if(params.loopback_mac) {
+  }
+  else if (params.loopback_mac)
+  {
     LOG(("Mode: loopback with PIO MAC\n"));
     mode = PARAM_MODE_LOOPBACK_MAC;
   }
   LOG(("Setting mode: %ld\n", (LONG)mode));
   ok = param_tag_mode_set(sh, mode);
-  if(!ok) {
+  if (!ok)
+  {
     return FALSE;
   }
 
   // save old flag
   ok = param_tag_flag_get(sh, &old_flag);
-  if(!ok) {
+  if (!ok)
+  {
     return FALSE;
   }
   LOG(("Old Flag: %ld\n", (LONG)old_flag));
 
   // set new flag
   UWORD flag = 0;
-  if(params.direct_spi) {
+  if (params.direct_spi)
+  {
     LOG(("Flag: direct SPI transfer to PIO\n"));
     flag = PARAM_FLAG_PIO_DIRECT_SPI;
   }
@@ -99,7 +116,8 @@ static BOOL restore_mode_and_flags(sanadev_handle_t *sh)
 
   LOG(("Restore Mode: %ld\n", (LONG)old_mode));
   ok = param_tag_mode_set(sh, old_mode);
-  if(!ok) {
+  if (!ok)
+  {
     return FALSE;
   }
 
@@ -110,9 +128,12 @@ static BOOL restore_mode_and_flags(sanadev_handle_t *sh)
 
 static void setup_bench_opt(bench_opt_t *opt)
 {
-  if(params.loops != NULL) {
+  if (params.loops != NULL)
+  {
     opt->loops = *params.loops;
-  } else {
+  }
+  else
+  {
     opt->loops = 0;
   }
   LOG(("Bench Loops: %ld\n", opt->loops));
@@ -133,12 +154,14 @@ static int plipbench(const char *device, LONG unit)
   // setup timer
   LOG(("Opening timer!\n"));
   th = atimer_init((struct Library *)SysBase);
-  if(th == NULL) {
+  if (th == NULL)
+  {
     PutStr("Error: no timer!\n");
     return RETURN_ERROR;
   }
   ok = atimer_sig_init(th);
-  if(!ok) {
+  if (!ok)
+  {
     PutStr("Error: no timer signal!\n");
     atimer_exit(th);
     return RETURN_ERROR;
@@ -147,31 +170,41 @@ static int plipbench(const char *device, LONG unit)
   // open plipbox.device
   LOG(("Opening device '%s' unit #%ld\n", device, unit));
   sh = sanadev_open(device, unit, 0, &error);
-  if(sh == NULL) {
+  if (sh == NULL)
+  {
     Printf("Error opening device '%s' unit #%ld: code=%ld\n", device, unit, (LONG)error);
     return RETURN_ERROR;
   }
 
   // set mode and flag
   ok = set_mode_and_flags(sh);
-  if(ok) {
+  if (ok)
+  {
 
     // setup events
     ok = sanadev_event_init(sh, &error);
-    if(!ok) {
+    if (!ok)
+    {
       Printf("Error setting up SANA-II events! code=%ld\n", (LONG)error);
-    } else {
+    }
+    else
+    {
 
       // go online
-      PutStr("going online...\n"); Flush(Output());
+      PutStr("going online...\n");
+      Flush(Output());
       ok = sanadev_cmd_online(sh);
-      if(!ok) {
+      if (!ok)
+      {
         PutStr("Error going online!\n");
         sanadev_cmd_print_error(sh);
-      } else {
+      }
+      else
+      {
 
 #if 1
-        PutStr("waiting for online...!\n"); Flush(Output());
+        PutStr("waiting for online...!\n");
+        Flush(Output());
         sanadev_event_start(sh, S2EVENT_ONLINE);
         atimer_sig_start(th, 5, 0);
         ULONG sana_mask = sanadev_event_get_mask(sh);
@@ -182,13 +215,15 @@ static int plipbench(const char *device, LONG unit)
         Printf("got_mask=%lx\n", got_mask);
 
         // got sana event
-        if((got_mask & sana_mask) == sana_mask) {
+        if ((got_mask & sana_mask) == sana_mask)
+        {
           // wait for online event
           ULONG event;
           BOOL ok = sanadev_event_get_event(sh, &event);
 
           LOG(("Got ok=%ld event: %lx\n", (ULONG)ok, event));
-          if((event & S2EVENT_ONLINE) == S2EVENT_ONLINE) {
+          if ((event & S2EVENT_ONLINE) == S2EVENT_ONLINE)
+          {
             PutStr("we are online!\n");
 
             // we made it: enter main loop
@@ -203,7 +238,8 @@ static int plipbench(const char *device, LONG unit)
         // finally go offline
         PutStr("going offline...\n");
         ok = sanadev_cmd_offline(sh);
-        if(!ok) {
+        if (!ok)
+        {
           PutStr("Error going offline!\n");
           sanadev_cmd_print_error(sh);
         }
@@ -215,7 +251,9 @@ static int plipbench(const char *device, LONG unit)
 
     // return to old mode
     restore_mode_and_flags(sh);
-  } else {
+  }
+  else
+  {
     PutStr("Error setting mode and flag and device...\n");
   }
 
@@ -235,26 +273,29 @@ int main(void)
 {
   struct RDArgs *args;
   char *device = "plipbox.device";
-  LONG  unit = 0;
-  int   result;
+  LONG unit = 0;
+  int result;
 
 #ifndef __SASC
-  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR)"dos.library", 0L);
+  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR) "dos.library", 0L);
 #endif
 
   /* First parse args */
   args = ReadArgs(TEMPLATE, (LONG *)&params, NULL);
-  if(args == NULL) {
+  if (args == NULL)
+  {
     PutStr(TEMPLATE);
     PutStr("  Invalid Args!\n");
     return RETURN_ERROR;
   }
 
   /* set options */
-  if(params.device != NULL) {
+  if (params.device != NULL)
+  {
     device = params.device;
   }
-  if(params.unit != NULL) {
+  if (params.unit != NULL)
+  {
     unit = *params.unit;
   }
 

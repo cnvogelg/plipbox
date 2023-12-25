@@ -4,7 +4,10 @@
 struct atimer_handle;
 typedef struct atimer_handle atimer_handle_t;
 
-struct atime_stamp { unsigned long hi, lo; };
+struct atime_stamp
+{
+  unsigned long hi, lo;
+};
 typedef struct atime_stamp atime_stamp_t;
 
 extern atimer_handle_t *atimer_init(struct Library *execbase);

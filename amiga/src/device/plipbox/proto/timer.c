@@ -7,42 +7,43 @@
 
 #include "timer.h"
 
-
-struct timer_handle {
+struct timer_handle
+{
   struct Library *sysBase;
-  ULONG           initFlags;
+  ULONG initFlags;
   struct MsgPort *timerPort;
   struct MsgPort *sigTimerPort;
-  struct Task    *task;
-  APTR            oldExceptCode;
-  APTR            oldExceptData;
-  ULONG           oldExcept;
+  struct Task *task;
+  APTR oldExceptCode;
+  APTR oldExceptData;
+  ULONG oldExcept;
   struct timerequest timerReq;
   struct timerequest sigTimerReq;
   struct Library *timerBase;
-  ULONG           timerSigMask;
-  ULONG           eClockFreq;
-  ULONG           syncSigMask;
-  BYTE            syncSig;
-  volatile UBYTE  timeoutFlag;
+  ULONG timerSigMask;
+  ULONG eClockFreq;
+  ULONG syncSigMask;
+  BYTE syncSig;
+  volatile UBYTE timeoutFlag;
 };
 
-static ULONG ASM SAVEDS exc_handler(REG(d0,ULONG sigmask), REG(a1,struct timer_handle *th));
-
+static ULONG ASM SAVEDS exc_handler(REG(d0, ULONG sigmask), REG(a1, struct timer_handle *th));
 
 struct timer_handle *timer_init(struct Library *SysBase)
 {
   /* alloc handle */
   struct timer_handle *th;
   th = AllocMem(sizeof(struct timer_handle), MEMF_CLEAR | MEMF_PUBLIC);
-  if(th == NULL) {
+  if (th == NULL)
+  {
     return NULL;
   }
   th->sysBase = SysBase;
 
   /* create msg port for timer access */
   th->timerPort = CreateMsgPort();
-  if(th->timerPort != NULL) {
+  if (th->timerPort != NULL)
+  {
     th->initFlags = 1;
 
     /* setup new exception data */
@@ -61,7 +62,8 @@ struct timer_handle *timer_init(struct Library *SysBase)
 
     /* setup timer request */
     th->timerReq.tr_node.io_Message.mn_ReplyPort = th->timerPort;
-    if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&th->timerReq, 0)) {
+    if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)&th->timerReq, 0))
+    {
       /* store timer base */
       th->timerBase = (struct Library *)th->timerReq.tr_node.io_Device;
 
@@ -75,7 +77,8 @@ struct timer_handle *timer_init(struct Library *SysBase)
 
       /* get signal */
       th->syncSig = AllocSignal(-1);
-      if(th->syncSig != -1) {
+      if (th->syncSig != -1)
+      {
         th->syncSigMask = 1 << th->syncSig;
         th->initFlags |= 8;
 
@@ -95,32 +98,37 @@ struct timer_handle *timer_init(struct Library *SysBase)
 
 void timer_exit(struct timer_handle *th)
 {
-  if(th == NULL) {
+  if (th == NULL)
+  {
     return;
   }
 
   /* free signal */
-  if(th->initFlags & 8) {
+  if (th->initFlags & 8)
+  {
     FreeSignal(th->syncSig);
   }
 
   /* cleanup timer request */
-  if(th->initFlags & 4) {
+  if (th->initFlags & 4)
+  {
     struct IORequest *req = (struct IORequest *)&th->timerReq;
     WaitIO(req);
     CloseDevice(req);
   }
 
   /* cleanup task's exception state */
-  if(th->initFlags & 2) {
-    SetExcept(0, 0xffffffff);    /* turn'em off */
+  if (th->initFlags & 2)
+  {
+    SetExcept(0, 0xffffffff); /* turn'em off */
     th->task->tc_ExceptCode = th->oldExceptCode;
     th->task->tc_ExceptData = th->oldExceptData;
     SetExcept(th->oldExcept, 0xffffffff);
   }
 
   /* remove timer port */
-  if(th->initFlags & 1) {
+  if (th->initFlags & 1)
+  {
     DeleteMsgPort(th->timerPort);
   }
 
@@ -136,7 +144,8 @@ volatile UBYTE *timer_get_flag(struct timer_handle *th)
 void timer_start(struct timer_handle *th, ULONG secs, ULONG micros)
 {
   /* wait for exc handler */
-  while(!th->timeoutFlag) {
+  while (!th->timeoutFlag)
+  {
     Wait(th->syncSigMask);
   };
 
@@ -147,14 +156,15 @@ void timer_start(struct timer_handle *th, ULONG secs, ULONG micros)
   /* start new timeout timer */
   th->timerReq.tr_time.tv_secs = secs;
   th->timerReq.tr_time.tv_micro = micros;
-  SendIO((struct IORequest*)&th->timerReq);
+  SendIO((struct IORequest *)&th->timerReq);
 }
 
 void timer_stop(struct timer_handle *th)
 {
   struct IORequest *req = (struct IORequest *)&th->timerReq;
   /* stop timeout timer */
-  if(!CheckIO(req)) {
+  if (!CheckIO(req))
+  {
     AbortIO(req);
   }
   WaitIO(req);
@@ -182,9 +192,11 @@ ULONG timer_eclock_to_us(struct timer_handle *th, time_stamp_t *delta)
   return (ULONG)(*delta * 1000000UL / th->eClockFreq);
 }
 
-union conv {
+union conv
+{
   time_stamp_t ts;
-  struct {
+  struct
+  {
     ULONG hi;
     ULONG lo;
   } hilo;
@@ -198,10 +210,10 @@ void timer_eclock_split(time_stamp_t *val, ULONG *hi, ULONG *lo)
   *lo = c.hilo.lo;
 }
 
-static ULONG ASM SAVEDS exc_handler(REG(d0,ULONG sigmask), REG(a1,struct timer_handle *th))
+static ULONG ASM SAVEDS exc_handler(REG(d0, ULONG sigmask), REG(a1, struct timer_handle *th))
 {
   /* remove the I/O Block from the port */
-  WaitIO((struct IORequest*)&th->timerReq);
+  WaitIO((struct IORequest *)&th->timerReq);
 
   /* set timeout flag */
   th->timeoutFlag = 0xff;
@@ -213,11 +225,11 @@ static ULONG ASM SAVEDS exc_handler(REG(d0,ULONG sigmask), REG(a1,struct timer_h
   return sigmask;
 }
 
-
 BOOL timer_sig_init(struct timer_handle *th)
 {
   th->sigTimerPort = CreateMsgPort();
-  if(th->sigTimerPort != NULL) {
+  if (th->sigTimerPort != NULL)
+  {
     th->initFlags |= 16;
 
     th->sigTimerReq.tr_node.io_Message.mn_ReplyPort = th->sigTimerPort;
@@ -229,7 +241,9 @@ BOOL timer_sig_init(struct timer_handle *th)
     th->timerSigMask = 1UL << th->sigTimerPort->mp_SigBit;
 
     return TRUE;
-  } else {
+  }
+  else
+  {
     return FALSE;
   }
 }
@@ -241,7 +255,8 @@ ULONG timer_sig_get_mask(struct timer_handle *th)
 
 void timer_sig_exit(struct timer_handle *th)
 {
-  if(th->initFlags & 16) {
+  if (th->initFlags & 16)
+  {
     th->initFlags &= ~16;
 
     DeleteMsgPort(th->sigTimerPort);
@@ -253,13 +268,14 @@ void timer_sig_start(struct timer_handle *th, ULONG secs, ULONG micros)
   th->sigTimerReq.tr_time.tv_secs = secs;
   th->sigTimerReq.tr_time.tv_micro = micros;
   SetSignal(0, th->timerSigMask);
-  SendIO((struct IORequest*)&th->sigTimerReq);
+  SendIO((struct IORequest *)&th->sigTimerReq);
 }
 
 void timer_sig_stop(struct timer_handle *th)
 {
   struct IORequest *req = (struct IORequest *)&th->sigTimerReq;
-  if(!CheckIO(req)) {
+  if (!CheckIO(req))
+  {
     AbortIO(req);
   }
   WaitIO(req);

@@ -9,13 +9,14 @@
 #include "proto_low.h"
 #include "proto_atom.h"
 
-struct proto_handle {
-    proto_env_handle_t  *penv;
-    struct pario_port   *port;
-    struct timer_handle *timer;
-    ULONG                timeout_s;
-    ULONG                timeout_us;
-    struct Library      *sys_base;
+struct proto_handle
+{
+  proto_env_handle_t *penv;
+  struct pario_port *port;
+  struct timer_handle *timer;
+  ULONG timeout_s;
+  ULONG timeout_us;
+  struct Library *sys_base;
 };
 
 proto_handle_t *proto_atom_init(proto_env_handle_t *penv, ULONG timeout_s, ULONG timeout_us)
@@ -24,13 +25,14 @@ proto_handle_t *proto_atom_init(proto_env_handle_t *penv, ULONG timeout_s, ULONG
   struct Library *SysBase = (struct Library *)proto_env_get_sysbase(penv);
 
   ph = AllocMem(sizeof(struct proto_handle), MEMF_CLEAR | MEMF_PUBLIC);
-  if(ph == NULL) {
+  if (ph == NULL)
+  {
     return NULL;
   }
   ph->penv = penv;
   ph->port = pario_get_port(proto_env_get_pario(penv));
   ph->timer = proto_env_get_timer(penv);
-  ph->timeout_s  = timeout_s;
+  ph->timeout_s = timeout_s;
   ph->timeout_us = timeout_us;
   ph->sys_base = SysBase;
 
@@ -44,7 +46,8 @@ proto_handle_t *proto_atom_init(proto_env_handle_t *penv, ULONG timeout_s, ULONG
 
 void proto_atom_exit(proto_handle_t *ph)
 {
-  if(ph == NULL) {
+  if (ph == NULL)
+  {
     return;
   }
   /* free handle */
@@ -93,9 +96,8 @@ int proto_atom_action_bench(proto_handle_t *ph, UBYTE cmd, ULONG deltas[2])
   volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
 
   struct cb_data cbd = {
-    bench_cb,
-    ph->timer
-  };
+      bench_cb,
+      ph->timer};
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_action_bench(port, timeout_flag, &cbd, cmd);
@@ -166,7 +168,8 @@ int proto_atom_write_block(proto_handle_t *ph, UBYTE cmd, UBYTE *buf, UWORD num_
 {
   struct pario_port *port = ph->port;
   volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
-  if(num_bytes & 1) {
+  if (num_bytes & 1)
+  {
     return PROTO_RET_ODD_BLOCK_SIZE;
   }
   UWORD num_words = num_bytes >> 1;
@@ -182,7 +185,8 @@ int proto_atom_read_block(proto_handle_t *ph, UBYTE cmd, UBYTE *buf, UWORD num_b
 {
   struct pario_port *port = ph->port;
   volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
-  if(num_bytes & 1) {
+  if (num_bytes & 1)
+  {
     return PROTO_RET_ODD_BLOCK_SIZE;
   }
   UWORD num_words = num_bytes >> 1;
@@ -198,16 +202,17 @@ int proto_atom_read_block(proto_handle_t *ph, UBYTE cmd, UBYTE *buf, UWORD num_b
 
 const char *proto_atom_perror(int res)
 {
-  switch(res) {
-    case PROTO_RET_OK:
-      return "OK";
-    case PROTO_RET_RAK_INVALID:
-      return "RAK invalid";
-    case PROTO_RET_TIMEOUT:
-      return "timeout";
-    case PROTO_RET_DEVICE_BUSY:
-      return "device is busy";
-    default:
-      return "?";
+  switch (res)
+  {
+  case PROTO_RET_OK:
+    return "OK";
+  case PROTO_RET_RAK_INVALID:
+    return "RAK invalid";
+  case PROTO_RET_TIMEOUT:
+    return "timeout";
+  case PROTO_RET_DEVICE_BUSY:
+    return "device is busy";
+  default:
+    return "?";
   }
 }

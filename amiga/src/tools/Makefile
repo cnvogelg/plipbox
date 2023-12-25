@@ -15,10 +15,10 @@ PLIPBENCH_SRC += sanadev.c param.c param_tag.c plipbox_cmd.c atimer.c
 PLIPBENCH_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPBENCH_SRC))
 
 # the plipbox test tool
-DEV_TEST_NAME = dev_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-DEV_TEST_PATH = $(BIN_DIR)/$(DEV_TEST_NAME)
-DEV_TEST_SRC = dev_test.c atimer.c
-DEV_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(DEV_TEST_SRC))
+#DEV_TEST_NAME = dev_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
+#DEV_TEST_PATH = $(BIN_DIR)/$(DEV_TEST_NAME)
+#DEV_TEST_SRC = dev_test.c atimer.c
+#DEV_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(DEV_TEST_SRC))
 
 # the udp test tool
 UDP_TEST_NAME = udp_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
@@ -26,7 +26,7 @@ UDP_TEST_PATH = $(BIN_DIR)/$(UDP_TEST_NAME)
 UDP_TEST_SRC = udp_test.c
 UDP_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(UDP_TEST_SRC))
 
-OBJS = $(DEV_TEST_BJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ) $(PLIPBENCH_OBJ)
+OBJS = $(DEV_TEST_OBJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ) $(PLIPBENCH_OBJ)
 TOOL_PATHS = $(PLIPTOOL_PATH) $(PLIPBENCH_PATH) $(DEV_TEST_PATH) $(UDP_TEST_PATH)
 
 # ----- tools -----
@@ -40,7 +40,7 @@ clean: clean_obj
 	rm -f $(TOOL_PATHS)
 
 test: dirs $(TOOL_PATHS)
-	cp $(DEV_TEST_PATH) $(TEST_DIR)/dev_test
+#	cp $(DEV_TEST_PATH) $(TEST_DIR)/dev_test
 	cp $(UDP_TEST_PATH) $(TEST_DIR)/udp_test
 	cp $(PLIPTOOL_PATH) $(TEST_DIR)/pliptool
 	cp $(PLIPBENCH_PATH) $(TEST_DIR)/plipbench

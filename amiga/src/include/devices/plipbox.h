@@ -5,22 +5,23 @@
 
 #include <devices/sana2.h>
 
-#define S2PB_BASE             0x5000
+#define S2PB_BASE 0x5000
 
 // plipbox extra commands
-#define S2PB_GET_VERSION      (S2PB_BASE+0)
-#define S2PB_PARAM_GET_NUM    (S2PB_BASE+1)
-#define S2PB_PARAM_FIND_TAG   (S2PB_BASE+2)
-#define S2PB_PARAM_GET_DEF    (S2PB_BASE+3)
-#define S2PB_PARAM_GET_VAL    (S2PB_BASE+4)
-#define S2PB_PARAM_SET_VAL    (S2PB_BASE+5)
-#define S2PB_PREFS_RESET      (S2PB_BASE+6)
-#define S2PB_PREFS_LOAD       (S2PB_BASE+7)
-#define S2PB_PREFS_SAVE       (S2PB_BASE+8)
+#define S2PB_GET_VERSION (S2PB_BASE + 0)
+#define S2PB_PARAM_GET_NUM (S2PB_BASE + 1)
+#define S2PB_PARAM_FIND_TAG (S2PB_BASE + 2)
+#define S2PB_PARAM_GET_DEF (S2PB_BASE + 3)
+#define S2PB_PARAM_GET_VAL (S2PB_BASE + 4)
+#define S2PB_PARAM_SET_VAL (S2PB_BASE + 5)
+#define S2PB_PREFS_RESET (S2PB_BASE + 6)
+#define S2PB_PREFS_LOAD (S2PB_BASE + 7)
+#define S2PB_PREFS_SAVE (S2PB_BASE + 8)
 
-#define S2PB_NO_INDEX         0xff
+#define S2PB_NO_INDEX 0xff
 
-struct s2pb_param_def {
+struct s2pb_param_def
+{
   UBYTE index;
   UBYTE type;
   UBYTE format;
@@ -120,7 +121,8 @@ typedef struct s2pb_param_def s2pb_param_def_t;
       ios2_WireError: result code
 */
 
-struct plipbox_param_def {
+struct plipbox_param_def
+{
   UBYTE index;
   UBYTE type;
   UBYTE format;
@@ -131,15 +133,15 @@ struct plipbox_param_def {
 typedef struct plipbox_param_def plipbox_param_def_t;
 
 // param type
-#define S2PB_PARAM_TYPE_WORD        1
-#define S2PB_PARAM_TYPE_LONG        2
-#define S2PB_PARAM_TYPE_BYTE_ARRAY  3
-#define S2PB_PARAM_TYPE_WORD_ARRAY  4
-#define S2PB_PARAM_TYPE_LONG_ARRAY  5
+#define S2PB_PARAM_TYPE_WORD 1
+#define S2PB_PARAM_TYPE_LONG 2
+#define S2PB_PARAM_TYPE_BYTE_ARRAY 3
+#define S2PB_PARAM_TYPE_WORD_ARRAY 4
+#define S2PB_PARAM_TYPE_LONG_ARRAY 5
 
 // param format flags
-#define S2PB_PARAM_FORMAT_HEX  1 // default value base is 16 instead of 10
-#define S2PB_PARAM_FORMAT_BIN  2 // default value base is 2 instead of 10
-#define S2PB_PARAM_FORMAT_STR  4 // data is given as null terminated string
+#define S2PB_PARAM_FORMAT_HEX 1 // default value base is 16 instead of 10
+#define S2PB_PARAM_FORMAT_BIN 2 // default value base is 2 instead of 10
+#define S2PB_PARAM_FORMAT_STR 4 // data is given as null terminated string
 
 #endif

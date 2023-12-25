@@ -4,12 +4,12 @@
 #include "timer.h"
 #include "pario.h"
 
-#define PROTO_ENV_OK                  0
-#define PROTO_ENV_ERROR_INIT_PARIO    1
-#define PROTO_ENV_ERROR_INIT_TIMER    2
-#define PROTO_ENV_ERROR_NO_SIGNAL     3
-#define PROTO_ENV_ERROR_ACK_IRQ       4
-#define PROTO_ENV_ERROR_TIMER_SIGNAL  5
+#define PROTO_ENV_OK 0
+#define PROTO_ENV_ERROR_INIT_PARIO 1
+#define PROTO_ENV_ERROR_INIT_TIMER 2
+#define PROTO_ENV_ERROR_NO_SIGNAL 3
+#define PROTO_ENV_ERROR_ACK_IRQ 4
+#define PROTO_ENV_ERROR_TIMER_SIGNAL 5
 
 struct proto_env_handle;
 typedef struct proto_env_handle proto_env_handle_t;
@@ -34,6 +34,6 @@ ULONG proto_env_get_trigger_sigmask(proto_env_handle_t *ph);
 ULONG proto_env_get_timer_sigmask(proto_env_handle_t *ph);
 UWORD proto_env_get_num_triggers(proto_env_handle_t *ph);
 UWORD proto_env_get_num_trigger_signals(proto_env_handle_t *ph);
-void  proto_env_confirm_trigger(proto_env_handle_t *ph);
+void proto_env_confirm_trigger(proto_env_handle_t *ph);
 
 #endif

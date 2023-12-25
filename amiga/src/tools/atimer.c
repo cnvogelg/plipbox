@@ -7,15 +7,16 @@
 
 #include "atimer.h"
 
-struct atimer_handle {
+struct atimer_handle
+{
   struct Library *sysBase;
   struct MsgPort *timerPort;
   struct MsgPort *sigTimerPort;
   struct timerequest timerReq;
   struct timerequest sigTimerReq;
   struct Library *timerBase;
-  ULONG           eClockFreq;
-  ULONG           timerSigMask;
+  ULONG eClockFreq;
+  ULONG timerSigMask;
 };
 
 atimer_handle_t *atimer_init(struct Library *SysBase)
@@ -23,18 +24,21 @@ atimer_handle_t *atimer_init(struct Library *SysBase)
   /* alloc handle */
   struct atimer_handle *th;
   th = AllocMem(sizeof(struct atimer_handle), MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
-  if(th == NULL) {
+  if (th == NULL)
+  {
     return NULL;
   }
   th->sysBase = SysBase;
 
   /* create msg port for timer access */
   th->timerPort = CreateMsgPort();
-  if(th->timerPort != NULL) {
+  if (th->timerPort != NULL)
+  {
 
     /* setup timer request */
     th->timerReq.tr_node.io_Message.mn_ReplyPort = th->timerPort;
-    if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest*)&th->timerReq, 0)) {
+    if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)&th->timerReq, 0))
+    {
       /* store timer base */
       th->timerBase = (struct Library *)th->timerReq.tr_node.io_Device;
       /* all ok */
@@ -52,17 +56,20 @@ atimer_handle_t *atimer_init(struct Library *SysBase)
 
 void atimer_exit(atimer_handle_t *th)
 {
-  if(th == NULL) {
+  if (th == NULL)
+  {
     return;
   }
 
   /* cleanup timer request */
-  if(th->timerBase != NULL) {
+  if (th->timerBase != NULL)
+  {
     CloseDevice((struct IORequest *)&th->timerReq);
   }
 
   /* remove timer port */
-  if(th->timerPort != NULL) {
+  if (th->timerPort != NULL)
+  {
     DeleteMsgPort(th->timerPort);
   }
 
@@ -84,10 +91,13 @@ ULONG atimer_eclock_get(atimer_handle_t *th, atime_stamp_t *val)
 
 void atimer_eclock_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_stamp_t *delta)
 {
-  if(end->lo < begin->lo) {
+  if (end->lo < begin->lo)
+  {
     delta->lo = 0xffffffffUL - begin->lo + end->lo + 1;
     delta->hi = end->hi - begin->hi - 1;
-  } else {
+  }
+  else
+  {
     delta->lo = end->lo - begin->lo;
     delta->hi = end->hi - begin->hi;
   }
@@ -106,7 +116,8 @@ ULONG atimer_eclock_to_kBps(atimer_handle_t *th, ULONG delta, ULONG bytes)
 BOOL atimer_sig_init(struct atimer_handle *th)
 {
   th->sigTimerPort = CreateMsgPort();
-  if(th->sigTimerPort != NULL) {
+  if (th->sigTimerPort != NULL)
+  {
     th->sigTimerReq.tr_node.io_Message.mn_ReplyPort = th->sigTimerPort;
     th->sigTimerReq.tr_node.io_Device = th->timerReq.tr_node.io_Device;
     th->sigTimerReq.tr_node.io_Unit = th->timerReq.tr_node.io_Unit;
@@ -116,23 +127,29 @@ BOOL atimer_sig_init(struct atimer_handle *th)
     th->timerSigMask = 1UL << th->sigTimerPort->mp_SigBit;
 
     return TRUE;
-  } else {
+  }
+  else
+  {
     return FALSE;
   }
 }
 
 ULONG atimer_sig_get_mask(struct atimer_handle *th)
 {
-  if(th->sigTimerPort != NULL) {
+  if (th->sigTimerPort != NULL)
+  {
     return 1 << th->sigTimerPort->mp_SigBit;
-  } else {
+  }
+  else
+  {
     return 0;
   }
 }
 
 void atimer_sig_exit(struct atimer_handle *th)
 {
-  if(th->sigTimerPort != NULL) {
+  if (th->sigTimerPort != NULL)
+  {
     DeleteMsgPort(th->sigTimerPort);
     th->sigTimerPort = NULL;
   }
@@ -143,15 +160,15 @@ void atimer_sig_start(struct atimer_handle *th, ULONG secs, ULONG micros)
   th->sigTimerReq.tr_time.tv_secs = secs;
   th->sigTimerReq.tr_time.tv_micro = micros;
   SetSignal(0, th->timerSigMask);
-  SendIO((struct IORequest*)&th->sigTimerReq);
+  SendIO((struct IORequest *)&th->sigTimerReq);
 }
 
 void atimer_sig_stop(struct atimer_handle *th)
 {
   struct IORequest *req = (struct IORequest *)&th->sigTimerReq;
-  if(!CheckIO(req)) {
+  if (!CheckIO(req))
+  {
     AbortIO(req);
   }
   WaitIO(req);
 }
-

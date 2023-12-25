@@ -3,7 +3,8 @@
 
 #include "sanadev.h"
 
-struct bench_opt {
+struct bench_opt
+{
   ULONG loops; // 0=infinite
 };
 typedef struct bench_opt bench_opt_t;

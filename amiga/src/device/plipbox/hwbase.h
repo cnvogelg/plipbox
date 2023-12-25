@@ -10,31 +10,31 @@
 /* structure to be filled by ReadArgs template */
 struct TemplateConfig
 {
-   struct CommonConfig common;
-   ULONG *io_timeout;
-   ULONG *tick_time;
+  struct CommonConfig common;
+  ULONG *io_timeout;
+  ULONG *tick_time;
 };
 
 struct HWBase
 {
-   proto_env_handle_t *        env;
-   proto_handle_t *            proto;
-   timer_handle_t *            timer;
-   UWORD                       token;
+  proto_env_handle_t *env;
+  proto_handle_t *proto;
+  timer_handle_t *timer;
+  UWORD token;
 
-   /* internal state */
-   UWORD                       max_frame_size;
-   UWORD                       hw_status;
-   ULONG                       num_rx;
-   ULONG                       num_tx;
+  /* internal state */
+  UWORD max_frame_size;
+  UWORD hw_status;
+  ULONG num_rx;
+  ULONG num_tx;
 
-   /* config options */
-   ULONG                       io_timeout_s;
-   ULONG                       io_timeout_us;
-   ULONG                       tick_time_s;
-   ULONG                       tick_time_us;
+  /* config options */
+  ULONG io_timeout_s;
+  ULONG io_timeout_us;
+  ULONG tick_time_s;
+  ULONG tick_time_us;
 
-   struct TemplateConfig       config;
+  struct TemplateConfig config;
 };
 
 /* ----- config ----- */

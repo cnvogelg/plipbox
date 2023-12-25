@@ -8,7 +8,14 @@
 #include "param.h"
 #include "plipbox_cmd.h"
 
-#define LOG(x) do { if(params.verbose) { Printf x ; } } while(0)
+#define LOG(x)          \
+  do                    \
+  {                     \
+    if (params.verbose) \
+    {                   \
+      Printf x;         \
+    }                   \
+  } while (0)
 
 /* lib bases */
 extern struct ExecBase *SysBase;
@@ -18,32 +25,32 @@ extern struct DosLibrary *DOSBase;
 struct DosLibrary *DOSBase;
 #endif
 
-#define PARAM_STR_BUF_SIZE  256
+#define PARAM_STR_BUF_SIZE 256
 char print_buffer[PARAM_STR_BUF_SIZE];
 
 /* params */
 static const char *TEMPLATE =
-  "-D=DEVICE/K,"
-  "-U=UNIT/N/K,"
-  "-V=VERBOSE/S,"
-  "PREFS_LOAD/S,"
-  "PREFS_SAVE/S,"
-  "PREFS_RESET/S,"
-  "TAG/K,"
-  "ID/N/K,"
-  "SET/K,"
-  "DUMP/S"
-  ;
-typedef struct {
-  char  *device;
+    "-D=DEVICE/K,"
+    "-U=UNIT/N/K,"
+    "-V=VERBOSE/S,"
+    "PREFS_LOAD/S,"
+    "PREFS_SAVE/S,"
+    "PREFS_RESET/S,"
+    "TAG/K,"
+    "ID/N/K,"
+    "SET/K,"
+    "DUMP/S";
+typedef struct
+{
+  char *device;
   ULONG *unit;
   ULONG verbose;
   ULONG prefs_load;
   ULONG prefs_save;
   ULONG prefs_reset;
-  char  *param_tag;
+  char *param_tag;
   ULONG *param_id;
-  char  *param_set;
+  char *param_set;
   ULONG param_dump;
 } params_t;
 static params_t params;
@@ -59,7 +66,8 @@ static BOOL get_device_info(sanadev_handle_t *sh)
 
   /* retrieve and show device and firmware version */
   ok = plipbox_cmd_get_version(sh, &dev_version, &fw_version);
-  if(!ok) {
+  if (!ok)
+  {
     PutStr("Error retrieving version info from device! No plipbox device?\n");
     return FALSE;
   }
@@ -82,22 +90,29 @@ static BOOL dump_param(sanadev_handle_t *sh, s2pb_param_def_t *def)
 {
   // alloc data buffer
   UBYTE *data = AllocVec(def->size, MEMF_ANY | MEMF_CLEAR);
-  if(data == NULL) {
+  if (data == NULL)
+  {
     Printf("No memory!\n");
     return FALSE;
   }
 
   // get param
   BOOL ok = plipbox_cmd_param_get_val(sh, def->index, def->size, data);
-  if(ok) {
+  if (ok)
+  {
     // print
     int res = param_print_val(print_buffer, def, data);
-    if(res == PARAM_OK) {
+    if (res == PARAM_OK)
+    {
       PutStr(print_buffer);
-    } else {
+    }
+    else
+    {
       Printf("Error printing value: %s\n", param_perror(res));
     }
-  } else {
+  }
+  else
+  {
     Printf("Error getting parameter #%ld!\n", (ULONG)def->index);
   }
 
@@ -109,7 +124,8 @@ static BOOL set_param(sanadev_handle_t *sh, s2pb_param_def_t *def, const char *t
 {
   // alloc data buffer
   UBYTE *data = AllocVec(def->size, MEMF_ANY | MEMF_CLEAR);
-  if(data == NULL) {
+  if (data == NULL)
+  {
     Printf("No memory!\n");
     return FALSE;
   }
@@ -117,15 +133,19 @@ static BOOL set_param(sanadev_handle_t *sh, s2pb_param_def_t *def, const char *t
   // parse param
   BOOL ok = TRUE;
   int res = param_parse_val(txt, def, data);
-  if(res == PARAM_OK) {
+  if (res == PARAM_OK)
+  {
     // set param
     ok = plipbox_cmd_param_set_val(sh, def->index, def->size, data);
-    if(!ok) {
+    if (!ok)
+    {
       Printf("Error setting parameter #%ld!\n", (ULONG)def->index);
     }
-  } else {
+  }
+  else
+  {
     Printf("Error parsing parameter #%ld: '%s' -> %s\n", (ULONG)def->index, txt,
-          param_perror(res));
+           param_perror(res));
     ok = FALSE;
   }
 
@@ -138,15 +158,18 @@ static BOOL dump_params(sanadev_handle_t *sh)
   UWORD i;
   UWORD num_param = 0;
   BOOL ok = plipbox_cmd_param_get_num(sh, &num_param);
-  if(!ok) {
+  if (!ok)
+  {
     Printf("Error getting number of parameters from device!\n");
     return FALSE;
   }
 
-  for(i=0;i<num_param;i++) {
+  for (i = 0; i < num_param; i++)
+  {
     s2pb_param_def_t def;
     ok = plipbox_cmd_param_get_def(sh, i, &def);
-    if(!ok) {
+    if (!ok)
+    {
       Printf("Error getting param definition #%ld\n", (ULONG)i);
       return FALSE;
     }
@@ -163,19 +186,23 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   UWORD status;
 
   // do we need to load or reset the params from flash on device?
-  if(params.prefs_load) {
+  if (params.prefs_load)
+  {
     PutStr("Loading device parameters from flash...");
     ok = plipbox_cmd_prefs_load(sh, &status);
     Printf("result=%lx\n", (ULONG)status);
-    if(!ok) {
+    if (!ok)
+    {
       return FALSE;
     }
   }
   // or do we reset them to factory defaults?
-  else if(params.prefs_reset) {
+  else if (params.prefs_reset)
+  {
     PutStr("Reset device parameters to factory defaults...\n");
     ok = plipbox_cmd_prefs_reset(sh);
-    if(!ok) {
+    if (!ok)
+    {
       return FALSE;
     }
   }
@@ -183,76 +210,94 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // process a parameter?
   UWORD index = S2PB_NO_INDEX;
   // given by tag
-  if(params.param_tag != NULL) {
+  if (params.param_tag != NULL)
+  {
     ULONG tag;
-    if(param_parse_tag(params.param_tag, &tag) == PARAM_OK) {
+    if (param_parse_tag(params.param_tag, &tag) == PARAM_OK)
+    {
       Printf("Searching tag '%s' (%04lx)\n", params.param_tag, tag);
       ok = plipbox_cmd_param_find_tag(sh, tag, &index);
-      if(!ok) {
+      if (!ok)
+      {
         return FALSE;
       }
-      if(index == S2PB_NO_INDEX) {
+      if (index == S2PB_NO_INDEX)
+      {
         PutStr("Tag not found!\n");
         return TRUE;
       }
-    } else {
+    }
+    else
+    {
       Printf("Invalid tag given: '%s'\n", params.param_tag);
       return TRUE;
     }
   }
   // given by index
-  else if(params.param_id != NULL) {
+  else if (params.param_id != NULL)
+  {
     index = (UWORD)*params.param_id;
     UWORD num_param = 0;
     ok = plipbox_cmd_param_get_num(sh, &num_param);
-    if(!ok) {
+    if (!ok)
+    {
       Printf("Error getting number of parameters from device!\n");
       return FALSE;
     }
-    if(index >= num_param) {
+    if (index >= num_param)
+    {
       Printf("Index out of range: %ld >= %ld\n", (ULONG)index, (ULONG)num_param);
       return TRUE;
     }
   }
 
   // set or dump value?
-  if(index != S2PB_NO_INDEX) {
+  if (index != S2PB_NO_INDEX)
+  {
     // get param def
     s2pb_param_def_t param_def;
     ok = plipbox_cmd_param_get_def(sh, index, &param_def);
-    if(!ok) {
+    if (!ok)
+    {
       Printf("Error getting param definition #%ld\n", (ULONG)index);
       return FALSE;
     }
 
     // set
-    if(params.param_set != NULL) {
+    if (params.param_set != NULL)
+    {
       ok = set_param(sh, &param_def, params.param_set);
-      if(!ok) {
+      if (!ok)
+      {
         return FALSE;
       }
     }
     // dump
     ok = dump_param(sh, &param_def);
-    if(!ok) {
+    if (!ok)
+    {
       return FALSE;
     }
   }
 
   // dump all params
-  if(params.param_dump) {
+  if (params.param_dump)
+  {
     ok = dump_params(sh);
-    if(!ok) {
+    if (!ok)
+    {
       return FALSE;
     }
   }
 
   // do we need to persist changes?
-  if(params.prefs_save) {
+  if (params.prefs_save)
+  {
     PutStr("Saving device parameters to flash...");
     ok = plipbox_cmd_prefs_save(sh, &status);
     Printf("result=%lx\n", (ULONG)status);
-    if(!ok) {
+    if (!ok)
+    {
       return FALSE;
     }
   }
@@ -269,16 +314,19 @@ static int pliptool(const char *device, LONG unit)
 
   LOG(("Opening device '%s' unit #%ld\n", device, unit));
   sh = sanadev_open(device, unit, 0, &error);
-  if(sh == NULL) {
+  if (sh == NULL)
+  {
     Printf("Error opening device '%s' unit #%ld: code=%ld\n", device, unit, error);
     return RETURN_ERROR;
   }
 
   // first try to get version info
   ok = get_device_info(sh);
-  if(ok) {
+  if (ok)
+  {
     ok = process_cmds(sh);
-    if(!ok) {
+    if (!ok)
+    {
       PutStr("Operation failed!\n");
       sanadev_cmd_print_error(sh);
     }
@@ -296,26 +344,29 @@ int main(void)
 {
   struct RDArgs *args;
   char *device = "plipbox.device";
-  LONG  unit = 0;
-  int   result;
+  LONG unit = 0;
+  int result;
 
 #ifndef __SASC
-  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR)"dos.library", 0L);
+  DOSBase = (struct DosLibrary *)OpenLibrary((STRPTR) "dos.library", 0L);
 #endif
 
   /* First parse args */
   args = ReadArgs(TEMPLATE, (LONG *)&params, NULL);
-  if(args == NULL) {
+  if (args == NULL)
+  {
     PutStr(TEMPLATE);
     PutStr("  Invalid Args!\n");
     return RETURN_ERROR;
   }
 
   /* set options */
-  if(params.device != NULL) {
+  if (params.device != NULL)
+  {
     device = params.device;
   }
-  if(params.unit != NULL) {
+  if (params.unit != NULL)
+  {
     unit = *params.unit;
   }
 

@@ -6,11 +6,12 @@
 typedef UBYTE mac_t[6];
 #define MAC_SIZE 6
 
-#define PROTO_RET_RX_TOO_LARGE    (PROTO_RET_CUSTOM + 0)
-#define PROTO_RET_RX_ERROR        (PROTO_RET_CUSTOM + 1)
-#define PROTO_RET_TX_ERROR        (PROTO_RET_CUSTOM + 2)
+#define PROTO_RET_RX_TOO_LARGE (PROTO_RET_CUSTOM + 0)
+#define PROTO_RET_RX_ERROR (PROTO_RET_CUSTOM + 1)
+#define PROTO_RET_TX_ERROR (PROTO_RET_CUSTOM + 2)
 
-struct proto_param_def {
+struct proto_param_def
+{
   UBYTE index;
   UBYTE type;
   UBYTE format;

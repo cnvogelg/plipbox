@@ -7,11 +7,25 @@ extern void KPrintF(char *, ...), KGetChar(void);
 
 #if (DEBUG & 1)
 #ifdef __FUNC__
-#define d(x) do { KPrintF("%s:%s:%ld:",__FILE__,__FUNC__,__LINE__); KPrintF x; } while(0)
+#define d(x)                                             \
+  do                                                     \
+  {                                                      \
+    KPrintF("%s:%s:%ld:", __FILE__, __FUNC__, __LINE__); \
+    KPrintF x;                                           \
+  } while (0)
 #else
-#define d(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
+#define d(x)                                \
+  do                                        \
+  {                                         \
+    KPrintF("%s:%ld:", __FILE__, __LINE__); \
+    KPrintF x;                              \
+  } while (0)
 #endif
-#define dr(x) do { KPrintF x; } while(0)
+#define dr(x)  \
+  do           \
+  {            \
+    KPrintF x; \
+  } while (0)
 #else
 #define d(x)
 #define dr(x)
@@ -19,11 +33,25 @@ extern void KPrintF(char *, ...), KGetChar(void);
 
 #if (DEBUG & 2)
 #ifdef __FUNC__
-#define d2(x) do { KPrintF("%s:%s:%ld:",__FILE__,__FUNC__,__LINE__); KPrintF x; } while(0)
+#define d2(x)                                            \
+  do                                                     \
+  {                                                      \
+    KPrintF("%s:%s:%ld:", __FILE__, __FUNC__, __LINE__); \
+    KPrintF x;                                           \
+  } while (0)
 #else
-#define d2(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
+#define d2(x)                               \
+  do                                        \
+  {                                         \
+    KPrintF("%s:%ld:", __FILE__, __LINE__); \
+    KPrintF x;                              \
+  } while (0)
 #endif
-#define d2r(x) do { KPrintF x; } while(0)
+#define d2r(x) \
+  do           \
+  {            \
+    KPrintF x; \
+  } while (0)
 #else
 #define d2(x)
 #define d2r(x)
@@ -31,11 +59,25 @@ extern void KPrintF(char *, ...), KGetChar(void);
 
 #if (DEBUG & 4)
 #ifdef __FUNC__
-#define d4(x) do { KPrintF("%s:%s:%ld:",__FILE__,__FUNC__,__LINE__); KPrintF x; } while(0)
+#define d4(x)                                            \
+  do                                                     \
+  {                                                      \
+    KPrintF("%s:%s:%ld:", __FILE__, __FUNC__, __LINE__); \
+    KPrintF x;                                           \
+  } while (0)
 #else
-#define d4(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
+#define d4(x)                               \
+  do                                        \
+  {                                         \
+    KPrintF("%s:%ld:", __FILE__, __LINE__); \
+    KPrintF x;                              \
+  } while (0)
 #endif
-#define d4r(x) do { KPrintF x; } while(0)
+#define d4r(x) \
+  do           \
+  {            \
+    KPrintF x; \
+  } while (0)
 #else
 #define d4(x)
 #define d4r(x)
@@ -43,15 +85,28 @@ extern void KPrintF(char *, ...), KGetChar(void);
 
 #if (DEBUG & 8)
 #ifdef __FUNC__
-#define d8(x) do { KPrintF("%s:%s:%ld:",__FILE__,__FUNC__,__LINE__); KPrintF x; } while(0)
+#define d8(x)                                            \
+  do                                                     \
+  {                                                      \
+    KPrintF("%s:%s:%ld:", __FILE__, __FUNC__, __LINE__); \
+    KPrintF x;                                           \
+  } while (0)
 #else
-#define d8(x) do { KPrintF("%s:%ld:",__FILE__,__LINE__); KPrintF x; } while(0)
+#define d8(x)                               \
+  do                                        \
+  {                                         \
+    KPrintF("%s:%ld:", __FILE__, __LINE__); \
+    KPrintF x;                              \
+  } while (0)
 #endif
-#define d8r(x) do { KPrintF x; } while(0)
+#define d8r(x) \
+  do           \
+  {            \
+    KPrintF x; \
+  } while (0)
 #else
 #define d8(x)
 #define d8r(x)
 #endif
 
 #endif
-

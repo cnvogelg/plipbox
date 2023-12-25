@@ -4,19 +4,19 @@
 #include "proto_env.h"
 
 // error codes
-#define PROTO_RET_OK                0
-#define PROTO_RET_RAK_INVALID       1
-#define PROTO_RET_TIMEOUT           2
-#define PROTO_RET_DEVICE_BUSY       3
-#define PROTO_RET_ODD_BLOCK_SIZE    4
-#define PROTO_RET_CUSTOM            10 // start of own error codes
+#define PROTO_RET_OK 0
+#define PROTO_RET_RAK_INVALID 1
+#define PROTO_RET_TIMEOUT 2
+#define PROTO_RET_DEVICE_BUSY 3
+#define PROTO_RET_ODD_BLOCK_SIZE 4
+#define PROTO_RET_CUSTOM 10 // start of own error codes
 
 // handle
 struct proto_handle;
 typedef struct proto_handle proto_handle_t;
 
 // init/exit of handle
-extern proto_handle_t *proto_atom_init(proto_env_handle_t *penv,ULONG timeout_s, ULONG timeout_us);
+extern proto_handle_t *proto_atom_init(proto_env_handle_t *penv, ULONG timeout_s, ULONG timeout_us);
 extern void proto_atom_exit(proto_handle_t *ph);
 extern proto_env_handle_t *proto_atom_get_env(proto_handle_t *ph);
 
