@@ -1,5 +1,5 @@
 /*
- * arduino.c - arduino2009 hardware access
+ * hw_uart.h - serial hw routines
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,17 +24,17 @@
  *
  */
 
-#include <avr/interrupt.h>
+#ifndef HW_UART_H
+#define HW_UART_H
 
-#include "types.h"
-#include "board.h"
+// init uart and rts/cts
+void hw_uart_init(void);
 
-void board_init(void)
-{
-   // disable watchdog
-   cli();
-   MCUSR &= ~_BV(WDRF);
-   WDTCSR |= _BV(WDCE) | _BV(WDE);
-   WDTCSR = 0;
-   sei();
-}
+// write a byte to serial
+void hw_uart_send(u08 data);
+
+u08 hw_uart_read_data_available(void);
+
+u08 hw_uart_read(void);
+
+#endif

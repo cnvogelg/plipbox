@@ -28,6 +28,7 @@
 #define PARAM_H
 
 #include "types.h"
+#include "arch.h"
 
 struct param_def {
   // --- shared via protocol
@@ -38,7 +39,7 @@ struct param_def {
   u32   tag;
   // --- internal
   u08  *data;
-  PGM_P desc;
+  rom_pchar desc;
 };
 typedef struct param_def param_def_t;
 

@@ -4,7 +4,7 @@
 #ifdef DEBUG
 // enable debug output macros
 #include "uartutil.h"
-#include "uart.h"
+#include "hw_uart.h"
 
 // debug char
 #define DC(x)  uart_send(x)

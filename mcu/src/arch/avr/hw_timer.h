@@ -10,7 +10,7 @@
 #include "types.h"
 
 // unit of my timers
-typedef u16 hw_timer_ms_t;
+typedef u32 hw_timer_ms_t;
 
 extern volatile hw_timer_ms_t  timer_ms;
 

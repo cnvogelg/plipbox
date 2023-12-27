@@ -11,7 +11,7 @@
 #include "debug.h"
 #include "mode.h"
 #include "mode_mod.h"
-#include "uart.h"
+#include "hw_uart.h"
 #include "uartutil.h"
 #include "proto_cmd.h"
 

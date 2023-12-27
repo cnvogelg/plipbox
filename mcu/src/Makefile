@@ -44,7 +44,8 @@ DEV_ENC28J60 ?= 1
 ifeq "$(BOARD)" "arduino"
 
 MCU = atmega328
-PLATFORM = avr
+ARCH = avr
+MACH = ardunano
 FLASH_MCU = m328p
 F_CPU = 16000000
 #MAX_SIZE = 14336
@@ -60,7 +61,8 @@ else
 ifeq "$(BOARD)" "nano"
 
 MCU = atmega328
-PLATFORM = avr
+ARCH = avr
+MACH = ardunano
 FLASH_MCU = m328p
 F_CPU = 16000000
 MAX_SIZE = 30720
@@ -76,7 +78,8 @@ else
 ifeq "$(BOARD)" "avrnetio"
 
 MCU = atmega32
-PLATFORM = avr
+ARCH = avr
+MACH = avrnetio
 FLASH_MCU = m32
 F_CPU = 16000000
 MAX_SIZE = 32768
@@ -138,22 +141,21 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:board:eth:base:proto
+VPATH = .:net:eth:base:proto:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
 
 # source files
-BOARDFILE ?= $(BOARD).c
-SRC := $(BOARDFILE) $(PLATFORM)_common.c
+SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c
+SRC += util.c uartutil.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
-SRC += util.c uart.c uartutil.c timer.c 
 SRC += param_def.c param.c param_cmd.c
 SRC += pkt_buf.c net.c arp.c
 SRC += dump.c stats.c
 ifdef DEV_ENC28J60
 DEFINES += DEV_ENC28J60
-SRC += spi.c enc28j60.c
+SRC += enc28j60.c
 endif
 SRC += pio.c pio_util.c
-SRC += proto_atom.c proto_cmd.c hw_timer.c
+SRC += proto_atom.c proto_cmd.c
 SRC += main.c mode.c mode_mod.c mode_cmd.c loop_buf.c
 
 ASRC = proto_low_asm.S
@@ -178,7 +180,9 @@ CFLAGS += -Os
 #CFLAGS += -fno-inline
 CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
-CFLAGS += -mmcu=$(MCU) -I. -Ibase -Ieth -Iproto/$(BOARD) -Iproto -I../../shared/include
+CFLAGS += -mmcu=$(MCU)
+CFLAGS += -I. -Iarch -Iarch/$(ARCH) -Iarch/$(ARCH)/mach-$(MACH) -Iarch/common
+CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include
 CFLAGS += -ffunction-sections -fdata-sections
  
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
@@ -187,6 +191,7 @@ CFLAGS_LOCAL += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
 CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
 CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
 CFLAGS_LOCAL += -DF_CPU=$(F_CPU) -DCONFIG_PTR_BITS=16
+CFLAGS_LOCAL += -DCONFIG_BAUD_RATE=$(UART_BAUD) -DCONFIG_SPI_NUM_CS=1
 # debug
 ifeq "$(BUILD_TYPE)" "DEBUG"
 #CFLAGS_LOCAL += -DDEBUG_PROTO_ATOM

@@ -30,7 +30,7 @@
 #include "cmd_table.h"
 #include "cmdkey_table.h"
 #include "uartutil.h"
-#include "uart.h"
+#include "hw_uart.h"
 
 #define MAX_LINE  32
 #define MAX_ARGS  4
@@ -42,7 +42,7 @@ static u08 enter_line(void)
 {
   u08 cmd_pos = 0;
   while(1) {
-    u08 c = uart_read();
+    u08 c = hw_uart_read();
     if(c=='\n') {
       uart_send_crlf();
       break;
@@ -248,8 +248,8 @@ u08 cmd_worker(void)
   u08 result = CMD_WORKER_IDLE;
 
   // small hack to enter commands
-  if(uart_read_data_available()) {
-    u08 cmd = uart_read();
+  if(hw_uart_read_data_available()) {
+    u08 cmd = hw_uart_read();
     if(cmd == '\n') {
       // enter command loop
       result = cmd_loop();

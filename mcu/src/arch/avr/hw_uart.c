@@ -1,5 +1,5 @@
 /*
- * uart.c - serial hw routines
+ * hw_uart.c - serial hw routines
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -29,9 +29,10 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "uart.h"
-#include "timer.h"
-#include "board.h"
+#define BAUD CONFIG_BAUD_RATE
+#include <util/setbaud.h>
+
+#include "hw_uart.h"
 
 #ifdef UBRR0H
 
@@ -49,11 +50,37 @@
 #define DOR    DOR0
 #define PE     UPE0
 
+#define U2X    U2X0
+#define RXEN   RXEN0
+#define TXEN   TXEN0
+#define RXCIE  RXCIE0
+
+#else
+#ifdef UBRR1H
+
+// for atmega32u4
+#define UBRRH  UBRR1H
+#define UBRRL  UBRR1L
+#define UCSRA  UCSR1A
+#define UCSRB  UCSR1B
+#define UCSRC  UCSR1C
+#define UDRE   UDRE1
+#define UDR    UDR1
+
+#define RXC    RXC1
+#define TXC    TXC1
+#define DOR    DOR1
+#define PE     UPE1
+
+#define U2X    U2X1
+#define RXEN   RXEN1
+#define TXEN   TXEN1
+#define RXCIE  RXCIE1
+
+#endif
 #endif
 
-// calc ubbr from baud rate
-#define UART_UBRR   F_CPU/16/UART_BAUD-1
-
+// read stuff
 #define UART_RX_BUF_SIZE 16
 #define UART_RX_SET_CTS_POS  2
 #define UART_RX_CLR_CTS_POS  13
@@ -62,25 +89,33 @@ static volatile u08 uart_rx_start = 0;
 static volatile u08 uart_rx_end = 0;
 static volatile u08 uart_rx_size = 0;
 
-void uart_init(void) 
+void hw_uart_init(void)
 {
-  cli();
-
-  // disable first
+  // disable
   UCSRB = 0;
 
-  // baud rate
-  UBRRH = (u08)((UART_UBRR)>>8);
-  UBRRL = (u08)((UART_UBRR)&0xff);
+  UBRRH = UBRRH_VALUE;
+  UBRRL = UBRRL_VALUE;
+#if USE_2X
+  UCSRA = (1 << U2X);
+#else
+  UCSRA = 0;
+#endif
 
-  UCSRB = 0x98; // 0x18  enable tranceiver and transmitter, RX interrupt
-  UCSRC = 0x86; // 0x86 -> use UCSRC, 8 bit, 1 stop, no parity, asynch. mode
-
-  sei();
+  UCSRB = (1 << TXEN) | (1 << RXEN) | (1 << RXCIE);
+  UCSRC = 0x86;
 
   uart_rx_start = 0;
   uart_rx_end = 0;
   uart_rx_size = 0;
+}
+
+void hw_uart_send(u08 data)
+{
+  // wait for transmitter to become ready
+  while(!( UCSRA & (1<<UDRE)));
+  // send byte
+  UDR = data;
 }
 
 // receiver interrupt
@@ -96,16 +131,16 @@ ISR(USART_RX_vect)
   uart_rx_end++;
   if(uart_rx_end == UART_RX_BUF_SIZE)
     uart_rx_end = 0;
-    
+
   uart_rx_size++;
 }
 
-u08 uart_read_data_available(void)
+u08 hw_uart_read_data_available(void)
 {
   return uart_rx_start != uart_rx_end;
 }
 
-u08 uart_read(void)
+u08 hw_uart_read(void)
 {
   // wait for buffe to be filled
   while(uart_rx_start==uart_rx_end);
@@ -114,23 +149,14 @@ u08 uart_read(void)
   cli();
 
   u08 data = uart_rx_buf[uart_rx_start];
-  
+
   uart_rx_start++;
   if(uart_rx_start == UART_RX_BUF_SIZE)
     uart_rx_start = 0;
-  
-  uart_rx_size--;  
- 
+
+  uart_rx_size--;
+
   sei();
   return data;
-}
-
-void uart_send(u08 data)
-{
-  // wait for transmitter to become ready
-  while(!( UCSRA & (1<<UDRE)));
-
-  // send byte
-  UDR = data;
 }
 

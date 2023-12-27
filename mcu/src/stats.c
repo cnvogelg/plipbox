@@ -26,7 +26,7 @@
 
 #include "stats.h"
 #include "uartutil.h"
-#include "uart.h"
+#include "hw_uart.h"
 
 stats_t stats[STATS_ID_NUM];
 

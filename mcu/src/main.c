@@ -25,11 +25,13 @@
  */
 
 #include "types.h"
-#include "board.h"
-#include "uart.h"
-#include "uartutil.h"
-#include "timer.h"
+
+#include "hw_system.h"
+#include "hw_uart.h"
 #include "hw_timer.h"
+#include "hw_spi.h"
+
+#include "uartutil.h"
 #include "param.h"
 #include "cmd.h"
 
@@ -95,12 +97,10 @@ static int main_loop(void)
 int main(void)
 {
   // board init. e.g. switch off watchdog
-  board_init();
-  // setup timer
-  timer_init();
+  hw_system_init();
   hw_timer_init();
-  // setup serial
-  uart_init();
+  hw_uart_init();
+  hw_spi_init();
   
   // send welcome
   uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION " " BUILD_DATE "\r\n"));
@@ -145,7 +145,7 @@ int main(void)
   // wait a bit and reset
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("resetting...\r\n"));
-  board_reset();
+  hw_system_reset();
 
   // never reach this
   return 0;

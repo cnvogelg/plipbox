@@ -27,7 +27,7 @@
 #include "arch.h"
 #include "param.h"
 #include "uartutil.h"
-#include "uart.h"
+#include "hw_uart.h"
 #include "net/net.h"
 #include "proto_cmd_shared.h"
 #include "param_shared.h"

@@ -27,11 +27,13 @@
 #ifndef UARTUTIL_H
 #define UARTUTIL_H
 
-#include <avr/pgmspace.h>
 #include "types.h"
+#include "arch.h"
+
+#define uart_send hw_uart_send
 
 // send a c string from PROGMEM
-void uart_send_pstring(PGM_P data);
+void uart_send_pstring(rom_pchar data);
 // send a c string
 void uart_send_string(const char *data);
 // send data

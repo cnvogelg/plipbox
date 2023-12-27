@@ -26,7 +26,6 @@
 
 #include "pio_util.h"
 
-#include "timer.h"
 #include "pio.h"
 #include "uartutil.h"
 #include "stats.h"
@@ -56,11 +55,12 @@ u08 pio_util_get_init_flags()
 u08 pio_util_recv_packet(u16 size)
 {
   // measure packet receive
-  timer_hw_reset();
+//  timer_hw_reset();
   u08 result = pio_recv(pkt_buf, size);
-  u16 delta = timer_hw_get();
+//  u16 delta = timer_hw_get();
 
-  u16 rate = timer_hw_calc_rate_kbs(size, delta);
+//  u16 rate = timer_hw_calc_rate_kbs(size, delta);
+  u16 rate = 0;
   if(result == PIO_OK) {
     stats_update_ok(STATS_ID_PIO_RX, size, rate);
   } else {
@@ -90,11 +90,12 @@ u08 pio_util_recv_packet(u16 size)
 
 u08 pio_util_send_packet(u16 size)
 {
-  timer_hw_reset();
+//  timer_hw_reset();
   u08 result = pio_send(pkt_buf, size);
-  u16 delta = timer_hw_get();
+//  u16 delta = timer_hw_get();
 
-  u16 rate = timer_hw_calc_rate_kbs(size, delta);
+//  u16 rate = timer_hw_calc_rate_kbs(size, delta);
+  u16 rate = 0;
   if(result == PIO_OK) {
     stats_update_ok(STATS_ID_PIO_TX, size, rate);
   } else {

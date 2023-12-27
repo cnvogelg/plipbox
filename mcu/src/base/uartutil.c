@@ -24,15 +24,16 @@
  *
  */
 
-#include "uart.h"
+#include "types.h"
+#include "hw_uart.h"
 #include "util.h"
 #include "uartutil.h"
-#include "timer.h"
+#include "hw_timer.h"
 
-void uart_send_pstring(PGM_P data)
+void uart_send_pstring(rom_pchar data)
 {
   while(1) {
-    u08 c = pgm_read_byte_near(data);
+    u08 c = read_rom_char(data);
     if(c == 0) {
       break;
     }
@@ -70,8 +71,8 @@ static u08 buf[12];
 
 void uart_send_time_stamp_spc(void)
 {
-  u32 ts = time_stamp;
-  dword_to_dec(ts, buf, 10, 4);
+  u32 ts = hw_timer_millis();
+  dword_to_dec(ts, buf, 10, 3);
   buf[11] = ' ';
   uart_send_data(buf,12);
 }

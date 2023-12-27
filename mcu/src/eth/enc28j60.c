@@ -13,7 +13,7 @@
 #include <util/delay.h>
 
 #include "enc28j60.h"
-#include "spi.h"
+#include "hw_spi.h"
 #include "pio.h"
 
 // ENC28J60 Control Registers
@@ -251,28 +251,33 @@ static u16 gNextPacketPtr;
 static u08 is_full_duplex;
 static u08 rev;
 
+// pick CS for SPI
+#define spi_enable_eth  hw_spi_enable_cs0
+#define spi_disable_eth hw_spi_disable_cs0
+
+
 static uint8_t readOp (uint8_t op, uint8_t address) {
     spi_enable_eth();
-    spi_out(op | (address & ADDR_MASK));
+    hw_spi_out(op | (address & ADDR_MASK));
     if (address & 0x80)
-        spi_out(0x00);
-    uint8_t result = spi_in();
+        hw_spi_out(0x00);
+    uint8_t result = hw_spi_in();
     spi_disable_eth();
     return result;
 }
 
 static void writeOp (uint8_t op, uint8_t address, uint8_t data) {
     spi_enable_eth();
-    spi_out(op | (address & ADDR_MASK));
-    spi_out(data);
+    hw_spi_out(op | (address & ADDR_MASK));
+    hw_spi_out(data);
     spi_disable_eth();
 }
 
 static void readBuf(uint16_t len, uint8_t* data) {
     spi_enable_eth();
-    spi_out(ENC28J60_READ_BUF_MEM);
+    hw_spi_out(ENC28J60_READ_BUF_MEM);
     while (len--) {
-        *data++ = spi_in();
+        *data++ = hw_spi_in();
     }
     spi_disable_eth();
 }
@@ -338,7 +343,6 @@ static inline void enc28j60_disable_broadcast ( void )
 
 static u08 enc28j60_init(u08 flags)
 {
-  spi_init();
   spi_disable_eth();
   
   is_full_duplex = (flags & PIO_INIT_FULL_DUPLEX) == PIO_INIT_FULL_DUPLEX;
@@ -514,9 +518,9 @@ static u08 enc28j60_send(const u08 *data, u16 size)
   // fill buffer
   u16 num = size;
   spi_enable_eth(),
-  spi_out(ENC28J60_WRITE_BUF_MEM);  
+  hw_spi_out(ENC28J60_WRITE_BUF_MEM);
   while(num--) {
-    spi_out(*data++);
+    hw_spi_out(*data++);
   }
   spi_disable_eth();
 

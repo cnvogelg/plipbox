@@ -1,10 +1,10 @@
 /*
- * spi.h - SPI setup
+ * hw_spi.h - SPI setup
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
  *
- * This file is part of plipbox.
+ * This file is part of parbox.
  * See README for copyright notice.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -24,65 +24,36 @@
  *
  */
 
-#ifndef SPI_H
-#define SPI_H
+#ifndef HW_SPI_H
+#define HW_SPI_H
 
 #include <avr/io.h>
+
+#include "arch.h"
 #include "types.h"
+#include "spi_pins.h"
+#include "hw_spi_common.h"
 
-#ifdef HAVE_arduino
-   
-/* SPI config ATmega328
+extern void hw_spi_init(void);
+extern void hw_spi_set_speed(u08 speed);
 
-SPI_SS   = Digital 10 = PB2
-SPI_MOSI = Digital 11 = PB3
-SPI_MISO = Digital 12 = PB4
-SPI_SCK  = Digital 13 = PB5
-
-*/
-
-#define SPI_SS_MASK		0x04
-#define SPI_MOSI_MASK	0x08
-#define SPI_MISO_MASK	0x10
-#define SPI_SCK_MASK	0x20
-
-#else
-
-#ifdef HAVE_avrnetio
-   
-/* SPI config ATmega32
-
-SPI_SS   = PB4
-SPI_MOSI = PB5
-SPI_MISO = PB6
-SPI_SCK  = PB7
-
-*/
-   
-#define SPI_SS_MASK   0x10
-#define SPI_MOSI_MASK 0x20
-#define SPI_MISO_MASK 0x40
-#define SPI_SCK_MASK  0x80    
-   
-#endif
-#endif
-
-extern void spi_init(void);
-
-static inline void spi_out(u08 data)
+FORCE_INLINE void hw_spi_out(u08 data)
 {
   SPDR = data;
-  while (!(SPSR&(1<<SPIF)));
+  loop_until_bit_is_set(SPSR, SPIF);
 }
 
-static inline u08 spi_in(void)
+FORCE_INLINE u08 hw_spi_in(void)
 {
-  SPDR = 0x00;
-  while (!(SPSR&(1<<SPIF)));
+  SPDR = 0xff;
+  loop_until_bit_is_set(SPSR, SPIF);
   return SPDR;
 }
 
-static inline void spi_enable_eth(void) { PORTB &= ~SPI_SS_MASK; }
-static inline void spi_disable_eth(void) { PORTB |= SPI_SS_MASK; }
+FORCE_INLINE void hw_spi_enable_cs0(void) { PORTB &= ~SPI_SS_MASK; }
+FORCE_INLINE void hw_spi_disable_cs0(void) { PORTB |= SPI_SS_MASK; }
 
-#endif
+FORCE_INLINE void hw_spi_enable_cs1(void) { SPI_SS1_PORT &= ~SPI_SS1_MASK; }
+FORCE_INLINE void hw_spi_disable_cs1(void) { SPI_SS1_PORT |= SPI_SS1_MASK; }
+
+#endif // SPI_H

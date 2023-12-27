@@ -25,7 +25,7 @@
  */
 
 #include "dump.h"
-#include "uart.h"
+#include "hw_uart.h"
 #include "uartutil.h"
 #include "net/net.h"
 #include "net/arp.h"

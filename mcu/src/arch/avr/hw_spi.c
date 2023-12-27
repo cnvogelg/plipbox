@@ -1,10 +1,10 @@
 /*
- * board.h - handle board specific setup
+ * hw_spi.c - SPI setup
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
  *
- * This file is part of plipbox.
+ * This file is part of parbox.
  * See README for copyright notice.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -24,12 +24,37 @@
  *
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+#include "hw_spi.h"
 
-#include "types.h"
+void hw_spi_init(void)
+{
+  // output: SS, MOSI, SCK
+  DDRB |= SPI_SS_MASK | SPI_MOSI_MASK | SPI_SCK_MASK;
+  // input: MISO
+  DDRB &= ~(SPI_MISO_MASK);
 
-extern void board_init(void);
-extern void board_reset(void);
+  // MOSI, SCK = 0
+  PORTB &= ~(SPI_MOSI_MASK | SPI_SCK_MASK);
+  // SS = 1
+  PORTB |= SPI_SS_MASK;
 
-#endif
+  // setup SS1
+  SPI_SS1_DDR  |= SPI_SS1_MASK;
+  SPI_SS1_PORT |= SPI_SS1_MASK;
+
+  SPCR = _BV(SPE) | _BV(MSTR); // 8 MHz @ 16
+  SPSR = _BV(SPI2X);
+}
+
+void hw_spi_set_speed(u08 speed)
+{
+  if(speed == HW_SPI_SPEED_MAX) {
+    SPCR = _BV(SPE) | _BV(MSTR); // 8 MHz @ 16 MHz FPU (clk/2)
+    SPSR = _BV(SPI2X);
+  } else {
+    // (clk/128)  @16 MHz -> 125 KHz
+    SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR1) | _BV(SPR0);
+    SPSR = 0;
+  }
+}
+

@@ -21,7 +21,7 @@ static inline void rom_copy(const unsigned char *src, unsigned char *dst, size_t
   }
 }
 
-#define ROM_ATTR      __ATTR_PROGMEM__
+#define ROM_ATTR __ATTR_PROGMEM__
 #define EEPROM_ATTR   EEMEM
 
 #define INLINE          static inline
