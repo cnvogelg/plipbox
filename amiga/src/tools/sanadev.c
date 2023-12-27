@@ -21,6 +21,8 @@ struct sanadev_handle
   struct Device *sana_dev;
   port_req_t cmd_pr;
   port_req_t event_pr;
+
+  port_req_t write_pr;
 };
 
 /* copy helper for SANA-II device */
@@ -176,22 +178,31 @@ void sanadev_event_exit(sanadev_handle_t *sh)
   free_port_req(&sh->event_pr);
 }
 
-void sanadev_event_start(sanadev_handle_t *sh, ULONG event_mask)
+BOOL sanadev_event_start(sanadev_handle_t *sh, ULONG event_mask)
 {
+  if(sh->write_pr.req == NULL) {
+    return FALSE;
+  }
+
   sh->event_pr.req->ios2_WireError = event_mask;
   sh->event_pr.req->ios2_Req.io_Command = S2_ONEVENT;
   SendIO((struct IORequest *)sh->event_pr.req);
+  return TRUE;
 }
 
-void sanadev_event_stop(sanadev_handle_t *sh)
+BOOL sanadev_event_stop(sanadev_handle_t *sh)
 {
   struct IORequest *req = (struct IORequest *)sh->event_pr.req;
+  if(req == NULL) {
+    return FALSE;
+  }
 
   if (!CheckIO(req))
   {
     AbortIO(req);
   }
   WaitIO(req);
+  return TRUE;
 }
 
 ULONG sanadev_event_get_mask(sanadev_handle_t *sh)
@@ -215,8 +226,101 @@ BOOL sanadev_event_get_event(sanadev_handle_t *sh, ULONG *event_mask)
 
 BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask)
 {
+  if(sh->event_pr.port == NULL) {
+    return FALSE;
+  }
+
   WaitPort(sh->event_pr.port);
   return sanadev_event_get_event(sh, event_mask);
+}
+
+// ----- I/O -----
+
+BOOL sanadev_io_init(sanadev_handle_t *sh, UWORD *error)
+{
+  // write port/ioreq
+  BOOL ok = alloc_port_req(&sh->write_pr, error);
+  if (!ok)
+  {
+    return FALSE;
+  }
+
+  clone_req(&sh->cmd_pr, &sh->write_pr);
+  return TRUE;
+}
+
+void sanadev_io_exit(sanadev_handle_t *sh)
+{
+  free_port_req(&sh->write_pr);
+}
+
+BOOL sanadev_io_write(sanadev_handle_t *sh, UWORD pkt_type, sanadev_mac_t dst_addr, APTR data, ULONG data_len)
+{
+  if(sh->write_pr.port == NULL) {
+    return FALSE;
+  }
+
+  struct IOSana2Req *req = sh->write_pr.req;
+  req->ios2_Req.io_Flags = 0;
+  req->ios2_Req.io_Command = CMD_WRITE;
+  req->ios2_PacketType = pkt_type;
+  CopyMem(req->ios2_DstAddr, dst_addr, SANADEV_MAC_SIZE);
+  req->ios2_Data = data;
+  req->ios2_DataLength = data_len;
+
+  if (DoIO((struct IORequest *)req) != 0)
+  {
+    return FALSE;
+  }
+  else
+  {
+    return TRUE;
+  }
+}
+
+BOOL sanadev_io_write_raw(sanadev_handle_t *sh, APTR data, ULONG data_len)
+{
+  if(sh->write_pr.port == NULL) {
+    return FALSE;
+  }
+
+  struct IOSana2Req *req = sh->write_pr.req;
+  req->ios2_Req.io_Flags = SANA2IOF_RAW;
+  req->ios2_Req.io_Command = CMD_WRITE;
+  req->ios2_Data = data;
+  req->ios2_DataLength = data_len;
+
+  if (DoIO((struct IORequest *)req) != 0)
+  {
+    return FALSE;
+  }
+  else
+  {
+    return TRUE;
+  }
+}
+
+BOOL sanadev_io_broadcast(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG data_len)
+{
+  if(sh->write_pr.port == NULL) {
+    return FALSE;
+  }
+
+  struct IOSana2Req *req = sh->write_pr.req;
+  req->ios2_Req.io_Flags = 0;
+  req->ios2_Req.io_Command = S2_BROADCAST;
+  req->ios2_PacketType = pkt_type;
+  req->ios2_Data = data;
+  req->ios2_DataLength = data_len;
+
+  if (DoIO((struct IORequest *)req) != 0)
+  {
+    return FALSE;
+  }
+  else
+  {
+    return TRUE;
+  }
 }
 
 // ----- Commands -----
@@ -264,7 +368,7 @@ BOOL sanadev_cmd_get_station_address(sanadev_handle_t *sh, sanadev_mac_t cur_mac
 
 // ----- misc -----
 
-static void get_error(struct IOSana2Req *sana_req, UWORD *error, UWORD *wire_error)
+static void get_error(struct IOSana2Req *sana_req, BYTE *error, ULONG *wire_error)
 {
   *error = sana_req->ios2_Req.io_Error;
   *wire_error = sana_req->ios2_WireError;
@@ -272,13 +376,15 @@ static void get_error(struct IOSana2Req *sana_req, UWORD *error, UWORD *wire_err
 
 static void print_error(struct IOSana2Req *sana_req)
 {
-  Printf((STRPTR) "SANA-II IO failed: cmd=%04lx -> error=%ld, wire_error=%ld\n",
+  Printf((STRPTR) "SANA-II IO failed: cmd=%04lx -> error=%ld (%s) wire_error=%ld (%s)\n",
          (ULONG)sana_req->ios2_Req.io_Command,
-         (ULONG)sana_req->ios2_Req.io_Error,
-         (ULONG)sana_req->ios2_WireError);
+         (LONG)sana_req->ios2_Req.io_Error,
+         sanadev_error_string(sana_req->ios2_Req.io_Error),
+         (ULONG)sana_req->ios2_WireError,
+         sanadev_wire_error_string(sana_req->ios2_WireError));
 }
 
-void sanadev_cmd_get_error(sanadev_handle_t *sh, UWORD *error, UWORD *wire_error)
+void sanadev_cmd_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_error)
 {
   get_error(sh->cmd_pr.req, error, wire_error);
 }
@@ -288,9 +394,57 @@ void sanadev_cmd_print_error(sanadev_handle_t *sh)
   print_error(sh->cmd_pr.req);
 }
 
+void sanadev_io_write_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_error)
+{
+  get_error(sh->write_pr.req, error, wire_error);
+}
+
+void sanadev_io_write_print_error(sanadev_handle_t *sh)
+{
+  print_error(sh->write_pr.req);
+}
+
 void sanadev_print_mac(sanadev_mac_t mac)
 {
   Printf("%02lx:%02lx:%02lx:%02lx:%02lx:%02lx",
          (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
          (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]);
+}
+
+char *sanadev_error_string(BYTE error)
+{
+  switch(error) {
+  case S2ERR_NO_ERROR: return "NO_ERROR";
+  case S2ERR_NO_RESOURCES: return "NO_RESOURCES";
+  case S2ERR_BAD_ARGUMENT: return "BAD_ARGUMENT";
+  case S2ERR_BAD_STATE: return "BAD_STATE";
+  case S2ERR_BAD_ADDRESS: return "BAD_ADDRRESSS";
+  case S2ERR_MTU_EXCEEDED: return "MTU_EXCEEDED";
+  case S2ERR_NOT_SUPPORTED: return "NOT_SUPPORTED";
+  case S2ERR_SOFTWARE: return "SOFTWARE";
+  case S2ERR_OUTOFSERVICE: return "OUTOFSERVICE";
+  case S2ERR_TX_FAILURE: return "TX_FAILURE";
+  default: return "?";
+  }
+}
+
+char *sanadev_wire_error_string(ULONG wire_error)
+{
+  switch(wire_error) {
+  case S2WERR_GENERIC_ERROR: return "GENERIC_ERROR";
+  case S2WERR_NOT_CONFIGURED: return "NOT_CONFIGURED";
+  case S2WERR_UNIT_ONLINE: return "ONLINE";
+  case S2WERR_UNIT_OFFLINE: return "OFFLINE";
+  case S2WERR_ALREADY_TRACKED: return "ALREADY_TRACKED";
+  case S2WERR_NOT_TRACKED: return "NOT_TRACKED";
+  case S2WERR_BUFF_ERROR: return "BUF_ERROR";
+  case S2WERR_SRC_ADDRESS: return "SRC_ADDRESS";
+  case S2WERR_DST_ADDRESS: return "DST_ADDRESS";
+  case S2WERR_BAD_BROADCAST: return "BAD_BROADCAST";
+  case S2WERR_BAD_MULTICAST: return "BAD_MULTICAST";
+  case S2WERR_MULTICAST_FULL: return "MULTICAST_FULL";
+  case S2WERR_BAD_EVENT: return "BAD_EVENT";
+  case S2WERR_BAD_STATDATA: return "BAD_STATDATA";
+  default: return "?";
+  }
 }

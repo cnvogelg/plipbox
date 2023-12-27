@@ -37,7 +37,10 @@ static const char *TEMPLATE =
     "LOOPBACK_DEV/S,"
     "LOOPBACK_MAC/S,"
     "DIRECT_SPI/S,"
-    "LOOPS/N/K";
+    "LOOPS/N/K,"
+    "DELAY/N/K,"
+    "TIMEOUT/N/K,"
+    "BUFSIZE/N/K";
 typedef struct
 {
   char *device;
@@ -48,6 +51,9 @@ typedef struct
   ULONG loopback_mac;
   ULONG direct_spi;
   ULONG *loops;
+  ULONG *delay;
+  ULONG *timeout;
+  ULONG *bufsize;
 } params_t;
 static params_t params;
 
@@ -134,123 +140,138 @@ static void setup_bench_opt(bench_opt_t *opt)
   }
   else
   {
-    opt->loops = 0;
+    opt->loops = 10;
   }
   LOG(("Bench Loops: %ld\n", opt->loops));
+
+  if (params.delay != NULL)
+  {
+    opt->delay = *params.delay;
+  }
+  else
+  {
+    opt->delay = 0;
+  }
+  LOG(("Iter Delay: %ld\n", opt->delay));
+
+  if (params.timeout != NULL)
+  {
+    opt->timeout = *params.timeout;
+  }
+  else
+  {
+    opt->timeout = 5;
+  }
+  LOG(("Timeout: %ld\n", opt->timeout));
+
+  if (params.bufsize != NULL)
+  {
+    opt->bufsize = *params.bufsize;
+    if(opt->bufsize < SANADEV_ETH_MIN_FRAME_SIZE) {
+      opt->bufsize = SANADEV_ETH_MIN_FRAME_SIZE;
+    }
+    else if(opt->bufsize > SANADEV_ETH_MAX_FRAME_SIZE) {
+      opt->bufsize = SANADEV_ETH_MAX_FRAME_SIZE;
+    }
+  }
+  else
+  {
+    opt->bufsize = SANADEV_ETH_RAW_FRAME_SIZE;
+  }
+  LOG(("Bufsize: %ld\n", opt->bufsize));
 }
 
 /* ----- tool ----- */
 static int plipbench(const char *device, LONG unit)
 {
-  sanadev_handle_t *sh;
-  atimer_handle_t *th;
   UWORD error;
   BOOL ok;
+  bench_data_t data;
   bench_opt_t bench_opt;
 
   // parse options
   setup_bench_opt(&bench_opt);
 
+  // alloc frame
+  LOG(("Alloc frame with %ld bytes\n", bench_opt.bufsize));
+  data.frame = AllocVec(bench_opt.bufsize, MEMF_CLEAR | MEMF_ANY);
+  if(data.frame == NULL) {
+    PutStr("Error: no frame memory!\n");
+    return RETURN_ERROR;
+  }
+
   // setup timer
   LOG(("Opening timer!\n"));
-  th = atimer_init((struct Library *)SysBase);
-  if (th == NULL)
+  data.th = atimer_init((struct Library *)SysBase);
+  if (data.th == NULL)
   {
+    FreeVec(data.frame);
     PutStr("Error: no timer!\n");
     return RETURN_ERROR;
   }
-  ok = atimer_sig_init(th);
+  ok = atimer_sig_init(data.th);
   if (!ok)
   {
     PutStr("Error: no timer signal!\n");
-    atimer_exit(th);
+    FreeVec(data.frame);
+    atimer_exit(data.th);
     return RETURN_ERROR;
   }
 
   // open plipbox.device
   LOG(("Opening device '%s' unit #%ld\n", device, unit));
-  sh = sanadev_open(device, unit, 0, &error);
-  if (sh == NULL)
+  data.sh = sanadev_open(device, unit, 0, &error);
+  if (data.sh == NULL)
   {
     Printf("Error opening device '%s' unit #%ld: code=%ld\n", device, unit, (LONG)error);
+    FreeVec(data.frame);
+    atimer_exit(data.th);
     return RETURN_ERROR;
   }
 
   // set mode and flag
-  ok = set_mode_and_flags(sh);
+  ok = set_mode_and_flags(data.sh);
   if (ok)
   {
 
-    // setup events
-    ok = sanadev_event_init(sh, &error);
+    // setup io
+    ok = sanadev_io_init(data.sh, &error);
     if (!ok)
     {
-      Printf("Error setting up SANA-II events! code=%ld\n", (LONG)error);
+      Printf("Error setting up SANA-II I/O! code=%ld\n", (LONG)error);
     }
     else
     {
-
       // go online
       PutStr("going online...\n");
       Flush(Output());
-      ok = sanadev_cmd_online(sh);
+      ok = sanadev_cmd_online(data.sh);
       if (!ok)
       {
         PutStr("Error going online!\n");
-        sanadev_cmd_print_error(sh);
+        sanadev_cmd_print_error(data.sh);
       }
       else
       {
-
-#if 1
-        PutStr("waiting for online...!\n");
-        Flush(Output());
-        sanadev_event_start(sh, S2EVENT_ONLINE);
-        atimer_sig_start(th, 5, 0);
-        ULONG sana_mask = sanadev_event_get_mask(sh);
-        ULONG timer_mask = atimer_sig_get_mask(th);
-        ULONG mask = sana_mask | timer_mask | SIGBREAKF_CTRL_C;
-        Printf("sana_mask=%lx timer_mask=%lx\n", sana_mask, timer_mask);
-        ULONG got_mask = Wait(mask);
-        Printf("got_mask=%lx\n", got_mask);
-
-        // got sana event
-        if ((got_mask & sana_mask) == sana_mask)
-        {
-          // wait for online event
-          ULONG event;
-          BOOL ok = sanadev_event_get_event(sh, &event);
-
-          LOG(("Got ok=%ld event: %lx\n", (ULONG)ok, event));
-          if ((event & S2EVENT_ONLINE) == S2EVENT_ONLINE)
-          {
-            PutStr("we are online!\n");
-
-            // we made it: enter main loop
-            bench_loop(sh, &bench_opt);
-          }
-        }
-
-        atimer_sig_stop(th);
-        sanadev_event_stop(sh);
-#endif
+        // we made it: enter main loop
+        bench_loop(&data, &bench_opt);
 
         // finally go offline
         PutStr("going offline...\n");
-        ok = sanadev_cmd_offline(sh);
+        ok = sanadev_cmd_offline(data.sh);
         if (!ok)
         {
           PutStr("Error going offline!\n");
-          sanadev_cmd_print_error(sh);
+          sanadev_cmd_print_error(data.sh);
         }
       }
 
-      LOG(("Sana Event exit\n"));
-      sanadev_event_exit(sh);
+      LOG(("Sana I/O exit\n"));
+      sanadev_io_exit(data.sh);
     }
 
     // return to old mode
-    restore_mode_and_flags(sh);
+    restore_mode_and_flags(data.sh);
   }
   else
   {
@@ -258,12 +279,15 @@ static int plipbench(const char *device, LONG unit)
   }
 
   LOG(("Closing device...\n"));
-  sanadev_close(sh);
+  sanadev_close(data.sh);
   LOG(("Done\n"));
 
   LOG(("Freeing timer\n"));
-  atimer_sig_exit(th);
-  atimer_exit(th);
+  atimer_sig_exit(data.th);
+  atimer_exit(data.th);
+
+  LOG(("Freeing frame\n"));
+  FreeVec(data.frame);
 
   return RETURN_OK;
 }
