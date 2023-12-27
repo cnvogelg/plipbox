@@ -13,7 +13,8 @@ typedef struct atime_stamp atime_stamp_t;
 extern atimer_handle_t *atimer_init(struct Library *execbase);
 extern void atimer_exit(atimer_handle_t *th);
 
-extern void atimer_get_sys_time(atimer_handle_t *th, atime_stamp_t *val);
+extern void atimer_sys_time_get(atimer_handle_t *th, atime_stamp_t *val);
+extern void atimer_sys_time_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_stamp_t *delta);
 
 extern ULONG atimer_eclock_get(atimer_handle_t *th, atime_stamp_t *val);
 extern void atimer_eclock_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_stamp_t *delta);

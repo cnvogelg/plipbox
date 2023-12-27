@@ -77,9 +77,23 @@ void atimer_exit(atimer_handle_t *th)
   FreeMem(th, sizeof(atimer_handle_t));
 }
 
-void atimer_get_sys_time(atimer_handle_t *th, atime_stamp_t *val)
+void atimer_sys_time_get(atimer_handle_t *th, atime_stamp_t *val)
 {
   GetSysTime((struct timeval *)val);
+}
+
+void atimer_sys_time_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_stamp_t *delta)
+{
+  if (end->lo < begin->lo)
+  {
+    delta->lo = 999999UL - begin->lo + end->lo + 1;
+    delta->hi = end->hi - begin->hi - 1;
+  }
+  else
+  {
+    delta->lo = end->lo - begin->lo;
+    delta->hi = end->hi - begin->hi;
+  }
 }
 
 ULONG atimer_eclock_get(atimer_handle_t *th, atime_stamp_t *val)
