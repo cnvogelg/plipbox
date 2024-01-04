@@ -37,15 +37,23 @@ void sanadev_event_exit(sanadev_handle_t *sh);
 BOOL sanadev_event_start(sanadev_handle_t *sh, ULONG event_mask);
 BOOL sanadev_event_stop(sanadev_handle_t *sh);
 ULONG sanadev_event_get_mask(sanadev_handle_t *sh);
-BOOL sanadev_event_get_event(sanadev_handle_t *sh, ULONG *event_mask);
+BOOL sanadev_event_result(sanadev_handle_t *sh, ULONG *event_mask);
 BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask);
 
 /* io: read/write ops */
 BOOL sanadev_io_init(sanadev_handle_t *sh, UWORD *error);
 void sanadev_io_exit(sanadev_handle_t *sh);
+/* io: sync tx */
 BOOL sanadev_io_write(sanadev_handle_t *sh, UWORD pkt_type, sanadev_mac_t dst_addr, APTR data, ULONG data_len);
 BOOL sanadev_io_write_raw(sanadev_handle_t *sh, APTR data, ULONG data_len);
 BOOL sanadev_io_broadcast(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG data_len);
+/* io: async rx */
+BOOL sanadev_io_read_start(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG data_len, BOOL raw);
+BOOL sanadev_io_read_start_orphan(sanadev_handle_t *sh, APTR data, ULONG data_len, BOOL raw);
+BOOL sanadev_io_read_stop(sanadev_handle_t *sh);
+ULONG sanadev_io_read_get_mask(sanadev_handle_t *sh);
+BOOL sanadev_io_read_result(sanadev_handle_t *sh, UWORD *pkt_type, sanadev_mac_t dst_addr, UBYTE **data, ULONG *data_len);
+BOOL sanadev_io_read_result_raw(sanadev_handle_t *sh, UBYTE **data, ULONG *data_len);
 
 /* helper */
 void sanadev_cmd_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_error);
@@ -53,6 +61,9 @@ void sanadev_cmd_print_error(sanadev_handle_t *sh);
 
 void sanadev_io_write_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_error);
 void sanadev_io_write_print_error(sanadev_handle_t *sh);
+
+void sanadev_io_read_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_error);
+void sanadev_io_read_print_error(sanadev_handle_t *sh);
 
 char *sanadev_error_string(BYTE error);
 char *sanadev_wire_error_string(ULONG wire_error);

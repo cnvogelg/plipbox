@@ -1,6 +1,7 @@
 #include <exec/exec.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <clib/alib_protos.h>
 
 #include <devices/sana2.h>
 #include <devices/plipbox.h>
@@ -23,6 +24,7 @@ struct sanadev_handle
   port_req_t event_pr;
 
   port_req_t write_pr;
+  port_req_t read_pr;
 };
 
 /* copy helper for SANA-II device */
@@ -210,11 +212,14 @@ ULONG sanadev_event_get_mask(sanadev_handle_t *sh)
   return get_port_req_mask(&sh->event_pr);
 }
 
-BOOL sanadev_event_get_event(sanadev_handle_t *sh, ULONG *event_mask)
+BOOL sanadev_event_result(sanadev_handle_t *sh, ULONG *event_mask)
 {
   struct IOSana2Req *req = get_port_req_next_req(&sh->event_pr);
   if (req != NULL)
   {
+    if(sh->event_pr.req->ios2_Req.io_Error != 0) {
+      return FALSE;
+    }
     *event_mask = sh->event_pr.req->ios2_WireError;
     return TRUE;
   }
@@ -231,10 +236,17 @@ BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask)
   }
 
   WaitPort(sh->event_pr.port);
-  return sanadev_event_get_event(sh, event_mask);
+  return sanadev_event_result(sh, event_mask);
 }
 
 // ----- I/O -----
+
+/* we need an own DoIO replacement since we want to pass io_Flags */
+static BYTE my_do_io(struct IOSana2Req *req)
+{
+  BeginIO((struct IORequest *)req);
+  return WaitIO((struct IORequest *)req);
+}
 
 BOOL sanadev_io_init(sanadev_handle_t *sh, UWORD *error)
 {
@@ -246,12 +258,23 @@ BOOL sanadev_io_init(sanadev_handle_t *sh, UWORD *error)
   }
 
   clone_req(&sh->cmd_pr, &sh->write_pr);
+
+  // read port/ioreq
+  ok = alloc_port_req(&sh->read_pr, error);
+  if (!ok)
+  {
+    return FALSE;
+  }
+
+  clone_req(&sh->cmd_pr, &sh->read_pr);
+
   return TRUE;
 }
 
 void sanadev_io_exit(sanadev_handle_t *sh)
 {
   free_port_req(&sh->write_pr);
+  free_port_req(&sh->read_pr);
 }
 
 BOOL sanadev_io_write(sanadev_handle_t *sh, UWORD pkt_type, sanadev_mac_t dst_addr, APTR data, ULONG data_len)
@@ -264,11 +287,11 @@ BOOL sanadev_io_write(sanadev_handle_t *sh, UWORD pkt_type, sanadev_mac_t dst_ad
   req->ios2_Req.io_Flags = 0;
   req->ios2_Req.io_Command = CMD_WRITE;
   req->ios2_PacketType = pkt_type;
-  CopyMem(req->ios2_DstAddr, dst_addr, SANADEV_MAC_SIZE);
+  CopyMem(dst_addr, req->ios2_DstAddr, SANADEV_MAC_SIZE);
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
 
-  if (DoIO((struct IORequest *)req) != 0)
+  if (my_do_io(req) != 0)
   {
     return FALSE;
   }
@@ -290,7 +313,7 @@ BOOL sanadev_io_write_raw(sanadev_handle_t *sh, APTR data, ULONG data_len)
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
 
-  if (DoIO((struct IORequest *)req) != 0)
+  if (my_do_io(req) != 0)
   {
     return FALSE;
   }
@@ -313,13 +336,108 @@ BOOL sanadev_io_broadcast(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
 
-  if (DoIO((struct IORequest *)req) != 0)
+  if (my_do_io(req) != 0)
   {
     return FALSE;
   }
   else
   {
     return TRUE;
+  }
+}
+
+// --- Read ---
+
+BOOL sanadev_io_read_start(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG data_len, BOOL raw)
+{
+  if(sh->read_pr.port == NULL) {
+    return FALSE;
+  }
+
+  struct IOSana2Req *req = sh->read_pr.req;
+  req->ios2_PacketType = pkt_type;
+  req->ios2_Req.io_Flags = raw ? SANA2IOF_RAW : 0;
+  req->ios2_Req.io_Command = CMD_READ;
+  req->ios2_Data = data;
+  req->ios2_DataLength = data_len;
+
+  BeginIO((struct IORequest *)req);
+  return TRUE;
+}
+
+BOOL sanadev_io_read_start_orphan(sanadev_handle_t *sh, APTR data, ULONG data_len, BOOL raw)
+{
+  if(sh->read_pr.port == NULL) {
+    return FALSE;
+  }
+
+  struct IOSana2Req *req = sh->read_pr.req;
+  req->ios2_Req.io_Flags = raw ? SANA2IOF_RAW : 0;
+  req->ios2_Req.io_Command = S2_READORPHAN;
+  req->ios2_Data = data;
+  req->ios2_DataLength = data_len;
+
+  BeginIO((struct IORequest *)req);
+  return TRUE;
+}
+
+BOOL sanadev_io_read_stop(sanadev_handle_t *sh)
+{
+  struct IORequest *req = (struct IORequest *)sh->read_pr.req;
+  if(req == NULL) {
+    return FALSE;
+  }
+
+  if (!CheckIO(req))
+  {
+    AbortIO(req);
+  }
+  WaitIO(req);
+  return TRUE;
+}
+
+ULONG sanadev_io_read_get_mask(sanadev_handle_t *sh)
+{
+  return get_port_req_mask(&sh->read_pr);
+}
+
+BOOL sanadev_io_read_result(sanadev_handle_t *sh, UWORD *pkt_type, sanadev_mac_t dst_addr, UBYTE **data, ULONG *data_len)
+{
+  struct IOSana2Req *req = get_port_req_next_req(&sh->read_pr);
+  if (req != NULL)
+  {
+    if(req->ios2_Req.io_Error != 0) {
+      return FALSE;
+    }
+
+    *pkt_type = req->ios2_PacketType;
+    CopyMem(dst_addr, req->ios2_DstAddr, SANADEV_MAC_SIZE);
+    *data = req->ios2_Data;
+    *data_len = req->ios2_DataLength;
+    return TRUE;
+  }
+  else
+  {
+    return FALSE;
+  }
+}
+
+BOOL sanadev_io_read_result_raw(sanadev_handle_t *sh, UBYTE **data, ULONG *data_len)
+{
+  struct IOSana2Req *req = get_port_req_next_req(&sh->read_pr);
+  if (req != NULL)
+  {
+    if(req->ios2_Req.io_Error != 0) {
+      return FALSE;
+    }
+
+    *data = req->ios2_Data;
+    *data_len = req->ios2_DataLength;
+    return TRUE;
+  }
+  else
+  {
+    return FALSE;
   }
 }
 
@@ -341,6 +459,9 @@ BOOL sanadev_cmd(sanadev_handle_t *sh, UWORD cmd)
   }
   else
   {
+    if(sana_req->ios2_Req.io_Error != 0) {
+      return FALSE;
+    }
     return TRUE;
   }
 }
@@ -402,6 +523,16 @@ void sanadev_io_write_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_e
 void sanadev_io_write_print_error(sanadev_handle_t *sh)
 {
   print_error(sh->write_pr.req);
+}
+
+void sanadev_io_read_get_error(sanadev_handle_t *sh, BYTE *error, ULONG *wire_error)
+{
+  get_error(sh->read_pr.req, error, wire_error);
+}
+
+void sanadev_io_read_print_error(sanadev_handle_t *sh)
+{
+  print_error(sh->read_pr.req);
 }
 
 void sanadev_print_mac(sanadev_mac_t mac)

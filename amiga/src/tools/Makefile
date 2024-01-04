@@ -10,7 +10,7 @@ PLIPTOOL_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPTOOL_SRC))
 # plipbench
 PLIPBENCH_NAME = plipbench_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 PLIPBENCH_PATH = $(BIN_DIR)/$(PLIPBENCH_NAME)
-PLIPBENCH_SRC = plipbench.c bench.c
+PLIPBENCH_SRC = plipbench.c bench.c pktbuf.c
 PLIPBENCH_SRC += sanadev.c param.c param_tag.c plipbox_cmd.c atimer.c
 PLIPBENCH_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPBENCH_SRC))
 

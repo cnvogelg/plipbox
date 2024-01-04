@@ -192,14 +192,6 @@ static int plipbench(const char *device, LONG unit)
   // parse options
   setup_bench_opt(&bench_opt);
 
-  // alloc frame
-  LOG(("Alloc frame with %ld bytes\n", bench_opt.bufsize));
-  data.frame = AllocVec(bench_opt.bufsize, MEMF_CLEAR | MEMF_ANY);
-  if(data.frame == NULL) {
-    PutStr("Error: no frame memory!\n");
-    return RETURN_ERROR;
-  }
-
   // setup timer
   LOG(("Opening timer!\n"));
   data.th = atimer_init((struct Library *)SysBase);
@@ -285,9 +277,6 @@ static int plipbench(const char *device, LONG unit)
   LOG(("Freeing timer\n"));
   atimer_sig_exit(data.th);
   atimer_exit(data.th);
-
-  LOG(("Freeing frame\n"));
-  FreeVec(data.frame);
 
   return RETURN_OK;
 }

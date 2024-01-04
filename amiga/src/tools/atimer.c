@@ -19,6 +19,8 @@ struct atimer_handle
   ULONG timerSigMask;
 };
 
+#define TimerBase th->timerBase
+
 atimer_handle_t *atimer_init(struct Library *SysBase)
 {
   /* alloc handle */
@@ -41,6 +43,11 @@ atimer_handle_t *atimer_init(struct Library *SysBase)
     {
       /* store timer base */
       th->timerBase = (struct Library *)th->timerReq.tr_node.io_Device;
+
+      /* init eClockFreq */
+      struct EClockVal dummy;
+      th->eClockFreq = ReadEClock(&dummy);
+
       /* all ok */
       return th;
     }
@@ -52,7 +59,6 @@ atimer_handle_t *atimer_init(struct Library *SysBase)
 }
 
 #define SysBase th->sysBase
-#define TimerBase th->timerBase
 
 void atimer_exit(atimer_handle_t *th)
 {
@@ -84,47 +90,46 @@ void atimer_sys_time_get(atimer_handle_t *th, atime_stamp_t *val)
 
 void atimer_sys_time_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_stamp_t *delta)
 {
-  if (end->lo < begin->lo)
+  if (end->ms < begin->ms)
   {
-    delta->lo = 999999UL - begin->lo + end->lo + 1;
-    delta->hi = end->hi - begin->hi - 1;
+    delta->ms = 999999UL - begin->ms + end->ms + 1;
+    delta->s = end->s - begin->s - 1;
   }
   else
   {
-    delta->lo = end->lo - begin->lo;
-    delta->hi = end->hi - begin->hi;
+    delta->ms = end->ms - begin->ms;
+    delta->s = end->s - begin->s;
   }
 }
 
-ULONG atimer_eclock_get(atimer_handle_t *th, atime_stamp_t *val)
+ULONG atimer_eclock_freq(atimer_handle_t *th)
 {
-  struct EClockVal *eval = (struct EClockVal *)val;
-  th->eClockFreq = ReadEClock(eval);
   return th->eClockFreq;
 }
 
-void atimer_eclock_delta(atime_stamp_t *end, atime_stamp_t *begin, atime_stamp_t *delta)
+void atimer_eclock_get(atimer_handle_t *th, atime_estamp_t *val)
 {
-  if (end->lo < begin->lo)
-  {
-    delta->lo = 0xffffffffUL - begin->lo + end->lo + 1;
-    delta->hi = end->hi - begin->hi - 1;
-  }
-  else
-  {
-    delta->lo = end->lo - begin->lo;
-    delta->hi = end->hi - begin->hi;
-  }
+  struct EClockVal *eval = (struct EClockVal *)val;
+  ReadEClock(eval);
 }
 
-ULONG atimer_eclock_to_us(atimer_handle_t *th, ULONG delta)
+void atimer_eclock_delta(atime_estamp_t *end, atime_estamp_t *begin, atime_estamp_t *delta)
 {
-  return (delta * 1000000UL) / th->eClockFreq;
+  *delta = *end - *begin;
 }
 
-ULONG atimer_eclock_to_kBps(atimer_handle_t *th, ULONG delta, ULONG bytes)
+ULONG atimer_eclock_to_us(atimer_handle_t *th, atime_estamp_t *delta)
 {
-  return (bytes * th->eClockFreq) / (delta * 1024UL);
+  return (ULONG)((*delta * 1000000UL) / th->eClockFreq);
+}
+
+ULONG atimer_eclock_to_bps(atimer_handle_t *th, atime_estamp_t *delta, ULONG bytes)
+{
+  if(*delta == 0) {
+    return 0;
+  }
+
+  return (ULONG)( (bytes * (atime_estamp_t)th->eClockFreq) / *delta );
 }
 
 BOOL atimer_sig_init(struct atimer_handle *th)

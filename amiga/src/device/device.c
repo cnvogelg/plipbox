@@ -415,7 +415,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASE
   switch (ios2->ios2_Req.io_Command)
   {
   case CMD_READ:
-    d4r(("CMD_READ\n"));
+    d4r(("CMD_READ %ld\n", ios2->ios2_DataLength));
     if (pb->pb_Flags & PLIPF_OFFLINE)
     {
       ios2->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
@@ -442,7 +442,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASE
     memset(ios2->ios2_DstAddr, 0xff, HW_ADDRFIELDSIZE);
     /* fall through */
   case CMD_WRITE:
-    d4r(("CMD_WRITE\n"));
+    d4r(("CMD_WRITE %ld\n", ios2->ios2_DataLength));
     /* determine max valid size */
     mtu = pb->pb_MTU;
     if (ios2->ios2_Req.io_Flags & SANA2IOF_RAW)

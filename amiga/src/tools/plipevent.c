@@ -51,7 +51,7 @@ static const event_desc_t event_desc[] = {
 
 static void print_ts(atime_stamp_t *ts)
 {
-  Printf("%08ld.%06ld ", ts->hi, ts->lo);
+  Printf("%08ld.%06ld ", ts->s, ts->ms);
 }
 
 static void print_events(ULONG events)
@@ -138,7 +138,7 @@ static int plipevent(const char *device, LONG unit)
     {
       // pick up event
       ULONG got_events;
-      BOOL ok = sanadev_event_get_event(sh, &got_events);
+      BOOL ok = sanadev_event_result(sh, &got_events);
 
       LOG(("Got ok=%ld event: %lx\n", (ULONG)ok, got_events));
       if(ok) {
