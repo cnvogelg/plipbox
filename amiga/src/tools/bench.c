@@ -5,6 +5,37 @@
 #include "bench.h"
 #include "pktbuf.h"
 
+struct timing {
+  atime_estamp_t start;
+  atime_estamp_t stop;
+  atime_estamp_t delta;
+  ULONG us;
+  ULONG bytes;
+  ULONG bps;
+};
+typedef struct timing timing_t;
+
+static void timing_calc(atimer_handle_t *th, timing_t *timing)
+{
+  if(timing->start != timing->stop) {
+    atimer_eclock_delta(&timing->stop, &timing->start, &timing->delta);
+  }
+  timing->us = atimer_eclock_to_us(th, &timing->delta);
+  timing->bps = atimer_eclock_to_bps(th, &timing->delta, timing->bytes);
+}
+
+static void timing_print(timing_t *timing)
+{
+  Printf("bytes=%ld, edelta=%ld, us=%ld, bps=%ld\n",
+    timing->bytes, (ULONG)timing->delta, timing->us, timing->bps);
+}
+
+static void timing_sum(timing_t *t, timing_t *sum)
+{
+  sum->bytes += t->bytes;
+  sum->delta += t->delta;
+}
+
 void bench_loop(bench_data_t *data, bench_opt_t *opt)
 {
   ULONG iter;
@@ -38,8 +69,8 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
   BOOL stay = TRUE;
 
   // time stamping
-  atime_estamp_t time_start;
-  atime_estamp_t time_end;
+  timing_t current;
+  timing_t sum = { 0,0,0,0,0,0 };
 
   // prepare buffer
   pktbuf_fill(tx_buf, 0);
@@ -48,7 +79,7 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
   Printf("EClock Freq: %ld Hz\n", atimer_eclock_freq(th));
   for(iter=0; iter<opt->loops; iter++) {
 
-    Printf("Frame: %ld\n", iter);
+    Printf("Frame: %04ld  ", iter);
     Flush(Output());
 
     // start timer
@@ -62,7 +93,7 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
     }
 
     // start time
-    atimer_eclock_get(th, &time_start);
+    atimer_eclock_get(th, &current.start);
 
     // send sync frame
     ok = sanadev_io_write_raw(sh, tx_buf->data, tx_buf->size);
@@ -75,7 +106,7 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
     ULONG res_mask = Wait(wait_mask);
 
     // end time
-    atimer_eclock_get(th, &time_end);
+    atimer_eclock_get(th, &current.stop);
 
     // got result
     if(res_mask & rx_mask) {
@@ -93,11 +124,12 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
           Printf("Rx Buffer mismatch @%ld!\n", pos);
           stay = FALSE;
         } else {
-          // calc time
-          atime_estamp_t delta;
-          atimer_eclock_delta(&time_end, &time_start, &delta);
-          sum_eclock += delta;
-          sum_bytes  += frame_size * 2; // tx + rx
+          // calc and print timing
+          current.bytes = 2 * frame_size;
+          timing_calc(th, &current);
+          timing_print(&current);
+          // sum
+          timing_sum(&current, &sum);
         }
       }
     }
@@ -121,13 +153,9 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
   }
 
   // timing result
-  Printf("Timing Result:\n");
-  Printf("Sum EClock: %8ld\n", (ULONG)sum_eclock);
-  Printf("Sum Bytes:  %8ld\n", sum_bytes);
-  ULONG sum_us = atimer_eclock_to_us(th, &sum_eclock);
-  ULONG bps = atimer_eclock_to_bps(th, &sum_eclock, sum_bytes);
-  Printf("Sum us:     %8ld\n", sum_us);
-  Printf("bytes/s:    %8ld\n", bps);
+  Printf("Result:  ");
+  timing_calc(th, &sum);
+  timing_print(&sum);
 
   // free tx/rx buffer
   pktbuf_free(rx_buf);
