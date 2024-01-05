@@ -141,7 +141,7 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:eth:base:proto:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
+VPATH = .:net:eth:base:proto:param:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
 
 # source files
 SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c hw_persist.c
@@ -182,7 +182,7 @@ CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
 CFLAGS += -mmcu=$(MCU)
 CFLAGS += -I. -Iarch -Iarch/$(ARCH) -Iarch/$(ARCH)/mach-$(MACH) -Iarch/common
-CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include
+CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include -Iparam
 CFLAGS += -ffunction-sections -fdata-sections
  
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
