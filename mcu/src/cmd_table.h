@@ -27,7 +27,6 @@
 #ifndef CMD_TABLE_H
 #define CMD_TABLE_H
 
-#include <avr/pgmspace.h>
 #include "types.h"
 
 #define CMD_OK            0x00
@@ -43,7 +42,7 @@
 #define CMD_MASK_ERROR    0x20
 
 #define COMMAND(x) static u08 x (u08 argc, const u08 **argv)
-#define CMD_NAME(y,x,z) static const char x ## _name[] PROGMEM = y ; static const char x ## _help[] PROGMEM = z
+#define CMD_NAME(y,x,z) static const char x ## _name[] ROM_ATTR = y ; static const char x ## _help[] ROM_ATTR = z
 #define CMD_ENTRY(x) { x ## _name, x, x ## _help }
 #define CMD_ENTRY_NAME(x,y) { y ## _name, x, y ## _help }
 
@@ -56,6 +55,6 @@ struct cmd_table_s {
 };
 typedef struct cmd_table_s cmd_table_t;
 
-extern const cmd_table_t PROGMEM cmd_table[];
+extern const cmd_table_t ROM_ATTR cmd_table[];
 
 #endif

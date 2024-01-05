@@ -1,4 +1,3 @@
-#include "autoconf.h"
 #include "types.h"
 
 #include "pario_pins.h"

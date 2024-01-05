@@ -26,6 +26,7 @@
 
 #include "cmdkey_table.h"
 
+#include "arch.h"
 #include "stats.h"
 #include "uartutil.h"
 #include "mode.h"
@@ -73,7 +74,7 @@ CMDKEY_HELP(cmd_attach, "attach device");
 CMDKEY_HELP(cmd_detach, "detach device");
 CMDKEY_HELP(cmd_dump_param, "dump parameters");
 
-const cmdkey_table_t PROGMEM cmdkey_table[] = {
+const cmdkey_table_t ROM_ATTR cmdkey_table[] = {
   CMDKEY_ENTRY('s', cmd_dump_stats),
   CMDKEY_ENTRY('S', cmd_reset_stats),
   CMDKEY_ENTRY('v', cmd_toggle_verbose),

@@ -34,7 +34,7 @@
 #endif
 
 // the table of available devices
-static const pio_dev_ptr_t PROGMEM devices[] = {
+static const pio_dev_ptr_t ROM_ATTR devices[] = {
 #ifdef DEV_ENC28J60
   &pio_dev_enc28j60,
 #endif
@@ -58,12 +58,12 @@ u08 pio_set_device(u08 id)
 u08 pio_init(u08 flags)
 {
   // get current device
-  cur_dev = (pio_dev_ptr_t)pgm_read_word(devices + dev_id);
+  cur_dev = (pio_dev_ptr_t)read_rom_rom_ptr(devices + dev_id);
 
   // show hello
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("pio: init: "));
-  PGM_P name = pio_dev_name(cur_dev);
+  rom_pchar name = pio_dev_name(cur_dev);
   uart_send_pstring(name);
 
   // call init

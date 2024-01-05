@@ -58,8 +58,8 @@ static u08 rx_end(u16 size)
 }
 
 // define module
-static const char PROGMEM mod_name[] = "loop_buf";
-const mode_mod_t PROGMEM mode_mod_loop_buf = {
+static const char ROM_ATTR mod_name[] = "loop_buf";
+const mode_mod_t ROM_ATTR mode_mod_loop_buf = {
   .name = mod_name,
 
   .attach = attach,

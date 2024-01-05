@@ -67,7 +67,7 @@ static void dump_line(u08 id)
   uart_send_rate_kbs(s->max_rate);
   uart_send_spc();
 
-  PGM_P str;
+  rom_pchar str;
   switch(id) {
     case STATS_ID_PB_RX:
       str = PSTR("rx plipbox");

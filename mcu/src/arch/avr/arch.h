@@ -2,7 +2,6 @@
 #define ARCH_H
 
 #include <avr/pgmspace.h>
-#include <avr/eeprom.h>
 
 typedef PGM_P rom_pchar;
 typedef char *ram_pchar;
@@ -22,7 +21,6 @@ static inline void rom_copy(const unsigned char *src, unsigned char *dst, size_t
 }
 
 #define ROM_ATTR __ATTR_PROGMEM__
-#define EEPROM_ATTR   EEMEM
 
 #define INLINE          static inline
 #define FORCE_INLINE    __attribute__((always_inline)) static inline

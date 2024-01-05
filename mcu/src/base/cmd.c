@@ -26,6 +26,7 @@
 
 #include <string.h>
 
+#include "arch.h"
 #include "cmd.h"
 #include "cmd_table.h"
 #include "cmdkey_table.h"
@@ -104,16 +105,16 @@ static void show_cmd_help(void)
   uart_send_pstring(PSTR("Command Help:\r\n"));
   const cmd_table_t * ptr = cmd_table;
   while(1) {
-    const char * name = (const char *)pgm_read_word(&ptr->name);
+    const char * name = (const char *)read_rom_rom_ptr(&ptr->name);
     if(name == 0) {
       break;
     }
-    const char * help = (const char *)pgm_read_word(&ptr->help);
+    const char * help = (const char *)read_rom_rom_ptr(&ptr->help);
 
     // show command
     u08 pos = 0;
     while(1) {
-      u08 c = pgm_read_byte(name);
+      u08 c = read_rom_char(name);
       if(c==0) {
         break;
       }
@@ -134,6 +135,19 @@ static void show_cmd_help(void)
 
     ptr ++;
   }
+}
+
+static int strcmp_rom(const char *ptr, const char *rom_ptr)
+{
+  while(*ptr != 0) {
+    char ch = read_rom_char(rom_ptr);
+    if(*ptr != ch) {
+      return 1;
+    }
+    ptr++;
+    rom_ptr++;
+  }
+  return 0;
 }
 
 static u08 cmd_loop(void)
@@ -171,11 +185,11 @@ static u08 cmd_loop(void)
           const cmd_table_t * ptr = cmd_table;
           const cmd_table_t * found = 0;
           while(1) {
-            const char * name = (const char *)pgm_read_word(&ptr->name);
+            const char * name = (const char *)read_rom_rom_ptr(&ptr->name);
             if(name == 0) {
               break;
             }
-            if(strcmp_P((const char *)cmd_args[0], name)==0) {
+            if(strcmp_rom((const char *)cmd_args[0], name)==0) {
               found = ptr;
               break;
             }
@@ -184,7 +198,7 @@ static u08 cmd_loop(void)
           // got a command
           if(found != 0) {
             // execute command
-            cmd_table_func_t func = (cmd_table_func_t)pgm_read_word(&found->func);
+            cmd_table_func_t func = (cmd_table_func_t)read_rom_rom_ptr(&found->func);
             status = func(argc, (const u08 **)&cmd_args);
             // show result
             uart_send_hex_byte(status);
@@ -227,11 +241,11 @@ static void show_cmdkey_help(void)
   uart_send_pstring(PSTR("Command Key Help:\r\n"));
   const cmdkey_table_t *ptr = cmdkey_table;
   while(1) {
-    u08 key = pgm_read_byte(&ptr->key);
+    u08 key = read_rom_char(&ptr->key);
     if(key == 0) {
       break;
     }
-    const char *help = (const char *)pgm_read_word(&ptr->help);
+    const char *help = (const char *)read_rom_rom_ptr(&ptr->help);
 
     uart_send(key);
     uart_send_pstring(PSTR("   "));
@@ -262,7 +276,7 @@ u08 cmd_worker(void)
       const cmdkey_table_t *ptr = cmdkey_table;
       const cmdkey_table_t *found = 0;
       while(1) {
-        u08 key = pgm_read_byte(&ptr->key);
+        u08 key = read_rom_char(&ptr->key);
         if(key == cmd) {
           found = ptr;
           break;
@@ -274,7 +288,7 @@ u08 cmd_worker(void)
       }
       // got a key command?
       if(found != 0) {
-        cmdkey_func_t func = (cmdkey_func_t)pgm_read_word(&found->func);
+        cmdkey_func_t func = (cmdkey_func_t)read_rom_rom_ptr(&found->func);
         func();
         result = CMD_WORKER_DONE;
       }

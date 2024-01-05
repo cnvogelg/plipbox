@@ -3,6 +3,6 @@
 
 #include "mode_mod.h"
 
-extern const mode_mod_t PROGMEM mode_mod_loop_buf;
+extern const mode_mod_t ROM_ATTR mode_mod_loop_buf;
 
 #endif

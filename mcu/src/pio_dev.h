@@ -27,7 +27,7 @@
 #ifndef PIO_DEV_H
 #define PIO_DEV_H
 
-#include <avr/pgmspace.h>
+#include "arch.h"
 #include "types.h"
 
 /* function pointers */
@@ -70,74 +70,74 @@ typedef const pio_dev_t *pio_dev_ptr_t;
 
 /* access device data from PROGMEM pio_dev_t */
 
-static inline const PGM_P pio_dev_name(pio_dev_ptr_t pd)
+static inline rom_pchar pio_dev_name(pio_dev_ptr_t pd)
 { 
-  return (PGM_P)pgm_read_word(&pd->name);
+  return (rom_pchar)read_rom_rom_ptr(&pd->name);
 }
 
 static inline u08 pio_dev_init(pio_dev_ptr_t pd, u08 flags)
 {
-  pio_dev_init_t init_f = (pio_dev_init_t)pgm_read_word(&pd->init_f);
+  pio_dev_init_t init_f = (pio_dev_init_t)read_rom_rom_ptr(&pd->init_f);
   return init_f(flags);
 }
 
 static inline void pio_dev_exit(pio_dev_ptr_t pd)
 {
-  pio_dev_exit_t exit_f = (pio_dev_exit_t)pgm_read_word(&pd->exit_f);
+  pio_dev_exit_t exit_f = (pio_dev_exit_t)read_rom_rom_ptr(&pd->exit_f);
   exit_f();
 }
 
 static inline void pio_dev_set_mac(pio_dev_ptr_t pd, const u08 mac[6])
 {
-  pio_dev_set_mac_t set_mac_f = (pio_dev_set_mac_t)pgm_read_word(&pd->set_mac_f);
+  pio_dev_set_mac_t set_mac_f = (pio_dev_set_mac_t)read_rom_rom_ptr(&pd->set_mac_f);
   set_mac_f(mac);
 }
 
 static inline void pio_dev_enable_rx(pio_dev_ptr_t pd)
 {
-  pio_dev_enable_rx_t enable_rx_f = (pio_dev_enable_rx_t)pgm_read_word(&pd->enable_rx_f);
+  pio_dev_enable_rx_t enable_rx_f = (pio_dev_enable_rx_t)read_rom_rom_ptr(&pd->enable_rx_f);
   enable_rx_f();
 }
 
 static inline void pio_dev_disable_rx(pio_dev_ptr_t pd)
 {
-  pio_dev_disable_rx_t disable_rx_f = (pio_dev_disable_rx_t)pgm_read_word(&pd->disable_rx_f);
+  pio_dev_disable_rx_t disable_rx_f = (pio_dev_disable_rx_t)read_rom_rom_ptr(&pd->disable_rx_f);
   disable_rx_f();
 }
 
 static inline u08 pio_dev_send(pio_dev_ptr_t pd, const u08 *buf, u16 size)
 {
-  pio_dev_send_t send_f = (pio_dev_send_t)pgm_read_word(&pd->send_f);
+  pio_dev_send_t send_f = (pio_dev_send_t)read_rom_rom_ptr(&pd->send_f);
   return send_f(buf, size);
 }
 
 static inline u08 pio_dev_recv_size(pio_dev_ptr_t pd, u16 *got_size)
 {
-  pio_dev_recv_size_t recv_size_f = (pio_dev_recv_size_t)pgm_read_word(&pd->recv_size_f);
+  pio_dev_recv_size_t recv_size_f = (pio_dev_recv_size_t)read_rom_rom_ptr(&pd->recv_size_f);
   return recv_size_f(got_size);
 }
 
 static inline u08 pio_dev_recv(pio_dev_ptr_t pd, u08 *buf, u16 size)
 {
-  pio_dev_recv_t recv_f = (pio_dev_recv_t)pgm_read_word(&pd->recv_f);
+  pio_dev_recv_t recv_f = (pio_dev_recv_t)read_rom_rom_ptr(&pd->recv_f);
   return recv_f(buf, size);
 }
 
 static inline u08 pio_dev_has_recv(pio_dev_ptr_t pd)
 {
-  pio_dev_has_recv_t has_recv_f = (pio_dev_has_recv_t)pgm_read_word(&pd->has_recv_f);
+  pio_dev_has_recv_t has_recv_f = (pio_dev_has_recv_t)read_rom_rom_ptr(&pd->has_recv_f);
   return has_recv_f();
 }
 
 static inline u08 pio_dev_status(pio_dev_ptr_t pd, u08 status_id, u08 *value)
 {
-  pio_dev_status_t status_f = (pio_dev_status_t)pgm_read_word(&pd->status_f);
+  pio_dev_status_t status_f = (pio_dev_status_t)read_rom_rom_ptr(&pd->status_f);
   return status_f(status_id, value);
 }
 
 static inline u08 pio_dev_control(pio_dev_ptr_t pd, u08 control_id, u08 value)
 {
-  pio_dev_control_t control_f = (pio_dev_control_t)pgm_read_word(&pd->control_f);
+  pio_dev_control_t control_f = (pio_dev_control_t)read_rom_rom_ptr(&pd->control_f);
   return control_f(control_id, value);
 }
 

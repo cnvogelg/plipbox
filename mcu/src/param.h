@@ -29,6 +29,7 @@
 
 #include "types.h"
 #include "arch.h"
+#include "hw_persist.h"
 
 struct param_def {
   // --- shared via protocol
@@ -43,16 +44,11 @@ struct param_def {
 };
 typedef struct param_def param_def_t;
 
-// param result
-#define PARAM_OK                  0
-#define PARAM_EEPROM_NOT_READY    1
-#define PARAM_EEPROM_CRC_MISMATCH 2
-
-// init parameters. try to load from eeprom or use default
+// init parameters. try to load from eeprom or use default (returns hw_persist_status)
 u08 param_init(void);
-// save param to eeprom (returns param result) 
+// save param to eeprom (returns hw_persist status)
 u08 param_save(void);
-// load param from eeprom (returns param result)
+// load param from eeprom (returns hw_persist status)
 u08 param_load(void);
 // reset param
 void param_reset(void);

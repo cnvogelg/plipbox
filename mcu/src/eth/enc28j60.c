@@ -10,9 +10,8 @@
 //
 // Adjusted by Christian Vogelgsaang to be Arduino-free C code
 
-#include <util/delay.h>
-
 #include "enc28j60.h"
+#include "hw_timer.h"
 #include "hw_spi.h"
 #include "pio.h"
 
@@ -349,7 +348,7 @@ static u08 enc28j60_init(u08 flags)
 
   // soft reset cpu
   writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
-  _delay_ms(2); // errata B7/2
+  hw_timer_delay_ms(2); // errata B7/2
   
   // wait or error
   u16 count = 0;
@@ -452,7 +451,7 @@ static void enc28j60_exit(void)
 {
   // soft reset cpu
   writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
-  _delay_ms(2); // errata B7/2
+  hw_timer_delay_ms(2); // errata B7/2
 }
 
 // ---------- control ----------
@@ -693,8 +692,8 @@ uint8_t enc28j60_do_BIST ( void )
 #endif
 
 // ----- pio_dev -----
-static const char PROGMEM dev_name[] = "enc28j60";
-const pio_dev_t PROGMEM pio_dev_enc28j60 = {
+static const char ROM_ATTR dev_name[] = "enc28j60";
+const pio_dev_t ROM_ATTR pio_dev_enc28j60 = {
   .name = dev_name,
 
   .init_f = enc28j60_init,

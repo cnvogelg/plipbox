@@ -39,12 +39,6 @@
 
 #include "debug.h"
 
-#include <util/crc16.h>
-#include <string.h>
-
-// eeprom param
-static param_t EEPROM_ATTR eeprom_param;
-
 static void dump_tag(u32 tag)
 {
   u32 shift = 24;
@@ -203,56 +197,15 @@ void param_dump(void)
   }
 }
 
-// build check sum for parameter block
-static uint16_t calc_crc16(param_t *p)
-{
-  uint16_t crc16 = 0xffff;
-  u08 *data = (u08 *)p;
-  for(u16 i=0;i<sizeof(param_t);i++) {
-    crc16 = _crc16_update(crc16,*data);
-    data++;
-  }
-  return crc16;
-}
 
 u08 param_save(void)
 {
-  // check that eeprom is writable
-  if(!eeprom_is_ready())
-    return PARAM_EEPROM_NOT_READY;
-
-  // calc check sum
-  param.crc = 0;
-  // calc current parameter crc
-  param.crc = calc_crc16(&param);
-
-  // write current param to eeprom
-  eeprom_write_block(&param,&eeprom_param,sizeof(param_t));
-
-  return PARAM_OK;
+  return hw_persist_save((hw_persist_base_t *)&param, sizeof(param_t));
 }
 
 u08 param_load(void)
 {
-  // check that eeprom is readable
-  if(!eeprom_is_ready())
-    return PARAM_EEPROM_NOT_READY;
-  
-  // read param
-  eeprom_read_block(&param,&eeprom_param,sizeof(param_t));
-
-  // get stored checksum
-  u16 got_crc = param.crc;
-
-  // recalc
-  param.crc = 0;
-  uint16_t calc_crc = calc_crc16(&param);
-  if(got_crc != calc_crc) {
-    param_reset();
-    return PARAM_EEPROM_CRC_MISMATCH;
-  }
-  
-  return PARAM_OK;
+  return hw_persist_load((hw_persist_base_t *)&param, sizeof(param_t));
 }
 
 void param_reset(void)
@@ -288,7 +241,7 @@ void param_set_cur_mac(mac_t mac)
 u08 param_init(void)
 {
   u08 res = param_load();
-  if(res != PARAM_OK) {
+  if(res != HW_PERSIST_OK) {
     param_reset();
     param_save();
   }

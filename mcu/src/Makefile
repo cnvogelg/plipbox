@@ -144,7 +144,7 @@ DISTDIR = ../bin
 VPATH = .:net:eth:base:proto:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
 
 # source files
-SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c
+SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c hw_persist.c
 SRC += util.c uartutil.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
 SRC += param_def.c param.c param_cmd.c

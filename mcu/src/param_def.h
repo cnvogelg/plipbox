@@ -4,10 +4,11 @@
 #include "types.h"
 #include "arch.h"
 #include "param.h"
+#include "hw_persist.h"
 
 typedef struct {
-  // first reserved entry is checksum
-  u16   crc;
+  // first reserved entry for persistence
+  hw_persist_base_t base;
 
   mac_t mac_addr;
   u16   mode;

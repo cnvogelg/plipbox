@@ -27,8 +27,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <avr/io.h>
-
 #include "types.h"
 
 // ----- conversion functions -----
@@ -57,12 +55,6 @@ extern u08 parse_word(const u08 *str,u16 *value);
 extern u08 parse_dword(const u08 *str,u32 *value);
 // parse a decimal byte value
 extern u08 parse_byte_dec(const u08 *buf, u08 *out);
-
-#ifdef DEBUG
-// ---- stack free -----
-extern void *__heap_start;
-inline u16 stack_free(void) { return SP - (u16) &__heap_start; }
-#endif
 
 #endif
 

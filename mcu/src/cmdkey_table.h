@@ -27,11 +27,11 @@
 #ifndef CMDKEY_TABLE_H
 #define CMDKEY_TABLE_H
 
-#include <avr/pgmspace.h>
+#include "arch.h"
 #include "types.h"
 
 #define COMMAND_KEY(x) static void x (void)
-#define CMDKEY_HELP(x,y) static const char x ## _help[] PROGMEM = y 
+#define CMDKEY_HELP(x,y) static const char x ## _help[] ROM_ATTR = y
 #define CMDKEY_ENTRY(x,y) { x, y, y ## _help }
 
 typedef void (*cmdkey_func_t)(void);
@@ -43,6 +43,6 @@ struct cmdkey_table_s {
 };
 typedef struct cmdkey_table_s cmdkey_table_t;
 
-extern const cmdkey_table_t PROGMEM cmdkey_table[];
+extern const cmdkey_table_t ROM_ATTR cmdkey_table[];
 
 #endif

@@ -27,8 +27,9 @@
 #ifndef ENC28J60_H
 #define ENC28J60_H
 
+#include "arch.h"
 #include "pio_dev.h"
 
-extern const pio_dev_t PROGMEM pio_dev_enc28j60;
+extern const pio_dev_t ROM_ATTR pio_dev_enc28j60;
 
 #endif

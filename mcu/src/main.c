@@ -109,7 +109,7 @@ int main(void)
   // param init
   u08 res = param_init();
   uart_send_pstring(PSTR("Device parameters "));
-  if(res == PARAM_OK) {
+  if(res == HW_PERSIST_OK) {
     uart_send_pstring(PSTR("loaded.\r\n\r\n"));
   } else {
     uart_send_pstring(PSTR("RESET!\r\n\r\n"));

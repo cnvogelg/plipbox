@@ -24,6 +24,7 @@
  *
  */
 
+#include "arch.h"
 #include "cmd_table.h"
 #include "uartutil.h"
 #include "util.h"
@@ -57,7 +58,7 @@ COMMAND(cmd_param_dump)
 COMMAND(cmd_param_save)
 {
   u08 result = param_save();
-  if(result == PARAM_OK) {
+  if(result == HW_PERSIST_OK) {
     return CMD_OK;
   } else {
     return CMD_MASK_ERROR | result;
@@ -67,7 +68,7 @@ COMMAND(cmd_param_save)
 COMMAND(cmd_param_load)
 {
   u08 result = param_load();
-  if(result == PARAM_OK) {
+  if(result == HW_PERSIST_OK) {
     return CMD_OK;
   } else {
     return CMD_MASK_ERROR | result;
@@ -203,7 +204,7 @@ CMD_NAME("fc", cmd_gen_fc, "set flow control [on]" );
 CMD_NAME("tm", cmd_gen_tm, "set mode" );
 
 // ----- Entries -----
-const cmd_table_t PROGMEM cmd_table[] = {
+const cmd_table_t ROM_ATTR cmd_table[] = {
   CMD_ENTRY(cmd_quit),
   CMD_ENTRY(cmd_device_reset),
   CMD_ENTRY(cmd_version),
