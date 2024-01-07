@@ -18,6 +18,7 @@ struct bench_opt
   ULONG delay; // 0=no delay, n=Delay(n)
   ULONG timeout; // in secs
   ULONG bufsize; // in bytes
+  BOOL  timing;
 };
 typedef struct bench_opt bench_opt_t;
 

@@ -20,6 +20,8 @@
 #include "device.h"
 #include "hw.h"
 
+#include "devices/plipbox.h"
+
 PUBLIC VOID SAVEDS ServerTask(VOID);
 PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
 PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
@@ -164,8 +166,17 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG u
       ** 13.05.96: Detlef Wuerkner <TetiSoft@apg.lahn.de>
       ** Rememer unit of 1st OpenDevice()
       */
-      if (pb->pb_DevNode.lib_OpenCnt == 1)
+      if (pb->pb_DevNode.lib_OpenCnt == 1) {
         pb->pb_Unit = unit;
+      }
+
+#ifdef ENABLE_TIMING
+      /* enable req timing? */
+      if (flags & S2PB_OPF_REQ_TIMING) {
+        d2(("enable req timing!"));
+        pb->pb_Flags |= PLIPF_REQ_TIMING;
+      }
+#endif
 
       /*
       ** Each opnener get's it's own BufferManagement. This is neccessary
@@ -377,6 +388,14 @@ PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
 {
   d2(("dev_termio: cmd=%ld, error=%ld, wireerror=%ld\n", (ULONG)ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error, ios2->ios2_WireError));
 
+#ifdef ENABLE_TIMING
+  /* req timing? */
+  if((pb->pb_Flags & PLIPF_REQ_TIMING) && (ios2->ios2_StatData != NULL)) {
+    s2pb_req_timing_t *rt = (s2pb_req_timing_t *)ios2->ios2_StatData;
+    hw_get_eclock(pb, &rt->end_req);
+  }
+#endif
+
   /* if this command was done asynchonously, we must
   ** reply the request
   */
@@ -397,6 +416,14 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASE
   ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
 
   d2(("dev_beginio: cmd=%ld req=%lx\n", (ULONG)ios2->ios2_Req.io_Command, (ULONG)ios2));
+
+#ifdef ENABLE_TIMING
+  /* req timing? */
+  if((pb->pb_Flags & PLIPF_REQ_TIMING) && (ios2->ios2_StatData != NULL)) {
+    s2pb_req_timing_t *rt = (s2pb_req_timing_t *)ios2->ios2_StatData;
+    hw_get_eclock(pb, &rt->start_req);
+  }
+#endif
 
   /*
   ** 1st level command dispatcher

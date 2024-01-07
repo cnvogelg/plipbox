@@ -22,6 +22,19 @@ GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
   timer_get_sys_time(th, (time_stamp_t *)time);
 }
 
+GLOBAL REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad)
+{
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  if(hwb == NULL) {
+    return;
+  }
+  timer_handle_t *th = proto_env_get_timer(hwb->env);
+  if(th == NULL) {
+    return;
+  }
+  timer_eclock_get(th, (time_stamp_t *)quad);
+}
+
 #define IO_TIMEOUT_DEF (500 * 1000)   // 500ms
 #define IO_TIMEOUT_MIN 500            // 500us
 #define IO_TIMEOUT_MAX (10000 * 1000) // 10s

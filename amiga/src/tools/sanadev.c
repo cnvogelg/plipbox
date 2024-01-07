@@ -25,6 +25,10 @@ struct sanadev_handle
 
   port_req_t write_pr;
   port_req_t read_pr;
+
+  BOOL timing;
+  s2pb_req_timing_t *write_timing;
+  s2pb_req_timing_t *read_timing;
 };
 
 /* copy helper for SANA-II device */
@@ -140,6 +144,9 @@ sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD 
 
   /* fetch device */
   sh->sana_dev = sh->cmd_pr.req->ios2_Req.io_Device;
+
+  /* is timing enabled in flags? */
+  sh->timing = (flags & S2PB_OPF_REQ_TIMING) == S2PB_OPF_REQ_TIMING;
 
   /* done. return handle */
   return sh;
@@ -263,10 +270,31 @@ BOOL sanadev_io_init(sanadev_handle_t *sh, UWORD *error)
   ok = alloc_port_req(&sh->read_pr, error);
   if (!ok)
   {
+    free_port_req(&sh->write_pr);
     return FALSE;
   }
 
   clone_req(&sh->cmd_pr, &sh->read_pr);
+
+  /* timing? */
+  if(sh->timing) {
+    sh->read_timing = AllocMem(sizeof(s2pb_req_timing_t), MEMF_ANY | MEMF_CLEAR);
+    if(sh->read_timing == NULL) {
+      free_port_req(&sh->write_pr);
+      free_port_req(&sh->read_pr);
+      return FALSE;
+    }
+
+    sh->write_timing = AllocMem(sizeof(s2pb_req_timing_t), MEMF_ANY | MEMF_CLEAR);
+    if(sh->write_timing == NULL) {
+      free_port_req(&sh->write_pr);
+      free_port_req(&sh->read_pr);
+      FreeMem(sh->read_timing, sizeof(s2pb_req_timing_t));
+      sh->read_timing = NULL;
+      return FALSE;
+    }
+  }
+
 
   return TRUE;
 }
@@ -275,6 +303,15 @@ void sanadev_io_exit(sanadev_handle_t *sh)
 {
   free_port_req(&sh->write_pr);
   free_port_req(&sh->read_pr);
+
+  if(sh->read_timing != NULL) {
+    FreeMem(sh->read_timing, sizeof(s2pb_req_timing_t));
+    sh->read_timing = NULL;
+  }
+  if(sh->write_timing != NULL) {
+    FreeMem(sh->write_timing, sizeof(s2pb_req_timing_t));
+    sh->write_timing = NULL;
+  }
 }
 
 BOOL sanadev_io_write(sanadev_handle_t *sh, UWORD pkt_type, sanadev_mac_t dst_addr, APTR data, ULONG data_len)
@@ -290,6 +327,7 @@ BOOL sanadev_io_write(sanadev_handle_t *sh, UWORD pkt_type, sanadev_mac_t dst_ad
   CopyMem(dst_addr, req->ios2_DstAddr, SANADEV_MAC_SIZE);
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
+  req->ios2_StatData = sh->write_timing;
 
   if (my_do_io(req) != 0)
   {
@@ -312,6 +350,7 @@ BOOL sanadev_io_write_raw(sanadev_handle_t *sh, APTR data, ULONG data_len)
   req->ios2_Req.io_Command = CMD_WRITE;
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
+  req->ios2_StatData = sh->write_timing;
 
   if (my_do_io(req) != 0)
   {
@@ -335,6 +374,7 @@ BOOL sanadev_io_broadcast(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG
   req->ios2_PacketType = pkt_type;
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
+  req->ios2_StatData = sh->write_timing;
 
   if (my_do_io(req) != 0)
   {
@@ -344,6 +384,11 @@ BOOL sanadev_io_broadcast(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULONG
   {
     return TRUE;
   }
+}
+
+s2pb_req_timing_t *sanadev_io_write_req_timing(sanadev_handle_t *sh)
+{
+  return sh->write_timing;
 }
 
 // --- Read ---
@@ -360,6 +405,7 @@ BOOL sanadev_io_read_start(sanadev_handle_t *sh, UWORD pkt_type, APTR data, ULON
   req->ios2_Req.io_Command = CMD_READ;
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
+  req->ios2_StatData = sh->read_timing;
 
   BeginIO((struct IORequest *)req);
   return TRUE;
@@ -376,6 +422,7 @@ BOOL sanadev_io_read_start_orphan(sanadev_handle_t *sh, APTR data, ULONG data_le
   req->ios2_Req.io_Command = S2_READORPHAN;
   req->ios2_Data = data;
   req->ios2_DataLength = data_len;
+  req->ios2_StatData = sh->read_timing;
 
   BeginIO((struct IORequest *)req);
   return TRUE;
@@ -439,6 +486,11 @@ BOOL sanadev_io_read_result_raw(sanadev_handle_t *sh, UBYTE **data, ULONG *data_
   {
     return FALSE;
   }
+}
+
+s2pb_req_timing_t *sanadev_io_read_req_timing(sanadev_handle_t *sh)
+{
+  return sh->read_timing;
 }
 
 // ----- Commands -----

@@ -36,6 +36,27 @@ static void timing_sum(timing_t *t, timing_t *sum)
   sum->delta += t->delta;
 }
 
+static void print_req_timing(const char *title, s2pb_req_timing_t *t)
+{
+  unsigned long long start_req, end_req, start_op, end_op;
+  unsigned long long delta_req, delta_op;
+
+  if(t != NULL) {
+    start_req = *(unsigned long long *)(&t->start_req);
+    end_req = *(unsigned long long *)(&t->end_req);
+    start_op = *(unsigned long long *)(&t->start_op);
+    end_op = *(unsigned long long *)(&t->end_op);
+
+    delta_req = end_req - start_req;
+    delta_op = end_op - start_op;
+
+    PutStr(title);
+    Printf(": d_req=%ld, d_op=%ld\n", (ULONG)delta_req, (ULONG)delta_op);
+  } else {
+    Printf("%s: n/a\n", title);
+  }
+}
+
 void bench_loop(bench_data_t *data, bench_opt_t *opt)
 {
   ULONG iter;
@@ -130,6 +151,14 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
           timing_print(&current);
           // sum
           timing_sum(&current, &sum);
+
+          // show timing values from driver
+          if(opt->timing) {
+            s2pb_req_timing_t *read_timing = sanadev_io_read_req_timing(sh);
+            s2pb_req_timing_t *write_timing = sanadev_io_write_req_timing(sh);
+            print_req_timing("RX", read_timing);
+            print_req_timing("TX", write_timing);
+          }
         }
       }
     }

@@ -40,7 +40,8 @@ static const char *TEMPLATE =
     "LOOPS/N/K,"
     "DELAY/N/K,"
     "TIMEOUT/N/K,"
-    "BUFSIZE/N/K";
+    "BUFSIZE/N/K,"
+    "TIMING/S";
 typedef struct
 {
   char *device;
@@ -54,6 +55,7 @@ typedef struct
   ULONG *delay;
   ULONG *timeout;
   ULONG *bufsize;
+  ULONG timing;
 } params_t;
 static params_t params;
 
@@ -179,6 +181,14 @@ static void setup_bench_opt(bench_opt_t *opt)
     opt->bufsize = SANADEV_ETH_RAW_FRAME_SIZE;
   }
   LOG(("Bufsize: %ld\n", opt->bufsize));
+
+  if (params.timing != 0)
+  {
+    opt->timing = TRUE;
+  } else {
+    opt->timing = FALSE;
+  }
+  LOG(("Timing: %ld\n", (ULONG)opt->timing));
 }
 
 /* ----- tool ----- */
@@ -210,9 +220,15 @@ static int plipbench(const char *device, LONG unit)
     return RETURN_ERROR;
   }
 
+  // enable timing in driver
+  ULONG flags = 0;
+  if(bench_opt.timing) {
+    flags = S2PB_OPF_REQ_TIMING;
+  }
+
   // open plipbox.device
-  LOG(("Opening device '%s' unit #%ld\n", device, unit));
-  data.sh = sanadev_open(device, unit, 0, &error);
+  LOG(("Opening device '%s' unit #%ld with flags %lx\n", device, unit, flags));
+  data.sh = sanadev_open(device, unit, flags, &error);
   if (data.sh == NULL)
   {
     Printf("Error opening device '%s' unit #%ld: code=%ld\n", device, unit, (LONG)error);

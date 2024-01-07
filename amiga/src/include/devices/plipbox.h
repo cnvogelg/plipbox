@@ -5,6 +5,20 @@
 
 #include <devices/sana2.h>
 
+// plipbox extra open flags
+#define S2PB_OPB_REQ_TIMING (8) /* exact request timing */
+#define S2PB_OPF_REQ_TIMING (1<<S2PB_OPB_REQ_TIMING)
+
+// structure for ios2_StatData when REQ_TIMING is enabled
+struct s2pb_req_timing {
+  S2QUAD  start_req;    /* start time of request in E clock */
+  S2QUAD  start_op;     /* start of op */
+  S2QUAD  end_op;
+  S2QUAD  end_req;
+};
+typedef struct s2pb_req_timing s2pb_req_timing_t;
+
+
 #define S2PB_BASE 0x5000
 
 // plipbox extra commands

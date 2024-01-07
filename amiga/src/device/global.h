@@ -146,11 +146,13 @@ struct PLIPBase
 #define PLIPB_EXCLUSIVE 1     /* current opener is exclusive */
 #define PLIPB_OFFLINE 2       /* currently not online (sic!) */
 #define PLIPB_SERVERSTOPPED 3 /* set by server while passing away */
+#define PLIPB_REQ_TIMING 4    /* request timing */
 
 #define PLIPF_REPLYSS (1 << PLIPB_REPLYSS)
 #define PLIPF_EXCLUSIVE (1 << PLIPB_EXCLUSIVE)
 #define PLIPF_OFFLINE (1 << PLIPB_OFFLINE)
 #define PLIPF_SERVERSTOPPED (1 << PLIPB_SERVERSTOPPED)
+#define PLIPF_REQ_TIMING (1 << PLIPB_REQ_TIMING)
 
 /*
 ** Values for PLIPBase->pb_ExtFlags

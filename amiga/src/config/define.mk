@@ -6,6 +6,7 @@ CPUSUFFIX   = 000
 BUILD_TYPE  = DEBUG
 DEBUG_LEVEL = 4   # bitmask 1..8 max is 15
 COMPILER    ?= vbcc
+COMMON_DEFINES = -DENABLE_TIMING
 
 # output directory
 BUILD_DIR = build_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)

@@ -50,6 +50,7 @@ GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb);
 
 GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
+GLOBAL REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);
 
 GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);

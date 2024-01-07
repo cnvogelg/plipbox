@@ -12,6 +12,8 @@
 #include "compiler.h"
 #include "hw.h"
 
+#include "devices/plipbox.h"
+
 /*
 ** return codes for write_frame()
 */
@@ -175,10 +177,27 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
   }
   else
   {
+#ifdef ENABLE_TIMING
+    /* req timing? */
+    s2pb_req_timing_t *rt = NULL;
+    if((pb->pb_Flags & PLIPF_REQ_TIMING) && (ios2->ios2_StatData != NULL)) {
+      rt = (s2pb_req_timing_t *)ios2->ios2_StatData;
+      hw_get_eclock(pb, &rt->start_op);
+    }
+#endif
+
     d2(("+hw_send\n"));
     d4r(("-t-"));
     rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
     d2(("-hw_send\n"));
+
+#ifdef ENABLE_TIMING
+    /* req timing? */
+    if(rt != NULL) {
+      hw_get_eclock(pb, &rt->end_op);
+    }
+#endif
+
 #if DEBUG & 2
     if (rc == AW_ERROR)
       d2(("Error sending packet (size=%ld)\n", (LONG)pb->pb_Frame->hwf_Size));
@@ -324,10 +343,27 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
   BOOL rv;
   struct HWFrame *frame = pb->pb_Frame;
 
+#ifdef ENABLE_TIMING
+  S2QUAD start_op, end_op;
+
+  /* req timing? */
+  if(pb->pb_Flags & PLIPF_REQ_TIMING) {
+    hw_get_eclock(pb, &start_op);
+  }
+#endif
+
   d2(("+hw_recv\n"));
   d4r(("+r+"));
   rv = hw_recv_frame(pb, frame);
   d2(("-hw_recv\n"));
+
+#ifdef ENABLE_TIMING
+  /* req timing? */
+  if(pb->pb_Flags & PLIPF_REQ_TIMING) {
+    hw_get_eclock(pb, &end_op);
+  }
+#endif
+
   if (rv)
   {
     pb->pb_DevStats.PacketsReceived++;
@@ -359,6 +395,15 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
         {
           DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
         }
+
+#ifdef ENABLE_TIMING
+        /* req timing? */
+        if((pb->pb_Flags & PLIPF_REQ_TIMING) && (got->ios2_StatData != NULL)) {
+          s2pb_req_timing_t *rt = (s2pb_req_timing_t *)got->ios2_StatData;
+          rt->start_op = start_op;
+          rt->end_op = end_op;
+        }
+#endif
 
         d2(("packet received, satisfying S2Request\n"));
         DevTermIO(pb, got);
@@ -399,6 +444,15 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
       {
         DoEvent(pb, S2EVENT_ERROR | S2EVENT_BUFF | S2EVENT_SOFTWARE);
       }
+
+#ifdef ENABLE_TIMING
+      /* req timing? */
+      if((pb->pb_Flags & PLIPF_REQ_TIMING) && (got->ios2_StatData != NULL)) {
+        s2pb_req_timing_t *rt = (s2pb_req_timing_t *)got->ios2_StatData;
+        rt->start_op = start_op;
+        rt->end_op = end_op;
+      }
+#endif
 
       d2(("orphan read\n"));
 
