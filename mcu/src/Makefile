@@ -141,7 +141,7 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:eth:base:proto:param:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
+VPATH = .:net:eth:base:proto:param:mode:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
 
 # source files
 SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c hw_persist.c
@@ -156,7 +156,8 @@ SRC += enc28j60.c
 endif
 SRC += pio.c pio_util.c
 SRC += proto_atom.c proto_cmd.c
-SRC += main.c mode.c mode_mod.c mode_cmd.c loop_buf.c
+SRC += main.c mode.c mode_mod.c mode_cmd.c mode_def.c
+SRC += mode_loop_buf.c
 
 ASRC = proto_low_asm.S
 
@@ -182,7 +183,7 @@ CFLAGS += -Wall -Werror -Wstrict-prototypes
 CFLAGS += -I$(AVRLIBC_DIR)/include
 CFLAGS += -mmcu=$(MCU)
 CFLAGS += -I. -Iarch -Iarch/$(ARCH) -Iarch/$(ARCH)/mach-$(MACH) -Iarch/common
-CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include -Iparam
+CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include -Iparam -Imode
 CFLAGS += -ffunction-sections -fdata-sections
  
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
