@@ -60,6 +60,11 @@ void param_get_def_mac(mac_t mac);
 void param_get_cur_mac(mac_t mac);
 void param_set_cur_mac(mac_t mac);
 
+// mode and nic
+u08 param_get_mode(void);
+u08 param_get_nic(void);
+u08 param_get_nic_flags(void);
+
 // generic param functions
 u08 param_get_num(void);
 u08 param_find_tag(u32 tag);

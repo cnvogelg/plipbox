@@ -45,6 +45,7 @@ void mode_init(void)
 {
   proto_status = PROTO_CMD_STATUS_IDLE;
   attached = 0;
+  mode_mod_init();
 }
 
 u08 mode_get_proto_status(void)
@@ -99,7 +100,7 @@ void mode_attach(void)
   }
 
   // get current module index from param
-  u08 mod_index = 0; //param_get_mode();
+  u08 mod_index = param_get_mode();
   mode_mod_set_current(mod_index);
 
   u08 result = mode_mod_attach();

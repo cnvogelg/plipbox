@@ -4,6 +4,7 @@
 // tags
 #define PARAM_TAG_MAC_ADDR      0x4d414300  // MAC\0
 #define PARAM_TAG_MODE          0x4d4f4445  // MODE
+#define PARAM_TAG_NIC           0x4e494300  // NIC
 #define PARAM_TAG_FLAG          0x464c4147  // FLAG
 #define PARAM_TAG_DLY           0x444c5900  // DLY
 #define PARAM_TAG_IP            0x49500000  // IP

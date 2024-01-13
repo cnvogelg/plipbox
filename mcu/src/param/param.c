@@ -238,6 +238,21 @@ void param_set_cur_mac(mac_t mac)
   }
 }
 
+u08 param_get_mode(void)
+{
+  return (u08)param.mode;
+}
+
+u08 param_get_nic(void)
+{
+  return (u08)param.nic;
+}
+
+u08 param_get_nic_flags(void)
+{
+  return (u08)param.nic_flags;
+}
+
 u08 param_init(void)
 {
   u08 res = param_load();
