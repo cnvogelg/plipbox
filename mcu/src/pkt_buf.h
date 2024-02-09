@@ -32,5 +32,6 @@
 #define PKT_BUF_SIZE    1514
 
 extern u08 pkt_buf[PKT_BUF_SIZE];
+extern u16 pkt_size;
 
 #endif

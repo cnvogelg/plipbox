@@ -93,12 +93,13 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
   timing_t current;
   timing_t sum = { 0,0,0,0,0,0 };
 
-  // prepare buffer
-  pktbuf_fill(tx_buf, 0);
-
   Printf("Bench Loop: Loops=%lu, BufSize=%lu\n", opt->loops, frame_size);
   Printf("EClock Freq: %ld Hz\n", atimer_eclock_freq(th));
   for(iter=0; iter<opt->loops; iter++) {
+
+    // prepare buffer
+    UBYTE fill_byte = (UBYTE)(iter & 0xff);
+    pktbuf_fill(tx_buf, fill_byte);
 
     Printf("Frame: %04ld  ", iter);
     Flush(Output());
@@ -140,7 +141,7 @@ void bench_loop(bench_data_t *data, bench_opt_t *opt)
       else {
         // check buffer
         ULONG pos = 0;
-        ok = pktbuf_check(&res_buf, 0, &pos);
+        ok = pktbuf_check(&res_buf, fill_byte, &pos);
         if(!ok) {
           Printf("Rx Buffer mismatch @%ld!\n", pos);
           stay = FALSE;

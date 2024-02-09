@@ -56,4 +56,14 @@ FORCE_INLINE void hw_spi_disable_cs0(void) { PORTB |= SPI_SS_MASK; }
 FORCE_INLINE void hw_spi_enable_cs1(void) { SPI_SS1_PORT &= ~SPI_SS1_MASK; }
 FORCE_INLINE void hw_spi_disable_cs1(void) { SPI_SS1_PORT |= SPI_SS1_MASK; }
 
+FORCE_INLINE void hw_spi_enable(u08 cs) {
+  if(cs == 0) hw_spi_enable_cs0();
+  else hw_spi_enable_cs1();
+}
+
+FORCE_INLINE void hw_spi_disable(u08 cs) {
+  if(cs == 0) hw_spi_disable_cs0();
+  else hw_spi_disable_cs1();
+}
+
 #endif // SPI_H

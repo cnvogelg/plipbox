@@ -1,5 +1,5 @@
-#ifndef LOOP_BUF_H
-#define LOOP_BUF_H
+#ifndef MODE_LOOP_BUF_H
+#define MODE_LOOP_BUF_H
 
 #include "mode_mod.h"
 

@@ -7,6 +7,7 @@
 #include "debug.h"
 #include "mode_mod.h"
 #include "mode.h"
+#include "mode_loop_buf.h"
 #include "pkt_buf.h"
 
 static u16 loop_size;

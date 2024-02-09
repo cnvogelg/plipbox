@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef NIC_DEV_H
-#define NIC_DEV_H
+#ifndef NIC_MOD_H
+#define NIC_MOD_H
 
 #include "arch.h"
 #include "types.h"
@@ -38,15 +38,15 @@ typedef void (*nic_mod_enable_t)(void);
 typedef void (*nic_mod_disable_t)(void);
 
 typedef u08  (*nic_mod_rx_num_pending_t)(void);
-typedef u08  (*nic_mod_rx_size_t)(u16 *got_size);
+typedef u16  (*nic_mod_rx_size_t)(void);
 
 typedef u08  (*nic_mod_rx_data_t)(u08 *buf, u16 size);
 typedef u08  (*nic_mod_tx_data_t)(const u08 *buf, u16 size);
 
-typedef u08  (*nic_mod_rx_direct_begin_t)(void);
-typedef u08  (*nic_mod_rx_direct_end_t)(void);
-typedef u08  (*nic_mod_tx_direct_begin_t)(u16 size);
-typedef u08  (*nic_mod_tx_direct_end_t)(void);
+typedef void (*nic_mod_rx_direct_begin_t)(u16 size);
+typedef u08  (*nic_mod_rx_direct_end_t)(u16 size);
+typedef void (*nic_mod_tx_direct_begin_t)(u16 size);
+typedef u08  (*nic_mod_tx_direct_end_t)(u16 size);
 
 typedef u08  (*nic_mod_ioctl_t)(u08 ioctl, u08 *value);
 
@@ -55,24 +55,24 @@ typedef struct {
   const char         *name;
   u16                 capabilities;
 
-  nic_mod_attach_t    attach_f;
-  nic_mod_detach_t    detach_f;
+  nic_mod_attach_t    attach;
+  nic_mod_detach_t    detach;
 
-  nic_mod_enable_t    enable_f;
-  nic_mod_disable_t   disable_f;
+  nic_mod_enable_t    enable;
+  nic_mod_disable_t   disable;
 
-  nic_mod_rx_num_pending_t  rx_num_pending_f;
-  nic_mod_rx_size_t   rx_size_f;
+  nic_mod_rx_num_pending_t  rx_num_pending;
+  nic_mod_rx_size_t   rx_size;
 
-  nic_mod_rx_data_t   rx_data_f;
-  nic_mod_tx_data_t   tx_data_f;
+  nic_mod_rx_data_t   rx_data;
+  nic_mod_tx_data_t   tx_data;
 
-  nic_mod_rx_direct_begin_t  rx_direct_begin_f;
-  nic_mod_rx_direct_end_t    rx_direct_end_f;
-  nic_mod_tx_direct_begin_t  tx_direct_begin_f;
-  nic_mod_tx_direct_end_t    tx_direct_end_f;
+  nic_mod_rx_direct_begin_t  rx_direct_begin;
+  nic_mod_rx_direct_end_t    rx_direct_end;
+  nic_mod_tx_direct_begin_t  tx_direct_begin;
+  nic_mod_tx_direct_end_t    tx_direct_end;
 
-  nic_mod_ioctl_t     ioctl_f;
+  nic_mod_ioctl_t     ioctl;
 } nic_mod_t;
 
 typedef const nic_mod_t *nic_mod_ptr_t;
@@ -95,92 +95,92 @@ static inline rom_pchar nic_mod_name(void)
 static inline u08 nic_mod_attach(u08 flags, mac_t mac)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_attach_t attach_f = (nic_mod_attach_t)read_rom_rom_ptr(&pd->attach_f);
-  return attach_f(flags, mac);
+  nic_mod_attach_t attach = (nic_mod_attach_t)read_rom_rom_ptr(&pd->attach);
+  return attach(flags, mac);
 }
 
 static inline void nic_mod_detach(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_detach_t detach_f = (nic_mod_detach_t)read_rom_rom_ptr(&pd->detach_f);
-  detach_f();
+  nic_mod_detach_t detach = (nic_mod_detach_t)read_rom_rom_ptr(&pd->detach);
+  detach();
 }
 
 static inline void nic_mod_enable(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_enable_t enable_f = (nic_mod_enable_t)read_rom_rom_ptr(&pd->enable_f);
-  enable_f();
+  nic_mod_enable_t enable = (nic_mod_enable_t)read_rom_rom_ptr(&pd->enable);
+  enable();
 }
 
 static inline void nic_mod_disable(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_disable_t disable_f = (nic_mod_disable_t)read_rom_rom_ptr(&pd->disable_f);
-  disable_f();
+  nic_mod_disable_t disable = (nic_mod_disable_t)read_rom_rom_ptr(&pd->disable);
+  disable();
 }
 
 static inline u08 nic_mod_rx_num_pending(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_num_pending_t rx_num_pending_f = (nic_mod_rx_num_pending_t)read_rom_rom_ptr(&pd->rx_num_pending_f);
-  return rx_num_pending_f();
+  nic_mod_rx_num_pending_t rx_num_pending = (nic_mod_rx_num_pending_t)read_rom_rom_ptr(&pd->rx_num_pending);
+  return rx_num_pending();
 }
 
-static inline u08 nic_mod_rx_size(u16 *got_size)
+static inline u16 nic_mod_rx_size(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_size_t rx_size_f = (nic_mod_rx_size_t)read_rom_rom_ptr(&pd->rx_size_f);
-  return rx_size_f(got_size);
+  nic_mod_rx_size_t rx_size = (nic_mod_rx_size_t)read_rom_rom_ptr(&pd->rx_size);
+  return rx_size();
 }
 
 static inline u08 nic_mod_rx_data(u08 *buf, u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_data_t rx_data_f = (nic_mod_rx_data_t)read_rom_rom_ptr(&pd->rx_data_f);
-  return rx_data_f(buf, size);
+  nic_mod_rx_data_t rx_data = (nic_mod_rx_data_t)read_rom_rom_ptr(&pd->rx_data);
+  return rx_data(buf, size);
 }
 
 static inline u08 nic_mod_tx_data(const u08 *buf, u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_tx_data_t tx_data_f = (nic_mod_tx_data_t)read_rom_rom_ptr(&pd->tx_data_f);
-  return tx_data_f(buf, size);
+  nic_mod_tx_data_t tx_data = (nic_mod_tx_data_t)read_rom_rom_ptr(&pd->tx_data);
+  return tx_data(buf, size);
 }
 
-static inline u08 nic_mod_rx_direct_begin(void)
+static inline void nic_mod_rx_direct_begin(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_direct_begin_t rx_direct_begin_f = (nic_mod_rx_direct_begin_t)read_rom_rom_ptr(&pd->rx_direct_begin_f);
-  return rx_direct_begin_f();
+  nic_mod_rx_direct_begin_t rx_direct_begin = (nic_mod_rx_direct_begin_t)read_rom_rom_ptr(&pd->rx_direct_begin);
+  rx_direct_begin(size);
 }
 
-static inline u08 nic_mod_rx_direct_end(void)
+static inline u08 nic_mod_rx_direct_end(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_direct_end_t rx_direct_end_f = (nic_mod_rx_direct_end_t)read_rom_rom_ptr(&pd->rx_direct_end_f);
-  return rx_direct_end_f();
+  nic_mod_rx_direct_end_t rx_direct_end = (nic_mod_rx_direct_end_t)read_rom_rom_ptr(&pd->rx_direct_end);
+  return rx_direct_end(size);
 }
 
-static inline u08 nic_mod_tx_direct_begin(u16 size)
+static inline void nic_mod_tx_direct_begin(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_tx_direct_begin_t tx_direct_begin_f = (nic_mod_tx_direct_begin_t)read_rom_rom_ptr(&pd->tx_direct_begin_f);
-  return tx_direct_begin_f(size);
+  nic_mod_tx_direct_begin_t tx_direct_begin = (nic_mod_tx_direct_begin_t)read_rom_rom_ptr(&pd->tx_direct_begin);
+  tx_direct_begin(size);
 }
 
-static inline u08 nic_mod_tx_direct_end(void)
+static inline u08 nic_mod_tx_direct_end(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_tx_direct_end_t tx_direct_end_f = (nic_mod_tx_direct_end_t)read_rom_rom_ptr(&pd->tx_direct_end_f);
-  return tx_direct_end_f();
+  nic_mod_tx_direct_end_t tx_direct_end = (nic_mod_tx_direct_end_t)read_rom_rom_ptr(&pd->tx_direct_end);
+  return tx_direct_end(size);
 }
 
-static inline u08 nic_mod_ioctl(u08 ioctl, u08 *value)
+static inline u08 nic_mod_ioctl(u08 id, u08 *value)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_ioctl_t ioctl_f = (nic_mod_ioctl_t)read_rom_rom_ptr(&pd->ioctl_f);
-  return ioctl_f(ioctl, value);
+  nic_mod_ioctl_t ioctl = (nic_mod_ioctl_t)read_rom_rom_ptr(&pd->ioctl);
+  return ioctl(id, value);
 }
 
 #endif
