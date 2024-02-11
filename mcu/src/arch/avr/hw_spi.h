@@ -34,6 +34,8 @@
 #include "spi_pins.h"
 #include "hw_spi_common.h"
 
+#define HW_SPI_NUM_CS     2
+
 extern void hw_spi_init(void);
 extern void hw_spi_set_speed(u08 speed);
 

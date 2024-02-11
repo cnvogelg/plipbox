@@ -31,16 +31,13 @@
 #include "types.h"
 
 /* function pointers */
-typedef u08  (*nic_mod_attach_t)(u08 flags, mac_t mac);
+typedef u08  (*nic_mod_attach_t)(u16 *caps, u08 port, mac_t mac);
 typedef void (*nic_mod_detach_t)(void);
 
-typedef void (*nic_mod_enable_t)(void);
-typedef void (*nic_mod_disable_t)(void);
-
 typedef u08  (*nic_mod_rx_num_pending_t)(void);
-typedef u16  (*nic_mod_rx_size_t)(void);
-
+typedef u08  (*nic_mod_rx_size_t)(u16 *got_size);
 typedef u08  (*nic_mod_rx_data_t)(u08 *buf, u16 size);
+
 typedef u08  (*nic_mod_tx_data_t)(const u08 *buf, u16 size);
 
 typedef void (*nic_mod_rx_direct_begin_t)(u16 size);
@@ -53,13 +50,10 @@ typedef u08  (*nic_mod_ioctl_t)(u08 ioctl, u08 *value);
 /* device structure */
 typedef struct {
   const char         *name;
-  u16                 capabilities;
+  u16                 caps;
 
   nic_mod_attach_t    attach;
   nic_mod_detach_t    detach;
-
-  nic_mod_enable_t    enable;
-  nic_mod_disable_t   disable;
 
   nic_mod_rx_num_pending_t  rx_num_pending;
   nic_mod_rx_size_t   rx_size;
@@ -92,11 +86,17 @@ static inline rom_pchar nic_mod_name(void)
   return (rom_pchar)read_rom_rom_ptr(&pd->name);
 }
 
-static inline u08 nic_mod_attach(u08 flags, mac_t mac)
+static inline u16 nic_mod_caps(void)
+{
+  nic_mod_ptr_t pd = nic_mod_ptr;
+  return read_rom_word(&pd->caps);
+}
+
+static inline u08 nic_mod_attach(u16 *caps, u08 port, mac_t mac)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_attach_t attach = (nic_mod_attach_t)read_rom_rom_ptr(&pd->attach);
-  return attach(flags, mac);
+  return attach(caps, port, mac);
 }
 
 static inline void nic_mod_detach(void)
@@ -106,20 +106,6 @@ static inline void nic_mod_detach(void)
   detach();
 }
 
-static inline void nic_mod_enable(void)
-{
-  nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_enable_t enable = (nic_mod_enable_t)read_rom_rom_ptr(&pd->enable);
-  enable();
-}
-
-static inline void nic_mod_disable(void)
-{
-  nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_disable_t disable = (nic_mod_disable_t)read_rom_rom_ptr(&pd->disable);
-  disable();
-}
-
 static inline u08 nic_mod_rx_num_pending(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
@@ -127,11 +113,11 @@ static inline u08 nic_mod_rx_num_pending(void)
   return rx_num_pending();
 }
 
-static inline u16 nic_mod_rx_size(void)
+static inline u08 nic_mod_rx_size(u16 *got_size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_rx_size_t rx_size = (nic_mod_rx_size_t)read_rom_rom_ptr(&pd->rx_size);
-  return rx_size();
+  return rx_size(got_size);
 }
 
 static inline u08 nic_mod_rx_data(u08 *buf, u16 size)

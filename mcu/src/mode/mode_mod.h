@@ -39,7 +39,7 @@ typedef u08  (*mode_mod_rx_poll_t)(void);
 typedef u08* (*mode_mod_tx_begin_t)(u16 size);
 typedef u08  (*mode_mod_tx_end_t)(u16 size);
 
-typedef u16  (*mode_mod_rx_size_t)(void);
+typedef u08  (*mode_mod_rx_size_t)(u16 *got_size);
 typedef u08* (*mode_mod_rx_begin_t)(u16 size);
 typedef u08  (*mode_mod_rx_end_t)(u16 size);
 
@@ -112,11 +112,11 @@ static inline u08 mode_mod_tx_end(u16 size)
   return tx_end(size);
 }
 
-static inline u16 mode_mod_rx_size(void)
+static inline u08 mode_mod_rx_size(u16 *got_size)
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
   mode_mod_rx_size_t rx_size = (mode_mod_rx_size_t)read_rom_rom_ptr(&pd->rx_size);
-  return rx_size();
+  return rx_size(got_size);
 }
 
 static inline u08 *mode_mod_rx_begin(u16 size)

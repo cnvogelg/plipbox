@@ -63,7 +63,8 @@ void param_set_cur_mac(mac_t mac);
 // mode and nic
 u08 param_get_mode(void);
 u08 param_get_nic(void);
-u08 param_get_nic_flags(void);
+u16 param_get_nic_caps(void);
+u08 param_get_nic_port(void);
 
 // generic param functions
 u08 param_get_num(void);

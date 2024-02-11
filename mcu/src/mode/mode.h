@@ -40,7 +40,7 @@ void mode_detach(void);
 u08 *mode_tx_begin(u16 size);
 u08  mode_tx_end(u16 size);
 
-u16  mode_rx_size(void);
+u08  mode_rx_size(u16 *got_size);
 u08 *mode_rx_begin(u16 size);
 u08  mode_rx_end(u16 size);
 

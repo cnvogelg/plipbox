@@ -13,10 +13,13 @@ typedef struct {
   mac_t mac_addr;
   u16   mode;
   u16   nic;
-  u16   nic_flags;
+  u16   nic_caps;
+  u16   nic_port;
+#if 0
   u32   delay;
   ip_addr_t  ip_addr;
   ip_addr_t  net_mask;
+#endif
 } param_t;
 
 extern const param_t ROM_ATTR default_param;

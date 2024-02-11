@@ -169,13 +169,14 @@ u08 mode_tx_end(u16 size)
   }
 }
 
-u16 mode_rx_size(void)
+u08 mode_rx_size(u16 *got_size)
 {
   if(attached) {
-    return mode_mod_rx_size();
+    return mode_mod_rx_size(got_size);
   } else {
     DS("rx_size"); not_attached();
-    return 0;
+    *got_size = 0;
+    return MODE_ERROR;
   }
 }
 

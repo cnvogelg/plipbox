@@ -33,6 +33,8 @@
 #include "uartutil.h"
 #include "param.h"
 
+static u08 is_direct_io;
+
 void nic_init(void)
 {
   nic_mod_init();
@@ -46,39 +48,61 @@ void nic_set_device(u08 device)
 u08 nic_attach_params(void)
 {
   u08 nic = param_get_nic();
-  u08 nic_flags = param_get_nic_flags();
+  u16 nic_caps = param_get_nic_caps();
+  u08 nic_port = param_get_nic_port();
   mac_t mac;
   param_get_cur_mac(mac);
 
   nic_set_device(nic);
-  u08 res = nic_attach(nic_flags, mac);
+  u08 res = nic_attach(nic_caps, nic_port, mac);
 
   return res;
 }
 
-u08 nic_attach(u08 flags, mac_t mac)
+u08 nic_attach(u16 caps, u08 port, mac_t mac)
 {
+  u08 device = nic_mod_get_current();
+
+  // get caps device has to offer
+  u16 caps_available = nic_caps_available();
+
   // show hello
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("nic_attach: #"));
   // dev no
-  u08 device = nic_mod_get_current();
   uart_send_hex_byte(device);
   uart_send_spc();
   // dev name
   rom_pchar name = nic_mod_name();
   uart_send_pstring(name);
-  uart_send_spc();
-  // flags
-  uart_send_hex_byte(flags);
-  uart_send_spc();
+  // caps
+  uart_send_pstring(PSTR(" caps="));
+  uart_send_hex_word(caps);
+  uart_send_pstring(PSTR("/"));
+  uart_send_hex_word(caps_available);
+  // port
+  uart_send_pstring(PSTR(" port="));
+  uart_send_hex_byte(port);
   // mac
+  uart_send_pstring(PSTR(" mac="));
   uart_send_hex_mac(mac);
 
+  // the caps we can use
+  u16 caps_req = caps & caps_available;
+
+  // check for direct io?
+  if(caps_req & NIC_CAP_DIRECT_IO) {
+    uart_send_pstring(PSTR(" DIO"));
+    is_direct_io = 1;
+  } else {
+    is_direct_io = 0;
+  }
+
   // call init
-  u08 result = nic_mod_attach(flags, mac);
+  u08 result = nic_mod_attach(&caps_req, port, mac);
   if(result == NIC_OK) {
-    uart_send_pstring(PSTR(": ok!"));
+    uart_send_pstring(PSTR(": ok, res_caps="));
+    uart_send_hex_word(caps_req);
 
     // show revision
     u08 rev;
@@ -114,34 +138,19 @@ void nic_detach(void)
 
 }
 
-u16 nic_capabilites(void)
+u16 nic_caps_available(void)
 {
-  // TODO
-  return 0;
+  return nic_mod_caps();
+}
+
+u16 nic_caps_in_use(void)
+{
+  return nic_mod_caps();
 }
 
 u08 nic_is_direct(void)
 {
-  // TODO
-  return 0;
-}
-
-void nic_enable(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("nic_enable"));
-  uart_send_crlf();
-
-  nic_mod_enable();
-}
-
-void nic_disable(void)
-{
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("nic_disable"));
-  uart_send_crlf();
-
-  nic_mod_disable();
+  return is_direct_io;
 }
 
 u08 nic_rx_num_pending(void)
@@ -149,9 +158,9 @@ u08 nic_rx_num_pending(void)
   return nic_mod_rx_num_pending();
 }
 
-u16 nic_rx_size()
+u08 nic_rx_size(u16 *got_size)
 {
-  return nic_mod_rx_size();
+  return nic_mod_rx_size(got_size);
 }
 
 u08 nic_rx_data(u08 *buf, u16 size)

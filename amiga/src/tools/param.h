@@ -18,4 +18,7 @@ extern int param_parse_val(const char *str, s2pb_param_def_t *def, UBYTE *data);
 extern int param_print_val(char *str, s2pb_param_def_t *def, const UBYTE *data);
 extern char *param_perror(int res);
 
+extern void param_set_wire_value(UBYTE *data, ULONG number, int value_bytes);
+extern ULONG param_get_wire_value(const UBYTE *data, int value_bytes);
+
 #endif

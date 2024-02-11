@@ -10,7 +10,7 @@
 #include "nic_enc28j60.h"
 #include "pkt_buf.h"
 
-static u08 attach(u08 flags, mac_t mac)
+static u08 attach(u16 *caps, u08 port, mac_t mac)
 {
   pkt_size = 0;
   return 0;
@@ -21,54 +21,42 @@ static void detach(void)
 
 }
 
-static void enable(void)
-{
-
-}
-
-static void disable(void)
-{
-
-}
-
 static u08 rx_num_pending(void)
 {
   return (pkt_size > 0) ? 1 : 0;
 }
 
-static u16 rx_size(void)
+static u08 rx_size(u16 *got_size)
 {
-  return pkt_size;
+  *got_size = pkt_size;
+  return NIC_OK;
 }
 
 static u08 rx_data(u08 *buf, u16 size)
 {
   pkt_size = 0;
-  return 0;
+  return NIC_OK;
 }
 
 static u08 tx_data(const u08 *buf, u16 size)
 {
   pkt_size = size;
-  return 0;
+  return NIC_OK;
 }
 
 static u08 ioctl(u08 ioctl, u08 *value)
 {
-  return 0;
+  return NIC_ERROR_IOCTL_NOT_FOUND;
 }
 
 // ----- NIC module -----
 static const char ROM_ATTR name[] = "loop";
 const nic_mod_t ROM_ATTR nic_mod_loop = {
   .name = name,
-  .capabilities = 0,
+  .caps = NIC_CAP_LOOP_BUF,
 
   .attach = attach,
   .detach = detach,
-
-  .enable = enable,
-  .disable = disable,
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,

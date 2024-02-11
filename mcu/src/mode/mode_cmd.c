@@ -58,9 +58,9 @@ u08 proto_cmd_api_tx_end(u16 size)
 
 // ----- rx packet from pio and send to parallel port -----
 
-u16 proto_cmd_api_rx_size(void)
+u08 proto_cmd_api_rx_size(u16 *got_size)
 {
-  return mode_rx_size();
+  return mode_rx_size(got_size);
 }
 
 u08 *proto_cmd_api_rx_begin(u16 size)

@@ -28,22 +28,7 @@
 #define NIC_H
 
 #include "types.h"
-
-/* result values */
-#define NIC_OK                0
-#define NIC_ERROR_NOT_FOUND   1
-
-/* capabilities */
-#define NIC_CAP_DIRECT_IO       1
-#define NIC_CAP_BROADCAST       2
-#define NIC_CAP_FULL_DUPLEX     4
-#define NIC_CAP_FLOW_CONTROL    8
-
-/* init flags */
-#define NIC_FLAG_FULL_DUPLEX    1
-#define NIC_FLAG_LOOP_BACK      2
-#define NIC_FLAG_BROADCAST      4
-#define NIC_FLAG_FLOW_CONTROL   8
+#include "nic_shared.h"
 
 /* ioctl */
 #define NIC_IOCTL_GET_HW_VERSION      0
@@ -55,17 +40,15 @@ extern void nic_init(void);
 extern void nic_set_device(u08 device);
 
 extern u08 nic_attach_params(void);
-extern u08 nic_attach(u08 flags, mac_t mac);
+extern u08 nic_attach(u16 caps, u08 port, mac_t mac);
 extern void nic_detach(void);
 
-extern u16 nic_capabilites(void);
+extern u16 nic_caps_available(void);
+extern u16 nic_caps_in_use(void);
 extern u08 nic_is_direct(void);
 
-extern void nic_enable(void);
-extern void nic_disable(void);
-
 extern u08 nic_rx_num_pending(void);
-extern u16 nic_rx_size(void);
+extern u08 nic_rx_size(u16 *got_size);
 
 // buffer API rx/tx
 extern u08 nic_rx_data(u08 *buf, u16 size);

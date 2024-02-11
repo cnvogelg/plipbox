@@ -1,25 +1,16 @@
 #ifndef PARAM_SHARED_H
 #define PARAM_SHARED_H
 
+#include "types.h"
+
+#define MAKE_TAG(a,b,c,d)      ( (((u32)a)<<24) | (((u32)b)<<16) | (((u32)c)<<8) | ((u32)d) )
+
 // tags
-#define PARAM_TAG_MAC_ADDR      0x4d414300  // MAC\0
-#define PARAM_TAG_MODE          0x4d4f4445  // MODE
-#define PARAM_TAG_NIC           0x4e494300  // NIC
-#define PARAM_TAG_FLAG          0x464c4147  // FLAG
-#define PARAM_TAG_DLY           0x444c5900  // DLY
-#define PARAM_TAG_IP            0x49500000  // IP
-#define PARAM_TAG_NMSK          0x4e4d534b  // NMSK
-
-// mode values
-#define PARAM_MODE_NIC            0x00  // normal operation as NIC
-#define PARAM_MODE_LOOPBACK_BUF   0x01  // loopback in plipbox buffer (no pio)
-#define PARAM_MODE_LOOPBACK_DEV   0x02  // loopback in PIO's buffer
-#define PARAM_MODE_LOOPBACK_MAC   0x03  // loopback in PIO's MAC
-
-// flag values
-#define PARAM_FLAG_PIO_FULL_DUPLEX    0x01
-#define PARAM_FLAG_PIO_FLOW_CONTROL   0x02
-#define PARAM_FLAG_PIO_DIRECT_SPI     0x04  // transfer buffer directly to pio
+#define PARAM_TAG_MAC_ADDR      MAKE_TAG('M','A','C',0)
+#define PARAM_TAG_MODE          MAKE_TAG('M','O','D','E')
+#define PARAM_TAG_NIC           MAKE_TAG('N','I','C',0)
+#define PARAM_TAG_NCAP          MAKE_TAG('N','C','A','P')
+#define PARAM_TAG_NPRT          MAKE_TAG('N','P','R','T')
 
 // param description
 // +00 u08 index

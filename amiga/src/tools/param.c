@@ -132,7 +132,7 @@ static int get_base(s2pb_param_def_t *def)
   return base;
 }
 
-static void set_value(UBYTE *data, ULONG number, int value_bytes)
+void param_set_wire_value(UBYTE *data, ULONG number, int value_bytes)
 {
   // to little endian
   if (value_bytes == 1)
@@ -172,7 +172,7 @@ static int parse_scalar(const char *str, s2pb_param_def_t *def, UBYTE *data,
   }
 
   // copy number to buffer
-  set_value(data, number, value_bytes);
+  param_set_wire_value(data, number, value_bytes);
 
   return PARAM_OK;
 }
@@ -242,7 +242,7 @@ static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
       return PARAM_DATA_TOO_LONG;
     }
 
-    set_value(ptr, number, value_bytes);
+    param_set_wire_value(ptr, number, value_bytes);
     ptr += value_bytes;
   }
 
@@ -360,7 +360,7 @@ static int print_def(char *str, s2pb_param_def_t *def)
   return sprintf(str, "#%03lu %-4s [%4lu]  ", (ULONG)def->index, tag, (ULONG)def->size);
 }
 
-static ULONG get_val(const UBYTE *data, int value_bytes)
+ULONG param_get_wire_value(const UBYTE *data, int value_bytes)
 {
   if (value_bytes == 1)
   {
@@ -398,7 +398,7 @@ static int print_scalar(char *str, s2pb_param_def_t *def, const UBYTE *data, int
   str += len;
 
   int base = get_base(def);
-  ULONG number = get_val(data, value_bytes);
+  ULONG number = param_get_wire_value(data, value_bytes);
   int consumed = 0;
   int res = print_number(str, base, number, value_bytes, 0, &consumed);
 
@@ -450,7 +450,7 @@ static int print_array(char *str, s2pb_param_def_t *def, const UBYTE *data, int 
 
     // print number
     int consumed = 0;
-    ULONG number = get_val(ptr, value_bytes);
+    ULONG number = param_get_wire_value(ptr, value_bytes);
     int res = print_number(str, base, number, value_bytes, 0, &consumed);
     if (res != PARAM_OK)
     {

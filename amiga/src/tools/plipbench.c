@@ -7,6 +7,8 @@
 #include "sanadev.h"
 #include "param_tag.h"
 #include "param_shared.h"
+#include "nic_shared.h"
+#include "mode_shared.h"
 #include "bench.h"
 #include "atimer.h"
 
@@ -36,6 +38,7 @@ static const char *TEMPLATE =
     "LOOPBACK_BUF/S,"
     "LOOPBACK_DEV/S,"
     "LOOPBACK_MAC/S,"
+    "FULL_DUPLEX/S,"
     "DIRECT_SPI/S,"
     "LOOPS/N/K,"
     "DELAY/N/K,"
@@ -50,6 +53,7 @@ typedef struct
   ULONG loopback_buf;
   ULONG loopback_dev;
   ULONG loopback_mac;
+  ULONG full_duplex;
   ULONG direct_spi;
   ULONG *loops;
   ULONG *delay;
@@ -60,11 +64,13 @@ typedef struct
 static params_t params;
 
 static UWORD old_mode;
-static UWORD old_flag;
+static UWORD old_ncap;
 
 static BOOL set_mode_and_flags(sanadev_handle_t *sh)
 {
   BOOL ok;
+  UWORD ncap = 0;
+  UWORD mode = 0;
 
   // save old mode
   ok = param_tag_mode_get(sh, &old_mode);
@@ -75,21 +81,22 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
   LOG(("Old Mode: %ld\n", (LONG)old_mode));
 
   // set new mode
-  UWORD mode = 0;
   if (params.loopback_buf)
   {
     LOG(("Mode: loopback with plipbox buffer\n"));
-    mode = PARAM_MODE_LOOPBACK_BUF;
+    mode = MODE_LOOP_BUF;
   }
   else if (params.loopback_dev)
   {
-    LOG(("Mode: loopback with PIO buffer\n"));
-    mode = PARAM_MODE_LOOPBACK_DEV;
+    LOG(("Mode: loopback with NIC buffer\n"));
+    mode = MODE_NIC;
+    ncap = NIC_CAP_LOOP_BUF;
   }
   else if (params.loopback_mac)
   {
-    LOG(("Mode: loopback with PIO MAC\n"));
-    mode = PARAM_MODE_LOOPBACK_MAC;
+    LOG(("Mode: loopback with NIC MAC\n"));
+    mode = MODE_NIC;
+    ncap = NIC_CAP_LOOP_MAC;
   }
   LOG(("Setting mode: %ld\n", (LONG)mode));
   ok = param_tag_mode_set(sh, mode);
@@ -98,23 +105,29 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
     return FALSE;
   }
 
-  // save old flag
-  ok = param_tag_flag_get(sh, &old_flag);
+  // save old nic caps
+  ok = param_tag_ncap_get(sh, &old_ncap);
   if (!ok)
   {
     return FALSE;
   }
-  LOG(("Old Flag: %ld\n", (LONG)old_flag));
+  LOG(("Old NIC Caps: $%lx\n", (LONG)old_ncap));
+
+  // full duplex
+  if (params.full_duplex)
+  {
+    LOG(("NIC Cap: Full Duplex\n"));
+    ncap |= NIC_CAP_FULL_DUPLEX;
+  }
 
   // set new flag
-  UWORD flag = 0;
   if (params.direct_spi)
   {
-    LOG(("Flag: direct SPI transfer to PIO\n"));
-    flag = PARAM_FLAG_PIO_DIRECT_SPI;
+    LOG(("NIC Cap: direct SPI transfer to NIC\n"));
+    ncap |= NIC_CAP_DIRECT_IO;
   }
-  LOG(("Setting flag: %ld\n", (LONG)flag));
-  ok = param_tag_flag_set(sh, flag);
+  LOG(("Setting NIC Caps: $%lx\n", (LONG)ncap));
+  ok = param_tag_ncap_set(sh, ncap);
   return ok;
 }
 
@@ -129,8 +142,8 @@ static BOOL restore_mode_and_flags(sanadev_handle_t *sh)
     return FALSE;
   }
 
-  LOG(("Restore Flag: %ld\n", (LONG)old_flag));
-  ok = param_tag_flag_set(sh, old_flag);
+  LOG(("Restore NIC Caps: %ld\n", (LONG)old_ncap));
+  ok = param_tag_ncap_set(sh, old_ncap);
   return ok;
 }
 

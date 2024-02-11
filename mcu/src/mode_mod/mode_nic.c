@@ -63,9 +63,13 @@ static u08 tx_end(u16 size)
   return MODE_OK;
 }
 
-static u16 rx_size(void)
+static u08 rx_size(u16 *got_size)
 {
-  return nic_rx_size();
+  u08 res = nic_rx_size(got_size);
+  if(res != NIC_OK) {
+    return MODE_ERROR;
+  }
+  return MODE_OK;
 }
 
 static u08 *rx_begin(u16 size)

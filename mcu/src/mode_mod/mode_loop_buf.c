@@ -41,11 +41,11 @@ static u08 tx_end(u16 size)
   return MODE_OK;
 }
 
-static u16 rx_size(void)
+static u08 rx_size(u16 *got_size)
 {
-  u16 size = loop_size;
+  *got_size = loop_size;
   loop_size = 0;
-  return size;
+  return MODE_OK;
 }
 
 static u08 *rx_begin(u16 size)

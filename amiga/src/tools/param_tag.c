@@ -16,7 +16,7 @@ BOOL param_tag_mode_set(sanadev_handle_t *sh, UWORD mode)
   {
     return FALSE;
   }
-  return plipbox_cmd_param_set_val(sh, id, sizeof(mode), (UBYTE *)&mode);
+  return plipbox_cmd_param_set_word(sh, id, mode);
 }
 
 BOOL param_tag_mode_get(sanadev_handle_t *sh, UWORD *mode)
@@ -27,29 +27,29 @@ BOOL param_tag_mode_get(sanadev_handle_t *sh, UWORD *mode)
   {
     return FALSE;
   }
-  return plipbox_cmd_param_get_val(sh, id, sizeof(mode), (UBYTE *)&mode);
+  return plipbox_cmd_param_get_word(sh, id, mode);
 }
 
-// flag
+// ncap
 
-BOOL param_tag_flag_set(sanadev_handle_t *sh, UWORD flag)
+BOOL param_tag_ncap_set(sanadev_handle_t *sh, UWORD flag)
 {
   UWORD id = 0;
-  BOOL ok = plipbox_cmd_param_find_tag(sh, PARAM_TAG_FLAG, &id);
+  BOOL ok = plipbox_cmd_param_find_tag(sh, PARAM_TAG_NCAP, &id);
   if (!ok)
   {
     return FALSE;
   }
-  return plipbox_cmd_param_set_val(sh, id, sizeof(flag), (UBYTE *)&flag);
+  return plipbox_cmd_param_set_word(sh, id, flag);
 }
 
-BOOL param_tag_flag_get(sanadev_handle_t *sh, UWORD *flag)
+BOOL param_tag_ncap_get(sanadev_handle_t *sh, UWORD *flag)
 {
   UWORD id = 0;
-  BOOL ok = plipbox_cmd_param_find_tag(sh, PARAM_TAG_FLAG, &id);
+  BOOL ok = plipbox_cmd_param_find_tag(sh, PARAM_TAG_NCAP, &id);
   if (!ok)
   {
     return FALSE;
   }
-  return plipbox_cmd_param_get_val(sh, id, sizeof(flag), (UBYTE *)&flag);
+  return plipbox_cmd_param_get_word(sh, id, flag);
 }

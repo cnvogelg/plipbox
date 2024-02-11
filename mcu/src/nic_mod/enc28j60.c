@@ -246,7 +246,6 @@
 
 static u08 Enc28j60Bank;
 static u16 gNextPacketPtr;
-static u08 is_full_duplex;
 static u08 enc_spi_cs;
 
 // pick CS for SPI
@@ -318,19 +317,12 @@ static void writePhy (uint8_t address, uint16_t data) {
 
 // ---------- init ----------
 
-// Functions to enable/disable broadcast filter bits
-// With the bit set, broadcast packets are filtered.
-void enc28j60_enable_broadcast ( void )
+u08 enc28j60_num_ports(void)
 {
-  writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/|ERXFCON_BCEN);
+  return HW_SPI_NUM_CS;
 }
 
-void enc28j60_disable_broadcast ( void )
-{
-  writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
-}
-
-u08 enc28j60_reset(u08 spi_cs)
+u08 enc28j60_reset_and_find(u08 spi_cs)
 {
   // keep global spi cs for enc
   enc_spi_cs = spi_cs;
@@ -376,24 +368,29 @@ void enc28j60_setup_buffers(void)
   writeReg(ETXND, TXSTOP_INIT);
 }
 
-void enc28j60_setup_mac_phy(u08 full_duplex)
+void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
 {
-  is_full_duplex = full_duplex;
+  u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
+  u08 loop_back = (flags & ENC28J60_FLAG_LOOP_BACK) == ENC28J60_FLAG_LOOP_BACK;
 
-  // BIST pattern generator?
-  writeReg(EPMM0, 0x303f);
-  writeReg(EPMCS, 0xf7f9);
-  
+  // set mac
+  writeRegByte(MAADR5, macaddr[0]);
+  writeRegByte(MAADR4, macaddr[1]);
+  writeRegByte(MAADR3, macaddr[2]);
+  writeRegByte(MAADR2, macaddr[3]);
+  writeRegByte(MAADR1, macaddr[4]);
+  writeRegByte(MAADR0, macaddr[5]);
+
   // MAC init (with flow control)
   writeRegByte(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
   writeRegByte(MACON2, 0x00);
   u08 mac3val = MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN;
-  if(is_full_duplex) {
+  if(full_duplex) {
     mac3val |= MACON3_FULDPX;
   }
   writeRegByte(MACON3, mac3val);
   
-  if(is_full_duplex) {
+  if(full_duplex) {
     writeRegByte(MABBIPG, 0x15);      
     writeReg(MAIPG, 0x0012);
   } else {
@@ -403,30 +400,30 @@ void enc28j60_setup_mac_phy(u08 full_duplex)
   writeReg(MAMXFL, MAX_FRAMELEN);
 
   // PHY init
-  if(is_full_duplex) {
-    writePhy(PHCON1, PHCON1_PDPXMD);
-    writePhy(PHCON2, 0);
+  uint16_t phcon1 = 0;
+  uint16_t phcon2 = 0;
+  if(full_duplex) {
+    phcon1 = PHCON1_PDPXMD;
   } else {
-    writePhy(PHCON1, 0);
-    writePhy(PHCON2, PHCON2_HDLDIS);
+    if(!loop_back) {
+      phcon2 = PHCON2_HDLDIS;
+    }
   }
+  writePhy(PHCON1, phcon1);
+  writePhy(PHCON2, phcon2);
   
   // prepare flow control
   writeReg(EPAUS, 20 * 100); // 100ms
-  
+
+  // set receive filter
+  if(flags & ENC28J60_FLAG_RX_BROADCAST) {
+    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/|ERXFCON_BCEN);
+  } else {
+    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
+  }
+
   SetBank(ECON1);
   writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
-}
-
-void enc28j60_set_mac(const mac_t macaddr)
-{
-  // set mac    
-  writeRegByte(MAADR5, macaddr[0]);
-  writeRegByte(MAADR4, macaddr[1]);
-  writeRegByte(MAADR3, macaddr[2]);
-  writeRegByte(MAADR2, macaddr[3]);
-  writeRegByte(MAADR1, macaddr[4]);
-  writeRegByte(MAADR0, macaddr[5]);
 }
 
 void enc28j60_enable_rx(void)
@@ -443,10 +440,10 @@ void enc28j60_disable_rx(void)
 
 // ---------- control ----------
 
-void enc28j60_control_flow(u08 on)
+void enc28j60_control_flow(u08 flags, u08 on)
 { 
   u08 flag;
-  if(is_full_duplex) {
+  if(flags & ENC28J60_FLAG_FULL_DUPLEX) {
     flag = on ? 2 : 3;
   } else {
     flag = on ? 1 : 0;
@@ -571,7 +568,7 @@ u08 enc28j60_rx_num_pending(void)
   return readRegByte(EPKTCNT);
 }
 
-u08 enc28j60_rx_begin(u16 *got_size)
+u08 enc28j60_rx_size(u16 *got_size)
 {
   writeReg(ERDPT, gNextPacketPtr);
 
@@ -583,15 +580,19 @@ u08 enc28j60_rx_begin(u16 *got_size)
     next_pkt();
     return ENC28J60_ERROR_RX;
   }
+  return ENC28J60_OK;
+}
 
+void enc28j60_rx_begin(void)
+{
   // begin spi buffer transfer
   spi_enable_eth();
   hw_spi_out(ENC28J60_READ_BUF_MEM);
-  return ENC28J60_OK;
 }
 
 void enc28j60_rx_begin_loop_back()
 {
+  // set read pointer to tx buffer
   writeReg(ERDPT, TXSTART_INIT);
 
   spi_enable_eth();
@@ -618,9 +619,6 @@ void enc28j60_rx_end(void)
 
   next_pkt();
 }
-
-// ---------- has_recv ----------
-
 
 #if 0
 // Contributed by Alex M. Based on code from: http://blog.derouineau.fr

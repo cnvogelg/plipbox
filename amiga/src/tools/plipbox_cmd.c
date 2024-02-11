@@ -8,6 +8,7 @@
 #include "compiler.h"
 #include "sanadev.h"
 #include "plipbox_cmd.h"
+#include "param.h"
 
 /* special plipbox commands */
 BOOL plipbox_cmd_get_version(sanadev_handle_t *sh, UWORD *dev_version, UWORD *fw_version)
@@ -81,6 +82,24 @@ BOOL plipbox_cmd_param_set_val(sanadev_handle_t *sh, UWORD id, UWORD size, UBYTE
   req->ios2_DataLength = size;
   req->ios2_Data = data;
   return sanadev_cmd(sh, S2PB_PARAM_SET_VAL);
+}
+
+BOOL plipbox_cmd_param_get_word(sanadev_handle_t *sh, UWORD id, UWORD *value)
+{
+  UBYTE data[2];
+  BOOL ok = plipbox_cmd_param_get_val(sh, id, 2, data);
+  if(!ok) {
+    return FALSE;
+  }
+  *value = param_get_wire_value(data, 2);
+  return TRUE;
+}
+
+BOOL plipbox_cmd_param_set_word(sanadev_handle_t *sh, UWORD id, UWORD value)
+{
+  UBYTE data[2];
+  param_set_wire_value(data, value, 2);
+  return plipbox_cmd_param_set_val(sh, id, 2, data);
 }
 
 // ----- prefs -----

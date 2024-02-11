@@ -12,8 +12,8 @@
 
 // the table of available modes
 const nic_mod_ptr_t ROM_ATTR nic_defs[] = {
-  &nic_mod_loop,
-  &nic_mod_enc28j60
+  &nic_mod_enc28j60,
+  &nic_mod_loop
 };
 
 const size_t nic_defs_size = (sizeof(nic_defs) / sizeof(nic_mod_ptr_t));

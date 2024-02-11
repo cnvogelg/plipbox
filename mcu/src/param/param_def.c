@@ -12,20 +12,26 @@ const param_t ROM_ATTR default_param = {
   .mac_addr = { 0x1a,0x11,0xaf,0xa0,0x47,0x11},
   .mode = 0,
   .nic = 0,
-  .nic_flags = 0,
+  .nic_caps = 0,
+  .nic_port = 0
+#if 0
   .delay = 10,
   .ip_addr = { 192, 168, 42, 1 },
   .net_mask = { 255, 255, 255, 0}
+#endif
 };
 
 // descriptions
 static const char ROM_ATTR desc_mac[] = "mac adress";
 static const char ROM_ATTR desc_mode[] = "operation mode";
 static const char ROM_ATTR desc_nic[] = "NIC device";
-static const char ROM_ATTR desc_nic_flags[] = "NIC flags";
+static const char ROM_ATTR desc_nic_caps[] = "NIC flags";
+static const char ROM_ATTR desc_nic_port[] = "NIC port";
+#if 0
 static const char ROM_ATTR desc_delay[] = "test delay (ms)";
 static const char ROM_ATTR desc_ip_addr[] = "test IP addr";
 static const char ROM_ATTR desc_net_mask[] = "test net mask";
+#endif
 
 // parameter description
 const param_def_t ROM_ATTR param_defs[] = {
@@ -58,13 +64,23 @@ const param_def_t ROM_ATTR param_defs[] = {
   },
   {
     .index = 3,
-    .tag = PARAM_TAG_FLAG,
+    .tag = PARAM_TAG_NCAP,
     .type = PARAM_TYPE_WORD,
     .format = PARAM_FORMAT_BIN,
     .size = PARAM_SIZE_WORD,
-    .data = (u08 *)&param.nic_flags,
-    .desc = desc_nic_flags
+    .data = (u08 *)&param.nic_caps,
+    .desc = desc_nic_caps
   },
+  {
+    .index = 4,
+    .tag = PARAM_TAG_NPRT,
+    .type = PARAM_TYPE_WORD,
+    .format = PARAM_FORMAT_BIN,
+    .size = PARAM_SIZE_WORD,
+    .data = (u08 *)&param.nic_port,
+    .desc = desc_nic_port
+  },
+#if 0
   {
     .index = 4,
     .tag = PARAM_TAG_DLY,
@@ -92,6 +108,7 @@ const param_def_t ROM_ATTR param_defs[] = {
     .data = (u08 *)&param.net_mask,
     .desc = desc_net_mask
   }
+#endif
 };
 
 const size_t param_defs_size = sizeof(param_defs) / sizeof(param_def_t);

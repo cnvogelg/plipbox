@@ -154,8 +154,9 @@ u08 proto_cmd_handle_main(void)
     case PROTO_CMD_RX_SIZE: {
       CHECK_STATE(PROTO_CMD_STATE_IDLE);
       cmd_state = PROTO_CMD_STATE_RX;
-      rx_size = proto_cmd_api_rx_size();
-      DS("rx_size:"); DW(rx_size); DNL;
+      rx_size = 0;
+      rx_status = proto_cmd_api_rx_size(&rx_size);
+      DS("rx_size:"); DB(rx_status); DC(':'); DW(rx_size); DNL;
       proto_atom_read_word(rx_size);
       break;
     }

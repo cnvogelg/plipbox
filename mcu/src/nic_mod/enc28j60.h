@@ -31,26 +31,27 @@
 #include "types.h"
 
 #define ENC28J60_FLAG_FULL_DUPLEX     1
-#define ENC28J60_FLAG_CONTROL_FLOW    2
-#define ENC28J60_FLAG_BROADCAST       4
+#define ENC28J60_FLAG_FLOW_CONTROL    2
+#define ENC28J60_FLAG_RX_BROADCAST    4
+#define ENC28J60_FLAG_LOOP_BACK       8
 
 #define ENC28J60_OK                   0
 #define ENC28J60_ERROR_NOT_FOUND      1
 #define ENC28J60_ERROR_RX             2
 
 // reset and return OK or NOT_FOUND
-u08 enc28j60_reset(u08 spi_cs);
+u08 enc28j60_num_ports(void);
+u08 enc28j60_reset_and_find(u08 spi_cs);
+
 u08 enc28j60_hw_revision(void);
+
 void enc28j60_setup_buffers(void);
-void enc28j60_set_mac(const mac_t mac);
-void enc28j60_setup_mac_phy(u08 full_duplex);
-void enc28j60_enable_broadcast(void);
-void enc28j60_disable_broadcast(void);
+void enc28j60_setup_mac_phy(const mac_t mac, u08 flags);
 
 void enc28j60_enable_rx(void);
 void enc28j60_disable_rx(void);
 
-void enc28j60_control_flow(u08 on);
+void enc28j60_control_flow(u08 flags, u08 on);
 
 u08 enc28j60_link_up(void);
 
@@ -62,7 +63,8 @@ void enc28j60_tx_begin_loop_back(void);
 void enc28j60_tx_end_loop_back(void);
 
 u08 enc28j60_rx_num_pending(void);
-u08 enc28j60_rx_begin(u16 *got_size);
+u08 enc28j60_rx_size(u16 *got_size);
+void enc28j60_rx_begin(void);
 void enc28j60_rx_data(u08 *data, u16 size);
 void enc28j60_rx_end(void);
 
