@@ -29,6 +29,11 @@ static void detach(void)
   nic_detach();
 }
 
+static void ping(void)
+{
+  nic_ping();
+}
+
 static u08 rx_poll(void)
 {
   if(nic_rx_num_pending() > 0) {
@@ -106,6 +111,8 @@ const mode_mod_t ROM_ATTR mode_mod_nic = {
 
   .attach = attach,
   .detach = detach,
+
+  .ping = ping,
 
   .rx_poll = rx_poll,
 

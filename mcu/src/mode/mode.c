@@ -143,6 +143,13 @@ void mode_detach(void)
   proto_status = PROTO_CMD_STATUS_IDLE;
 }
 
+void mode_ping(void)
+{
+  if(attached) {
+    mode_mod_ping();
+  }
+}
+
 u08 *mode_tx_begin(u16 size)
 {
   if(attached) {

@@ -43,6 +43,8 @@ extern u08 nic_attach_params(void);
 extern u08 nic_attach(u16 caps, u08 port, mac_t mac);
 extern void nic_detach(void);
 
+extern void nic_ping(void);
+
 extern u16 nic_caps_available(void);
 extern u16 nic_caps_in_use(void);
 extern u08 nic_is_direct(void);

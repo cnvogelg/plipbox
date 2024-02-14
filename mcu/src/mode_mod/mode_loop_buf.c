@@ -22,6 +22,10 @@ static void detach(void)
 {
 }
 
+static void ping(void)
+{
+}
+
 static u08 rx_poll(void)
 {
   if(loop_size > 0) {
@@ -65,6 +69,8 @@ const mode_mod_t ROM_ATTR mode_mod_loop_buf = {
 
   .attach = attach,
   .detach = detach,
+
+  .ping = ping,
 
   .rx_poll = rx_poll,
 

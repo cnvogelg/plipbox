@@ -21,6 +21,10 @@ static void detach(void)
 
 }
 
+static void ping(void)
+{
+}
+
 static u08 rx_num_pending(void)
 {
   return (pkt_size > 0) ? 1 : 0;
@@ -57,6 +61,8 @@ const nic_mod_t ROM_ATTR nic_mod_loop = {
 
   .attach = attach,
   .detach = detach,
+
+  .ping = ping,
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,

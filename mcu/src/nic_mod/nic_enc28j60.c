@@ -13,7 +13,6 @@
 
 #define MODE_NORMAL         0
 #define MODE_LOOP_BUF       1
-#define MODE_LOOP_MAC       2
 
 static u08 mode;
 static u08 enc_flags;
@@ -23,9 +22,6 @@ static void map_caps(u16 caps)
   mode = MODE_NORMAL;
   if((caps & NIC_CAP_LOOP_BUF)) {
     mode = MODE_LOOP_BUF;
-  }
-  if((caps & NIC_CAP_LOOP_MAC)) {
-    mode = MODE_LOOP_MAC;
   }
 
   enc_flags = 0;
@@ -37,6 +33,9 @@ static void map_caps(u16 caps)
   }
   if((caps & NIC_CAP_FLOW_CONTROL)) {
     enc_flags |= ENC28J60_FLAG_FLOW_CONTROL;
+  }
+  if((caps & NIC_CAP_LOOP_MAC)) {
+    enc_flags |= ENC28J60_FLAG_LOOP_BACK;
   }
 }
 
@@ -71,7 +70,13 @@ static u08 attach(u16 *caps, u08 port, mac_t mac)
 
 static void detach(void)
 {
+}
 
+static void ping(void)
+{
+  DS(("enc28j60: ping: num_pkt="));
+  DB(enc28j60_rx_num_pending());
+  DNL;
 }
 
 static u08 rx_num_pending(void)
@@ -190,6 +195,8 @@ const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
 
   .attach = attach,
   .detach = detach,
+
+  .ping = ping,
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,

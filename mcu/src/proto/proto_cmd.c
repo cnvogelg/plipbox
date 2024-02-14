@@ -94,6 +94,7 @@ u08 proto_cmd_handle_main(void)
     case PROTO_CMD_PING:
       DS("PING:"); DW(token); DNL;
       proto_atom_read_word(token);
+      proto_cmd_api_ping();
       break;
     case PROTO_CMD_EXIT:
       DS("EXIT"); DNL;

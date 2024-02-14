@@ -44,6 +44,11 @@ u16 proto_cmd_api_get_status(void)
   return mode_get_proto_status();
 }
 
+void proto_cmd_api_ping(void)
+{
+  mode_ping();
+}
+
 // ----- TX -----
 
 u08 *proto_cmd_api_tx_begin(u16 size)

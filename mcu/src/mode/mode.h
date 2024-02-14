@@ -34,6 +34,8 @@
 void mode_init(void);
 
 u08  mode_get_proto_status(void);
+void mode_ping(void);
+
 void mode_attach(void);
 void mode_detach(void);
 

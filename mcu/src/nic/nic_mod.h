@@ -34,6 +34,8 @@
 typedef u08  (*nic_mod_attach_t)(u16 *caps, u08 port, mac_t mac);
 typedef void (*nic_mod_detach_t)(void);
 
+typedef void (*nic_mod_ping_t)(void);
+
 typedef u08  (*nic_mod_rx_num_pending_t)(void);
 typedef u08  (*nic_mod_rx_size_t)(u16 *got_size);
 typedef u08  (*nic_mod_rx_data_t)(u08 *buf, u16 size);
@@ -54,6 +56,8 @@ typedef struct {
 
   nic_mod_attach_t    attach;
   nic_mod_detach_t    detach;
+
+  nic_mod_ping_t      ping;
 
   nic_mod_rx_num_pending_t  rx_num_pending;
   nic_mod_rx_size_t   rx_size;
@@ -104,6 +108,13 @@ static inline void nic_mod_detach(void)
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_detach_t detach = (nic_mod_detach_t)read_rom_rom_ptr(&pd->detach);
   detach();
+}
+
+static inline void nic_mod_ping(void)
+{
+  nic_mod_ptr_t pd = nic_mod_ptr;
+  nic_mod_ping_t ping = (nic_mod_ping_t)read_rom_rom_ptr(&pd->ping);
+  ping();
 }
 
 static inline u08 nic_mod_rx_num_pending(void)

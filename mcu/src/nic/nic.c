@@ -138,6 +138,11 @@ void nic_detach(void)
 
 }
 
+void nic_ping(void)
+{
+  nic_mod_ping();
+}
+
 u16 nic_caps_available(void)
 {
   return nic_mod_caps();

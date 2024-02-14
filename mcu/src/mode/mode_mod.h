@@ -34,6 +34,8 @@
 typedef u08  (*mode_mod_attach_t)(void);
 typedef void (*mode_mod_detach_t)(void);
 
+typedef void (*mode_mod_ping_t)(void);
+
 typedef u08  (*mode_mod_rx_poll_t)(void);
 
 typedef u08* (*mode_mod_tx_begin_t)(u16 size);
@@ -49,6 +51,8 @@ typedef struct {
 
   mode_mod_attach_t       attach;
   mode_mod_detach_t       detach;
+
+  mode_mod_ping_t         ping;
 
   mode_mod_rx_poll_t      rx_poll;
 
@@ -89,6 +93,13 @@ static inline void mode_mod_detach(void)
   mode_mod_ptr_t pd = mode_mod_ptr;
   mode_mod_detach_t detach = (mode_mod_detach_t)read_rom_rom_ptr(&pd->detach);
   detach();
+}
+
+static inline void mode_mod_ping(void)
+{
+  mode_mod_ptr_t pd = mode_mod_ptr;
+  mode_mod_ping_t ping = (mode_mod_ping_t)read_rom_rom_ptr(&pd->ping);
+  ping();
 }
 
 static inline u08 mode_mod_rx_poll(void)
