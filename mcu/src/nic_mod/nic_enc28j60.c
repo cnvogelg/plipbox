@@ -20,7 +20,7 @@ static u08 enc_flags;
 static void map_caps(u16 caps)
 {
   mode = MODE_NORMAL;
-  if((caps & NIC_CAP_LOOP_BUF)) {
+  if((caps & NIC_CAP_LOOP_BACK)) {
     mode = MODE_LOOP_BUF;
   }
 
@@ -33,9 +33,6 @@ static void map_caps(u16 caps)
   }
   if((caps & NIC_CAP_FLOW_CONTROL)) {
     enc_flags |= ENC28J60_FLAG_FLOW_CONTROL;
-  }
-  if((caps & NIC_CAP_LOOP_MAC)) {
-    enc_flags |= ENC28J60_FLAG_LOOP_BACK;
   }
 }
 
@@ -190,7 +187,7 @@ static u08 ioctl(u08 cmd, u08 *value)
 static const char ROM_ATTR name[] = "enc28j60";
 const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
   .name = name,
-  .caps= NIC_CAP_LOOP_BUF | NIC_CAP_LOOP_MAC | NIC_CAP_DIRECT_IO |
+  .caps= NIC_CAP_LOOP_BACK | NIC_CAP_DIRECT_IO |
          NIC_CAP_BROADCAST | NIC_CAP_FULL_DUPLEX | NIC_CAP_FLOW_CONTROL,
 
   .attach = attach,

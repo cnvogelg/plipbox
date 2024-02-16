@@ -371,7 +371,6 @@ void enc28j60_setup_buffers(void)
 void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
 {
   u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
-  u08 loop_back = (flags & ENC28J60_FLAG_LOOP_BACK) == ENC28J60_FLAG_LOOP_BACK;
 
   // set mac
   writeRegByte(MAADR5, macaddr[0]);
@@ -405,9 +404,7 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
   if(full_duplex) {
     phcon1 = PHCON1_PDPXMD;
   } else {
-    if(!loop_back) {
-      phcon2 = PHCON2_HDLDIS;
-    }
+    phcon2 = PHCON2_HDLDIS;
   }
   writePhy(PHCON1, phcon1);
   writePhy(PHCON2, phcon2);

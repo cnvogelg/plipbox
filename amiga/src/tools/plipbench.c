@@ -36,8 +36,8 @@ static const char *TEMPLATE =
     "-U=UNIT/N/K,"
     "-V=VERBOSE/S,"
     "LOOPBACK_BUF/S,"
-    "LOOPBACK_DEV/S,"
-    "LOOPBACK_MAC/S,"
+    "LOOPBACK_INT/S,"
+    "LOOPBACK_EXT/S,"
     "FULL_DUPLEX/S,"
     "DIRECT_SPI/S,"
     "LOOPS/N/K,"
@@ -51,8 +51,8 @@ typedef struct
   ULONG *unit;
   ULONG verbose;
   ULONG loopback_buf;
-  ULONG loopback_dev;
-  ULONG loopback_mac;
+  ULONG loopback_int;
+  ULONG loopback_ext;
   ULONG full_duplex;
   ULONG direct_spi;
   ULONG *loops;
@@ -86,17 +86,17 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
     LOG(("Mode: loopback with plipbox buffer\n"));
     mode = MODE_LOOP_BUF;
   }
-  else if (params.loopback_dev)
+  else if (params.loopback_int)
   {
-    LOG(("Mode: loopback with NIC buffer\n"));
+    LOG(("Mode: loopback internal with NIC\n"));
     mode = MODE_NIC;
-    ncap = NIC_CAP_LOOP_BUF;
+    ncap = NIC_CAP_LOOP_BACK;
   }
-  else if (params.loopback_mac)
+  else if (params.loopback_ext)
   {
-    LOG(("Mode: loopback with NIC MAC\n"));
+    LOG(("Mode: loopback external with loopback cablel\n"));
     mode = MODE_NIC;
-    ncap = NIC_CAP_LOOP_MAC;
+    ncap = NIC_CAP_FULL_DUPLEX;
   }
   LOG(("Setting mode: %ld\n", (LONG)mode));
   ok = param_tag_mode_set(sh, mode);

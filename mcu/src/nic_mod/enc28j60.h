@@ -33,7 +33,6 @@
 #define ENC28J60_FLAG_FULL_DUPLEX     1
 #define ENC28J60_FLAG_FLOW_CONTROL    2
 #define ENC28J60_FLAG_RX_BROADCAST    4
-#define ENC28J60_FLAG_LOOP_BACK       8
 
 #define ENC28J60_OK                   0
 #define ENC28J60_ERROR_NOT_FOUND      1

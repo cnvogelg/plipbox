@@ -3,8 +3,7 @@
 
 /* capabilities bit field (requested in NCAP) */
 #define NIC_CAP_DIRECT_IO       1
-#define NIC_CAP_LOOP_BUF        2
-#define NIC_CAP_LOOP_MAC        4
+#define NIC_CAP_LOOP_BACK       2
 
 #define NIC_CAP_BROADCAST       0x10
 #define NIC_CAP_FULL_DUPLEX     0x20

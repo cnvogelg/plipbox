@@ -57,7 +57,7 @@ static u08 ioctl(u08 ioctl, u08 *value)
 static const char ROM_ATTR name[] = "loop";
 const nic_mod_t ROM_ATTR nic_mod_loop = {
   .name = name,
-  .caps = NIC_CAP_LOOP_BUF,
+  .caps = NIC_CAP_LOOP_BACK,
 
   .attach = attach,
   .detach = detach,
