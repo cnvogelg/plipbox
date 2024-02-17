@@ -16,5 +16,7 @@
 #define NIC_ERROR_IOCTL_NOT_FOUND     3
 #define NIC_ERROR_RX                  4
 #define NIC_ERROR_TX                  5
+#define NIC_ERROR_ALREADY_ATTACHED    6
+#define NIC_ERROR_NOT_ATTACHED        7
 
 #endif

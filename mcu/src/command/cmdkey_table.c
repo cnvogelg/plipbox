@@ -82,6 +82,11 @@ COMMAND_KEY(cmd_nic_test_rx)
   nic_test_rx();
 }
 
+COMMAND_KEY(cmd_nic_test_toggle_duplex)
+{
+  nic_test_toggle_duplex();
+}
+
 CMDKEY_HELP(cmd_dump_stats, "dump statistics");
 CMDKEY_HELP(cmd_reset_stats, "reset statistics");
 CMDKEY_HELP(cmd_toggle_verbose, "toggle verbose output");
@@ -92,6 +97,7 @@ CMDKEY_HELP(cmd_dump_param, "dump parameters");
 CMDKEY_HELP(cmd_nic_test_status, "test NIC status");
 CMDKEY_HELP(cmd_nic_test_tx, "test NIC tx");
 CMDKEY_HELP(cmd_nic_test_rx, "test NIC rx");
+CMDKEY_HELP(cmd_nic_test_toggle_duplex, "toggle NIC duplex");
 
 const cmdkey_table_t ROM_ATTR cmdkey_table[] = {
   CMDKEY_ENTRY('s', cmd_dump_stats),
@@ -104,5 +110,6 @@ const cmdkey_table_t ROM_ATTR cmdkey_table[] = {
   CMDKEY_ENTRY('n', cmd_nic_test_status),
   CMDKEY_ENTRY('t', cmd_nic_test_tx),
   CMDKEY_ENTRY('r', cmd_nic_test_rx),
+  CMDKEY_ENTRY('f', cmd_nic_test_toggle_duplex),
   { 0,0 }
 };

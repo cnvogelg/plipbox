@@ -7,5 +7,6 @@
 extern void nic_test_status(void);
 extern void nic_test_tx(void);
 extern void nic_test_rx(void);
+extern void nic_test_toggle_duplex(void);
 
 #endif

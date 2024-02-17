@@ -42,6 +42,7 @@ extern void nic_set_device(u08 device);
 extern u08 nic_attach_params(void);
 extern u08 nic_attach(u16 caps, u08 port, mac_t mac);
 extern void nic_detach(void);
+extern u08 nic_is_attached(void);
 
 extern void nic_ping(void);
 extern void nic_status(void);

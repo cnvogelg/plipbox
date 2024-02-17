@@ -394,7 +394,7 @@ void enc28j60_setup_buffers(void)
 
 void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
 {
-  //u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
+  u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
 
   DS("mac:");
 
@@ -416,11 +416,19 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
   // MAC
   writeReg(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
   // enable automatic padding to 60bytes and CRC operations
-  writeOp(ENC28J60_BIT_FIELD_SET, MACON3, MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN);
+  u08 macon3 = MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN;
+  if(full_duplex) {
+    macon3 |= MACON3_FULDPX;
+  }
+  writeOp(ENC28J60_BIT_FIELD_SET, MACON3, macon3);
   // set inter-frame gap (non-back-to-back)
   writeReg(MAIPG, 0x0C12);
   // set inter-frame gap (back-to-back)
-  writeReg(MABBIPG, 0x12);
+  u08 bbipg = 0x12;
+  if(full_duplex) {
+    bbipg = 0x15;
+  }
+  writeReg(MABBIPG, bbipg);
   // Set the maximum packet size which the controller will accept
   // Do not send packets longer than MAX_FRAMELEN:
   writeReg(MAMXFL, MAX_FRAMELEN);
@@ -435,6 +443,9 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
 
   // no loopback of transmitted frames
   writePhy(PHCON2, PHCON2_HDLDIS);
+  if(full_duplex) {
+    writePhy(PHCON1, PHCON1_PDPXMD);
+  }
 
   // enable rx
   SetBank(ECON1);

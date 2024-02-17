@@ -65,6 +65,7 @@ u08 param_get_mode(void);
 u08 param_get_nic(void);
 u16 param_get_nic_caps(void);
 u08 param_get_nic_port(void);
+void param_set_nic_caps(u16 caps);
 
 // test ip/netmask
 void param_get_ip_addr(ip_addr_t ip);

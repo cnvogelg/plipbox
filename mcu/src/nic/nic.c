@@ -34,10 +34,13 @@
 #include "param.h"
 
 static u08 is_direct_io;
+static u08 is_attached;
+static u16 caps_in_use;
 
 void nic_init(void)
 {
   nic_mod_init();
+  is_attached = 0;
 }
 
 void nic_set_device(u08 device)
@@ -98,9 +101,19 @@ u08 nic_attach(u16 caps, u08 port, mac_t mac)
     is_direct_io = 0;
   }
 
+  if(is_attached) {
+    uart_send_pstring(PSTR(": already attached!"));
+    uart_send_crlf();
+    return NIC_ERROR_ALREADY_ATTACHED;
+  }
+
   // call init
   u08 result = nic_mod_attach(&caps_req, port, mac);
   if(result == NIC_OK) {
+
+    is_attached = 1;
+    caps_in_use = caps_req;
+
     uart_send_pstring(PSTR(": ok, res_caps="));
     uart_send_hex_word(caps_req);
 
@@ -130,22 +143,37 @@ u08 nic_attach(u16 caps, u08 port, mac_t mac)
 
 void nic_detach(void)
 {
+  if(!is_attached) {
+    return;
+  }
+
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("nic_detach"));
   uart_send_crlf();
 
   nic_mod_detach();
 
+  is_attached = 0;
+  caps_in_use = 0;
+}
+
+u08 nic_is_attached(void)
+{
+  return is_attached;
 }
 
 void nic_ping(void)
 {
-  nic_mod_ping();
+  if(is_attached) {
+    nic_mod_ping();
+  }
 }
 
 void nic_status(void)
 {
-  nic_mod_status();
+  if(is_attached) {
+    nic_mod_status();
+  }
 }
 
 u16 nic_caps_available(void)
@@ -155,7 +183,7 @@ u16 nic_caps_available(void)
 
 u16 nic_caps_in_use(void)
 {
-  return nic_mod_caps();
+  return caps_in_use;
 }
 
 u08 nic_is_direct(void)
@@ -165,45 +193,77 @@ u08 nic_is_direct(void)
 
 u08 nic_rx_num_pending(void)
 {
-  return nic_mod_rx_num_pending();
+  if(is_attached) {
+    return nic_mod_rx_num_pending();
+  } else {
+    return 0;
+  }
 }
 
 u08 nic_rx_size(u16 *got_size)
 {
-  return nic_mod_rx_size(got_size);
+  if(is_attached) {
+    return nic_mod_rx_size(got_size);
+  } else {
+    return NIC_ERROR_NOT_ATTACHED;
+  }
 }
 
 u08 nic_rx_data(u08 *buf, u16 size)
 {
-  return nic_mod_rx_data(buf, size);
+  if(is_attached) {
+    return nic_mod_rx_data(buf, size);
+  } else {
+    return NIC_ERROR_NOT_ATTACHED;
+  }
 }
 
 u08 nic_tx_data(const u08 *buf, u16 size)
 {
-  return nic_mod_tx_data(buf, size);
+  if(is_attached) {
+    return nic_mod_tx_data(buf, size);
+  } else {
+    return NIC_ERROR_NOT_ATTACHED;
+  }
 }
 
 void nic_rx_direct_begin(u16 size)
 {
-  nic_mod_rx_direct_begin(size);
+  if(is_attached) {
+    nic_mod_rx_direct_begin(size);
+  }
 }
 
 u08 nic_rx_direct_end(u16 size)
 {
-  return nic_mod_rx_direct_end(size);
+  if(is_attached) {
+    return nic_mod_rx_direct_end(size);
+  } else {
+    return NIC_ERROR_NOT_ATTACHED;
+  }
 }
 
 void nic_tx_direct_begin(u16 size)
 {
-  nic_mod_tx_direct_begin(size);
+  if(is_attached) {
+    nic_mod_tx_direct_begin(size);
+  }
 }
 
 u08 nic_tx_direct_end(u16 size)
 {
-  return nic_mod_tx_direct_end(size);
+  if(is_attached) {
+    return nic_mod_tx_direct_end(size);
+  } else {
+    return NIC_ERROR_NOT_ATTACHED;
+  }
 }
 
 u08 nic_ioctl(u08 ioctl, u08 *value)
 {
-  return nic_mod_ioctl(ioctl, value);
+  if(is_attached) {
+    return nic_mod_ioctl(ioctl, value);
+  } else {
+    return NIC_ERROR_NOT_ATTACHED;
+  }
 }

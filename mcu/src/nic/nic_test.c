@@ -40,8 +40,10 @@ void nic_test_tx(void)
   uart_send_hex_byte(res);
   uart_send_crlf();
 
-  dump_pkt(pkt_buf, total_size);
-  uart_send_crlf();
+  if(res == NIC_OK) {
+    dump_pkt(pkt_buf, total_size);
+    uart_send_crlf();
+  }
 }
 
 void nic_test_rx(void)
@@ -63,10 +65,26 @@ void nic_test_rx(void)
       res = nic_rx_data(pkt_buf, size);
       uart_send_pstring(PSTR(",res="));
       uart_send_hex_byte(res);
-      uart_send_crlf();
-      dump_pkt(pkt_buf, size);
+      if(res == NIC_OK) {
+        uart_send_crlf();
+        dump_pkt(pkt_buf, size);
+      }
     }
     uart_send_crlf();
   }
 }
 
+void nic_test_toggle_duplex(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("nic_test_toggle_duplex:"));
+  u16 caps = param_get_nic_caps();
+  if(caps & NIC_CAP_FULL_DUPLEX) {
+    caps &= NIC_CAP_FULL_DUPLEX;
+    uart_send_pstring(PSTR("OFF"));
+  } else {
+    caps |= NIC_CAP_FULL_DUPLEX;
+    uart_send_pstring(PSTR("ON"));
+  }
+  uart_send_crlf();
+}
