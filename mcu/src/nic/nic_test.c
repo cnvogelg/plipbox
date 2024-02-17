@@ -86,5 +86,6 @@ void nic_test_toggle_duplex(void)
     caps |= NIC_CAP_FULL_DUPLEX;
     uart_send_pstring(PSTR("ON"));
   }
+  param_set_nic_caps(caps);
   uart_send_crlf();
 }
