@@ -10,6 +10,11 @@
 //
 // Adjusted by Christian Vogelgsang to be Arduino-free C code
 
+#ifdef DEBUG_ENC28J60
+#define DEBUG
+#endif
+
+#include "debug.h"
 #include "enc28j60.h"
 #include "hw_timer.h"
 #include "hw_spi.h"
@@ -283,11 +288,9 @@ static uint8_t readRegByte (uint8_t address) {
     return readOp(ENC28J60_READ_CTRL_REG, address);
 }
 
-#if 0
 static uint16_t readReg(uint8_t address) {
-	return readRegByte(address) + (readRegByte(address+1) << 8);
+    return readRegByte(address) + (readRegByte(address+1) << 8);
 }
-#endif
 
 static void writeRegByte (uint8_t address, uint8_t data) {
     SetBank(address);
@@ -305,7 +308,7 @@ static uint16_t readPhyByte (uint8_t address) {
     while (readRegByte(MISTAT) & MISTAT_BUSY)
         ;
     writeRegByte(MICMD, 0x00);
-    return readRegByte(MIRD+1);
+    return readReg(MIRD);
 }
 
 static void writePhy (uint8_t address, uint16_t data) {
@@ -330,6 +333,7 @@ u08 enc28j60_reset_and_find(u08 spi_cs)
   spi_disable_eth();
   
   // soft reset cpu
+  DS("RESET:"); DNL;
   writeOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
   hw_timer_delay_ms(2); // errata B7/2
   
@@ -340,6 +344,26 @@ u08 enc28j60_reset_and_find(u08 spi_cs)
     if(count == 0xfff) {
       return ENC28J60_ERROR_NOT_FOUND;
     }
+  }
+  DW(count); DNL;
+
+  // check revision
+  u08 rev = readRegByte(EREVID);
+  DS("rev:"); DB(rev); DNL;
+  if((rev < 1) || (rev > 6)) {
+    return ENC28J60_ERROR_NOT_FOUND;
+  }
+
+  // --- phy ---
+  // check phy model id
+  uint16_t id1 = readPhyByte(PHHID1);
+  uint16_t id2 = readPhyByte(PHHID2);
+  DS("id1:"); DW(id1); DS(",id2:"); DW(id2); DNL;
+  if(id1 != 0x83) {
+    return ENC28J60_ERROR_NOT_FOUND;
+  }
+  if(id2 != 0x1400) {
+    return ENC28J60_ERROR_NOT_FOUND;
   }
 
   return ENC28J60_OK;
