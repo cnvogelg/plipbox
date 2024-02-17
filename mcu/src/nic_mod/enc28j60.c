@@ -394,7 +394,36 @@ void enc28j60_setup_buffers(void)
 
 void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
 {
-  u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
+  //u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
+
+  DS("mac:");
+
+  // The pattern to match on is therefore
+  // Type     ETH.DST
+  // ARP      BROADCAST
+  // 06 08 -- ff ff ff ff ff ff -> ip checksum for theses bytes=f7f9
+  // in binary these poitions are:11 0000 0011 1111
+  // This is hex 303F->EPMM0=0x3f,EPMM1=0x30
+  u16 fcon = ERXFCON_UCEN|ERXFCON_CRCEN|ERXFCON_PMEN;
+  if(flags & ENC28J60_FLAG_RX_BROADCAST) {
+    fcon |= ERXFCON_BCEN;
+  }
+  DS("ERXFCON="); DW(fcon);
+  writeRegByte(ERXFCON, fcon);
+  writeReg(EPMM0, 0x303f);
+  writeReg(EPMCS, 0xf7f9);
+
+  // MAC
+  writeReg(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
+  // enable automatic padding to 60bytes and CRC operations
+  writeOp(ENC28J60_BIT_FIELD_SET, MACON3, MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN);
+  // set inter-frame gap (non-back-to-back)
+  writeReg(MAIPG, 0x0C12);
+  // set inter-frame gap (back-to-back)
+  writeReg(MABBIPG, 0x12);
+  // Set the maximum packet size which the controller will accept
+  // Do not send packets longer than MAX_FRAMELEN:
+  writeReg(MAMXFL, MAX_FRAMELEN);
 
   // set mac
   writeRegByte(MAADR5, macaddr[0]);
@@ -404,47 +433,16 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
   writeRegByte(MAADR1, macaddr[4]);
   writeRegByte(MAADR0, macaddr[5]);
 
-  // MAC init (with flow control)
-  writeRegByte(MACON1, MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS);
-  writeRegByte(MACON2, 0x00);
-  u08 mac3val = MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN;
-  if(full_duplex) {
-    mac3val |= MACON3_FULDPX;
-  }
-  writeRegByte(MACON3, mac3val);
-  
-  if(full_duplex) {
-    writeRegByte(MABBIPG, 0x15);      
-    writeReg(MAIPG, 0x0012);
-  } else {
-    writeRegByte(MABBIPG, 0x12);
-    writeReg(MAIPG, 0x0C12);
-  }
-  writeReg(MAMXFL, MAX_FRAMELEN);
+  // no loopback of transmitted frames
+  writePhy(PHCON2, PHCON2_HDLDIS);
 
-  // PHY init
-  uint16_t phcon1 = 0;
-  uint16_t phcon2 = 0;
-  if(full_duplex) {
-    phcon1 = PHCON1_PDPXMD;
-  } else {
-    phcon2 = PHCON2_HDLDIS;
-  }
-  writePhy(PHCON1, phcon1);
-  writePhy(PHCON2, phcon2);
-  
-  // prepare flow control
-  writeReg(EPAUS, 20 * 100); // 100ms
-
-  // set receive filter
-  if(flags & ENC28J60_FLAG_RX_BROADCAST) {
-    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/|ERXFCON_BCEN);
-  } else {
-    writeRegByte(ERXFCON, ERXFCON_UCEN|ERXFCON_CRCEN/*|ERXFCON_PMEN*/);
-  }
-
+  // enable rx
   SetBank(ECON1);
-  writeOp(ENC28J60_BIT_FIELD_SET, EIE, EIE_INTIE|EIE_PKTIE);
+  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+
+  // configure leds
+  writePhy(PHLCON,0x476);
+  DS("done."); DNL;
 }
 
 void enc28j60_enable_rx(void)

@@ -216,6 +216,8 @@ void param_reset(void)
   rom_copy(in, out, sizeof(param_t));
 }
 
+// ----- get specific paramters -----
+
 void param_get_def_mac(mac_t mac)
 {
   // restore default param
@@ -235,6 +237,20 @@ void param_set_cur_mac(mac_t mac)
 {
   for(u08 i=0;i<sizeof(mac_t);i++) {
     param.mac_addr[i] = mac[i];
+  }
+}
+
+void param_get_ip_addr(ip_addr_t ip)
+{
+  for(u08 i=0;i<sizeof(ip_addr_t);i++) {
+    ip[i] = param.ip_addr[i];
+  }
+}
+
+void param_get_net_mask(ip_addr_t nm)
+{
+  for(u08 i=0;i<sizeof(ip_addr_t);i++) {
+    nm[i] = param.ip_addr[i];
   }
 }
 

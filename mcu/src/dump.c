@@ -184,7 +184,7 @@ extern void dump_ip_protocol(const u08 *ip_buf)
   }
 }
 
-extern void dump_line(const u08 *eth_buf, u16 size)
+extern void dump_pkt(const u08 *eth_buf, u16 size)
 {
   dump_eth_pkt(eth_buf, size);
   

@@ -46,7 +46,7 @@
 #define ARP_REPLY         2
 
 extern u08 arp_is_ipv4(const u08 *buf, u16 len);
-extern void arp_make_reply(u08 *buf, const u08 *my_mac, const u08 *my_ip);
+extern u16 arp_make_reply(u08 *buf, const u08 *my_mac, const u08 *my_ip);
 
 /* getter */
 static inline u16 arp_get_op(const u08 *buf) { return net_get_word(buf + ARP_OFF_OP); }

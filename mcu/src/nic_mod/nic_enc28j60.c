@@ -69,11 +69,16 @@ static void detach(void)
 {
 }
 
-static void ping(void)
+static void status(void)
 {
-  DS(("enc28j60: ping: num_pkt="));
+  DS("enc28j60:status:num_pkt=");
   DB(enc28j60_rx_num_pending());
   DNL;
+}
+
+static void ping(void)
+{
+  status();
 }
 
 static u08 rx_num_pending(void)
@@ -90,8 +95,7 @@ static u08 rx_size(u16 *got_size)
   if(mode == MODE_LOOP_BUF) {
     *got_size = pkt_size;
   } else {
-    u16 size = 0;
-    u08 ok = enc28j60_rx_size(&size);
+    u08 ok = enc28j60_rx_size(got_size);
     if(ok != ENC28J60_OK) {
       return NIC_ERROR_RX;
     }
@@ -194,6 +198,7 @@ const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
   .detach = detach,
 
   .ping = ping,
+  .status = status,
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,

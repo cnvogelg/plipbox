@@ -11,6 +11,9 @@
 #define PARAM_TAG_NIC           MAKE_TAG('N','I','C',0)
 #define PARAM_TAG_NCAP          MAKE_TAG('N','C','A','P')
 #define PARAM_TAG_NPRT          MAKE_TAG('N','P','R','T')
+// test tags
+#define PARAM_TAG_IP            MAKE_TAG('I','P',0,0)
+#define PARAM_TAG_NMSK          MAKE_TAG('N','M','S','K')
 
 // param description
 // +00 u08 index

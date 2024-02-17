@@ -38,6 +38,7 @@
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
 #include "mode.h"
+#include "nic.h"
 
 #define LOOP_DONE     0
 #define LOOP_RESET    1
@@ -129,6 +130,10 @@ int main(void)
   // main ops: waiting for driver and main loop
   int result = LOOP_DONE;
   while(1) {
+
+    mode_init();
+    nic_init();
+
     if(result == LOOP_DONE) {
       result = init_loop();
       if(result == LOOP_RESET) {

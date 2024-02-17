@@ -143,6 +143,11 @@ void nic_ping(void)
   nic_mod_ping();
 }
 
+void nic_status(void)
+{
+  nic_mod_status();
+}
+
 u16 nic_caps_available(void)
 {
   return nic_mod_caps();
