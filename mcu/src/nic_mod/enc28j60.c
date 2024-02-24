@@ -302,7 +302,7 @@ static void writeReg(uint8_t address, uint16_t data) {
     writeRegByte(address + 1, data >> 8);
 }
 
-static uint16_t readPhyByte (uint8_t address) {
+static uint16_t readPhy (uint8_t address) {
     writeRegByte(MIREGADR, address);
     writeRegByte(MICMD, MICMD_MIIRD);
     while (readRegByte(MISTAT) & MISTAT_BUSY)
@@ -356,8 +356,8 @@ u08 enc28j60_reset_and_find(u08 spi_cs)
 
   // --- phy ---
   // check phy model id
-  uint16_t id1 = readPhyByte(PHHID1);
-  uint16_t id2 = readPhyByte(PHHID2);
+  uint16_t id1 = readPhy(PHHID1);
+  uint16_t id2 = readPhy(PHHID2);
   DS("id1:"); DW(id1); DS(",id2:"); DW(id2); DNL;
   if(id1 != 0x83) {
     return ENC28J60_ERROR_NOT_FOUND;
@@ -396,8 +396,6 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
 {
   u08 full_duplex = (flags & ENC28J60_FLAG_FULL_DUPLEX) == ENC28J60_FLAG_FULL_DUPLEX;
 
-  DS("mac:");
-
   // The pattern to match on is therefore
   // Type     ETH.DST
   // ARP      BROADCAST
@@ -408,7 +406,6 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
   if(flags & ENC28J60_FLAG_RX_BROADCAST) {
     fcon |= ERXFCON_BCEN;
   }
-  DS("ERXFCON="); DW(fcon);
   writeRegByte(ERXFCON, fcon);
   writeReg(EPMM0, 0x303f);
   writeReg(EPMCS, 0xf7f9);
@@ -447,13 +444,8 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
     writePhy(PHCON1, PHCON1_PDPXMD);
   }
 
-  // enable rx
-  SetBank(ECON1);
-  writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
-
   // configure leds
   writePhy(PHLCON,0x476);
-  DS("done."); DNL;
 }
 
 void enc28j60_enable_rx(void)
@@ -485,7 +477,8 @@ void enc28j60_control_flow(u08 flags, u08 on)
 
 u08 enc28j60_link_up(void)
 {
-  u08 link_up = (readPhyByte(PHSTAT2) >> 2) & 1;
+  uint16_t phstat2 = readPhy(PHSTAT2);
+  u08 link_up = (phstat2 & 0x400) == 0x400;
   return link_up > 0;
 }
 
