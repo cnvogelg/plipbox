@@ -67,6 +67,8 @@ static u08 attach(u16 *caps, u08 port, mac_t mac)
 
 static void detach(void)
 {
+  DS(("enc28j60: detach")); DNL;
+  enc28j60_disable_rx();
 }
 
 static void status(void)

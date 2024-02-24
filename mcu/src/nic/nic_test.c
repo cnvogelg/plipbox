@@ -17,6 +17,17 @@ void nic_test_status(void)
   uart_send_pstring(PSTR("nic_test_status:num="));
   u08 num_pkt = nic_rx_num_pending();
   uart_send_hex_byte(num_pkt);
+
+  u08 link_up = 0;
+  u08 ok = nic_ioctl(NIC_IOCTL_GET_LINK_STATUS, &link_up);
+  uart_send_pstring(PSTR(",link="));
+  if(ok == NIC_OK) {
+    uart_send_hex_byte(link_up);
+  } else {
+    uart_send_pstring(PSTR("err="));
+    uart_send_hex_byte(ok);
+  }
+
   uart_send_crlf();
 }
 
