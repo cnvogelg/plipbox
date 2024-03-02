@@ -53,38 +53,69 @@ u08 mode_get_proto_status(void)
   return proto_status;
 }
 
-static u08 update_rx_pending_state(void)
+static u08 update_proto_status(u08 status_changed, u08 new_status)
 {
-  u08 res = mode_mod_rx_poll();
+  u08 trigger = 0;
 
-  // rx pending not yet set...
-  if((proto_status & PROTO_CMD_STATUS_RX_PENDING) == 0) {
-    if(res == MODE_RX_PENDING) {
+  // rx pending changed!
+  if(status_changed & PROTO_CMD_STATUS_RX_PENDING) {
+    // rx pending not yet set...
+    if((proto_status & PROTO_CMD_STATUS_RX_PENDING) == 0) {
       proto_status |= PROTO_CMD_STATUS_RX_PENDING;
-      DT; DS("RX++"); DNL;
-      return 1;
+      trigger = 1;
+      DT; DS("RX!"); DNL;
     }
-  }
-  // rx pending is set
-  else {
-    // pio has no packets... clear flag
-    if(res != MODE_RX_PENDING) {
+    // rx pending is set
+    else {
       proto_status &= ~PROTO_CMD_STATUS_RX_PENDING;
-      DT; DS("RX--"); DNL;
+      trigger = 1;
+      DT; DS("rx."); DNL;
     }
   }
-  return 0;
+
+  // link went up
+  if(status_changed & PROTO_CMD_STATUS_LINK_UP) {
+    // link not yet up
+    if((proto_status & PROTO_CMD_STATUS_LINK_UP) == 0) {
+      proto_status |= PROTO_CMD_STATUS_LINK_UP;
+      trigger = 1;
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("mode: link up!"));
+      uart_send_crlf();
+    }
+    else {
+      proto_status &= ~PROTO_CMD_STATUS_LINK_UP;
+      trigger = 1;
+      uart_send_time_stamp_spc();
+      uart_send_pstring(PSTR("mode: link down!"));
+      uart_send_crlf();
+    }
+  }
+
+  return trigger;
+}
+
+static u08 poll_and_update_proto_status(void)
+{
+  // poll status from mode
+  u08 new_status = mode_mod_poll_status();
+
+  // check which status bits changed
+  u08 status_change = new_status ^ proto_status;
+
+  // update status change
+  return update_proto_status(status_change, new_status);
 }
 
 void mode_handle(void)
 {
   if(attached) {
-    // if not in a tx/rx phase then check for incoming packets
+    // if not in a tx/rx phase then check mode status, e.g. rx packet or link up/down
     if(proto_cmd_get_state() == PROTO_CMD_STATE_IDLE) {
-      u08 became_pending = update_rx_pending_state();
-      if(became_pending) {
-          // send async trigger to host -> will check status
-          proto_cmd_trigger_status();
+      u08 trigger = poll_and_update_proto_status();
+      if(trigger) {
+        // send async trigger to host -> will check status
+        proto_cmd_trigger_status();
       }
     }
   }
@@ -103,6 +134,7 @@ void mode_attach(void)
   u08 mod_index = param_get_mode();
   mode_mod_set_current(mod_index);
 
+  // attach and init status
   u08 result = mode_mod_attach();
   if(result == MODE_OK) {
     attached = 1;
@@ -119,6 +151,9 @@ void mode_attach(void)
   uart_send_pstring(PSTR(" -> "));
   uart_send_hex_byte(result);
   uart_send_crlf();
+
+  // initially poll status to set link status or rx pending
+  mode_handle();
 }
 
 static void not_attached(void)
@@ -136,17 +171,23 @@ void mode_detach(void)
     uart_send_pstring(PSTR("mode: detached."));
     uart_send_crlf();
 
+    // set idle state and announce it
+    proto_status = PROTO_CMD_STATUS_IDLE;
+    proto_cmd_trigger_status();
   } else {
-    DS("detach: "); not_attached();
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("mode: already detached!"));
+    uart_send_crlf();
   }
-
-  proto_status = PROTO_CMD_STATUS_IDLE;
 }
 
 void mode_ping(void)
 {
   if(attached) {
-    mode_mod_ping();
+    // if not in a tx/rx phase then check mode status, e.g. rx packet or link up/down
+    if(proto_cmd_get_state() == PROTO_CMD_STATE_IDLE) {
+      mode_mod_ping();
+    }
   }
 }
 
@@ -164,12 +205,8 @@ u08 mode_tx_end(u16 size)
 {
   if(attached) {
     u08 tx_status = mode_mod_tx_end(size);
-    u08 result = 0;
-    if(tx_status != MODE_OK) {
-      result = PROTO_CMD_STATUS_TX_ERROR;
-    }
-    update_rx_pending_state();
-    return proto_status | result;
+    poll_and_update_proto_status();
+    return tx_status | proto_status;
   } else {
     DS("tx_end"); not_attached();
     return 0;
@@ -201,12 +238,8 @@ u08 mode_rx_end(u16 size)
 {
   if(attached) {
     u08 rx_status = mode_mod_rx_end(size);
-    u08 result = 0;
-    if(rx_status != MODE_OK) {
-      result = PROTO_CMD_STATUS_RX_ERROR;
-    }
-    update_rx_pending_state();
-    return proto_status | result;
+    poll_and_update_proto_status();
+    return rx_status | proto_status;
   } else {
     DS("rx_end"); not_attached();
     return 0;

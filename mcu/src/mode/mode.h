@@ -28,8 +28,7 @@
 #define MODE_H
 
 #define MODE_OK           0
-#define MODE_RX_PENDING   1
-#define MODE_ERROR        2
+#define MODE_ERROR        1
 
 void mode_init(void);
 

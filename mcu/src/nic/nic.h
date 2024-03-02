@@ -50,6 +50,7 @@ extern void nic_status(void);
 extern u16 nic_caps_available(void);
 extern u16 nic_caps_in_use(void);
 extern u08 nic_is_direct(void);
+extern u08 nic_has_link_status(void);
 
 extern u08 nic_rx_num_pending(void);
 extern u08 nic_rx_size(u16 *got_size);

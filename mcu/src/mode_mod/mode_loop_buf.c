@@ -9,6 +9,7 @@
 #include "mode.h"
 #include "mode_loop_buf.h"
 #include "pkt_buf.h"
+#include "proto_cmd_shared.h"
 
 static u16 loop_size;
 
@@ -26,12 +27,13 @@ static void ping(void)
 {
 }
 
-static u08 rx_poll(void)
+static u08 poll_status(void)
 {
+  u08 status = PROTO_CMD_STATUS_LINK_UP;
   if(loop_size > 0) {
-    return MODE_RX_PENDING;
+    status |= PROTO_CMD_STATUS_RX_PENDING;
   }
-  return MODE_OK;
+  return status;
 }
 
 static u08 *tx_begin(u16 size)
@@ -42,7 +44,7 @@ static u08 *tx_begin(u16 size)
 static u08 tx_end(u16 size)
 {
   loop_size = size;
-  return MODE_OK;
+  return 0;
 }
 
 static u08 rx_size(u16 *got_size)
@@ -59,7 +61,7 @@ static u08 *rx_begin(u16 size)
 
 static u08 rx_end(u16 size)
 {
-  return MODE_OK;
+  return 0;
 }
 
 // define module
@@ -71,8 +73,7 @@ const mode_mod_t ROM_ATTR mode_mod_loop_buf = {
   .detach = detach,
 
   .ping = ping,
-
-  .rx_poll = rx_poll,
+  .poll_status = poll_status,
 
   .tx_begin = tx_begin,
   .tx_end = tx_end,

@@ -35,6 +35,7 @@
 
 static u08 is_direct_io;
 static u08 is_attached;
+static u08 cap_link_status;
 static u16 caps_in_use;
 
 void nic_init(void)
@@ -125,12 +126,18 @@ u08 nic_attach(u16 caps, u08 port, mac_t mac)
       uart_send_hex_byte(rev);
     }
 
-    // show link status
-    u08 status;
-    result = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &status);
-    if(result == NIC_OK) {
-      uart_send_pstring(PSTR(" link="));
-      uart_send_hex_byte(status);
+    // if device has link status
+    if(caps_available & NIC_CAP_LINK_STATUS) {
+      cap_link_status = 1;
+      // show link status
+      u08 status;
+      result = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &status);
+      if(result == NIC_OK) {
+        uart_send_pstring(PSTR(" link="));
+        uart_send_hex_byte(status);
+      }
+    } else {
+      cap_link_status = 0;
     }
 
   } else {
@@ -160,6 +167,11 @@ void nic_detach(void)
 u08 nic_is_attached(void)
 {
   return is_attached;
+}
+
+u08 nic_has_link_status(void)
+{
+  return cap_link_status;
 }
 
 void nic_ping(void)

@@ -11,6 +11,7 @@
 #include "pkt_buf.h"
 #include "nic.h"
 #include "param.h"
+#include "proto_cmd_shared.h"
 
 static u08 rx_res;
 
@@ -34,12 +35,33 @@ static void ping(void)
   nic_ping();
 }
 
-static u08 rx_poll(void)
+static u08 poll_status(void)
 {
+  u08 status = 0;
+
   if(nic_rx_num_pending() > 0) {
-    return MODE_RX_PENDING;
+    status = PROTO_CMD_STATUS_RX_PENDING;
   }
-  return MODE_OK;
+
+  // poll link status if its available
+  if(nic_has_link_status()) {
+    u08 link_status = 0;
+    u08 ok = nic_ioctl(NIC_IOCTL_GET_LINK_STATUS, &link_status);
+    if(ok == NIC_OK) {
+      if(link_status) {
+        status |= PROTO_CMD_STATUS_LINK_UP;
+      }
+    } else {
+      DT; DS("nic link status err:"); DB(ok); DNL;
+    }
+  }
+  // fake link status
+  else {
+    status |= PROTO_CMD_STATUS_LINK_UP;
+  }
+
+  DS("poll_status:"); DB(status); DNL;
+  return status;
 }
 
 static u08 *tx_begin(u16 size)
@@ -63,9 +85,9 @@ static u08 tx_end(u16 size)
   }
 
   if(res != NIC_OK) {
-    return MODE_ERROR;
+    return PROTO_CMD_STATUS_TX_ERROR;
   }
-  return MODE_OK;
+  return 0;
 }
 
 static u08 rx_size(u16 *got_size)
@@ -99,9 +121,9 @@ static u08 rx_end(u16 size)
   }
 
   if(res != NIC_OK) {
-    return MODE_ERROR;
+    return PROTO_CMD_STATUS_RX_ERROR;
   }
-  return MODE_OK;
+  return 0;
 }
 
 // define module
@@ -113,8 +135,7 @@ const mode_mod_t ROM_ATTR mode_mod_nic = {
   .detach = detach,
 
   .ping = ping,
-
-  .rx_poll = rx_poll,
+  .poll_status = poll_status,
 
   .tx_begin = tx_begin,
   .tx_end = tx_end,
