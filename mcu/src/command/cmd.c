@@ -289,8 +289,7 @@ u08 cmd_worker(void)
       // got a key command?
       if(found != 0) {
         cmdkey_func_t func = (cmdkey_func_t)read_rom_rom_ptr(&found->func);
-        func();
-        result = CMD_WORKER_DONE;
+        result = func();
       }
     }
   }

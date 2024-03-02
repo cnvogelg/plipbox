@@ -30,11 +30,11 @@
 #include "arch.h"
 #include "types.h"
 
-#define COMMAND_KEY(x) static void x (void)
+#define COMMAND_KEY(x) static u08 x (void)
 #define CMDKEY_HELP(x,y) static const char x ## _help[] ROM_ATTR = y
 #define CMDKEY_ENTRY(x,y) { x, y, y ## _help }
 
-typedef void (*cmdkey_func_t)(void);
+typedef u08 (*cmdkey_func_t)(void);
 
 struct cmdkey_table_s {
   u08     key;

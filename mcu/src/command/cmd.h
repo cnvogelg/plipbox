@@ -33,6 +33,7 @@
 #define CMD_WORKER_DONE     1
 #define CMD_WORKER_RESET    2
 #define CMD_WORKER_RESTART  3
+#define CMD_WORKER_EXIT     4
 
 extern u08 cmd_worker(void);
 
