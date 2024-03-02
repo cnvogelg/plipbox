@@ -59,8 +59,11 @@ static int init_loop(void)
 
     // handle commands
     res = cmd_worker();
-    if(res & CMD_WORKER_RESET) {
+    if(res == CMD_WORKER_RESET) {
       return LOOP_RESET;
+    }
+    else if(res == CMD_WORKER_EXIT) {
+      return LOOP_DONE;
     }
   }
 }
@@ -88,8 +91,11 @@ static int main_loop(void)
 
     // handle commands
     res = cmd_worker();
-    if(res & CMD_WORKER_RESET) {
+    if(res == CMD_WORKER_RESET) {
       return LOOP_RESET;
+    }
+    else if(res == CMD_WORKER_EXIT) {
+      return LOOP_DONE;
     }
   }
 }
