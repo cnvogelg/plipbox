@@ -33,11 +33,19 @@ struct PLIPBase;
 #define HW_SPECIAL_CMD_ERROR 1
 #define HW_SPECIAL_CMD_PARAM_CHANGE 2
 
+/* hw events */
+#define HW_EVENT_NONE           0
+#define HW_EVENT_RX_PENDING     1
+#define HW_EVENT_LINK_UP        2
+#define HW_EVENT_LINK_DOWN      4
+#define HW_EVENT_NEED_REINIT    8
+
 /* hw API */
 GLOBAL REGARGS BOOL hw_base_alloc(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_base_free(struct PLIPBase *pb);
 
 GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL hw_reinit(struct PLIPBase *pb);
 GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
 
 GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac);
@@ -55,11 +63,11 @@ GLOBAL REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);
 GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
 GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
 
-GLOBAL REGARGS ULONG hw_get_rx_sigmask(struct PLIPBase *pb);
+GLOBAL REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb);
 GLOBAL REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL hw_is_rx_pending(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL hw_handle_rx_signal(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL hw_handle_extra_signal(struct PLIPBase *pb);
+GLOBAL REGARGS BOOL  hw_is_event_pending(struct PLIPBase *pb);
+GLOBAL REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait);
+GLOBAL REGARGS UWORD hw_handle_extra_signal(struct PLIPBase *pb);
 
 GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
                                    STRPTR *template_str,

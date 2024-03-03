@@ -218,9 +218,9 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
        (nextwrite = (struct IOSana2Req *)currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
        currentwrite = nextwrite)
   {
-    if (hw_is_rx_pending(pb))
+    if (hw_is_event_pending(pb))
     {
-      d2(("incoming data!"));
+      d2(("hw event is pending!"));
       break;
     }
 
@@ -483,9 +483,9 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
   */
   while (ios2 = (struct IOSana2Req *)GetMsg(pb->pb_ServerPort))
   {
-    if (hw_is_rx_pending(pb))
+    if (hw_is_event_pending(pb))
     {
-      d2(("incoming data!"));
+      d2(("hw event is pending!"));
       break;
     }
 
@@ -733,9 +733,6 @@ PUBLIC VOID SAVEDS ServerTask(void)
 
     if (init(pb))
     {
-      ULONG got_sigmask = 0, port_sigmask, rx_sigmask, extra_sigmask, full_sigmask;
-      BOOL running;
-
       /* Ok, we are fine and will tell this mother personally :-) */
       pb->pb_Startup->ss_Error = 0;
       /* don't forget this, or we will have to keep a warm place */
@@ -743,55 +740,83 @@ PUBLIC VOID SAVEDS ServerTask(void)
       pb->pb_Flags &= ~PLIPF_REPLYSS;
       ReplyMsg((struct Message *)pb->pb_Startup);
 
-      port_sigmask = 1 << pb->pb_ServerPort->mp_SigBit;
-      rx_sigmask = hw_get_rx_sigmask(pb);
-      extra_sigmask = hw_get_extra_sigmask(pb);
+      ULONG port_sigmask = 1 << pb->pb_ServerPort->mp_SigBit;
+      ULONG event_sigmask = hw_get_event_sigmask(pb);
+      ULONG extra_sigmask = hw_get_extra_sigmask(pb);
 
-      full_sigmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | port_sigmask | rx_sigmask | extra_sigmask;
+      ULONG full_sigmask = SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C | port_sigmask | event_sigmask | extra_sigmask;
 
       /* main loop of server task */
       d2(("--- server main loop: %08lx ---\n", full_sigmask));
       d4r(("\nhi!\n"));
-      for (running = TRUE; running;)
+      for (BOOL running = TRUE; running;)
       {
         d2(("** full sigmask is 0x%08lx\n", full_sigmask));
 
-        /* if no recv is pending then wait for incoming signals */
-        if (!hw_is_rx_pending(pb))
+        /* if no hw event is already pending then wait for incoming signals */
+        BOOL from_wait = FALSE;
+        ULONG got_sigmask = 0;
+        if (!hw_is_event_pending(pb))
         {
           d2(("**> wait\n"));
           d4r(("\nW"));
           got_sigmask = Wait(full_sigmask);
           d2(("**> wait: got 0x%08lx\n", got_sigmask));
+          from_wait = TRUE;
         }
         else
         {
-          got_sigmask = 0;
+          /* make sure to enter handle event below */
+          got_sigmask = event_sigmask;
         }
 
-        /* handle rx signal of hw */
-        if (got_sigmask & rx_sigmask)
+        /* handle event signal of hw (rx pending, link up, ...) */
+        UWORD hw_events = 0;
+        if (got_sigmask & event_sigmask)
         {
-          d2(("** handle rx signal\n"));
-          hw_handle_rx_signal(pb);
-          d4r(("S"));
+          d2(("** handle event signal\n"));
+          hw_events = hw_handle_event_signal(pb, from_wait);
+          d4r(("S(%lx)", (ULONG)hw_events));
         }
 
         /* handle extra signal of hw */
         if (got_sigmask & extra_sigmask)
         {
           d2(("** handle extra signal\n"));
-          hw_handle_extra_signal(pb);
-          d4r(("X"));
+          UWORD extra_hw_events = hw_handle_extra_signal(pb);
+          hw_events |= extra_hw_events;
+          d4r(("X(%lx)", (ULONG)extra_hw_events));
         }
 
         /* accept pending receive and start reading */
-        if (hw_is_rx_pending(pb))
+        if(hw_events & HW_EVENT_RX_PENDING)
         {
           d4r(("R"));
           d2(("*+ do_read\n"));
           doreadreqs(pb);
           d2(("*- do_read\n"));
+        }
+
+        /* link up/down handling */
+        if(hw_events & HW_EVENT_LINK_UP) {
+          d4r(("L+"));
+          // TODO
+        }
+        if(hw_events & HW_EVENT_LINK_DOWN) {
+          d4r(("L-"));
+          // TODO
+        }
+
+        /* reinit hardware?? */
+        if(hw_events & HW_EVENT_NEED_REINIT) {
+          d4r(("#!?#"));
+          d2(("need HW reinit\n"));
+          gooffline(pb);
+          BOOL ok = hw_reinit(pb);
+          if(!ok) {
+            // TODO - driver stays inactive
+            d2(("hw dead. stop driver!\n"))
+          }
         }
 
         /* send packets if any */

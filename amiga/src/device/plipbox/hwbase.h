@@ -23,8 +23,8 @@ struct HWBase
   UWORD token;
 
   /* internal state */
-  UWORD max_frame_size;
   UWORD hw_status;
+  UWORD hw_event;
   ULONG num_rx;
   ULONG num_tx;
 

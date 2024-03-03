@@ -64,6 +64,11 @@ u08 proto_cmd_handle_init(void)
       DW(token); DNL;
       result = PROTO_CMD_HANDLE_INIT;
       break;
+    case PROTO_CMD_PING:
+      DS("PING:"); DW(token); DNL;
+      proto_atom_read_word(token);
+      proto_cmd_api_ping();
+      break;
     default:
       DC('?'); DNL;
       result = PROTO_CMD_HANDLE_UNKNOWN;
