@@ -4,6 +4,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include "devices/sana2link.h"
+
 #include "sanadev.h"
 #include "atimer.h"
 
@@ -38,37 +40,31 @@ typedef struct
 } params_t;
 static params_t params;
 
-typedef struct
-{
-  ULONG event;
-  char *desc;
-} event_desc_t;
-static const event_desc_t event_desc[] = {
-  { S2EVENT_ONLINE, "Online" },
-  { S2EVENT_OFFLINE, "Offline" },
-  { 0, NULL }
-};
-
 static void print_ts(atime_stamp_t *ts)
 {
   Printf("%08ld.%06ld ", ts->s, ts->ms);
 }
 
-static void print_events(ULONG events)
+static void print_link_status(BYTE link_status)
 {
-  const event_desc_t *ptr = &event_desc[0];
-  while(ptr->event != 0) {
-    if((events & ptr->event) == ptr->event) {
-      PutStr(ptr->desc);
-      PutStr(" ");
-    }
-    ptr++;
+  switch(link_status) {
+  case S2LINKSTATUS_UP:
+    Printf("Link up\n");
+    break;
+  case S2LINKSTATUS_DOWN:
+    Printf("Link down\n");
+    break;
+  case S2LINKSTATUS_UNKNOWN:
+    Printf("Link status unknown\n");
+    break;
+  default:
+    Printf("INVALID VALUE: %lx\n", (ULONG)link_status);
+    break;
   }
-  PutStr("\n");
 }
 
 /* ----- tool ----- */
-static int plipevent(const char *device, LONG unit)
+static int pliplink(const char *device, LONG unit)
 {
   sanadev_handle_t *sh;
   atimer_handle_t *th;
@@ -92,39 +88,29 @@ static int plipevent(const char *device, LONG unit)
     return RETURN_ERROR;
   }
 
-  // init events
-  ok = sanadev_event_init(sh, &error);
+  // init link status
+  ok = sanadev_link_init(sh, &error);
   if(!ok) {
     sanadev_close(sh);
 
-    Printf("Error init events. code=%ld\n", (LONG)error);
+    Printf("Error init link status handling. code=%ld\n", (LONG)error);
     return RETURN_ERROR;
   }
 
-  PutStr("waiting for events... press Ctrl+C to quit.\n");
+  PutStr("waiting for link status... press Ctrl+C to quit.\n");
   Flush(Output());
-
-  ULONG other_events = S2EVENT_ERROR | S2EVENT_TX | S2EVENT_RX |
-    S2EVENT_BUFF | S2EVENT_HARDWARE | S2EVENT_SOFTWARE;
-  BOOL is_online = FALSE;
 
   // start timing
   atime_stamp_t  start_time;
   atimer_sys_time_get(th, &start_time);
 
+  BYTE link_status = S2LINKSTATUS_UNKNOWN;
+
   while(1) {
 
-    // setup events to wait for
-    ULONG events;
-    if(is_online) {
-      events = other_events | S2EVENT_OFFLINE;
-    } else {
-      events = other_events | S2EVENT_ONLINE;
-    }
-
-    LOG(("Start events: %lx\n", events));
-    sanadev_event_start(sh, events);
-    ULONG sana_mask = sanadev_event_get_mask(sh);
+    LOG(("Start link status: %ld\n", link_status));
+    sanadev_link_start(sh, link_status);
+    ULONG sana_mask = sanadev_link_get_mask(sh);
     ULONG mask = sana_mask | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D;
     ULONG got_mask = Wait(mask);
     LOG(("Wait got_mask=%lx\n", got_mask));
@@ -133,28 +119,22 @@ static int plipevent(const char *device, LONG unit)
     atime_stamp_t  now;
     atime_stamp_t  delta;
 
-    // got sana event
+    // got sana link status update
     if ((got_mask & sana_mask) == sana_mask)
     {
-      // pick up event
-      ULONG got_events;
-      BOOL ok = sanadev_event_result(sh, &got_events);
+      // pick up link status
+      BYTE new_link_status = S2LINKSTATUS_UNKNOWN;
+      BOOL ok = sanadev_link_result(sh, &new_link_status);
 
-      LOG(("Got ok=%ld event: %lx\n", (ULONG)ok, got_events));
+      LOG(("Got ok=%ld link status: %ld\n", (ULONG)ok, (LONG)new_link_status));
       if(ok) {
         atimer_sys_time_get(th, &now);
         atimer_sys_time_delta(&now, &start_time, &delta);
         print_ts(&delta);
-        print_events(got_events);
+        print_link_status(new_link_status);
       }
 
-      // update online state
-      if((got_events & S2EVENT_ONLINE) == S2EVENT_ONLINE) {
-        is_online = TRUE;
-      }
-      if((got_events & S2EVENT_OFFLINE) == S2EVENT_OFFLINE) {
-        is_online = FALSE;
-      }
+      link_status = new_link_status;
     }
     if ((got_mask & (SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_C)) != 0) {
       PutStr("bye...\n");
@@ -162,11 +142,11 @@ static int plipevent(const char *device, LONG unit)
     }
   }
 
-  LOG(("Stop events\n"));
-  sanadev_event_stop(sh);
+  LOG(("Stop link status\n"));
+  sanadev_link_stop(sh);
 
-  LOG(("Exit events\n"));
-  sanadev_event_exit(sh);
+  LOG(("Exit link status\n"));
+  sanadev_link_exit(sh);
 
   LOG(("Closing device...\n"));
   sanadev_close(sh);
@@ -209,7 +189,7 @@ int main(void)
     unit = *params.unit;
   }
 
-  result = plipevent(device, unit);
+  result = pliplink(device, unit);
 
   /* free args */
   FreeArgs(args);

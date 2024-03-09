@@ -21,6 +21,13 @@ PLIPEVENT_SRC = plipevent.c
 PLIPEVENT_SRC += sanadev.c atimer.c
 PLIPEVENT_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPEVENT_SRC))
 
+# pliplink
+PLIPLINK_NAME = pliplink_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
+PLIPLINK_PATH = $(BIN_DIR)/$(PLIPLINK_NAME)
+PLIPLINK_SRC = pliplink.c
+PLIPLINK_SRC += sanadev.c atimer.c
+PLIPLINK_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPLINK_SRC))
+
 # the plipbox test tool
 #DEV_TEST_NAME = dev_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 #DEV_TEST_PATH = $(BIN_DIR)/$(DEV_TEST_NAME)
@@ -34,7 +41,7 @@ UDP_TEST_SRC = udp_test.c
 UDP_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(UDP_TEST_SRC))
 
 OBJS = $(DEV_TEST_OBJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ) $(PLIPBENCH_OBJ) $(PLIPEVENT_OBJ)
-TOOL_PATHS = $(PLIPTOOL_PATH) $(PLIPBENCH_PATH) $(PLIPEVENT_PATH)
+TOOL_PATHS = $(PLIPTOOL_PATH) $(PLIPBENCH_PATH) $(PLIPEVENT_PATH) $(PLIPLINK_PATH)
 TOOL_PATHS += $(DEV_TEST_PATH) $(UDP_TEST_PATH)
 
 # ----- tools -----
@@ -53,6 +60,7 @@ test: dirs $(TOOL_PATHS)
 	cp $(PLIPTOOL_PATH) $(TEST_DIR)/pliptool
 	cp $(PLIPBENCH_PATH) $(TEST_DIR)/plipbench
 	cp $(PLIPEVENT_PATH) $(TEST_DIR)/plipevent
+	cp $(PLIPLINK_PATH) $(TEST_DIR)/pliplink
 
 # --- pliptool ---
 pliptool: $(PLIPTOOL_PATH)
@@ -76,6 +84,14 @@ plipevent: $(PLIPEVENT_PATH)
 $(PLIPEVENT_PATH): $(PLIPEVENT_OBJ)
 	@echo "  LNK $@"
 	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(PLIPEVENT_OBJ)) \
+	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
+
+# --- pliplink ---
+pliplink: $(PLIPLINK_PATH)
+
+$(PLIPLINK_PATH): $(PLIPLINK_OBJ)
+	@echo "  LNK $@"
+	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(PLIPLINK_OBJ)) \
 	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
 
 # --- dev_test tool ---

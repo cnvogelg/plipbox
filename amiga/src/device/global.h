@@ -97,12 +97,14 @@ struct PLIPBase
       pb_EventList,                       /* event tracking */
       pb_ReadOrphanList,                  /* for spurious packets */
       pb_TrackList,                       /* track type */
-      pb_BufferManagement;                /* Copy-In/Out */
+      pb_BufferManagement,                /* Copy-In/Out */
+      pb_LinkStatusList;                  /* link status receiver */
   struct SignalSemaphore pb_EventListSem, /* protection for lists */
       pb_ReadListSem,
       pb_WriteListSem,
       pb_TrackListSem,
       pb_ReadOrphanListSem,
+      pb_LinkStatusListSem,
       pb_Lock;
 
   volatile UBYTE pb_Flags; /* see below */
@@ -147,12 +149,14 @@ struct PLIPBase
 #define PLIPB_OFFLINE 2       /* currently not online (sic!) */
 #define PLIPB_SERVERSTOPPED 3 /* set by server while passing away */
 #define PLIPB_REQ_TIMING 4    /* request timing */
+#define PLIPB_LINK_UP 5       /* link is up */
 
-#define PLIPF_REPLYSS (1 << PLIPB_REPLYSS)
-#define PLIPF_EXCLUSIVE (1 << PLIPB_EXCLUSIVE)
-#define PLIPF_OFFLINE (1 << PLIPB_OFFLINE)
-#define PLIPF_SERVERSTOPPED (1 << PLIPB_SERVERSTOPPED)
-#define PLIPF_REQ_TIMING (1 << PLIPB_REQ_TIMING)
+#define PLIPF_REPLYSS         (1 << PLIPB_REPLYSS)
+#define PLIPF_EXCLUSIVE       (1 << PLIPB_EXCLUSIVE)
+#define PLIPF_OFFLINE         (1 << PLIPB_OFFLINE)
+#define PLIPF_SERVERSTOPPED   (1 << PLIPB_SERVERSTOPPED)
+#define PLIPF_REQ_TIMING      (1 << PLIPB_REQ_TIMING)
+#define PLIPF_LINK_UP         (1 << PLIPB_LINK_UP)
 
 /*
 ** Values for PLIPBase->pb_ExtFlags

@@ -21,6 +21,7 @@
 #include "hw.h"
 
 #include "devices/plipbox.h"
+#include "devices/sana2link.h"
 
 PUBLIC VOID SAVEDS ServerTask(VOID);
 PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
@@ -85,6 +86,7 @@ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0, BASEPTR), REG(a0, BPTR seglist)
   NewList((struct List *)&pb->pb_ReadOrphanList);
   NewList((struct List *)&pb->pb_TrackList);
   NewList((struct List *)&pb->pb_BufferManagement);
+  NewList((struct List *)&pb->pb_LinkStatusList);
 
   /* initialise the access protection semaphores */
   InitSemaphore(&pb->pb_ReadListSem);
@@ -92,6 +94,7 @@ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0, BASEPTR), REG(a0, BPTR seglist)
   InitSemaphore(&pb->pb_EventListSem);
   InitSemaphore(&pb->pb_WriteListSem);
   InitSemaphore(&pb->pb_TrackListSem);
+  InitSemaphore(&pb->pb_LinkStatusListSem);
   InitSemaphore(&pb->pb_Lock);
 
   pb->pb_SpecialStats[S2SS_TXERRORS].Type = S2SS_PLIP_TXERRORS;
@@ -405,6 +408,53 @@ PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
     ios2->ios2_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 }
 
+static REGARGS BOOL handle_link_status(BASEPTR, struct IOSana2Req *ios2,
+                                       struct Sana2LinkStatus *s2_link_status)
+{
+  /* Sanity Check of stat data */
+  if(s2_link_status == NULL) {
+    ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+    ios2->ios2_WireError = S2WERR_BAD_STATDATA;
+    return FALSE;
+  }
+  if(s2_link_status->s2ls_Size < sizeof(struct Sana2LinkStatus)) {
+    ios2->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
+    ios2->ios2_WireError = S2WERR_BAD_STATDATA;
+    return FALSE;
+  }
+
+  /* copy current state to old state */
+  s2_link_status->s2ls_PreviousStatus = s2_link_status->s2ls_CurrentStatus;
+
+  BYTE link_status;
+  if(pb->pb_Flags & PLIPF_OFFLINE) {
+    /* if device is offline then the link status is always unknown */
+    link_status = S2LINKSTATUS_UNKNOWN;
+  } else {
+    /* get link status */
+    BOOL link_up = (pb->pb_Flags & PLIPF_LINK_UP) == PLIPF_LINK_UP;
+    link_status = link_up ? S2LINKSTATUS_UP : S2LINKSTATUS_DOWN;
+  }
+
+  /* if mode is IMMEDIATE or current status is different from real state
+     then return status directly */
+  if((s2_link_status->s2ls_QueryMode == S2LS_QUERYMODE_IMMEDIATE) ||
+     (s2_link_status->s2ls_CurrentStatus != link_status)) {
+
+    /* get time stamp */
+    hw_get_eclock(pb, (S2QUAD *)&s2_link_status->s2ls_TimeStamp);
+
+    s2_link_status->s2ls_CurrentStatus = link_status;
+
+    /* do not queue request */
+    return FALSE;
+  }
+  /* otherwise add to watch list and update req on next change */
+  else {
+    return TRUE;
+  }
+}
+
 PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASEPTR))
 {
   ULONG mtu;
@@ -569,6 +619,23 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASE
     }
     break;
 
+    /* ----- new link status command ----- */
+
+  case S2_LINK_STATUS:
+    {
+      d4r(("S2_LINK_STATUS\n"));
+      struct Sana2LinkStatus *s2_link_status = ios2->ios2_StatData;
+      BOOL queue = handle_link_status(pb, ios2, s2_link_status);
+      if(queue) {
+        ios2->ios2_Req.io_Flags &= ~SANA2IOF_QUICK;
+        ObtainSemaphore(&pb->pb_LinkStatusListSem);
+        AddTail((struct List *)&pb->pb_LinkStatusList, (struct Node *)ios2);
+        ReleaseSemaphore(&pb->pb_LinkStatusListSem);
+        ios2 = NULL;
+      }
+    }
+    break;
+
     /* --------------- stats support ----------------------- */
 
   case S2_TRACKTYPE:
@@ -723,6 +790,13 @@ PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1, struct IOSana2Req *ior), REG(a6, BASEP
   if ((is = isinlist((struct Node *)ior, (struct List *)&pb->pb_ReadOrphanList)))
     abort_req(pb, ior);
   ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
+  if (is)
+    goto leave;
+
+  ObtainSemaphore(&pb->pb_LinkStatusListSem);
+  if ((is = isinlist((struct Node *)ior, (struct List *)&pb->pb_LinkStatusList)))
+    abort_req(pb, ior);
+  ReleaseSemaphore(&pb->pb_LinkStatusListSem);
   if (is)
     goto leave;
 

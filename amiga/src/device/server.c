@@ -13,6 +13,7 @@
 #include "hw.h"
 
 #include "devices/plipbox.h"
+#include "devices/sana2link.h"
 
 /*
 ** return codes for write_frame()
@@ -38,6 +39,7 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2);
 PRIVATE REGARGS VOID dowritereqs(BASEPTR);
 PRIVATE REGARGS VOID doreadreqs(BASEPTR);
 PRIVATE REGARGS VOID dos2reqs(BASEPTR);
+PRIVATE REGARGS void do_link_status(BASEPTR, BYTE link_status);
 
 /*
 ** functions to go online/offline
@@ -90,8 +92,14 @@ PRIVATE REGARGS BOOL goonline(BASEPTR)
     else
     {
       hw_get_sys_time(pb, &pb->pb_DevStats.LastStart);
+
       pb->pb_Flags &= ~PLIPF_OFFLINE;
       DoEvent(pb, S2EVENT_ONLINE);
+
+      /* link status starts with down */
+      pb->pb_Flags &= ~PLIPF_LINK_UP;
+      do_link_status(pb, S2LINKSTATUS_DOWN);
+
       d2(("online: ok!\n"));
     }
   }
@@ -107,8 +115,11 @@ PRIVATE REGARGS VOID gooffline(BASEPTR)
     hw_detach(pb);
 
     pb->pb_Flags |= PLIPF_OFFLINE;
-
     DoEvent(pb, S2EVENT_OFFLINE);
+
+    /* link status is unknown after offline */
+    pb->pb_Flags &= ~PLIPF_LINK_UP;
+    do_link_status(pb, S2LINKSTATUS_UNKNOWN);
   }
   d2(("offline: ok!\n"));
 }
@@ -139,6 +150,40 @@ PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
 
   d2(("event: done=%lx\n", event));
 }
+
+/* answert S2_LINK_STATUS on change queries */
+PRIVATE REGARGS void do_link_status(BASEPTR, BYTE link_status)
+{
+  struct IOSana2Req *ior, *ior2;
+
+  d2(("do_linkstatus: %ld\n", link_status));
+
+  ObtainSemaphore(&pb->pb_LinkStatusListSem);
+
+  for (ior = (struct IOSana2Req *)pb->pb_LinkStatusList.lh_Head;
+       (ior2 = (struct IOSana2Req *)ior->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
+       ior = ior2)
+  {
+    struct Sana2LinkStatus *s2_link_status = ior->ios2_StatData;
+
+    /* report a change */
+    if(link_status != s2_link_status->s2ls_CurrentStatus) {
+
+      /* set up to date time stamp */
+      hw_get_eclock(pb, (S2QUAD *)&s2_link_status->s2ls_TimeStamp);
+
+      s2_link_status->s2ls_CurrentStatus = link_status;
+
+      Remove((struct Node *)ior);
+      DevTermIO(pb, ior);
+    }
+  }
+
+  ReleaseSemaphore(&pb->pb_LinkStatusListSem);
+
+  d2(("do_link_status: done=%ld\n", link_status));
+}
+
 
 /*
 ** writing packets
@@ -800,11 +845,13 @@ PUBLIC VOID SAVEDS ServerTask(void)
         /* link up/down handling */
         if(hw_events & HW_EVENT_LINK_UP) {
           d4r(("L+"));
-          // TODO
+          pb->pb_Flags |= PLIPF_LINK_UP;
+          do_link_status(pb, S2LINKSTATUS_UP);
         }
         if(hw_events & HW_EVENT_LINK_DOWN) {
           d4r(("L-"));
-          // TODO
+          pb->pb_Flags &= ~PLIPF_LINK_UP;
+          do_link_status(pb, S2LINKSTATUS_DOWN);
         }
 
         /* reinit hardware?? */

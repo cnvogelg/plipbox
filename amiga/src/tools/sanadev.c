@@ -5,6 +5,7 @@
 
 #include <devices/sana2.h>
 #include <devices/plipbox.h>
+#include <devices/sana2link.h>
 
 #include "compiler.h"
 #include "sanadev.h"
@@ -22,6 +23,7 @@ struct sanadev_handle
   struct Device *sana_dev;
   port_req_t cmd_pr;
   port_req_t event_pr;
+  port_req_t link_pr;
 
   port_req_t write_pr;
   port_req_t read_pr;
@@ -29,6 +31,8 @@ struct sanadev_handle
   BOOL timing;
   s2pb_req_timing_t *write_timing;
   s2pb_req_timing_t *read_timing;
+
+  struct Sana2LinkStatus link_status;
 };
 
 /* copy helper for SANA-II device */
@@ -113,6 +117,22 @@ static struct IOSana2Req *get_port_req_next_req(port_req_t *pr)
   return (struct IOSana2Req *)GetMsg(pr->port);
 }
 
+static BOOL stop_req(port_req_t *pr)
+{
+  struct IORequest *req = (struct IORequest *)pr->req;
+  if(req == NULL) {
+    return FALSE;
+  }
+
+  if (!CheckIO(req))
+  {
+    AbortIO(req);
+  }
+  WaitIO(req);
+  return TRUE;
+
+}
+
 // ----- open/close -----
 
 sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD *error)
@@ -189,7 +209,7 @@ void sanadev_event_exit(sanadev_handle_t *sh)
 
 BOOL sanadev_event_start(sanadev_handle_t *sh, ULONG event_mask)
 {
-  if(sh->write_pr.req == NULL) {
+  if(sh->event_pr.req == NULL) {
     return FALSE;
   }
 
@@ -201,17 +221,7 @@ BOOL sanadev_event_start(sanadev_handle_t *sh, ULONG event_mask)
 
 BOOL sanadev_event_stop(sanadev_handle_t *sh)
 {
-  struct IORequest *req = (struct IORequest *)sh->event_pr.req;
-  if(req == NULL) {
-    return FALSE;
-  }
-
-  if (!CheckIO(req))
-  {
-    AbortIO(req);
-  }
-  WaitIO(req);
-  return TRUE;
+  return stop_req(&sh->event_pr);
 }
 
 ULONG sanadev_event_get_mask(sanadev_handle_t *sh)
@@ -244,6 +254,79 @@ BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask)
 
   WaitPort(sh->event_pr.port);
   return sanadev_event_result(sh, event_mask);
+}
+
+// ----- link -----
+
+BOOL sanadev_link_init(sanadev_handle_t *sh, UWORD *error)
+{
+  BOOL ok = alloc_port_req(&sh->link_pr, error);
+  if (!ok)
+  {
+    return FALSE;
+  }
+
+  clone_req(&sh->cmd_pr, &sh->link_pr);
+  return TRUE;
+}
+
+void sanadev_link_exit(sanadev_handle_t *sh)
+{
+  free_port_req(&sh->link_pr);
+}
+
+BOOL sanadev_link_start(sanadev_handle_t *sh, BYTE link_status)
+{
+  if(sh->link_pr.req == NULL) {
+    return FALSE;
+  }
+
+  sh->link_status.s2ls_Size = sizeof(struct Sana2LinkStatus);
+  sh->link_status.s2ls_QueryMode = S2LS_QUERYMODE_ONCHANGE;
+  sh->link_status.s2ls_PreviousStatus = S2LINKSTATUS_UNKNOWN;
+  sh->link_status.s2ls_CurrentStatus = link_status;
+
+  sh->link_pr.req->ios2_StatData = &sh->link_status;
+  sh->link_pr.req->ios2_Req.io_Command = S2_LINK_STATUS;
+  SendIO((struct IORequest *)sh->link_pr.req);
+  return TRUE;
+}
+
+BOOL sanadev_link_stop(sanadev_handle_t *sh)
+{
+  return stop_req(&sh->link_pr);
+}
+
+ULONG sanadev_link_get_mask(sanadev_handle_t *sh)
+{
+  return get_port_req_mask(&sh->link_pr);
+}
+
+BOOL sanadev_link_result(sanadev_handle_t *sh, BYTE *link_status)
+{
+  struct IOSana2Req *req = get_port_req_next_req(&sh->link_pr);
+  if (req != NULL)
+  {
+    if(sh->link_pr.req->ios2_Req.io_Error != 0) {
+      return FALSE;
+    }
+    *link_status = sh->link_status.s2ls_CurrentStatus;
+    return TRUE;
+  }
+  else
+  {
+    return FALSE;
+  }
+}
+
+BOOL sanadev_link_wait(sanadev_handle_t *sh, BYTE *link_status)
+{
+  if(sh->link_pr.port == NULL) {
+    return FALSE;
+  }
+
+  WaitPort(sh->link_pr.port);
+  return sanadev_link_result(sh, link_status);
 }
 
 // ----- I/O -----
@@ -430,17 +513,7 @@ BOOL sanadev_io_read_start_orphan(sanadev_handle_t *sh, APTR data, ULONG data_le
 
 BOOL sanadev_io_read_stop(sanadev_handle_t *sh)
 {
-  struct IORequest *req = (struct IORequest *)sh->read_pr.req;
-  if(req == NULL) {
-    return FALSE;
-  }
-
-  if (!CheckIO(req))
-  {
-    AbortIO(req);
-  }
-  WaitIO(req);
-  return TRUE;
+  return stop_req(&sh->read_pr);
 }
 
 ULONG sanadev_io_read_get_mask(sanadev_handle_t *sh)

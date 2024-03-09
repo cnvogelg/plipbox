@@ -40,6 +40,15 @@ ULONG sanadev_event_get_mask(sanadev_handle_t *sh);
 BOOL sanadev_event_result(sanadev_handle_t *sh, ULONG *event_mask);
 BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask);
 
+/* link status */
+BOOL sanadev_link_init(sanadev_handle_t *sh, UWORD *error);
+void sanadev_link_exit(sanadev_handle_t *sh);
+BOOL sanadev_link_start(sanadev_handle_t *sh, BYTE link_status);
+BOOL sanadev_link_stop(sanadev_handle_t *sh);
+ULONG sanadev_link_get_mask(sanadev_handle_t *sh);
+BOOL sanadev_link_result(sanadev_handle_t *sh, BYTE *link_status);
+BOOL sanadev_link_wait(sanadev_handle_t *sh, BYTE *link_status);
+
 /* io: read/write ops */
 BOOL sanadev_io_init(sanadev_handle_t *sh, UWORD *error);
 void sanadev_io_exit(sanadev_handle_t *sh);

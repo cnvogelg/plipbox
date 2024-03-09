@@ -535,7 +535,7 @@ GLOBAL REGARGS BOOL hw_is_event_pending(struct PLIPBase *pb)
   }
 
   /* nothing to do */
-  return HW_EVENT_NONE;
+  return FALSE;
 }
 
 GLOBAL REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait)
