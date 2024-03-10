@@ -21,6 +21,8 @@ typedef UBYTE sanadev_mac_t[SANADEV_MAC_SIZE];
 /* API */
 extern sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD *error);
 extern void sanadev_close(sanadev_handle_t *sh);
+extern BOOL sanadev_is_newstyle(sanadev_handle_t *sh);
+extern BOOL sanadev_check_command(sanadev_handle_t *sh, UWORD command);
 
 /* regular SANA-II commands */
 BOOL sanadev_cmd_online(sanadev_handle_t *sh);
@@ -41,6 +43,7 @@ BOOL sanadev_event_result(sanadev_handle_t *sh, ULONG *event_mask);
 BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask);
 
 /* link status */
+BOOL sanadev_link_is_supported(sanadev_handle_t *sh);
 BOOL sanadev_link_init(sanadev_handle_t *sh, UWORD *error);
 void sanadev_link_exit(sanadev_handle_t *sh);
 BOOL sanadev_link_start(sanadev_handle_t *sh, BYTE link_status);

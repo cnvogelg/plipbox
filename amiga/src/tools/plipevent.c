@@ -88,6 +88,8 @@ static int plipevent(const char *device, LONG unit)
   sh = sanadev_open(device, unit, 0, &error);
   if (sh == NULL)
   {
+    atimer_exit(th);
+
     Printf("Error opening device '%s' unit #%ld: code=%ld\n", device, unit, (LONG)error);
     return RETURN_ERROR;
   }
@@ -95,6 +97,7 @@ static int plipevent(const char *device, LONG unit)
   // init events
   ok = sanadev_event_init(sh, &error);
   if(!ok) {
+    atimer_exit(th);
     sanadev_close(sh);
 
     Printf("Error init events. code=%ld\n", (LONG)error);

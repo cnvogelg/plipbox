@@ -6,6 +6,7 @@
 #include <devices/sana2.h>
 #include <devices/plipbox.h>
 #include <devices/sana2link.h>
+#include <devices/newstyle.h>
 
 #include "compiler.h"
 #include "sanadev.h"
@@ -33,6 +34,9 @@ struct sanadev_handle
   s2pb_req_timing_t *read_timing;
 
   struct Sana2LinkStatus link_status;
+
+  /* if its a newstyle device then keep command list here */
+  static const UWORD *supported_commands;
 };
 
 /* copy helper for SANA-II device */
@@ -133,6 +137,64 @@ static BOOL stop_req(port_req_t *pr)
 
 }
 
+static BOOL check_newstyle(sanadev_handle_t *sh)
+{
+  BOOL is_newstyle = FALSE;
+
+  /* lets use the size of a SANA-II req here to make it compatible with devices assuming this size */
+  struct IOStdReq *req = (struct IOStdReq *)CreateIORequest(sh->cmd_pr.port, sizeof(struct IOSana2Req));
+  if(req == NULL) {
+    return FALSE;
+  }
+  /* store device */
+  req->io_Device = sh->sana_dev;
+
+  /* prepare NSCMD_DEVICEQUERY */
+  ULONG size = sizeof(struct NSDeviceQueryResult);
+  struct NSDeviceQueryResult info;
+  info.nsdqr_SizeAvailable = 0;
+  info.nsdqr_DevQueryFormat = 0;
+  req->io_Command = NSCMD_DEVICEQUERY;
+  req->io_Data = &info;
+  req->io_Length = size;
+
+  BYTE error = DoIO((struct IORequest *)req);
+  if(!error) {
+    /* sanity checks */
+    if((req->io_Actual >= 16) &&
+       (req->io_Actual <= size) &&
+       (req->io_Actual == info.nsdqr_SizeAvailable) &&
+       (info.nsdqr_DeviceType == NSDEVTYPE_SANA2)) {
+
+      /* keep command list */
+      sh->supported_commands = info.nsdqr_SupportedCommands;
+      is_newstyle = TRUE;
+    }
+  }
+
+  DeleteIORequest(req);
+  return is_newstyle;
+}
+
+BOOL sanadev_check_command(sanadev_handle_t *sh, UWORD command)
+{
+  /* no NSD so we don't know about the available commands */
+  if(sh->supported_commands == NULL) {
+    return FALSE;
+  }
+
+  /* scan command list */
+  const UWORD *ptr = sh->supported_commands;
+  while(*ptr != 0) {
+    if(*ptr == command) {
+      return TRUE;
+    }
+    ptr++;
+  }
+
+  return FALSE;
+}
+
 // ----- open/close -----
 
 sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD *error)
@@ -168,6 +230,9 @@ sanadev_handle_t *sanadev_open(const char *name, ULONG unit, ULONG flags, UWORD 
   /* is timing enabled in flags? */
   sh->timing = (flags & S2PB_OPF_REQ_TIMING) == S2PB_OPF_REQ_TIMING;
 
+  /* check newstyle device */
+  check_newstyle(sh);
+
   /* done. return handle */
   return sh;
 
@@ -186,6 +251,11 @@ void sanadev_close(sanadev_handle_t *sh)
   free_port_req(&sh->cmd_pr);
 
   FreeMem(sh, sizeof(struct sanadev_handle));
+}
+
+BOOL sanadev_is_newstyle(sanadev_handle_t *sh)
+{
+  return sh->supported_commands != NULL;
 }
 
 // ----- events -----
@@ -257,6 +327,11 @@ BOOL sanadev_event_wait(sanadev_handle_t *sh, ULONG *event_mask)
 }
 
 // ----- link -----
+
+BOOL sanadev_link_is_supported(sanadev_handle_t *sh)
+{
+  return sanadev_check_command(sh, S2_LINK_STATUS);
+}
 
 BOOL sanadev_link_init(sanadev_handle_t *sh, UWORD *error)
 {

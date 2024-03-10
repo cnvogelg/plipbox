@@ -7,6 +7,7 @@
 #include <proto/timer.h>
 
 #include <devices/sana2.h>
+#include <devices/newstyle.h>
 #include <hardware/cia.h>
 #include <dos/dostags.h>
 #include <resources/misc.h>
@@ -31,6 +32,39 @@ PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG
 PUBLIC VOID freetracktypes(BASEPTR);
 PRIVATE BOOL isinlist(struct Node *n, struct List *l);
 PRIVATE VOID abort_req(BASEPTR, struct IOSana2Req *ior);
+
+static const UWORD supported_commands[] =
+{
+  CMD_READ,
+  CMD_WRITE,
+  S2_DEVICEQUERY,
+  S2_GETSTATIONADDRESS,
+  S2_CONFIGINTERFACE,
+  //S2_ADDMULTICASTADDRESS,
+  //S2_DELMULTICASTADDRESS,
+  //S2_MULTICAST,
+  S2_BROADCAST,
+  S2_TRACKTYPE,
+  S2_UNTRACKTYPE,
+  S2_GETTYPESTATS,
+  S2_GETSPECIALSTATS,
+  S2_GETGLOBALSTATS,
+  S2_ONEVENT,
+  S2_READORPHAN,
+  S2_ONLINE,
+  S2_OFFLINE,
+  NSCMD_DEVICEQUERY,
+  //S2_ADDMULTICASTADDRESSES,
+  //S2_DELMULTICASTADDRESSES,
+  //S2_GETSIGNALQUALITY,
+  //S2_GETNETWORKS,
+  //S2_SETOPTIONS,
+  //S2_SETKEY,
+  //S2_GETNETWORKINFO,
+  //S2_GETCRYPTTYPES,
+  S2_LINK_STATUS,
+  0
+};
 
 /*
 ** various support routines
@@ -455,8 +489,46 @@ static REGARGS BOOL handle_link_status(BASEPTR, struct IOSana2Req *ios2,
   }
 }
 
+static REGARGS void handle_newstyle_query(BASEPTR, struct IOStdReq *request)
+{
+  d4r(("NSCMD_DEVICEQUERY\n"));
+
+  /* expected min size */
+  ULONG size = sizeof(struct NSDeviceQueryResult);
+  /* sanity checks */
+  if((request->io_Data == NULL) || (request->io_Length < size)) {
+    request->io_Error = IOERR_BADLENGTH;
+  }
+  else {
+    struct NSDeviceQueryResult *info = request->io_Data;
+    request->io_Error = 0;
+    request->io_Actual = size;
+    info->nsdqr_SizeAvailable = size;
+    info->nsdqr_DevQueryFormat = 0;
+    info->nsdqr_DeviceType = NSDEVTYPE_SANA2;
+    info->nsdqr_DeviceSubType = 0;
+    info->nsdqr_SupportedCommands = (APTR)supported_commands;
+  }
+
+  if (!(request->io_Flags & IOF_QUICK)) {
+    request->io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    ReplyMsg((struct Message *)request);
+  }
+  else {
+    /* otherwise just mark it as done */
+    request->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+  }
+}
+
 PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASEPTR))
 {
+  /* handle newstyle query */
+  struct IOStdReq *ioreq = (struct IOStdReq *)ios2;
+  if(ioreq->io_Command == NSCMD_DEVICEQUERY) {
+    handle_newstyle_query(pb, ioreq);
+    return;
+  }
+
   ULONG mtu;
   ULONG oldWire = ios2->ios2_WireError;
 

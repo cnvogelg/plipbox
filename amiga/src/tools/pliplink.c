@@ -84,13 +84,27 @@ static int pliplink(const char *device, LONG unit)
   sh = sanadev_open(device, unit, 0, &error);
   if (sh == NULL)
   {
+    atimer_exit(th);
+
     Printf("Error opening device '%s' unit #%ld: code=%ld\n", device, unit, (LONG)error);
+    return RETURN_ERROR;
+  }
+
+  // check if link status is available in device?
+  LOG(("Checking for link status support in device!\n"));
+  BOOL has_link_status = sanadev_link_is_supported(sh);
+  if(!has_link_status) {
+    atimer_exit(th);
+    sanadev_close(sh);
+
+    PutStr("Link Status Command not supported by device. Aborting.\n");
     return RETURN_ERROR;
   }
 
   // init link status
   ok = sanadev_link_init(sh, &error);
   if(!ok) {
+    atimer_exit(th);
     sanadev_close(sh);
 
     Printf("Error init link status handling. code=%ld\n", (LONG)error);

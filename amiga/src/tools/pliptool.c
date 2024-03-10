@@ -64,6 +64,10 @@ static BOOL get_device_info(sanadev_handle_t *sh)
   sanadev_mac_t cur_mac;
   sanadev_mac_t def_mac;
 
+  /* is a newstyle device? */
+  ok = sanadev_is_newstyle(sh);
+  Printf("Newstyle Device: %s\n", ok ? "yes": "no");
+
   /* retrieve and show device and firmware version */
   ok = plipbox_cmd_get_version(sh, &dev_version, &fw_version);
   if (!ok)

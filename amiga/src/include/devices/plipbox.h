@@ -19,7 +19,7 @@ struct s2pb_req_timing {
 typedef struct s2pb_req_timing s2pb_req_timing_t;
 
 
-#define S2PB_BASE 0x5000
+#define S2PB_BASE 0x3000
 
 // plipbox extra commands
 #define S2PB_GET_VERSION (S2PB_BASE + 0)

@@ -4,10 +4,10 @@ LD=vc +aos68km
 AS=vasmm68k_mot
 
 # NDK includes/libs
-NDK_DIR ?= $(AMIGA_DIR)/ndk_3.9
-NDK_INC = $(NDK_DIR)/include/include_h
-NDK_LIB = $(NDK_DIR)/include/linker_libs
-NDK_INC_ASM = $(NDK_DIR)/include/include_i
+NDK_DIR ?= $(AMIGA_DIR)/ndk3.2r4
+NDK_INC = $(NDK_DIR)/include_h
+NDK_LIB = $(NDK_DIR)/lib
+NDK_INC_ASM = $(NDK_DIR)/include_i
 
 # netinclude
 NET_INC ?= $(AMIGA_DIR)/roadshow/netinclude
