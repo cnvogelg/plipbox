@@ -33,7 +33,7 @@ struct timer_handle *timer_init(struct Library *SysBase)
 {
   /* alloc handle */
   struct timer_handle *th;
-  th = AllocMem(sizeof(struct timer_handle), MEMF_CLEAR | MEMF_PUBLIC);
+  th = AllocMem(sizeof(struct timer_handle), MEMF_CLEAR | MEMF_ANY);
   if (th == NULL)
   {
     return NULL;

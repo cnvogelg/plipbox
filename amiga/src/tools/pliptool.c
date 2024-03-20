@@ -6,6 +6,7 @@
 
 #include "sanadev.h"
 #include "param.h"
+#include "plipbox_req.h"
 #include "plipbox_cmd.h"
 
 #define LOG(x)          \
@@ -90,7 +91,7 @@ static BOOL get_device_info(sanadev_handle_t *sh)
   return TRUE;
 }
 
-static BOOL dump_param(sanadev_handle_t *sh, s2pb_param_def_t *def)
+static BOOL dump_param(sanadev_handle_t *sh, param_def_t *def)
 {
   // alloc data buffer
   UBYTE *data = AllocVec(def->size, MEMF_ANY | MEMF_CLEAR);
@@ -101,30 +102,30 @@ static BOOL dump_param(sanadev_handle_t *sh, s2pb_param_def_t *def)
   }
 
   // get param
-  BOOL ok = plipbox_cmd_param_get_val(sh, def->index, def->size, data);
-  if (ok)
+  int res = plipbox_req_param_get_val(sh, def->index, def->size, data);
+  if (res == REQ_OK)
   {
     // print
-    int res = param_print_val(print_buffer, def, data);
-    if (res == PARAM_OK)
+    res = param_print_val(print_buffer, def, data);
+    if (res == PARAM_PARSE_OK)
     {
       PutStr(print_buffer);
     }
     else
     {
-      Printf("Error printing value: %s\n", param_perror(res));
+      Printf("Error printing value: %s\n", param_parse_perror(res));
     }
   }
   else
   {
-    Printf("Error getting parameter #%ld!\n", (ULONG)def->index);
+    Printf("Error %ld getting parameter #%ld!\n", (ULONG)res, (ULONG)def->index);
   }
 
   FreeVec(data);
-  return ok;
+  return (res == REQ_OK);
 }
 
-static BOOL set_param(sanadev_handle_t *sh, s2pb_param_def_t *def, const char *txt)
+static BOOL set_param(sanadev_handle_t *sh, param_def_t *def, const char *txt)
 {
   // alloc data buffer
   UBYTE *data = AllocVec(def->size, MEMF_ANY | MEMF_CLEAR);
@@ -135,44 +136,44 @@ static BOOL set_param(sanadev_handle_t *sh, s2pb_param_def_t *def, const char *t
   }
 
   // parse param
-  BOOL ok = TRUE;
   int res = param_parse_val(txt, def, data);
-  if (res == PARAM_OK)
+  if (res == PARAM_PARSE_OK)
   {
     // set param
-    ok = plipbox_cmd_param_set_val(sh, def->index, def->size, data);
-    if (!ok)
+    res = plipbox_req_param_set_val(sh, def->index, def->size, data);
+    if (res != REQ_OK)
     {
-      Printf("Error setting parameter #%ld!\n", (ULONG)def->index);
+      Printf("Error %ld setting parameter #%ld!\n", (ULONG)res, (ULONG)def->index);
     }
   }
   else
   {
     Printf("Error parsing parameter #%ld: '%s' -> %s\n", (ULONG)def->index, txt,
-           param_perror(res));
-    ok = FALSE;
+           param_parse_perror(res));
+    res = REQ_ERROR_UNKNOWN;
   }
 
   FreeVec(data);
-  return ok;
+  return (res == REQ_OK);
 }
 
 static BOOL dump_params(sanadev_handle_t *sh)
 {
   UWORD i;
-  UWORD num_param = 0;
-  BOOL ok = plipbox_cmd_param_get_num(sh, &num_param);
-  if (!ok)
+  UBYTE num_param = 0;
+  int res = plipbox_req_param_get_num(sh, &num_param);
+  if (res != REQ_OK)
   {
-    Printf("Error getting number of parameters from device!\n");
+    Printf("Error %ld getting number of parameters from device!\n", (ULONG)res);
     return FALSE;
   }
 
+  Printf("Number of Parameters: %ld\n", (ULONG)num_param);
   for (i = 0; i < num_param; i++)
   {
-    s2pb_param_def_t def;
-    ok = plipbox_cmd_param_get_def(sh, i, &def);
-    if (!ok)
+    param_def_t def;
+    res = plipbox_req_param_get_def(sh, i, &def);
+    if (res != REQ_OK)
     {
       Printf("Error getting param definition #%ld\n", (ULONG)i);
       return FALSE;
@@ -186,16 +187,16 @@ static BOOL dump_params(sanadev_handle_t *sh)
 
 static BOOL process_cmds(sanadev_handle_t *sh)
 {
-  BOOL ok;
+  int res;
   UWORD status;
 
   // do we need to load or reset the params from flash on device?
   if (params.prefs_load)
   {
     PutStr("Loading device parameters from flash...");
-    ok = plipbox_cmd_prefs_load(sh, &status);
-    Printf("result=%lx\n", (ULONG)status);
-    if (!ok)
+    res = plipbox_req_prefs_load(sh);
+    Printf("result=%ld\n", (ULONG)res);
+    if (res != REQ_OK)
     {
       return FALSE;
     }
@@ -203,29 +204,31 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // or do we reset them to factory defaults?
   else if (params.prefs_reset)
   {
-    PutStr("Reset device parameters to factory defaults...\n");
-    ok = plipbox_cmd_prefs_reset(sh);
-    if (!ok)
+    PutStr("Reset device parameters to factory defaults...");
+    res = plipbox_req_prefs_reset(sh);
+    Printf("result=%ld\n", (ULONG)res);
+    if (res != REQ_OK)
     {
       return FALSE;
     }
   }
 
   // process a parameter?
-  UWORD index = S2PB_NO_INDEX;
+  UBYTE index = PARAM_ID_INVALID;
   // given by tag
   if (params.param_tag != NULL)
   {
     ULONG tag;
-    if (param_parse_tag(params.param_tag, &tag) == PARAM_OK)
+    if (param_parse_tag(params.param_tag, &tag) == PARAM_PARSE_OK)
     {
       Printf("Searching tag '%s' (%04lx)\n", params.param_tag, tag);
-      ok = plipbox_cmd_param_find_tag(sh, tag, &index);
-      if (!ok)
+      res = plipbox_req_param_find_tag(sh, tag, &index);
+      if (res != REQ_OK)
       {
+        Printf("Search failed with Error %ld\n", res);
         return FALSE;
       }
-      if (index == S2PB_NO_INDEX)
+      if (index == PARAM_ID_INVALID)
       {
         PutStr("Tag not found!\n");
         return TRUE;
@@ -241,11 +244,11 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   else if (params.param_id != NULL)
   {
     index = (UWORD)*params.param_id;
-    UWORD num_param = 0;
-    ok = plipbox_cmd_param_get_num(sh, &num_param);
-    if (!ok)
+    UBYTE num_param = 0;
+    res = plipbox_req_param_get_num(sh, &num_param);
+    if (res != REQ_OK)
     {
-      Printf("Error getting number of parameters from device!\n");
+      Printf("Error %ld getting number of parameters from device!\n", (ULONG)res);
       return FALSE;
     }
     if (index >= num_param)
@@ -256,28 +259,28 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   }
 
   // set or dump value?
-  if (index != S2PB_NO_INDEX)
+  if (index != PARAM_ID_INVALID)
   {
     // get param def
-    s2pb_param_def_t param_def;
-    ok = plipbox_cmd_param_get_def(sh, index, &param_def);
-    if (!ok)
+    param_def_t param_def;
+    res = plipbox_req_param_get_def(sh, index, &param_def);
+    if (res != REQ_OK)
     {
-      Printf("Error getting param definition #%ld\n", (ULONG)index);
+      Printf("Error %ld getting param definition #%ld\n", (ULONG)res, (ULONG)index);
       return FALSE;
     }
 
     // set
     if (params.param_set != NULL)
     {
-      ok = set_param(sh, &param_def, params.param_set);
+      BOOL ok = set_param(sh, &param_def, params.param_set);
       if (!ok)
       {
         return FALSE;
       }
     }
     // dump
-    ok = dump_param(sh, &param_def);
+    BOOL ok = dump_param(sh, &param_def);
     if (!ok)
     {
       return FALSE;
@@ -287,7 +290,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   // dump all params
   if (params.param_dump)
   {
-    ok = dump_params(sh);
+    BOOL ok = dump_params(sh);
     if (!ok)
     {
       return FALSE;
@@ -298,9 +301,9 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   if (params.prefs_save)
   {
     PutStr("Saving device parameters to flash...");
-    ok = plipbox_cmd_prefs_save(sh, &status);
-    Printf("result=%lx\n", (ULONG)status);
-    if (!ok)
+    res = plipbox_req_prefs_save(sh);
+    Printf("result=%ld\n", (ULONG)res);
+    if (res != REQ_OK)
     {
       return FALSE;
     }

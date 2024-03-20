@@ -13,6 +13,7 @@
 #include "hwbase.h"
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
+#include "proto_req.h"
 #include "devices/plipbox.h"
 
 static REGARGS ULONG decode_hw_event(ULONG hw_status, ULONG last_status);
@@ -223,10 +224,10 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
 GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
-  int ok = proto_cmd_get_cur_mac(hwb->proto, cur_mac);
+  int ok = proto_req_get_cur_mac(hwb->proto, cur_mac);
   if (ok == PROTO_RET_OK)
   {
-    ok = proto_cmd_get_def_mac(hwb->proto, def_mac);
+    ok = proto_req_get_def_mac(hwb->proto, def_mac);
   }
   return ok == PROTO_RET_OK;
 }
@@ -234,7 +235,7 @@ GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_
 GLOBAL REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
-  return proto_cmd_set_cur_mac(hwb->proto, cur_mac);
+  return proto_req_set_cur_mac(hwb->proto, cur_mac);
 }
 
 GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
@@ -243,14 +244,7 @@ GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
   switch (cmd)
   {
   case S2PB_GET_VERSION:
-  case S2PB_PARAM_GET_NUM:
-  case S2PB_PARAM_FIND_TAG:
-  case S2PB_PARAM_GET_DEF:
-  case S2PB_PARAM_GET_VAL:
-  case S2PB_PARAM_SET_VAL:
-  case S2PB_PREFS_RESET:
-  case S2PB_PREFS_LOAD:
-  case S2PB_PREFS_SAVE:
+  case S2PB_DO_REQUEST:
     return TRUE;
   default:
     return FALSE;
@@ -281,72 +275,18 @@ GLOBAL REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req 
     req->ios2_WireError = version | DEVICE_VERSION << 24 | DEVICE_REVISION << 16;
     break;
   }
-  // ----- param -----
-  case S2PB_PARAM_GET_NUM:
+  case S2PB_DO_REQUEST:
   {
-    UWORD num_param = 0;
-    res = proto_cmd_param_get_num(hwb->proto, &num_param);
-    req->ios2_WireError = num_param;
-    break;
-  }
-  case S2PB_PARAM_FIND_TAG:
-  {
-    ULONG tag = req->ios2_WireError;
-    UWORD id = S2PB_NO_INDEX;
-    res = proto_cmd_param_find_tag(hwb->proto, tag, &id);
-    req->ios2_WireError = id;
-    break;
-  }
-  case S2PB_PARAM_GET_DEF:
-  {
-    UWORD id = (UWORD)req->ios2_WireError;
-    if (req->ios2_DataLength != sizeof(proto_param_def_t))
+    if (req->ios2_DataLength != sizeof(proto_cmd_req_t))
     {
       req->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
       req->ios2_WireError = S2WERR_GENERIC_ERROR;
     }
     else
     {
-      proto_param_def_t *def = (proto_param_def_t *)req->ios2_Data;
-      res = proto_cmd_param_get_def(hwb->proto, id, def);
+      proto_cmd_req_t *preq = (proto_cmd_req_t *)req->ios2_Data;
+      res = proto_cmd_request(hwb->proto, preq);
     }
-    break;
-  }
-  case S2PB_PARAM_GET_VAL:
-  {
-    UWORD id = (UWORD)req->ios2_WireError;
-    UWORD size = (UWORD)req->ios2_DataLength;
-    UBYTE *data = (UBYTE *)req->ios2_Data;
-    res = proto_cmd_param_get_val(hwb->proto, id, size, data);
-    break;
-  }
-  case S2PB_PARAM_SET_VAL:
-  {
-    UWORD id = (UWORD)req->ios2_WireError;
-    UWORD size = (UWORD)req->ios2_DataLength;
-    UBYTE *data = (UBYTE *)req->ios2_Data;
-    res = proto_cmd_param_set_val(hwb->proto, id, size, data);
-    return_value = HW_SPECIAL_CMD_PARAM_CHANGE;
-    break;
-  }
-  // ----- prefs -----
-  case S2PB_PREFS_RESET:
-    res = proto_cmd_prefs_reset(hwb->proto);
-    return_value = HW_SPECIAL_CMD_PARAM_CHANGE;
-    break;
-  case S2PB_PREFS_LOAD:
-  {
-    UWORD status = 0;
-    res = proto_cmd_prefs_load(hwb->proto, &status);
-    req->ios2_WireError = status;
-    return_value = HW_SPECIAL_CMD_PARAM_CHANGE;
-    break;
-  }
-  case S2PB_PREFS_SAVE:
-  {
-    UWORD status = 0;
-    res = proto_cmd_prefs_save(hwb->proto, &status);
-    req->ios2_WireError = status;
     break;
   }
   default:
@@ -356,7 +296,7 @@ GLOBAL REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req 
   /* update error in req */
   if (res != PROTO_RET_OK)
   {
-    req->ios2_Req.io_Error = S2ERR_TX_FAILURE;
+    req->ios2_Req.io_Error = S2ERR_SOFTWARE;
     req->ios2_WireError = S2WERR_GENERIC_ERROR;
     return HW_SPECIAL_CMD_ERROR;
   }

@@ -24,7 +24,7 @@ proto_handle_t *proto_atom_init(proto_env_handle_t *penv, ULONG timeout_s, ULONG
   proto_handle_t *ph;
   struct Library *SysBase = (struct Library *)proto_env_get_sysbase(penv);
 
-  ph = AllocMem(sizeof(struct proto_handle), MEMF_CLEAR | MEMF_PUBLIC);
+  ph = AllocMem(sizeof(struct proto_handle), MEMF_CLEAR | MEMF_ANY);
   if (ph == NULL)
   {
     return NULL;

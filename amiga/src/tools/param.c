@@ -21,12 +21,12 @@ int param_parse_tag(const char *str, ULONG *tag)
     num++;
     if (num > 4)
     {
-      return PARAM_WRONG_TAG_SIZE;
+      return PARAM_PARSE_WRONG_TAG_SIZE;
     }
   }
 
   *tag = res_tag;
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
 #define MAX_NUM_BUF 32
@@ -48,16 +48,16 @@ static int parse_digit(char ch, int base, ULONG *res)
   }
   else
   {
-    return PARAM_NO_DIGIT_CHAR;
+    return PARAM_PARSE_NO_DIGIT_CHAR;
   }
 
   if (num >= base)
   {
-    return PARAM_DIGIT_NOT_IN_BASE;
+    return PARAM_PARSE_DIGIT_NOT_IN_BASE;
   }
 
   *res = num;
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
 static int parse_number(const char *str, int base, ULONG *num, int *consumed)
@@ -90,7 +90,7 @@ static int parse_number(const char *str, int base, ULONG *num, int *consumed)
   {
     ULONG digit;
     int res = parse_digit(*str, base, &digit);
-    if (res == PARAM_NO_DIGIT_CHAR)
+    if (res == PARAM_PARSE_NO_DIGIT_CHAR)
     {
       // is a valid terminator for arrays?
       if ((*str == '.') || (*str == ':'))
@@ -101,7 +101,7 @@ static int parse_number(const char *str, int base, ULONG *num, int *consumed)
       }
     }
     // other error
-    if (res != PARAM_OK)
+    if (res != PARAM_PARSE_OK)
     {
       return res;
     }
@@ -115,17 +115,17 @@ static int parse_number(const char *str, int base, ULONG *num, int *consumed)
   {
     *consumed = len;
   }
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
-static int get_base(s2pb_param_def_t *def)
+static int get_base(param_def_t *def)
 {
   int base = 10;
-  if ((def->format & S2PB_PARAM_FORMAT_HEX) == S2PB_PARAM_FORMAT_HEX)
+  if ((def->format & PARAM_FORMAT_HEX) == PARAM_FORMAT_HEX)
   {
     base = 16;
   }
-  else if ((def->format & S2PB_PARAM_FORMAT_BIN) == S2PB_PARAM_FORMAT_BIN)
+  else if ((def->format & PARAM_FORMAT_BIN) == PARAM_FORMAT_BIN)
   {
     base = 2;
   }
@@ -153,12 +153,12 @@ void param_set_wire_value(UBYTE *data, ULONG number, int value_bytes)
   }
 }
 
-static int parse_scalar(const char *str, s2pb_param_def_t *def, UBYTE *data,
+static int parse_scalar(const char *str, param_def_t *def, UBYTE *data,
                         UWORD value_bytes)
 {
   if (def->size != value_bytes)
   {
-    return PARAM_WRONG_DATA_SIZE;
+    return PARAM_PARSE_WRONG_DATA_SIZE;
   }
 
   // get default base for numbers
@@ -166,7 +166,7 @@ static int parse_scalar(const char *str, s2pb_param_def_t *def, UBYTE *data,
 
   ULONG number = 0;
   int res = parse_number(str, base, &number, NULL);
-  if (res != PARAM_OK)
+  if (res != PARAM_PARSE_OK)
   {
     return res;
   }
@@ -174,10 +174,10 @@ static int parse_scalar(const char *str, s2pb_param_def_t *def, UBYTE *data,
   // copy number to buffer
   param_set_wire_value(data, number, value_bytes);
 
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
-static int get_num_elements(s2pb_param_def_t *def, UWORD value_bytes)
+static int get_num_elements(param_def_t *def, UWORD value_bytes)
 {
   int max_count = def->size;
   if (value_bytes == 2)
@@ -191,28 +191,28 @@ static int get_num_elements(s2pb_param_def_t *def, UWORD value_bytes)
   return max_count;
 }
 
-static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
+static int parse_array(const char *str, param_def_t *def, UBYTE *data,
                        UWORD value_bytes)
 {
   if ((def->size % value_bytes) != 0)
   {
-    return PARAM_WRONG_DATA_SIZE;
+    return PARAM_PARSE_WRONG_DATA_SIZE;
   }
 
   // parse as string?
-  if ((def->format & S2PB_PARAM_FORMAT_STR) == S2PB_PARAM_FORMAT_STR)
+  if ((def->format & PARAM_FORMAT_STR) == PARAM_FORMAT_STR)
   {
     int n = strlen(str);
     if (n >= def->size)
     {
-      return PARAM_DATA_TOO_LONG;
+      return PARAM_PARSE_DATA_TOO_LONG;
     }
     if (n == 0)
     {
-      return PARAM_DATA_TOO_SHORT;
+      return PARAM_PARSE_DATA_TOO_SHORT;
     }
     strncpy(data, str, def->size);
-    return PARAM_OK;
+    return PARAM_PARSE_OK;
   }
 
   // get default base for numbers
@@ -229,7 +229,7 @@ static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
     int consumed = 0;
     ULONG number = 0;
     int res = parse_number(str, base, &number, &consumed);
-    if (res != PARAM_OK)
+    if (res != PARAM_PARSE_OK)
     {
       return res;
     }
@@ -239,7 +239,7 @@ static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
     count++;
     if (count > def->size)
     {
-      return PARAM_DATA_TOO_LONG;
+      return PARAM_PARSE_DATA_TOO_LONG;
     }
 
     param_set_wire_value(ptr, number, value_bytes);
@@ -248,28 +248,28 @@ static int parse_array(const char *str, s2pb_param_def_t *def, UBYTE *data,
 
   if (count != max_count)
   {
-    return PARAM_DATA_TOO_SHORT;
+    return PARAM_PARSE_DATA_TOO_SHORT;
   }
 
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
-int param_parse_val(const char *str, s2pb_param_def_t *def, UBYTE *data)
+int param_parse_val(const char *str, param_def_t *def, UBYTE *data)
 {
   switch (def->type)
   {
-  case S2PB_PARAM_TYPE_WORD:
+  case PARAM_TYPE_WORD:
     return parse_scalar(str, def, data, 2);
-  case S2PB_PARAM_TYPE_LONG:
+  case PARAM_TYPE_LONG:
     return parse_scalar(str, def, data, 4);
-  case S2PB_PARAM_TYPE_BYTE_ARRAY:
+  case PARAM_TYPE_BYTE_ARRAY:
     return parse_array(str, def, data, 1);
-  case S2PB_PARAM_TYPE_WORD_ARRAY:
+  case PARAM_TYPE_WORD_ARRAY:
     return parse_array(str, def, data, 2);
-  case S2PB_PARAM_TYPE_LONG_ARRAY:
+  case PARAM_TYPE_LONG_ARRAY:
     return parse_array(str, def, data, 4);
   default:
-    return PARAM_WRONG_TYPE;
+    return PARAM_PARSE_WRONG_TYPE;
   }
 }
 
@@ -336,7 +336,7 @@ static int print_number(char *str, int base, ULONG num, int value_bytes, int pre
   }
   else
   {
-    return PARAM_WRONG_BASE;
+    return PARAM_PARSE_WRONG_BASE;
   }
 
   if (consumed != NULL)
@@ -344,10 +344,10 @@ static int print_number(char *str, int base, ULONG num, int value_bytes, int pre
     *consumed = len;
   }
 
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
-static int print_def(char *str, s2pb_param_def_t *def)
+static int print_def(char *str, param_def_t *def)
 {
   // convert tag
   UBYTE tag[5];
@@ -387,11 +387,11 @@ ULONG param_get_wire_value(const UBYTE *data, int value_bytes)
   return 0;
 }
 
-static int print_scalar(char *str, s2pb_param_def_t *def, const UBYTE *data, int value_bytes)
+static int print_scalar(char *str, param_def_t *def, const UBYTE *data, int value_bytes)
 {
   if (def->size != value_bytes)
   {
-    return PARAM_WRONG_DATA_SIZE;
+    return PARAM_PARSE_WRONG_DATA_SIZE;
   }
 
   int len = print_def(str, def);
@@ -417,21 +417,21 @@ static char get_sep(int base)
     return '.';
 }
 
-static int print_array(char *str, s2pb_param_def_t *def, const UBYTE *data, int value_bytes)
+static int print_array(char *str, param_def_t *def, const UBYTE *data, int value_bytes)
 {
   if ((def->size % value_bytes) != 0)
   {
-    return PARAM_WRONG_DATA_SIZE;
+    return PARAM_PARSE_WRONG_DATA_SIZE;
   }
 
   int len = print_def(str, def);
   str += len;
 
   // print as string?
-  if ((def->format & S2PB_PARAM_FORMAT_STR) == S2PB_PARAM_FORMAT_STR)
+  if ((def->format & PARAM_FORMAT_STR) == PARAM_FORMAT_STR)
   {
     strcpy(str, data);
-    return PARAM_OK;
+    return PARAM_PARSE_OK;
   }
 
   // print as numbers
@@ -452,7 +452,7 @@ static int print_array(char *str, s2pb_param_def_t *def, const UBYTE *data, int 
     int consumed = 0;
     ULONG number = param_get_wire_value(ptr, value_bytes);
     int res = print_number(str, base, number, value_bytes, 0, &consumed);
-    if (res != PARAM_OK)
+    if (res != PARAM_PARSE_OK)
     {
       return res;
     }
@@ -464,47 +464,47 @@ static int print_array(char *str, s2pb_param_def_t *def, const UBYTE *data, int 
   *(str++) = '\n';
   *(str++) = '\0';
 
-  return PARAM_OK;
+  return PARAM_PARSE_OK;
 }
 
-int param_print_val(char *str, s2pb_param_def_t *def, const UBYTE *data)
+int param_print_val(char *str, param_def_t *def, const UBYTE *data)
 {
   switch (def->type)
   {
-  case S2PB_PARAM_TYPE_WORD:
+  case PARAM_TYPE_WORD:
     return print_scalar(str, def, data, 2);
-  case S2PB_PARAM_TYPE_LONG:
+  case PARAM_TYPE_LONG:
     return print_scalar(str, def, data, 4);
-  case S2PB_PARAM_TYPE_BYTE_ARRAY:
+  case PARAM_TYPE_BYTE_ARRAY:
     return print_array(str, def, data, 1);
-  case S2PB_PARAM_TYPE_WORD_ARRAY:
+  case PARAM_TYPE_WORD_ARRAY:
     return print_array(str, def, data, 2);
-  case S2PB_PARAM_TYPE_LONG_ARRAY:
+  case PARAM_TYPE_LONG_ARRAY:
     return print_array(str, def, data, 4);
   }
 }
 
-char *param_perror(int res)
+char *param_parse_perror(int res)
 {
   switch (res)
   {
-  case PARAM_OK:
+  case PARAM_PARSE_OK:
     return "OK";
-  case PARAM_WRONG_TAG_SIZE:
+  case PARAM_PARSE_WRONG_TAG_SIZE:
     return "Wrong tag size!";
-  case PARAM_NO_DIGIT_CHAR:
+  case PARAM_PARSE_NO_DIGIT_CHAR:
     return "No digit char!";
-  case PARAM_DIGIT_NOT_IN_BASE:
+  case PARAM_PARSE_DIGIT_NOT_IN_BASE:
     return "Digit not in base!";
-  case PARAM_WRONG_DATA_SIZE:
+  case PARAM_PARSE_WRONG_DATA_SIZE:
     return "Wrong data size!";
-  case PARAM_WRONG_TYPE:
+  case PARAM_PARSE_WRONG_TYPE:
     return "Wrong type!";
-  case PARAM_DATA_TOO_LONG:
+  case PARAM_PARSE_DATA_TOO_LONG:
     return "Data too long";
-  case PARAM_DATA_TOO_SHORT:
+  case PARAM_PARSE_DATA_TOO_SHORT:
     return "Data too short";
-  case PARAM_WRONG_BASE:
+  case PARAM_PARSE_WRONG_BASE:
     return "Wrong base!";
   default:
     return "???";

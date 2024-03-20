@@ -15,7 +15,7 @@ DEVICE_ID = $(DEVICE_NAME) $(DEVICE_VERSION).$(DEVICE_REVISION) ($(DEVICE_DATE))
 CSRC=rt.c device.c server.c track.c
 
 # driver specific source files
-CSRC += proto_env.c proto_atom.c proto_cmd.c timer.c pario.c proto_low_cfg.c
+CSRC += proto_env.c proto_atom.c proto_cmd.c proto_req.c timer.c pario.c proto_low_cfg.c
 CSRC += hw.c
 ASRC += proto_low.s pario_irq.s
 

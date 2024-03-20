@@ -220,7 +220,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG u
       ** since we want to allow several protocol stacks to use PLIP
       ** simultaneously.
       */
-      if ((bm = (struct BufferManagement *)AllocVec(sizeof(struct BufferManagement), MEMF_CLEAR | MEMF_PUBLIC)) != NULL)
+      if ((bm = (struct BufferManagement *)AllocVec(sizeof(struct BufferManagement), MEMF_CLEAR | MEMF_ANY)) != NULL)
       {
         /*
         ** We don't care if there actually are buffer management functions,

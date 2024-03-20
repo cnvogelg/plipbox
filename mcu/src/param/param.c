@@ -328,4 +328,14 @@ u08 *param_get_data(u08 index)
   return data;
 }
 
+u16 param_get_size(u08 index)
+{
+  if(index >= param_defs_size) {
+    return 0;
+  }
+
+  u16 size = read_rom_word(&param_defs[index].size);
+  return size;
+}
+
 

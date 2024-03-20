@@ -92,7 +92,7 @@ pario_handle_t *pario_init(struct Library *SysBase)
 {
   /* alloc handle */
   struct pario_handle *ph;
-  ph = AllocMem(sizeof(struct pario_handle), MEMF_CLEAR | MEMF_PUBLIC);
+  ph = AllocMem(sizeof(struct pario_handle), MEMF_CLEAR | MEMF_ANY);
   if (ph == NULL)
   {
     return NULL;

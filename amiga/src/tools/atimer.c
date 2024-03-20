@@ -25,7 +25,7 @@ atimer_handle_t *atimer_init(struct Library *SysBase)
 {
   /* alloc handle */
   struct atimer_handle *th;
-  th = AllocMem(sizeof(struct atimer_handle), MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
+  th = AllocMem(sizeof(struct atimer_handle), MEMF_CLEAR | MEMF_ANY);
   if (th == NULL)
   {
     return NULL;

@@ -78,182 +78,77 @@ int proto_cmd_get_version(proto_handle_t *proto, UWORD *version)
   return res;
 }
 
-int proto_cmd_get_cur_mac(proto_handle_t *proto, mac_t mac)
+// ----- Request -----
+
+int proto_cmd_request(proto_handle_t *proto, proto_cmd_req_t *req)
 {
   int res;
+  ULONG data;
 
-  d8(("proto_cmd_get_cur_mac:"));
-  res = proto_atom_read_block(proto, PROTO_CMD_GET_CUR_MAC, mac, MAC_SIZE);
-  d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
-       (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-       (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
-  return res;
-}
-
-int proto_cmd_get_def_mac(proto_handle_t *proto, mac_t mac)
-{
-  int res;
-
-  d8(("proto_cmd_get_def_mac:"));
-  res = proto_atom_read_block(proto, PROTO_CMD_GET_DEF_MAC, mac, MAC_SIZE);
-  d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
-       (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-       (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
-  return res;
-}
-
-int proto_cmd_set_cur_mac(proto_handle_t *proto, mac_t mac)
-{
-  int res;
-
-  d8(("proto_cmd_set_cur_mac:"));
-  res = proto_atom_write_block(proto, PROTO_CMD_SET_CUR_MAC, mac, MAC_SIZE);
-  d8r((" res=%ld %02lx:%02lx:%02lx:%02lx:%02lx:%02lx\n", (LONG)res,
-       (ULONG)mac[0], (ULONG)mac[1], (ULONG)mac[2],
-       (ULONG)mac[3], (ULONG)mac[4], (ULONG)mac[5]));
-  return res;
-}
-
-// ----- param -----
-
-int proto_cmd_param_get_num(proto_handle_t *proto, UWORD *num)
-{
-  int res;
-
-  d8(("proto_cmd_param_get_num:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_PARAM_GET_NUM, num);
-  d8r((" num=%ld res=%ld\n", (LONG)*num, (LONG)res));
-  return res;
-}
-
-int proto_cmd_param_find_tag(proto_handle_t *proto, ULONG tag, UWORD *id)
-{
-  int res;
-
-  d8(("proto_cmd_param_find_tag: tag=%lx", tag));
-  res = proto_atom_write_long(proto, PROTO_CMD_PARAM_FIND_TAG, tag);
-  d8r((" res=%ld, ", (LONG)res));
-
-  if (res != PROTO_RET_OK)
-  {
+  // begin command
+  d8(("proto_cmd_request:"));
+  UWORD in_size = req->in_size;
+  data = req->command | (req->in_extra << 8) | (in_size << 16);
+  d8r((" data_in=%lx\n", data));
+  res = proto_atom_write_long(proto, PROTO_CMD_REQ_IN, data);
+  d8r((" res_in=%ld", (LONG)res));
+  if(res != PROTO_RET_OK) {
     return res;
   }
 
-  d8r(("get_id:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_PARAM_GET_ID, id);
-  d8r((" id=%ld res=%ld\n", (ULONG)*id, (LONG)res));
-  return res;
-}
-
-int proto_cmd_param_get_def(proto_handle_t *proto, UWORD id, proto_param_def_t *def)
-{
-  int res;
-  UBYTE buf[PARAM_DEF_SIZE];
-
-  d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
-  res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
-  d8r((" res=%ld\n", (LONG)res));
-  if (res != PROTO_RET_OK)
-  {
-    return res;
+  // has input data
+  if(in_size > 0) {
+    // round to even
+    if((in_size % 2) != 0) {
+      in_size++;
+    }
+    res = proto_atom_write_block(proto, PROTO_CMD_REQ_IN_DATA, req->in_buf, in_size);
+    d8r((" res_in_data=%ld", (LONG)res));
+    if(res != PROTO_RET_OK) {
+      return res;
+    }
   }
 
-  d8r(("get_def[%ld]:", (LONG)sizeof(*def)));
-  res = proto_atom_read_block(proto, PROTO_CMD_PARAM_GET_DEF, buf, PARAM_DEF_SIZE);
-  d8r((" res=%ld\n", (LONG)res));
-  if (res != PROTO_RET_OK)
-  {
+  // retrieve result
+  res = proto_atom_read_long(proto, PROTO_CMD_REQ_OUT, &data);
+  d8r((" data_out=%lx res_out=%ld", data, (LONG)res));
+  if(res != PROTO_RET_OK) {
     return res;
   }
+  UWORD out_size = (UWORD)(data >> 16);
+  UBYTE status = (UBYTE)(data & 0xff);
+  UBYTE out_extra = (UBYTE)((data >> 8) & 0xff);
+  req->status = status;
+  req->out_size = out_size;
+  req->out_extra = out_extra;
+  d8r((" out_size=%ld out_extra=%ld status=%ld", (ULONG)out_size, (ULONG)out_extra, (ULONG)status));
 
-  // convert wire def
-  // param description
-  // +00 u08 index
-  // +01 u08 type
-  // +02 u08 format
-  // +03 u08 reserved
-  // +04 u16 size
-  // +06 u32 tag
-  // =10
-  def->index = buf[0];
-  def->type = buf[1];
-  def->format = buf[2];
-  def->size = *(UWORD *)&buf[4]; // is big endian
-  def->tag = *(ULONG *)&buf[6];
-  d8(("got def: index=%ld type=%ld format=%ld size=%ld tag=%lx",
-      (ULONG)def->index, (ULONG)def->type, (ULONG)def->format,
-      (ULONG)def->size, def->tag));
-
-  return res;
-}
-
-int proto_cmd_param_get_val(proto_handle_t *proto, UWORD id, UWORD size, UBYTE *data)
-{
-  int res;
-
-  d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
-  res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
-  d8r((" res=%ld\n", (LONG)res));
-
-  if (res != PROTO_RET_OK)
-  {
-    return res;
+  // has output data?
+  if(out_size > 0) {
+    // round to even
+    if((out_size % 2) != 0) {
+      out_size++;
+    }
+    res = proto_atom_read_block(proto, PROTO_CMD_REQ_OUT_DATA, req->out_buf, out_size);
+    d8r((" res_in_data=%ld\n", (LONG)res));
+    if(res != PROTO_RET_OK) {
+      return res;
+    }
+  } else {
+    d8r(("\n"));
   }
 
-  d8r(("get_val[%ld]:", (LONG)size));
-  res = proto_atom_read_block(proto, PROTO_CMD_PARAM_GET_VAL, data, size);
-  d8r((" res=%ld\n", (LONG)res));
-  return res;
+  return PROTO_RET_OK;
 }
 
-int proto_cmd_param_set_val(proto_handle_t *proto, UWORD id, UWORD size, UBYTE *data)
+int proto_cmd_request_events(proto_handle_t *proto, UWORD *req_events)
 {
   int res;
 
-  d8(("proto_cmd_param_get_def: id=%ld", (LONG)id));
-  res = proto_atom_write_word(proto, PROTO_CMD_PARAM_SET_ID, id);
-  d8r((" res=%ld\n", (LONG)res));
+  d8(("proto_cmd_request_events:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_REQ_EVENTS, req_events);
+  d8r((" events=%lx res=%ld\n", *req_events, (LONG)res));
 
-  if (res != PROTO_RET_OK)
-  {
-    return res;
-  }
-
-  d8r(("set_val:[%ld]", (LONG)size));
-  res = proto_atom_write_block(proto, PROTO_CMD_PARAM_SET_VAL, data, size);
-  d8r((" res=%ld\n", (LONG)res));
-  return res;
-}
-
-// ----- prefs -----
-
-int proto_cmd_prefs_reset(proto_handle_t *proto)
-{
-  int res;
-
-  d8(("proto_cmd_prefs_reset:"));
-  res = proto_atom_action(proto, PROTO_CMD_PREFS_RESET);
-  d8r((" res=%ld\n", (LONG)res));
-  return res;
-}
-
-int proto_cmd_prefs_load(proto_handle_t *proto, UWORD *status)
-{
-  int res;
-
-  d8(("proto_cmd_prefs_load:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_PREFS_LOAD, status);
-  d8r((" status=%04lx res=%ld\n", (ULONG)*status, (LONG)res));
-  return res;
-}
-
-int proto_cmd_prefs_save(proto_handle_t *proto, UWORD *status)
-{
-  int res;
-
-  d8(("proto_cmd_prefs_save:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_PREFS_SAVE, status);
-  d8r((" status=%04lx res=%ld\n", (ULONG)*status, (LONG)res));
   return res;
 }
 

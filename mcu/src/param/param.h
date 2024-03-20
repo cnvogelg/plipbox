@@ -76,5 +76,6 @@ u08 param_get_num(void);
 u08 param_find_tag(u32 tag);
 void param_get_def(u08 index, param_def_t *def);
 u08 *param_get_data(u08 index);
+u16  param_get_size(u08 index);
 
 #endif

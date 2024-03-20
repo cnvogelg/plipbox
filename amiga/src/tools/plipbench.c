@@ -68,13 +68,13 @@ static UWORD old_ncap;
 
 static BOOL set_mode_and_flags(sanadev_handle_t *sh)
 {
-  BOOL ok;
+  int res;
   UWORD ncap = 0;
   UWORD mode = 0;
 
   // save old mode
-  ok = param_tag_mode_get(sh, &old_mode);
-  if (!ok)
+  res = param_tag_mode_get(sh, &old_mode);
+  if (res != REQ_OK)
   {
     return FALSE;
   }
@@ -99,15 +99,15 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
     ncap = NIC_CAP_FULL_DUPLEX;
   }
   LOG(("Setting mode: %ld\n", (LONG)mode));
-  ok = param_tag_mode_set(sh, mode);
-  if (!ok)
+  res = param_tag_mode_set(sh, mode);
+  if (res != REQ_OK)
   {
     return FALSE;
   }
 
   // save old nic caps
-  ok = param_tag_ncap_get(sh, &old_ncap);
-  if (!ok)
+  res = param_tag_ncap_get(sh, &old_ncap);
+  if (res != REQ_OK)
   {
     return FALSE;
   }
@@ -127,24 +127,24 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
     ncap |= NIC_CAP_DIRECT_IO;
   }
   LOG(("Setting NIC Caps: $%lx\n", (LONG)ncap));
-  ok = param_tag_ncap_set(sh, ncap);
-  return ok;
+  res = param_tag_ncap_set(sh, ncap);
+  return (res == REQ_OK);
 }
 
 static BOOL restore_mode_and_flags(sanadev_handle_t *sh)
 {
-  BOOL ok;
+  int res;
 
   LOG(("Restore Mode: %ld\n", (LONG)old_mode));
-  ok = param_tag_mode_set(sh, old_mode);
-  if (!ok)
+  res = param_tag_mode_set(sh, old_mode);
+  if (res != REQ_OK)
   {
     return FALSE;
   }
 
   LOG(("Restore NIC Caps: %ld\n", (LONG)old_ncap));
-  ok = param_tag_ncap_set(sh, old_ncap);
-  return ok;
+  res = param_tag_ncap_set(sh, old_ncap);
+  return (res == REQ_OK) ? TRUE : FALSE;
 }
 
 static void setup_bench_opt(bench_opt_t *opt)

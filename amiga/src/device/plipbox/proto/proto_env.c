@@ -21,7 +21,7 @@ struct proto_env_handle
 
 proto_env_handle_t *proto_env_init(struct Library *SysBase, int *res)
 {
-  proto_env_handle_t *ph = AllocMem(sizeof(proto_env_handle_t), MEMF_CLEAR | MEMF_PUBLIC);
+  proto_env_handle_t *ph = AllocMem(sizeof(proto_env_handle_t), MEMF_CLEAR | MEMF_ANY);
   if (ph == NULL)
   {
     return NULL;

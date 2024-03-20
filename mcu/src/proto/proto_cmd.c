@@ -16,6 +16,8 @@ static u08 rx_status;
 static u08 cmd_state = PROTO_CMD_STATE_IDLE;
 static u16 token = 0;
 
+static proto_cmd_req_t req;
+
 void proto_cmd_init(void)
 {
   proto_atom_init();
@@ -194,104 +196,40 @@ u08 proto_cmd_handle_main(void)
       break;
     }
 
-    case PROTO_CMD_PARAM_GET_NUM: {
+    // ----- req -----
+    case PROTO_CMD_REQ_IN: {
       CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 num = proto_cmd_api_param_get_num();
-      DS("param_get_num:"); DW(num); DNL;
-      proto_atom_read_word(num);
+      cmd_state = PROTO_CMD_STATE_REQ;
+      u32 data = proto_atom_write_long();
+      req.command = (u08)(data & 0xff);
+      req.in_extra = (u08)((data >> 8) & 0xff);
+      req.in_size = (u16)(data >> 16);
+      DS("req_in:cmd="); DB(req.command); DC('/'); DB(req.in_extra); DC('+'); DW(req.in_size); DNL;
+      proto_cmd_api_req_in(&req);
       break;
     }
-    case PROTO_CMD_PARAM_FIND_TAG: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u32 tag = proto_atom_write_long();
-      DS("param_find_tag:"); DL(tag); DNL;
-      proto_cmd_api_param_find_tag(tag);
+    case PROTO_CMD_REQ_IN_DATA: {
+      CHECK_STATE(PROTO_CMD_STATE_REQ);
+      DS("req_in_data:"); DW(req.in_size); DNL;
+      proto_atom_write_block(req.in_buf, req.in_size);
       break;
     }
-    case PROTO_CMD_PARAM_GET_ID: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 id = proto_cmd_api_param_get_id();
-      DS("param_get_id:"); DW(id); DNL;
-      proto_atom_read_word(id);
+    case PROTO_CMD_REQ_OUT: {
+      CHECK_STATE(PROTO_CMD_STATE_REQ);
+      proto_cmd_api_req_out(&req);
+      u32 data = (u32)req.status | ((u32)req.out_extra << 8) | ((u32)req.out_size << 16);
+      proto_atom_read_long(data);
+      DS("req_out:res="); DB(req.status); DC('/'); DB(req.out_extra); DC('+'); DW(req.out_size); DNL;
+      if(req.out_size == 0) {
+        cmd_state = PROTO_CMD_STATE_IDLE;
+      }
       break;
     }
-    case PROTO_CMD_PARAM_SET_ID: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 id = proto_atom_write_word();
-      DS("param_set_id:"); DW(id); DNL;
-      proto_cmd_api_param_set_id(id);
-      break;
-    }
-    case PROTO_CMD_PARAM_GET_DEF: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 size = 0;
-      u08 *buf = proto_cmd_api_param_get_def(&size);
-      DS("param_get_def:"); DW(size); DNL;
-      proto_atom_read_block(buf, size);
-      break;
-    }
-    case PROTO_CMD_PARAM_GET_VAL: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 size = 0;
-      u08 *buf = proto_cmd_api_param_get_val(&size);
-      DS("param_get_val:"); DW(size); DNL;
-      proto_atom_read_block(buf, size);
-      break;
-    }
-    case PROTO_CMD_PARAM_SET_VAL: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 size = 0;
-      u08 *buf = proto_cmd_api_param_get_val(&size);
-      DS("param_set_val:"); DW(size); DNL;
-      proto_atom_write_block(buf, size);
-      proto_cmd_api_param_set_val(buf, size);
-      break;
-    }
-    // ----- MAC ---
-    case PROTO_CMD_GET_CUR_MAC: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      mac_t mac;
-      proto_cmd_api_get_cur_mac(mac);
-      DS("get_cur_mac:"); DM(mac); DNL;
-      proto_atom_read_block(mac, MAC_SIZE);
-      break;
-    }
-    case PROTO_CMD_GET_DEF_MAC: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      mac_t mac;
-      proto_cmd_api_get_def_mac(mac);
-      DS("get_def_mac:"); DM(mac); DNL;
-      proto_atom_read_block(mac, MAC_SIZE);
-      break;
-    }
-    case PROTO_CMD_SET_CUR_MAC: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      mac_t mac;
-      DS("set_def_mac:");
-      proto_atom_write_block(mac, MAC_SIZE);
-      DM(mac); DNL;
-      proto_cmd_api_set_cur_mac(mac);
-      break;
-    }
-    // ----- prefs -----
-    case PROTO_CMD_PREFS_RESET:
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      proto_cmd_api_prefs_reset();
-      proto_atom_action();
-      DS("reset_prefs"); DNL;
-      break;
-    case PROTO_CMD_PREFS_LOAD: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 status = proto_cmd_api_prefs_load();
-      proto_atom_read_word(status);
-      DS("load_prefs:"); DW(status); DNL;
-      break;
-    }
-    case PROTO_CMD_PREFS_SAVE: {
-      CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 status = proto_cmd_api_prefs_save();
-      proto_atom_read_word(status);
-      DS("save_prefs:"); DW(status); DNL;
+    case PROTO_CMD_REQ_OUT_DATA: {
+      CHECK_STATE(PROTO_CMD_STATE_REQ);
+      DS("req_out_data:"); DW(req.out_size); DNL;
+      proto_atom_read_block(req.out_buf, req.out_size);
+      cmd_state = PROTO_CMD_STATE_IDLE;
       break;
     }
 

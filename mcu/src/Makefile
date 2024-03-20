@@ -141,16 +141,16 @@ OUTPUT = $(OUTDIR)/$(BASENAME)
 DISTDIR = ../bin
 
 # setup src search
-VPATH = .:net:eth:base:proto:param:mode:mode_mod:nic:nic_mod:net:command:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
+VPATH = .:net:eth:base:proto:req:param:mode:mode_mod:nic:nic_mod:net:command:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
 
 # source files
 SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c hw_persist.c
 SRC += util.c uartutil.c
+SRC += proto_atom.c proto_cmd.c req.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
 SRC += param_def.c param.c param_cmd.c
 SRC += pkt_buf.c net.c arp.c
 SRC += dump.c stats.c
-SRC += proto_atom.c proto_cmd.c
 SRC += mode.c mode_mod.c mode_cmd.c mode_def.c
 SRC += mode_loop_buf.c mode_nic.c nic_test.c
 SRC += nic.c nic_def.c nic_mod.c nic_loop.c nic_enc28j60.c enc28j60.c
@@ -181,7 +181,7 @@ CFLAGS += -I$(AVRLIBC_DIR)/include
 CFLAGS += -mmcu=$(MCU)
 CFLAGS += -I. -Iarch -Iarch/$(ARCH) -Iarch/$(ARCH)/mach-$(MACH) -Iarch/common
 CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include -Iparam -Imode -Icommand
-CFLAGS += -Inic -Imode_mod -Inic_mod -Inet
+CFLAGS += -Inic -Imode_mod -Inic_mod -Inet -Ireq
 CFLAGS += -ffunction-sections -fdata-sections
  
 CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
