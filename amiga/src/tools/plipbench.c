@@ -4,6 +4,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <devices/sana2link.h>
+
 #include "sanadev.h"
 #include "param_tag.h"
 #include "param_shared.h"
@@ -204,6 +206,86 @@ static void setup_bench_opt(bench_opt_t *opt)
   LOG(("Timing: %ld\n", (ULONG)opt->timing));
 }
 
+static BOOL wait_for_link_up(sanadev_handle_t *sh, atimer_handle_t *th, ULONG timeout)
+{
+  // if no link up support then skip it
+  if(!sanadev_link_is_supported(sh)) {
+    LOG(("Skipping link up... not supported!\n"));
+    return TRUE;
+  }
+
+  UWORD error = 0;
+  if(!sanadev_link_init(sh, &error)) {
+    LOG(("Link status init failed: %ld\n", (ULONG)error));
+    return FALSE;
+  }
+
+  // send link status request
+  if(!sanadev_link_start(sh)) {
+    LOG(("Error setting up link request!\n"));
+    sanadev_link_exit(sh);
+    return FALSE;
+  }
+
+  // start timer
+  atimer_sig_start(th, timeout, 0);
+
+  // wait for event
+  ULONG link_mask = sanadev_link_get_mask(sh);
+  ULONG timer_mask = atimer_sig_get_mask(th);
+  ULONG wait_mask = link_mask | timer_mask | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D;
+  BOOL stay = TRUE;
+  BOOL ok = FALSE;
+  int count = 0;
+
+  while(stay) {
+    ULONG got_mask = Wait(wait_mask);
+
+    if((got_mask & link_mask) == link_mask) {
+      BYTE link_status = 0;
+      if(sanadev_link_result(sh, &link_status)) {
+        LOG(("Received link status: %ld\n", (LONG)link_status));
+        if(link_status == S2LINKSTATUS_UP) {
+          ok = TRUE;
+          stay = FALSE;
+        } else {
+          // wait a bit: 1/10s
+          Delay(5);
+
+          // abort on too many tries
+          count++;
+          if(count > 10 * timeout) {
+            stay = FALSE;
+          }
+          else {
+            // start next request
+            if(!sanadev_link_start(sh)) {
+              LOG(("Error setting up link request!\n"));
+              sanadev_link_exit(sh);
+              stay = FALSE;
+            }
+          }
+        }
+      } else {
+        LOG(("Error getting link status!\n"));
+      }
+    }
+    else if((got_mask & timer_mask) == timer_mask) {
+      LOG(("Timeout in link status!\n"));
+      stay = FALSE;
+    }
+    else {
+      LOG(("User break in link status.\n"));
+      stay = FALSE;
+    }
+  }
+
+  atimer_sig_stop(th);
+  sanadev_link_stop(sh);
+  sanadev_link_exit(sh);
+  return ok;
+}
+
 /* ----- tool ----- */
 static int plipbench(const char *device, LONG unit)
 {
@@ -274,8 +356,16 @@ static int plipbench(const char *device, LONG unit)
       }
       else
       {
-        // we made it: enter main loop
-        bench_loop(&data, &bench_opt);
+        PutStr("waiting for link up...\n");
+        Flush(Output());
+        ok = wait_for_link_up(data.sh, data.th, bench_opt.timeout);
+        if(!ok) {
+          PutStr("Error waiting for link up!\n");
+        }
+        else {
+          // we made it: enter main loop
+          bench_loop(&data, &bench_opt);
+        }
 
         // finally go offline
         PutStr("going offline...\n");

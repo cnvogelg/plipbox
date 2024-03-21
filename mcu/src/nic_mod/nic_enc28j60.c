@@ -75,6 +75,8 @@ static void status(void)
 {
   DS("enc28j60:status:num_pkt=");
   DB(enc28j60_rx_num_pending());
+  DS(",link_up:");
+  DB(enc28j60_link_up());
   DNL;
 }
 

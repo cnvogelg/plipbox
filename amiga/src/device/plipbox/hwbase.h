@@ -24,7 +24,7 @@ struct HWBase
 
   /* internal state */
   UWORD hw_status;
-  UWORD hw_event;
+  UWORD hw_events;
   ULONG num_rx;
   ULONG num_tx;
 

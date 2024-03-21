@@ -27,6 +27,11 @@
 #include "arch.h"
 #include "types.h"
 
+#ifdef DEBUG_NIC
+#define DEBUG
+#endif
+
+#include "debug.h"
 #include "nic.h"
 #include "nic_mod.h"
 

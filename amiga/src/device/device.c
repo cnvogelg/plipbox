@@ -112,6 +112,7 @@ ASM SAVEDS struct Device *DevInit(REG(d0, BASEPTR), REG(a0, BPTR seglist), REG(a
   pb->pb_Flags = PLIPF_OFFLINE;
   pb->pb_BPS = HW_BPS;
   pb->pb_MTU = HW_ETH_MTU;
+  pb->pb_LinkStatus = S2LINKSTATUS_UNKNOWN;
 
   /* initialise the lists */
   NewList((struct List *)&pb->pb_ReadList);
@@ -460,15 +461,8 @@ static REGARGS BOOL handle_link_status(BASEPTR, struct IOSana2Req *ios2,
   /* copy current state to old state */
   s2_link_status->s2ls_PreviousStatus = s2_link_status->s2ls_CurrentStatus;
 
-  BYTE link_status;
-  if(pb->pb_Flags & PLIPF_OFFLINE) {
-    /* if device is offline then the link status is always unknown */
-    link_status = S2LINKSTATUS_UNKNOWN;
-  } else {
-    /* get link status */
-    BOOL link_up = (pb->pb_Flags & PLIPF_LINK_UP) == PLIPF_LINK_UP;
-    link_status = link_up ? S2LINKSTATUS_UP : S2LINKSTATUS_DOWN;
-  }
+  /* retrieve link status */
+  BYTE link_status = pb->pb_LinkStatus;
 
   /* if mode is IMMEDIATE or current status is different from real state
      then return status directly */

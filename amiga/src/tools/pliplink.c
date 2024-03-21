@@ -118,12 +118,10 @@ static int pliplink(const char *device, LONG unit)
   atime_stamp_t  start_time;
   atimer_sys_time_get(th, &start_time);
 
-  BYTE link_status = S2LINKSTATUS_UNKNOWN;
-
   while(1) {
 
-    LOG(("Start link status: %ld\n", link_status));
-    sanadev_link_start(sh, link_status);
+    LOG(("Start link status\n"));
+    sanadev_link_start(sh);
     ULONG sana_mask = sanadev_link_get_mask(sh);
     ULONG mask = sana_mask | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D;
     ULONG got_mask = Wait(mask);
@@ -147,8 +145,6 @@ static int pliplink(const char *device, LONG unit)
         print_ts(&delta);
         print_link_status(new_link_status);
       }
-
-      link_status = new_link_status;
     }
     if ((got_mask & (SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_C)) != 0) {
       PutStr("bye...\n");

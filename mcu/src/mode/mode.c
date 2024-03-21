@@ -151,9 +151,6 @@ void mode_attach(void)
   uart_send_pstring(PSTR(" -> "));
   uart_send_hex_byte(result);
   uart_send_crlf();
-
-  // initially poll status to set link status or rx pending
-  mode_handle();
 }
 
 static void not_attached(void)
@@ -171,9 +168,8 @@ void mode_detach(void)
     uart_send_pstring(PSTR("mode: detached."));
     uart_send_crlf();
 
-    // set idle state and announce it
+    // set idle state but do NOT trigger a change since host will ignore it
     proto_status = PROTO_CMD_STATUS_IDLE;
-    proto_cmd_trigger_status();
   } else {
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("mode: already detached!"));

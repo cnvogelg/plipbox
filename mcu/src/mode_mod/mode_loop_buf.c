@@ -1,6 +1,6 @@
 #include "types.h"
 
-#ifdef DEBUG_LOOP_BUF
+#ifdef DEBUG_MODE
 #define DEBUG
 #endif
 

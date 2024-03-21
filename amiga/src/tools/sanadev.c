@@ -350,7 +350,7 @@ void sanadev_link_exit(sanadev_handle_t *sh)
   free_port_req(&sh->link_pr);
 }
 
-BOOL sanadev_link_start(sanadev_handle_t *sh, BYTE link_status)
+BOOL sanadev_link_start(sanadev_handle_t *sh)
 {
   if(sh->link_pr.req == NULL) {
     return FALSE;
@@ -359,7 +359,7 @@ BOOL sanadev_link_start(sanadev_handle_t *sh, BYTE link_status)
   sh->link_status.s2ls_Size = sizeof(struct Sana2LinkStatus);
   sh->link_status.s2ls_QueryMode = S2LS_QUERYMODE_ONCHANGE;
   sh->link_status.s2ls_PreviousStatus = S2LINKSTATUS_UNKNOWN;
-  sh->link_status.s2ls_CurrentStatus = link_status;
+  sh->link_status.s2ls_CurrentStatus = S2LINKSTATUS_UNKNOWN;
 
   sh->link_pr.req->ios2_StatData = &sh->link_status;
   sh->link_pr.req->ios2_Req.io_Command = S2_LINK_STATUS;

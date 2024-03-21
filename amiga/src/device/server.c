@@ -33,8 +33,8 @@ static struct PLIPBase *startup(void);
 static REGARGS void DoEvent(BASEPTR, long event);
 static void readargs(BASEPTR);
 static BOOL init(BASEPTR);
-static REGARGS BOOL goonline(BASEPTR);
-static REGARGS void gooffline(BASEPTR);
+static REGARGS BOOL handle_online(BASEPTR);
+static REGARGS void handle_offline(BASEPTR);
 static REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2);
 static REGARGS void dowritereqs(BASEPTR);
 static REGARGS void doreadreqs(BASEPTR);
@@ -76,7 +76,7 @@ static REGARGS void rejectpackets(BASEPTR)
   ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
 }
 
-static REGARGS BOOL goonline(BASEPTR)
+static REGARGS BOOL handle_online(BASEPTR)
 {
   BOOL rc = TRUE;
 
@@ -96,10 +96,6 @@ static REGARGS BOOL goonline(BASEPTR)
       pb->pb_Flags &= ~PLIPF_OFFLINE;
       DoEvent(pb, S2EVENT_ONLINE);
 
-      /* link status starts with down */
-      pb->pb_Flags &= ~PLIPF_LINK_UP;
-      do_link_status(pb, S2LINKSTATUS_DOWN);
-
       d2(("online: ok!\n"));
     }
   }
@@ -107,7 +103,7 @@ static REGARGS BOOL goonline(BASEPTR)
   return rc;
 }
 
-static REGARGS void gooffline(BASEPTR)
+static REGARGS void handle_offline(BASEPTR)
 {
   d2(("offline\n"));
   if (!(pb->pb_Flags & PLIPF_OFFLINE))
@@ -118,7 +114,6 @@ static REGARGS void gooffline(BASEPTR)
     DoEvent(pb, S2EVENT_OFFLINE);
 
     /* link status is unknown after offline */
-    pb->pb_Flags &= ~PLIPF_LINK_UP;
     do_link_status(pb, S2LINKSTATUS_UNKNOWN);
   }
   d2(("offline: ok!\n"));
@@ -155,6 +150,16 @@ static REGARGS void DoEvent(BASEPTR, long event)
 static REGARGS void do_link_status(BASEPTR, BYTE link_status)
 {
   struct IOSana2Req *ior, *ior2;
+
+  /* actually no change? */
+  if(link_status == pb->pb_LinkStatus) {
+    d4r(("L?"));
+    return;
+  }
+
+  /* update status */
+  pb->pb_LinkStatus = link_status;
+  d4r(("L%ld", (ULONG)link_status));
 
   d2(("do_linkstatus: %ld\n", link_status));
 
@@ -232,7 +237,7 @@ static REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
 #endif
 
     d2(("+hw_send\n"));
-    d4r(("-t-"));
+    d4r(("w"));
     rc = hw_send_frame(pb, frame) ? AW_OK : AW_ERROR;
     d2(("-hw_send\n"));
 
@@ -399,7 +404,7 @@ static REGARGS void doreadreqs(BASEPTR)
 #endif
 
   d2(("+hw_recv\n"));
-  d4r(("+r+"));
+  d4r(("r"));
   rv = hw_recv_frame(pb, frame);
   d2(("-hw_recv\n"));
 
@@ -535,7 +540,7 @@ static REGARGS void dos2reqs(BASEPTR)
     {
     case S2_ONLINE:
       d4r(("S2_ONLINE\n"));
-      if (!goonline(pb))
+      if (!handle_online(pb))
       {
         ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
         ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
@@ -544,7 +549,7 @@ static REGARGS void dos2reqs(BASEPTR)
 
     case S2_OFFLINE:
       d4r(("S2_OFFLINE\n"));
-      gooffline(pb);
+      handle_offline(pb);
       rejectpackets(pb); /* reject all pending requests */
       break;
 
@@ -556,14 +561,14 @@ static REGARGS void dos2reqs(BASEPTR)
       /* if already online then first go offline */
       if (!(pb->pb_Flags & PLIPF_OFFLINE))
       {
-        gooffline(pb);
+        handle_offline(pb);
       }
 
       // update mac
       hw_set_mac(pb, pb->pb_CfgAddr);
 
       /* now go online */
-      if (!goonline(pb))
+      if (!handle_online(pb))
       {
         ios2->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
         ios2->ios2_WireError = S2WERR_GENERIC_ERROR;
@@ -732,7 +737,7 @@ static void cleanup(BASEPTR)
 
   d2(("cleanup\n"));
 
-  gooffline(pb);
+  handle_offline(pb);
 
   while (bm = (struct BufferManagement *)RemHead((struct List *)&pb->pb_BufferManagement))
     FreeVec(bm);
@@ -753,6 +758,36 @@ static void cleanup(BASEPTR)
   }
 
   d2(("cleanup: done\n"));
+}
+
+static REGARGS void handle_hw_events(BASEPTR, UWORD hw_events)
+{
+  /* accept pending receive and start reading */
+  if(hw_events & HW_EVENT_RX_PENDING)
+  {
+    d4r(("R["));
+    d2(("*+ do_read\n"));
+    doreadreqs(pb);
+    d2(("*- do_read\n"));
+    d4r(("]"));
+  }
+
+  /* link up/down handling */
+  if(hw_events & HW_EVENT_LINK_CHANGE) {
+    do_link_status(pb, hw_get_link_status(pb));
+  }
+
+  /* reinit hardware?? */
+  if(hw_events & HW_EVENT_NEED_REINIT) {
+    d4r(("#!?#"));
+    d2(("need HW reinit\n"));
+    handle_offline(pb);
+    BOOL ok = hw_reinit(pb);
+    if(!ok) {
+      // TODO - driver stays inactive
+      d2(("hw dead. stop driver!\n"))
+    }
+  }
 }
 
 /*
@@ -799,8 +834,9 @@ void SAVEDS ServerTask(void)
         if (!hw_is_event_pending(pb))
         {
           d2(("**> wait\n"));
-          d4r(("\nW"));
+          d4r(("\nZ<"));
           got_sigmask = Wait(full_sigmask);
+          d4r((">\n"));
           d2(("**> wait: got 0x%08lx\n", got_sigmask));
           from_wait = TRUE;
         }
@@ -816,7 +852,7 @@ void SAVEDS ServerTask(void)
         {
           d2(("** handle event signal\n"));
           hw_events = hw_handle_event_signal(pb, from_wait);
-          d4r(("S(%lx)", (ULONG)hw_events));
+          d4r(("E(%lx)", (ULONG)hw_events));
         }
 
         /* handle extra signal of hw */
@@ -828,51 +864,25 @@ void SAVEDS ServerTask(void)
           d4r(("X(%lx)", (ULONG)extra_hw_events));
         }
 
-        /* accept pending receive and start reading */
-        if(hw_events & HW_EVENT_RX_PENDING)
-        {
-          d4r(("R"));
-          d2(("*+ do_read\n"));
-          doreadreqs(pb);
-          d2(("*- do_read\n"));
-        }
-
-        /* link up/down handling */
-        if(hw_events & HW_EVENT_LINK_UP) {
-          d4r(("L+"));
-          pb->pb_Flags |= PLIPF_LINK_UP;
-          do_link_status(pb, S2LINKSTATUS_UP);
-        }
-        if(hw_events & HW_EVENT_LINK_DOWN) {
-          d4r(("L-"));
-          pb->pb_Flags &= ~PLIPF_LINK_UP;
-          do_link_status(pb, S2LINKSTATUS_DOWN);
-        }
-
-        /* reinit hardware?? */
-        if(hw_events & HW_EVENT_NEED_REINIT) {
-          d4r(("#!?#"));
-          d2(("need HW reinit\n"));
-          gooffline(pb);
-          BOOL ok = hw_reinit(pb);
-          if(!ok) {
-            // TODO - driver stays inactive
-            d2(("hw dead. stop driver!\n"))
-          }
+        /* handle hw events */
+        if(hw_events != 0) {
+          handle_hw_events(pb, hw_events);
         }
 
         /* send packets if any */
-        d4r(("W"));
+        d4r(("W["));
         d2(("*+ do_write\n"));
         dowritereqs(pb);
         d2(("*- do_write\n"));
+        d4r(("]"));
 
         /* handle SANA-II send requests */
         if (got_sigmask & port_sigmask)
         {
-          d4r(("S"));
+          d4r(("N["));
           d2(("SANA-II request(s)\n"));
           dos2reqs(pb);
+          d4r(("]"));
         }
 
         /* stop server task */

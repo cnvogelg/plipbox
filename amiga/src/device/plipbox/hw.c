@@ -16,7 +16,7 @@
 #include "proto_req.h"
 #include "devices/plipbox.h"
 
-static REGARGS ULONG decode_hw_event(ULONG hw_status, ULONG last_status);
+static REGARGS UWORD decode_hw_events(ULONG hw_status, ULONG last_status);
 
 REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
 {
@@ -312,8 +312,23 @@ REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, B
 REGARGS BOOL hw_attach(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+
+  // attach to device
+  d4r(("A"));
   int ok = proto_cmd_attach(hwb->proto);
-  return ok == PROTO_RET_OK;
+  if(ok != PROTO_RET_OK) {
+    return FALSE;
+  }
+
+  // trigger initial status update
+  ok = proto_cmd_get_status(hwb->proto, &hwb->hw_status);
+  hwb->hw_events = decode_hw_events(hwb->hw_status, 0);
+  d4r(("(s:%lx,e:%lx)", hwb->hw_status, hwb->hw_events));
+  if(ok == PROTO_RET_OK) {
+    return TRUE;
+  } else {
+    return FALSE;
+  }
 }
 
 /*
@@ -322,7 +337,14 @@ REGARGS BOOL hw_attach(struct PLIPBase *pb)
 REGARGS void hw_detach(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+
+  // detach from device
+  d4r(("D"));
   proto_cmd_detach(hwb->proto);
+
+  // reset status
+  hwb->hw_status = 0;
+  hwb->hw_events = 0;
 }
 
 REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
@@ -334,7 +356,7 @@ REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
   if (ok == PROTO_RET_OK)
   {
     /* update events? */
-    hwb->hw_event = decode_hw_event(status, hwb->hw_status);
+    hwb->hw_events = decode_hw_events(status, hwb->hw_status);
     hwb->hw_status = status;
 
     /* device transfer ok... check status */
@@ -363,7 +385,7 @@ REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
   if (ok == PROTO_RET_OK)
   {
     /* update events? */
-    hwb->hw_event = decode_hw_event(status, hwb->hw_status);
+    hwb->hw_events = decode_hw_events(status, hwb->hw_status);
     hwb->hw_status = status;
 
     /* device transfer ok... check status */
@@ -403,27 +425,23 @@ REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb)
   return sigmask;
 }
 
-static REGARGS ULONG decode_hw_event(ULONG hw_status, ULONG last_status)
+static REGARGS UWORD decode_hw_events(ULONG hw_status, ULONG last_status)
 {
+  UWORD events = 0;
+
   // RX pending
   if ((hw_status & PROTO_CMD_STATUS_RX_PENDING) == PROTO_CMD_STATUS_RX_PENDING)
   {
-    return HW_EVENT_RX_PENDING;
+    events = HW_EVENT_RX_PENDING;
   }
 
   // check change to last status
   ULONG change = hw_status ^ last_status;
   if((change & PROTO_CMD_STATUS_LINK_UP) == PROTO_CMD_STATUS_LINK_UP) {
-    // link change!
-    if((hw_status & PROTO_CMD_STATUS_LINK_UP) == PROTO_CMD_STATUS_LINK_UP) {
-      return HW_EVENT_LINK_UP;
-    }
-    else {
-      return HW_EVENT_LINK_DOWN;
-    }
+    events |= HW_EVENT_LINK_CHANGE;
   }
 
-  return FALSE;
+  return events;
 }
 
 static REGARGS BOOL poll_status(struct PLIPBase *pb, UWORD *hw_status)
@@ -449,8 +467,8 @@ REGARGS BOOL hw_is_event_pending(struct PLIPBase *pb)
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
   /* was a hw_event already detected? */
-  if(hwb->hw_event != HW_EVENT_NONE) {
-    d(("hw_is_event_pending: already got hw_event=%lx", (ULONG)hwb->hw_event));
+  if(hwb->hw_events != HW_EVENT_NONE) {
+    d(("hw_is_event_pending: already got hw_events=%lx", (ULONG)hwb->hw_events));
     return TRUE;
   }
 
@@ -463,12 +481,14 @@ REGARGS BOOL hw_is_event_pending(struct PLIPBase *pb)
     BOOL ok = poll_status(pb, &new_status);
     if(ok) {
       /* decode event from last status and new one */
-      hwb->hw_event = decode_hw_event(new_status, hwb->hw_status);
-      d(("hw_is_event_pending: polled hw_status=%lx new_status=%lx -> hw_event=%lx\n",
-      (ULONG)hwb->hw_status, (ULONG)new_status, (ULONG)hwb->hw_event));
+      hwb->hw_events = decode_hw_events(new_status, hwb->hw_status);
+      d(("hw_is_event_pending: polled hw_status=%lx new_status=%lx -> hw_events=%lx\n",
+      (ULONG)hwb->hw_status, (ULONG)new_status, (ULONG)hwb->hw_events));
+      hwb->hw_status = new_status;
+      d4r(("pi(s:%lx,e:%lx)", hwb->hw_status, hwb->hw_events));
 
       /* some event is already pending */
-      if(hwb->hw_event != HW_EVENT_NONE) {
+      if(hwb->hw_events != HW_EVENT_NONE) {
         return TRUE;
       }
     }
@@ -491,15 +511,17 @@ REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait)
     BOOL ok = poll_status(pb, &new_status);
     if(ok) {
       /* decode event from last status and new one */
-      hwb->hw_event = decode_hw_event(new_status, hwb->hw_status);
-      d(("hw_handle_event_signal: polled hw_status=%lx new_status=%lx -> hw_event=%lx\n",
-      (ULONG)hwb->hw_status, (ULONG)new_status, (ULONG)hwb->hw_event));
+      hwb->hw_events = decode_hw_events(new_status, hwb->hw_status);
+      d(("hw_handle_event_signal: polled hw_status=%lx new_status=%lx -> hw_events=%lx\n",
+      (ULONG)hwb->hw_status, (ULONG)new_status, (ULONG)hwb->hw_events));
+      hwb->hw_status = new_status;
+      d4r(("pe(s:%lx,e:%lx)", hwb->hw_status, hwb->hw_events));
     }
   }
 
   /* return current events and reset event mask */
-  UWORD result = hwb->hw_event;
-  hwb->hw_event = 0;
+  UWORD result = hwb->hw_events;
+  hwb->hw_events = 0;
   return result;
 }
 
@@ -537,4 +559,10 @@ REGARGS UWORD hw_handle_extra_signal(struct PLIPBase *pb)
   timer_sig_start(hwb->timer, hwb->tick_time_s, hwb->tick_time_us);
 
   return HW_EVENT_NONE;
+}
+
+REGARGS BOOL hw_get_link_status(struct PLIPBase *pb)
+{
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+  return (hwb->hw_status & PROTO_CMD_STATUS_LINK_UP) == PROTO_CMD_STATUS_LINK_UP;
 }

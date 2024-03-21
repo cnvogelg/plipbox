@@ -1,6 +1,6 @@
 #include "types.h"
 
-#ifdef DEBUG_LOOP_BUF
+#ifdef DEBUG_MODE
 #define DEBUG
 #endif
 
@@ -60,7 +60,7 @@ static u08 poll_status(void)
     status |= PROTO_CMD_STATUS_LINK_UP;
   }
 
-  DS("poll_status:"); DB(status); DNL;
+  //DS("poll_status:"); DB(status); DNL;
   return status;
 }
 

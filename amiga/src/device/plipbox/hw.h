@@ -36,9 +36,8 @@ struct PLIPBase;
 /* hw events */
 #define HW_EVENT_NONE           0
 #define HW_EVENT_RX_PENDING     1
-#define HW_EVENT_LINK_UP        2
-#define HW_EVENT_LINK_DOWN      4
-#define HW_EVENT_NEED_REINIT    8
+#define HW_EVENT_LINK_CHANGE    2
+#define HW_EVENT_NEED_REINIT    4
 
 /* hw API */
 REGARGS BOOL hw_base_alloc(struct PLIPBase *pb);
@@ -62,6 +61,8 @@ REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);
 
 REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
 REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
+
+REGARGS BOOL hw_get_link_status(struct PLIPBase *pb);
 
 REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb);
 REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb);
