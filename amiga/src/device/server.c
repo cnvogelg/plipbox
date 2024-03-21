@@ -263,12 +263,6 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
        (nextwrite = (struct IOSana2Req *)currentwrite->ios2_Req.io_Message.mn_Node.ln_Succ) != NULL;
        currentwrite = nextwrite)
   {
-    if (hw_is_event_pending(pb))
-    {
-      d2(("hw event is pending!"));
-      break;
-    }
-
     code = write_frame(pb, currentwrite);
 
     if (code == AW_BUFFER_ERROR) /* BufferManagement callback error */
@@ -306,6 +300,13 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
       currentwrite->ios2_WireError = S2WERR_GENERIC_ERROR;
       Remove((struct Node *)currentwrite);
       DevTermIO(pb, currentwrite);
+    }
+
+    /* after each write check if a read is pending and abort loop if needed */
+    if (hw_is_event_pending(pb))
+    {
+      d2(("hw event is pending!"));
+      break;
     }
   }
 
@@ -528,12 +529,6 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
   */
   while (ios2 = (struct IOSana2Req *)GetMsg(pb->pb_ServerPort))
   {
-    if (hw_is_event_pending(pb))
-    {
-      d2(("hw event is pending!"));
-      break;
-    }
-
     d2(("sana2req %ld from serverport\n", ios2->ios2_Req.io_Command));
 
     switch (ios2->ios2_Req.io_Command)
