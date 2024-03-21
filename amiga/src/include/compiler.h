@@ -8,8 +8,6 @@
 #define REGARGS __regargs          /* pass args to this function in regs */
 #define SAVEDS __saveds            /* setup data segment reg. on entry */
 #define FAR __far                  /* reference this object in far mode */
-#define PUBLIC                     /* define a globally visible function */
-#define PRIVATE static             /* define a locally visible function */
 
 #define min __builtin_min
 
@@ -21,10 +19,6 @@
 #define REGARGS
 #define SAVEDS __saveds
 #define FAR __far
-#define PUBLIC
-#define PRIVATE static
-#undef GLOBAL
-#define GLOBAL
 
 #define min(a, b) ((a < b) ? (a) : (b))
 
@@ -40,8 +34,6 @@
 #define SAVEDS
 #endif
 #define FAR __far
-#define PUBLIC
-#define PRIVATE static
 
 #define min(a, b) ((a < b) ? (a) : (b))
 

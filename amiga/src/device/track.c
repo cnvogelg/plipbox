@@ -9,14 +9,14 @@
 #include "global.h"
 #include "debug.h"
 
-PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
-PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
-PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
-PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
-PUBLIC VOID freetracktypes(BASEPTR);
-PRIVATE struct TrackRec *findtracktype(BASEPTR, ULONG type);
+BOOL addtracktype(BASEPTR, ULONG type);
+BOOL remtracktype(BASEPTR, ULONG type);
+void dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
+BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
+void freetracktypes(BASEPTR);
+static struct TrackRec *findtracktype(BASEPTR, ULONG type);
 
-PRIVATE INLINE struct TrackRec *findtracktype(BASEPTR, ULONG type)
+static INLINE struct TrackRec *findtracktype(BASEPTR, ULONG type)
 {
   struct TrackRec *tr;
 
@@ -30,7 +30,7 @@ PRIVATE INLINE struct TrackRec *findtracktype(BASEPTR, ULONG type)
   return (NULL);
 }
 
-PUBLIC BOOL addtracktype(BASEPTR, ULONG type)
+BOOL addtracktype(BASEPTR, ULONG type)
 {
   struct TrackRec *tr;
   BOOL rv = FALSE;
@@ -56,7 +56,7 @@ PUBLIC BOOL addtracktype(BASEPTR, ULONG type)
   return rv;
 }
 
-PUBLIC BOOL remtracktype(BASEPTR, ULONG type)
+BOOL remtracktype(BASEPTR, ULONG type)
 {
   struct TrackRec *tr;
   BOOL rv = FALSE;
@@ -76,7 +76,7 @@ PUBLIC BOOL remtracktype(BASEPTR, ULONG type)
   return rv;
 }
 
-PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd)
+void dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd)
 {
   struct TrackRec *tr;
 
@@ -92,7 +92,7 @@ PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG
   ReleaseSemaphore(&pb->pb_TrackListSem);
 }
 
-PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info)
+BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info)
 {
   struct TrackRec *tr;
   BOOL rv = FALSE;
@@ -108,7 +108,7 @@ PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info)
   return rv;
 }
 
-PUBLIC VOID freetracktypes(BASEPTR)
+void freetracktypes(BASEPTR)
 {
   struct Node *tr;
 

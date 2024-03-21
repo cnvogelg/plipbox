@@ -41,39 +41,39 @@ struct PLIPBase;
 #define HW_EVENT_NEED_REINIT    8
 
 /* hw API */
-GLOBAL REGARGS BOOL hw_base_alloc(struct PLIPBase *pb);
-GLOBAL REGARGS VOID hw_base_free(struct PLIPBase *pb);
+REGARGS BOOL hw_base_alloc(struct PLIPBase *pb);
+REGARGS void hw_base_free(struct PLIPBase *pb);
 
-GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL hw_reinit(struct PLIPBase *pb);
-GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb);
+REGARGS BOOL hw_init(struct PLIPBase *pb);
+REGARGS BOOL hw_reinit(struct PLIPBase *pb);
+REGARGS void hw_cleanup(struct PLIPBase *pb);
 
-GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac);
-GLOBAL REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac);
+REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac);
+REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac);
 
-GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd);
-GLOBAL REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline);
+REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd);
+REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline);
 
-GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb);
-GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb);
+REGARGS BOOL hw_attach(struct PLIPBase *pb);
+REGARGS void hw_detach(struct PLIPBase *pb);
 
-GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
-GLOBAL REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);
+REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
+REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);
 
-GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
-GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
+REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
+REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
 
-GLOBAL REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb);
-GLOBAL REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb);
-GLOBAL REGARGS BOOL  hw_is_event_pending(struct PLIPBase *pb);
-GLOBAL REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait);
-GLOBAL REGARGS UWORD hw_handle_extra_signal(struct PLIPBase *pb);
+REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb);
+REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb);
+REGARGS BOOL  hw_is_event_pending(struct PLIPBase *pb);
+REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait);
+REGARGS UWORD hw_handle_extra_signal(struct PLIPBase *pb);
 
-GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
+REGARGS void hw_config_init(struct PLIPBase *pb,
                                    STRPTR *template_str,
                                    struct CommonConfig **cfg,
                                    STRPTR *config_file);
-GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb);
-GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb);
+REGARGS void hw_config_update(struct PLIPBase *pb);
+REGARGS void hw_config_dump(struct PLIPBase *pb);
 
 #endif

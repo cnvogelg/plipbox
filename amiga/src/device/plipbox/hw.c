@@ -18,14 +18,14 @@
 
 static REGARGS ULONG decode_hw_event(ULONG hw_status, ULONG last_status);
 
-GLOBAL REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
+REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   timer_handle_t *th = proto_env_get_timer(hwb->env);
   timer_get_sys_time(th, (time_stamp_t *)time);
 }
 
-GLOBAL REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad)
+REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   if(hwb == NULL) {
@@ -46,14 +46,14 @@ GLOBAL REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad)
 #define TICK_TIME_MIN 100000UL   // 100ms
 #define TICK_TIME_MAX 60000000UL // 60s
 
-GLOBAL REGARGS BOOL hw_base_alloc(struct PLIPBase *pb)
+REGARGS BOOL hw_base_alloc(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)AllocVec(sizeof(struct HWBase), MEMF_CLEAR | MEMF_ANY);
   pb->pb_HWBase = hwb;
   return (hwb != NULL);
 }
 
-GLOBAL REGARGS void hw_base_free(struct PLIPBase *pb)
+REGARGS void hw_base_free(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   if (hwb != NULL)
@@ -63,7 +63,7 @@ GLOBAL REGARGS void hw_base_free(struct PLIPBase *pb)
   }
 }
 
-GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
+REGARGS void hw_config_init(struct PLIPBase *pb,
                                    STRPTR *template_str,
                                    struct CommonConfig **cfg,
                                    STRPTR *config_file)
@@ -81,7 +81,7 @@ GLOBAL REGARGS void hw_config_init(struct PLIPBase *pb,
   *cfg = (struct CommonConfig *)&hwb->config;
 }
 
-GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb)
+REGARGS void hw_config_update(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   struct TemplateConfig *args = &hwb->config;
@@ -100,7 +100,7 @@ GLOBAL REGARGS void hw_config_update(struct PLIPBase *pb)
   }
 }
 
-GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
+REGARGS void hw_config_dump(struct PLIPBase *pb)
 {
 #if DEBUG & 1
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
@@ -109,7 +109,7 @@ GLOBAL REGARGS void hw_config_dump(struct PLIPBase *pb)
   d(("TICK_TIME  %ld.%ld\n", hwb->tick_time_s, hwb->tick_time_us));
 }
 
-GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
+REGARGS BOOL hw_init(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   int res = 0;
@@ -159,7 +159,7 @@ GLOBAL REGARGS BOOL hw_init(struct PLIPBase *pb)
   return hw_reinit(pb);
 }
 
-GLOBAL REGARGS BOOL hw_reinit(struct PLIPBase *pb)
+REGARGS BOOL hw_reinit(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
@@ -185,7 +185,7 @@ GLOBAL REGARGS BOOL hw_reinit(struct PLIPBase *pb)
   return TRUE;
 }
 
-GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
+REGARGS void hw_cleanup(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   if (hwb == NULL)
@@ -221,7 +221,7 @@ GLOBAL REGARGS VOID hw_cleanup(struct PLIPBase *pb)
   }
 }
 
-GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac)
+REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_mac)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   int ok = proto_req_get_cur_mac(hwb->proto, cur_mac);
@@ -232,13 +232,13 @@ GLOBAL REGARGS BOOL hw_get_macs(struct PLIPBase *pb, UBYTE *cur_mac, UBYTE *def_
   return ok == PROTO_RET_OK;
 }
 
-GLOBAL REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac)
+REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   return proto_req_set_cur_mac(hwb->proto, cur_mac);
 }
 
-GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
+REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
 {
   /* register all special comamnds here! */
   switch (cmd)
@@ -251,7 +251,7 @@ GLOBAL REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
   }
 }
 
-GLOBAL REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)
+REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   int res = PROTO_RET_OK;
@@ -309,7 +309,7 @@ GLOBAL REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req 
 /*
  * hwattach - setup hardware if device gets online
  */
-GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
+REGARGS BOOL hw_attach(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   int ok = proto_cmd_attach(hwb->proto);
@@ -319,13 +319,13 @@ GLOBAL REGARGS BOOL hw_attach(struct PLIPBase *pb)
 /*
  * shutdown hardware if device gets offline
  */
-GLOBAL REGARGS VOID hw_detach(struct PLIPBase *pb)
+REGARGS void hw_detach(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   proto_cmd_detach(hwb->proto);
 }
 
-GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
+REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   UBYTE *buf = ((UBYTE *)frame) + 2;
@@ -353,7 +353,7 @@ GLOBAL REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
   }
 }
 
-GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
+REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
   ULONG pkttyp;
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
@@ -384,7 +384,7 @@ GLOBAL REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 
 /* events and extra signals */
 
-GLOBAL REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb)
+REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb)
 {
   /* the event signal is generated by the proto IRQ directly (namely the ACK)
    */
@@ -394,7 +394,7 @@ GLOBAL REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb)
   return sigmask;
 }
 
-GLOBAL REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb)
+REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   timer_handle_t *timer = hwb->timer;
@@ -438,7 +438,7 @@ static REGARGS BOOL poll_status(struct PLIPBase *pb, UWORD *hw_status)
   return (ok == PROTO_RET_OK);
 }
 
-GLOBAL REGARGS BOOL hw_is_event_pending(struct PLIPBase *pb)
+REGARGS BOOL hw_is_event_pending(struct PLIPBase *pb)
 {
   /* hw_is_event_pending() will be called at various points
      in the driver to check if a hw event has to be handled. if yes then
@@ -478,7 +478,7 @@ GLOBAL REGARGS BOOL hw_is_event_pending(struct PLIPBase *pb)
   return FALSE;
 }
 
-GLOBAL REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait)
+REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait)
 {
   /* this is called by the driver after receiving the event signal of the hw.
      it prepares the upcoming hw_is_event_pending() call
@@ -503,7 +503,7 @@ GLOBAL REGARGS UWORD hw_handle_event_signal(struct PLIPBase *pb, BOOL from_wait)
   return result;
 }
 
-GLOBAL REGARGS UWORD hw_handle_extra_signal(struct PLIPBase *pb)
+REGARGS UWORD hw_handle_extra_signal(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 

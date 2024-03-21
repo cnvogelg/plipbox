@@ -24,14 +24,14 @@
 #include "devices/plipbox.h"
 #include "devices/sana2link.h"
 
-PUBLIC VOID SAVEDS ServerTask(VOID);
-PUBLIC BOOL remtracktype(BASEPTR, ULONG type);
-PUBLIC BOOL addtracktype(BASEPTR, ULONG type);
-PUBLIC BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
-PUBLIC VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
-PUBLIC VOID freetracktypes(BASEPTR);
-PRIVATE BOOL isinlist(struct Node *n, struct List *l);
-PRIVATE VOID abort_req(BASEPTR, struct IOSana2Req *ior);
+void SAVEDS ServerTask(void);
+BOOL remtracktype(BASEPTR, ULONG type);
+BOOL addtracktype(BASEPTR, ULONG type);
+BOOL gettrackrec(BASEPTR, ULONG type, struct Sana2PacketTypeStats *info);
+void dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
+void freetracktypes(BASEPTR);
+static BOOL isinlist(struct Node *n, struct List *l);
+static void abort_req(BASEPTR, struct IOSana2Req *ior);
 
 static const UWORD supported_commands[] =
 {
@@ -69,7 +69,7 @@ static const UWORD supported_commands[] =
 /*
 ** various support routines
 */
-PRIVATE BOOL isinlist(struct Node *n, struct List *l)
+static BOOL isinlist(struct Node *n, struct List *l)
 {
   struct Node *cmp;
 
@@ -79,7 +79,7 @@ PRIVATE BOOL isinlist(struct Node *n, struct List *l)
 
   return FALSE;
 }
-PRIVATE VOID abort_req(BASEPTR, struct IOSana2Req *ior)
+static void abort_req(BASEPTR, struct IOSana2Req *ior)
 {
   Remove((struct Node *)ior);
   ior->ios2_Req.io_Error = IOERR_ABORTED;
@@ -90,7 +90,7 @@ PRIVATE VOID abort_req(BASEPTR, struct IOSana2Req *ior)
 /*
 ** initialise device
 */
-PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0, BASEPTR), REG(a0, BPTR seglist), REG(a6, struct Library *_SysBase))
+ASM SAVEDS struct Device *DevInit(REG(d0, BASEPTR), REG(a0, BPTR seglist), REG(a6, struct Library *_SysBase))
 {
   BOOL ok;
   UBYTE *p;
@@ -167,7 +167,7 @@ PUBLIC ASM SAVEDS struct Device *DevInit(REG(d0, BASEPTR), REG(a0, BPTR seglist)
 /*
 ** open device
 */
-PUBLIC ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG unit), REG(d1, ULONG flags), REG(a6, BASEPTR))
+ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG unit), REG(d1, ULONG flags), REG(a6, BASEPTR))
 {
   BOOL ok = FALSE;
   struct BufferManagement *bm;
@@ -282,7 +282,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG u
           AddTail((struct List *)&pb->pb_BufferManagement, (struct Node *)bm);
           pb->pb_DevNode.lib_OpenCnt++;
           pb->pb_DevNode.lib_Flags &= ~LIBF_DELEXP;
-          ios2->ios2_BufferManagement = (VOID *)bm;
+          ios2->ios2_BufferManagement = (void *)bm;
           ios2->ios2_Req.io_Error = 0;
           ios2->ios2_Req.io_Unit = (struct Unit *)unit;
           ios2->ios2_Req.io_Device = (struct Device *)pb;
@@ -311,7 +311,7 @@ PUBLIC ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG u
 /*
 ** close device
 */
-PUBLIC ASM SAVEDS BPTR DevClose(REG(a1, struct IOSana2Req *ior), REG(a6, BASEPTR))
+ASM SAVEDS BPTR DevClose(REG(a1, struct IOSana2Req *ior), REG(a6, BASEPTR))
 {
   BPTR seglist;
   struct BufferManagement *bm;
@@ -348,7 +348,7 @@ PUBLIC ASM SAVEDS BPTR DevClose(REG(a1, struct IOSana2Req *ior), REG(a6, BASEPTR
   return seglist;
 }
 
-PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6, BASEPTR))
+ASM SAVEDS BPTR DevExpunge(REG(a6, BASEPTR))
 {
   BPTR seglist;
   ULONG sigb;
@@ -412,7 +412,7 @@ PUBLIC ASM SAVEDS BPTR DevExpunge(REG(a6, BASEPTR))
 /*
 ** initiate io command (1st level dispatcher)
 */
-static INLINE VOID DevForwardIO(BASEPTR, struct IOSana2Req *ios2)
+static INLINE void DevForwardIO(BASEPTR, struct IOSana2Req *ios2)
 {
   d2(("forwarding request %ld\n", ios2->ios2_Req.io_Command));
 
@@ -421,7 +421,7 @@ static INLINE VOID DevForwardIO(BASEPTR, struct IOSana2Req *ios2)
   PutMsg(pb->pb_ServerPort, (struct Message *)ios2);
 }
 
-PUBLIC VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2)
+void DevTermIO(BASEPTR, struct IOSana2Req *ios2)
 {
   d2(("dev_termio: cmd=%ld, error=%ld, wireerror=%ld\n", (ULONG)ios2->ios2_Req.io_Command, ios2->ios2_Req.io_Error, ios2->ios2_WireError));
 
@@ -520,7 +520,7 @@ static REGARGS void handle_newstyle_query(BASEPTR, struct IOStdReq *request)
   }
 }
 
-PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASEPTR))
+ASM SAVEDS void DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASEPTR))
 {
   /* handle newstyle query */
   struct IOStdReq *ioreq = (struct IOStdReq *)ios2;
@@ -830,7 +830,7 @@ PUBLIC ASM SAVEDS VOID DevBeginIO(REG(a1, struct IOSana2Req *ios2), REG(a6, BASE
 /*
 ** stop io-command
 */
-PUBLIC ASM SAVEDS LONG DevAbortIO(REG(a1, struct IOSana2Req *ior), REG(a6, BASEPTR))
+ASM SAVEDS LONG DevAbortIO(REG(a1, struct IOSana2Req *ior), REG(a6, BASEPTR))
 {
   BOOL is;
   LONG rc = 0;

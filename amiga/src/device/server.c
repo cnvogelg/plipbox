@@ -26,25 +26,25 @@ typedef enum
 } AW_RESULT;
 
 /* external functions */
-GLOBAL VOID dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
-GLOBAL VOID DevTermIO(BASEPTR, struct IOSana2Req *ios2);
-PUBLIC VOID SAVEDS ServerTask(void);
-PRIVATE struct PLIPBase *startup(void);
-PRIVATE REGARGS VOID DoEvent(BASEPTR, long event);
-PRIVATE VOID readargs(BASEPTR);
-PRIVATE BOOL init(BASEPTR);
-PRIVATE REGARGS BOOL goonline(BASEPTR);
-PRIVATE REGARGS VOID gooffline(BASEPTR);
-PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2);
-PRIVATE REGARGS VOID dowritereqs(BASEPTR);
-PRIVATE REGARGS VOID doreadreqs(BASEPTR);
-PRIVATE REGARGS VOID dos2reqs(BASEPTR);
-PRIVATE REGARGS void do_link_status(BASEPTR, BYTE link_status);
+void dotracktype(BASEPTR, ULONG type, ULONG ps, ULONG pr, ULONG bs, ULONG br, ULONG pd);
+void DevTermIO(BASEPTR, struct IOSana2Req *ios2);
+void SAVEDS ServerTask(void);
+static struct PLIPBase *startup(void);
+static REGARGS void DoEvent(BASEPTR, long event);
+static void readargs(BASEPTR);
+static BOOL init(BASEPTR);
+static REGARGS BOOL goonline(BASEPTR);
+static REGARGS void gooffline(BASEPTR);
+static REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2);
+static REGARGS void dowritereqs(BASEPTR);
+static REGARGS void doreadreqs(BASEPTR);
+static REGARGS void dos2reqs(BASEPTR);
+static REGARGS void do_link_status(BASEPTR, BYTE link_status);
 
 /*
 ** functions to go online/offline
 */
-PRIVATE REGARGS VOID rejectpackets(BASEPTR)
+static REGARGS void rejectpackets(BASEPTR)
 {
   struct IOSana2Req *ios2;
 
@@ -76,7 +76,7 @@ PRIVATE REGARGS VOID rejectpackets(BASEPTR)
   ReleaseSemaphore(&pb->pb_ReadOrphanListSem);
 }
 
-PRIVATE REGARGS BOOL goonline(BASEPTR)
+static REGARGS BOOL goonline(BASEPTR)
 {
   BOOL rc = TRUE;
 
@@ -107,7 +107,7 @@ PRIVATE REGARGS BOOL goonline(BASEPTR)
   return rc;
 }
 
-PRIVATE REGARGS VOID gooffline(BASEPTR)
+static REGARGS void gooffline(BASEPTR)
 {
   d2(("offline\n"));
   if (!(pb->pb_Flags & PLIPF_OFFLINE))
@@ -127,7 +127,7 @@ PRIVATE REGARGS VOID gooffline(BASEPTR)
 /*
 ** SANA-2 Event management
 */
-PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
+static REGARGS void DoEvent(BASEPTR, long event)
 {
   struct IOSana2Req *ior, *ior2;
 
@@ -152,7 +152,7 @@ PRIVATE REGARGS VOID DoEvent(BASEPTR, long event)
 }
 
 /* answert S2_LINK_STATUS on change queries */
-PRIVATE REGARGS void do_link_status(BASEPTR, BYTE link_status)
+static REGARGS void do_link_status(BASEPTR, BYTE link_status)
 {
   struct IOSana2Req *ior, *ior2;
 
@@ -188,7 +188,7 @@ PRIVATE REGARGS void do_link_status(BASEPTR, BYTE link_status)
 /*
 ** writing packets
 */
-PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
+static REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
 {
   AW_RESULT rc;
   struct HWFrame *frame = pb->pb_Frame;
@@ -252,7 +252,7 @@ PRIVATE REGARGS AW_RESULT write_frame(BASEPTR, struct IOSana2Req *ios2)
   return rc;
 }
 
-PRIVATE REGARGS VOID dowritereqs(BASEPTR)
+static REGARGS void dowritereqs(BASEPTR)
 {
   struct IOSana2Req *currentwrite, *nextwrite;
   AW_RESULT code;
@@ -313,7 +313,7 @@ PRIVATE REGARGS VOID dowritereqs(BASEPTR)
   ReleaseSemaphore(&pb->pb_WriteListSem);
 }
 
-PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
+static REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 {
   int i;
   BOOL broadcast;
@@ -381,7 +381,7 @@ PRIVATE REGARGS BOOL read_frame(struct IOSana2Req *req, struct HWFrame *frame)
 /*
 ** reading packets
 */
-PRIVATE REGARGS VOID doreadreqs(BASEPTR)
+static REGARGS void doreadreqs(BASEPTR)
 {
   LONG datasize;
   struct IOSana2Req *got;
@@ -515,7 +515,7 @@ PRIVATE REGARGS VOID doreadreqs(BASEPTR)
 /*
 ** 2nd level device command dispatcher (~SANA2IOF_QUICK)
 */
-PRIVATE REGARGS VOID dos2reqs(BASEPTR)
+static REGARGS void dos2reqs(BASEPTR)
 {
   struct IOSana2Req *ios2;
 
@@ -592,7 +592,7 @@ PRIVATE REGARGS VOID dos2reqs(BASEPTR)
 /*
 ** startup,initialisation and termination functions
 */
-PRIVATE struct PLIPBase *startup(void)
+static struct PLIPBase *startup(void)
 {
   struct ServerStartup *ss;
   struct Process *we;
@@ -618,7 +618,7 @@ PRIVATE struct PLIPBase *startup(void)
 #define PLIP_MINPRIORITY -128
 #define PLIP_MAXPRIORITY 127
 
-PRIVATE VOID readargs(BASEPTR)
+static void readargs(BASEPTR)
 {
   struct RDArgs *rda;
   struct CommonConfig *args;
@@ -670,7 +670,7 @@ PRIVATE VOID readargs(BASEPTR)
   d2(("args: done\n"));
 }
 
-PRIVATE BOOL init(BASEPTR)
+static BOOL init(BASEPTR)
 {
   BOOL rc = FALSE;
 
@@ -726,7 +726,7 @@ PRIVATE BOOL init(BASEPTR)
   return rc;
 }
 
-PRIVATE VOID cleanup(BASEPTR)
+static void cleanup(BASEPTR)
 {
   struct BufferManagement *bm;
 
@@ -758,7 +758,7 @@ PRIVATE VOID cleanup(BASEPTR)
 /*
 ** entry point, mainloop
 */
-PUBLIC VOID SAVEDS ServerTask(void)
+void SAVEDS ServerTask(void)
 {
   BASEPTR;
 
