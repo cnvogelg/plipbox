@@ -27,12 +27,6 @@
  
 OS=$(shell uname -s)
 
-# install dir of avr libc (here MacPorts location)
-ifeq "$(OS)" "Darwin"
-AVRLIBC_DIR = /opt/local/avr
-else
-AVRLIBC_DIR = /usr/lib/avr
-endif
 
 ALL_BOARDS= arduino avrnetio nano
 DIST_BOARDS= arduino avrnetio nano
@@ -177,7 +171,6 @@ CFLAGS += -Os
 #CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 #CFLAGS += -fno-inline
 CFLAGS += -Wall -Werror -Wstrict-prototypes
-CFLAGS += -I$(AVRLIBC_DIR)/include
 CFLAGS += -mmcu=$(MCU)
 CFLAGS += -I. -Iarch -Iarch/$(ARCH) -Iarch/$(ARCH)/mach-$(MACH) -Iarch/common
 CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include -Iparam -Imode -Icommand

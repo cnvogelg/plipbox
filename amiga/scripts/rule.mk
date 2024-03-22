@@ -25,15 +25,15 @@ clean_obj:
 clean_dist:
 	rm -rf $(BIN_DIR) $(OBJ_DIR)
 
-dirs: $(BUILD_PATH) $(BIN_DIR)
+dirs: $(OBJ_PATH) $(BIN_PATH)
 
 rtest:
 	$(H)$(MAKE) BUILD_TYPE=RELEASE test
 
 # --- dirs ---
-$(BIN_DIR):
-	$(H)mkdir $(BIN_DIR)
+$(BIN_PATH):
+	$(H)mkdir -p $(BIN_PATH)
 
-$(BUILD_PATH):
-	$(H)mkdir -p $(BUILD_PATH)
+$(OBJ_PATH):
+	$(H)mkdir -p $(OBJ_PATH)
 

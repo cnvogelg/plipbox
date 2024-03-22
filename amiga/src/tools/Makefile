@@ -1,57 +1,59 @@
-include ../config/define.mk
+SCRIPT_DIR=../../scripts
+
+include $(SCRIPT_DIR)/define.mk
 
 # lib files
 LIBTOOL_SRC = atimer.c param.c param_tag.c pktbuf.c
 LIBTOOL_SRC += plipbox_cmd.c plipbox_req.c sanadev.c
-LIBTOOL_BASE = libtool_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
+LIBTOOL_BASE = libtool
 LIBTOOL_NAME = $(LIBTOOL_BASE)$(LIB_EXT)
-LIBTOOL_PATH = $(BIN_DIR)/$(LIBTOOL_NAME)
-LIBTOOL_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(LIBTOOL_SRC))
+LIBTOOL_PATH = $(OBJ_PATH)/$(LIBTOOL_NAME)
+LIBTOOL_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(LIBTOOL_SRC))
 
 # add lib
 CFLAGS += -Ilib
 VPATH = lib
-LDFLAGS += -L$(BIN_DIR) -l$(LIBTOOL_BASE)
+LDFLAGS += -L$(OBJ_PATH) -l$(LIBTOOL_BASE)
 
 # pliptool
-PLIPTOOL_NAME = pliptool_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-PLIPTOOL_PATH = $(BIN_DIR)/$(PLIPTOOL_NAME)
+PLIPTOOL_NAME = pliptool
+PLIPTOOL_PATH = $(BIN_PATH)/$(PLIPTOOL_NAME)
 PLIPTOOL_SRC = pliptool.c
 PLIPTOOL_SRC += $(LIB_SRC)
-PLIPTOOL_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPTOOL_SRC))
+PLIPTOOL_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(PLIPTOOL_SRC))
 
 # plipbench
-PLIPBENCH_NAME = plipbench_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-PLIPBENCH_PATH = $(BIN_DIR)/$(PLIPBENCH_NAME)
+PLIPBENCH_NAME = plipbench
+PLIPBENCH_PATH = $(BIN_PATH)/$(PLIPBENCH_NAME)
 PLIPBENCH_SRC = plipbench.c bench.c
 PLIPBENCH_SRC += $(LIB_SRC)
-PLIPBENCH_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPBENCH_SRC))
+PLIPBENCH_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(PLIPBENCH_SRC))
 
 # plipevent
-PLIPEVENT_NAME = plipevent_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-PLIPEVENT_PATH = $(BIN_DIR)/$(PLIPEVENT_NAME)
+PLIPEVENT_NAME = plipevent
+PLIPEVENT_PATH = $(BIN_PATH)/$(PLIPEVENT_NAME)
 PLIPEVENT_SRC = plipevent.c
 PLIPEVENT_SRC += $(LIB_SRC)
-PLIPEVENT_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPEVENT_SRC))
+PLIPEVENT_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(PLIPEVENT_SRC))
 
 # pliplink
-PLIPLINK_NAME = pliplink_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-PLIPLINK_PATH = $(BIN_DIR)/$(PLIPLINK_NAME)
+PLIPLINK_NAME = pliplink
+PLIPLINK_PATH = $(BIN_PATH)/$(PLIPLINK_NAME)
 PLIPLINK_SRC = pliplink.c
 PLIPLINK_SRC += $(LIB_SRC)
-PLIPLINK_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(PLIPLINK_SRC))
+PLIPLINK_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(PLIPLINK_SRC))
 
 # the plipbox test tool
-#DEV_TEST_NAME = dev_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-#DEV_TEST_PATH = $(BIN_DIR)/$(DEV_TEST_NAME)
+#DEV_TEST_NAME = dev_test
+#DEV_TEST_PATH = $(BIN_PATH)/$(DEV_TEST_NAME)
 #DEV_TEST_SRC = dev_test.c atimer.c
-#DEV_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(DEV_TEST_SRC))
+#DEV_TEST_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(DEV_TEST_SRC))
 
 # the udp test tool
-UDP_TEST_NAME = udp_test_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-UDP_TEST_PATH = $(BIN_DIR)/$(UDP_TEST_NAME)
+UDP_TEST_NAME = udp_test
+UDP_TEST_PATH = $(BIN_PATH)/$(UDP_TEST_NAME)
 UDP_TEST_SRC = udp_test.c
-UDP_TEST_OBJ = $(patsubst %.c,$(BUILD_PATH)/%.o,$(UDP_TEST_SRC))
+UDP_TEST_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$(UDP_TEST_SRC))
 
 OBJS = $(DEV_TEST_OBJ) $(UDP_TEST_OBJ) $(PLIPTOOL_OBJ) $(PLIPBENCH_OBJ) $(PLIPEVENT_OBJ)
 OBJS += $(LIBTOOL_OBJ)
@@ -63,7 +65,7 @@ TOOL_PATHS += $(DEV_TEST_PATH) $(UDP_TEST_PATH)
 
 all: dirs $(TOOL_PATHS)
 
-include ../config/rule.mk
+include $(SCRIPT_DIR)/rule.mk
 
 clean: clean_obj
 	rm -f $(TOOL_PATHS) $(LIBTOOL_PATH)
@@ -132,6 +134,6 @@ $(UDP_TEST_PATH): $(UDP_TEST_OBJ)
 	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$@)
 
 # --- compile ---
-$(BUILD_PATH)/%.o: %.c
+$(OBJ_PATH)/%.o: %.c
 	@echo "  C   $<"
 	$(H)$(CC) $(CFLAGS_$(BUILD_TYPE)) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<

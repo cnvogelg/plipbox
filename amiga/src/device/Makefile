@@ -1,6 +1,8 @@
 # Build plipbox.device
 
-include ../config/define.mk
+SCRIPT_DIR=../../scripts
+
+include $(SCRIPT_DIR)/define.mk
 include ../../../version.mk
 
 # device setup
@@ -8,7 +10,7 @@ DEVICE_NAME = plipbox
 DEVICE_VERSION = $(VERSION_MAJ)
 DEVICE_REVISION = $(VERSION_MIN)
 DEVICE_DATE = $(shell date '+%d.%m.%Y')
-DEVICE_FILE = $(DEVICE_NAME).device_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
+DEVICE_FILE = $(DEVICE_NAME).device
 DEVICE_ID = $(DEVICE_NAME) $(DEVICE_VERSION).$(DEVICE_REVISION) ($(DEVICE_DATE))
 
 CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
@@ -26,11 +28,11 @@ CSRC += hw.c
 ASRC += proto_low.s pario_irq.s
 
 # object files
-OBJS+=$(patsubst %.c,$(BUILD_PATH)/%.o,$(CSRC) $(CSRC_$(DRIVER_NAME)))
-OBJS+=$(patsubst %.s,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
+OBJS+=$(patsubst %.c,$(OBJ_PATH)/%.o,$(CSRC) $(CSRC_$(DRIVER_NAME)))
+OBJS+=$(patsubst %.s,$(OBJ_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
 
 # output device
-DEVICE = $(BIN_DIR)/$(DEVICE_FILE)
+DEVICE_PATH = $(BIN_PATH)/$(DEVICE_FILE)
 
 # add driver directory
 VPATH = .:$(DEVICE_NAME):plipbox/pbproto
@@ -39,28 +41,28 @@ VPATH = .:$(DEVICE_NAME):plipbox/pbproto
 
 .PHONY: all clean rtest test
 
-all: dirs $(DEVICE)
+all: dirs $(DEVICE_PATH)
 
-include ../config/rule.mk
+include $(SCRIPT_DIR)/rule.mk
 
 clean: clean_obj
-	rm -f $(DEVICE)
+	rm -f $(DEVICE_PATH)
 
-test: dirs $(DEVICE)
-	cp $(DEVICE) $(TEST_DIR)/plipbox.device
+test: dirs $(DEVICE_PATH)
+	cp $(DEVICE_PATH) $(TEST_DIR)/$(DEVICE_FILE)
 
 # --- compile ---
-$(BUILD_PATH)/%.o: %.c
+$(OBJ_PATH)/%.o: %.c
 	@echo "  C   $<"
 	$(H)$(CC) $(CFLAGS_$(BUILD_TYPE)) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 
 # --- assemble ---
-$(BUILD_PATH)/%.o: %.s
+$(OBJ_PATH)/%.o: %.s
 	@echo "  ASM $<"
 	$(H)$(AS) $(ASFLAGS) $(OBJ_NAME) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$@) $<
 
 # --- link ---
-$(DEVICE): $(OBJS)
+$(DEVICE_PATH): $(OBJS)
 	@echo "  LNK $@"
 ifeq "$(LDFLAGS_HAS_MAP)" "1"
 	$(H)$(LD) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$(OBJS)) \

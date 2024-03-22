@@ -9,8 +9,9 @@ COMPILER    ?= vbcc
 COMMON_DEFINES = -DENABLE_TIMING
 
 # output directory
-BUILD_DIR = build_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
-BUILD_PATH = $(OBJ_DIR)/$(BUILD_DIR)
+BUILD_DIR = $(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
+OBJ_PATH = $(OBJ_DIR)/$(BUILD_DIR)
+BIN_PATH = $(BIN_DIR)/$(BUILD_DIR)
 
 # where do the amiga files reside?
 # expects the following dirs:
@@ -23,13 +24,13 @@ export AMIGA_DIR
 
 # include compiler setup
 ifeq "$(COMPILER)" "vbcc"
-include ../config/vbcc.mk
+include $(SCRIPT_DIR)/vbcc.mk
 else
 ifeq "$(COMPILER)" "sc"
-include ../config/sc.mk
+include $(SCRIPT_DIR)/sc.mk
 else
 ifeq "$(COMPILER)" "gcc"
-include ../config/gcc.mk
+include $(SCRIPT_DIR)/gcc.mk
 else
 $(error Invalid compiler $(COMPILER))
 endif

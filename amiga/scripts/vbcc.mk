@@ -19,7 +19,6 @@ VBCC_LIB = $(VBCC_TARGET_AMIGAOS)/lib
 
 CFLAGS = -c99 -cpu=68$(CPUSUFFIX) -Os -+ -sc
 CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
-CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/pbproto -I.
 CFLAGS += -I../../../shared/include -I../include
 CFLAGS += $(COMMON_DEFINES)
 
