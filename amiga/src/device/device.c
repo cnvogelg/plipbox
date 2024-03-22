@@ -874,8 +874,10 @@ leave:
 }
 
 #ifdef __GNUC__
+#ifdef BASEREL
 extern void __restore_a4(void)
 {
   __asm volatile("\tlea ___a4_init, a4");
 }
+#endif
 #endif

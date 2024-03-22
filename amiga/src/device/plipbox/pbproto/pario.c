@@ -101,21 +101,21 @@ pario_handle_t *pario_init(struct Library *SysBase)
 
   /* get misc.resource */
   d(("OpenResouce(MISCNAME)\n"));
-  MiscBase = OpenResource(MISCNAME);
+  MiscBase = OpenResource((STRPTR)MISCNAME);
   if (MiscBase != NULL)
   {
 
     /* get ciaa.resource */
     d(("OpenResource(CIANAME)\n"));
-    CIAABase = OpenResource(CIAANAME);
+    CIAABase = OpenResource((STRPTR)CIAANAME);
     if (CIAABase != NULL)
     {
 
       /* obtain exclusive access to the parallel hardware */
-      if (!AllocMiscResource(MR_PARALLELPORT, pario_tag))
+      if (!AllocMiscResource(MR_PARALLELPORT, (STRPTR)pario_tag))
       {
         ph->initFlags = 1;
-        if (!AllocMiscResource(MR_PARALLELBITS, pario_tag))
+        if (!AllocMiscResource(MR_PARALLELBITS, (STRPTR)pario_tag))
         {
           ph->initFlags = 3;
 
@@ -216,7 +216,7 @@ int pario_setup_ack_irq(pario_handle_t *ph, struct Task *sigTask, BYTE signal)
 
 void pario_cleanup_ack_irq(pario_handle_t *ph)
 {
-  if (ph->initFlags & 4 == 0)
+  if ((ph->initFlags & 4) == 0)
   {
     return;
   }

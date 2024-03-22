@@ -11,6 +11,12 @@ DEVICE_DATE = $(shell date '+%d.%m.%Y')
 DEVICE_FILE = $(DEVICE_NAME).device_$(COMPILER)_$(BUILD_TYPE)_$(CPUSUFFIX)
 DEVICE_ID = $(DEVICE_NAME) $(DEVICE_VERSION).$(DEVICE_REVISION) ($(DEVICE_DATE))
 
+CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
+CFLAGS += -DDEVICE_VERSION=$(DEVICE_VERSION)
+CFLAGS += -DDEVICE_REVISION=$(DEVICE_REVISION)
+CFLAGS += -DDEVICE_ID="\"\\\"$(DEVICE_ID)\\\"\""
+CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/pbproto -I.
+
 # generic source files
 CSRC=rt.c device.c server.c track.c
 
@@ -27,7 +33,7 @@ OBJS+=$(patsubst %.s,$(BUILD_PATH)/%.o,$(ASRC) $(ASRC_$(DRIVER_NAME)))
 DEVICE = $(BIN_DIR)/$(DEVICE_FILE)
 
 # add driver directory
-VPATH = .:$(DEVICE_NAME):plipbox/proto
+VPATH = .:$(DEVICE_NAME):plipbox/pbproto
 
 # --- rules ---
 

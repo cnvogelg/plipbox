@@ -1,6 +1,7 @@
 #define __NOLIBBASE__
 #include <proto/exec.h>
 #include <proto/timer.h>
+#include <devices/timer.h>
 
 #include "debug.h"
 #include "compiler.h"
@@ -62,7 +63,7 @@ struct timer_handle *timer_init(struct Library *SysBase)
 
     /* setup timer request */
     th->timerReq.tr_node.io_Message.mn_ReplyPort = th->timerPort;
-    if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)&th->timerReq, 0))
+    if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)&th->timerReq, 0))
     {
       /* store timer base */
       th->timerBase = (struct Library *)th->timerReq.tr_node.io_Device;

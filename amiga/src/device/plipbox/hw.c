@@ -377,7 +377,6 @@ REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
 
 REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame)
 {
-  ULONG pkttyp;
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
   UBYTE *buf = ((UBYTE *)frame) + 2;
   UWORD status = 0;

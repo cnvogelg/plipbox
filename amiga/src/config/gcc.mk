@@ -13,17 +13,14 @@ NDK_INC_ASM = $(NDK_DIR)/include_i
 NET_INC ?= $(AMIGA_DIR)/roadshow/netinclude
 DEV_INC ?= $(AMIGA_DIR)/roadshow/include
 
-BASEREL = -fbaserel -DBASEREL
+#BASEREL = -fbaserel -DBASEREL
 
 CFLAGS = -Wall -Werror -noixemul -mcrt=clib2
 CFLAGS += -mcpu=68$(CPUSUFFIX) $(BASEREL) -Os
 CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
-CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/proto -I. -I../include
-
-CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
-CFLAGS += -DDEVICE_VERSION=$(DEVICE_VERSION)
-CFLAGS += -DDEVICE_REVISION=$(DEVICE_REVISION)
-CFLAGS += -DDEVICE_ID="\"\\\"$(DEVICE_ID)\\\"\""
+CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/proto
+CFLAGS += -I../../../shared/include -I../include
+CFLAGS += $(COMMON_DEFINES)
 
 OBJ_NAME = -o
 CFLAGS_DEBUG = $(CFLAGS) -g

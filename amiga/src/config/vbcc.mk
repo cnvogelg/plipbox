@@ -19,13 +19,8 @@ VBCC_LIB = $(VBCC_TARGET_AMIGAOS)/lib
 
 CFLAGS = -c99 -cpu=68$(CPUSUFFIX) -Os -+ -sc
 CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
-CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/proto -I. -I../include
+CFLAGS += -I$(DEVICE_NAME) -I$(DEVICE_NAME)/pbproto -I.
 CFLAGS += -I../../../shared/include -I../include
-
-CFLAGS += -DDEVICE_NAME="\"\\\"$(DEVICE_NAME).device\\\"\""
-CFLAGS += -DDEVICE_VERSION=$(DEVICE_VERSION)
-CFLAGS += -DDEVICE_REVISION=$(DEVICE_REVISION)
-CFLAGS += -DDEVICE_ID="\"\\\"$(DEVICE_ID)\\\"\""
 CFLAGS += $(COMMON_DEFINES)
 
 OBJ_NAME = -o
@@ -43,3 +38,7 @@ LDFLAGS_APP =
 LDFLAGS_HAS_MAP = 0
 
 ASFLAGS = -Fhunk -quiet -phxass -m68$(CPUSUFFIX) -I$(NDK_INC_ASM)
+
+AR = cat
+AR_OUT = >
+LIB_EXT = .lib

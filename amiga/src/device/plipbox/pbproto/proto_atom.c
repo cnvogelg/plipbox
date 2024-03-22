@@ -62,7 +62,7 @@ proto_env_handle_t *proto_atom_get_env(proto_handle_t *ph)
 int proto_atom_action(proto_handle_t *ph, UBYTE cmd)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_action(port, timeout_flag, cmd);
@@ -74,7 +74,7 @@ int proto_atom_action(proto_handle_t *ph, UBYTE cmd)
 int proto_atom_action_no_busy(proto_handle_t *ph, UBYTE cmd)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_action_no_busy(port, timeout_flag, cmd);
@@ -93,7 +93,7 @@ static ASM void bench_cb(REG(d0, int id), REG(a2, struct cb_data *cb))
 int proto_atom_action_bench(proto_handle_t *ph, UBYTE cmd, ULONG deltas[2])
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   struct cb_data cbd = {
       bench_cb,
@@ -119,7 +119,7 @@ int proto_atom_action_bench(proto_handle_t *ph, UBYTE cmd, ULONG deltas[2])
 int proto_atom_read_word(proto_handle_t *ph, UBYTE cmd, UWORD *data)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_read_word(port, timeout_flag, cmd, data);
@@ -131,7 +131,7 @@ int proto_atom_read_word(proto_handle_t *ph, UBYTE cmd, UWORD *data)
 int proto_atom_write_word(proto_handle_t *ph, UBYTE cmd, UWORD data)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_write_word(port, timeout_flag, cmd, &data);
@@ -143,7 +143,7 @@ int proto_atom_write_word(proto_handle_t *ph, UBYTE cmd, UWORD data)
 int proto_atom_read_long(proto_handle_t *ph, UBYTE cmd, ULONG *data)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_read_long(port, timeout_flag, cmd, data);
@@ -155,7 +155,7 @@ int proto_atom_read_long(proto_handle_t *ph, UBYTE cmd, ULONG *data)
 int proto_atom_write_long(proto_handle_t *ph, UBYTE cmd, ULONG data)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
 
   timer_start(ph->timer, ph->timeout_s, ph->timeout_us);
   int result = proto_low_write_long(port, timeout_flag, cmd, &data);
@@ -167,7 +167,7 @@ int proto_atom_write_long(proto_handle_t *ph, UBYTE cmd, ULONG data)
 int proto_atom_write_block(proto_handle_t *ph, UBYTE cmd, UBYTE *buf, UWORD num_bytes)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
   if (num_bytes & 1)
   {
     return PROTO_RET_ODD_BLOCK_SIZE;
@@ -184,7 +184,7 @@ int proto_atom_write_block(proto_handle_t *ph, UBYTE cmd, UBYTE *buf, UWORD num_
 int proto_atom_read_block(proto_handle_t *ph, UBYTE cmd, UBYTE *buf, UWORD num_bytes)
 {
   struct pario_port *port = ph->port;
-  volatile BYTE *timeout_flag = timer_get_flag(ph->timer);
+  volatile UBYTE *timeout_flag = timer_get_flag(ph->timer);
   if (num_bytes & 1)
   {
     return PROTO_RET_ODD_BLOCK_SIZE;
