@@ -23,122 +23,22 @@
 #  02111-1307  USA.
 #
 
-# ----- Config Options -----
- 
-OS=$(shell uname -s)
+SCRIPT_DIR=../scripts
 
-
-ALL_BOARDS= arduino avrnetio nano
-DIST_BOARDS= arduino avrnetio nano
-
-# select board
-BOARD ?= nano
-DEV_ENC28J60 ?= 1
-
-ifeq "$(BOARD)" "arduino"
-
-MCU = atmega328
-ARCH = avr
-MACH = ardunano
-FLASH_MCU = m328p
-F_CPU = 16000000
-#MAX_SIZE = 14336
-MAX_SIZE = 30720
-MAX_SRAM = 2048
-#UART_BAUD = 500000
-#UART_BAUD = 19200
-#UART_BAUD = 250000
-UART_BAUD = 57600
-FLASHER = arduino
-
-else
-ifeq "$(BOARD)" "nano"
-
-MCU = atmega328
-ARCH = avr
-MACH = ardunano
-FLASH_MCU = m328p
-F_CPU = 16000000
-MAX_SIZE = 30720
-MAX_SRAM = 2048
-UART_BAUD = 57600
-FLASHER = isp
-
-# its a subclass of the Arduino board
-DEFINES += HAVE_arduino
-BOARDFILE = arduino.c
-
-else
-ifeq "$(BOARD)" "avrnetio"
-
-MCU = atmega32
-ARCH = avr
-MACH = avrnetio
-FLASH_MCU = m32
-F_CPU = 16000000
-MAX_SIZE = 32768
-MAX_SRAM = 2048
-UART_BAUD = 57600
-FLASHER = isp
-
-else
-
-$(error "Unsupported board '$(BOARD)'. Only $(ALL_BOARDS) allowed!")
-
-endif
-endif
-endif
-
-# ----- setup flasher -----
-# 'arduino' = Arduino bootloader via serial
-ifeq "$(FLASHER)" "arduino"
-
-LDR_SPEED ?= $(UART_BAUD)
-LDR_SPEC = -P $(LDR_PORT) -b $(LDR_SPEED) -c arduino
-
-else
-# 'isp' = AVRISP mkII compatible, e.g. Diamex All AVR
-ifeq "$(FLASHER)" "isp"
-
-ISP_PORT ?= usb
-ISP_TYPE ?= avrisp2
-ISP_SPEED ?= 1
-LDR_SPEC = -P $(ISP_PORT) -B $(ISP_SPEED) -c $(ISP_TYPE)
-
-else
-# 'usbasp' = see http://www.fischl.de/usbasp/
-ifeq "$(FLASHER)" "usbasp"
-
-LDR_SPEC = -c usbasp
-
-else
-
-$(error "Unsupported flasher '$(FLASHER)'!")
-
-endif
-endif
-endif
-
-# ----- End of Config -----
+include $(SCRIPT_DIR)/boards.mk
+include ../../version.mk
+include $(SCRIPT_DIR)/define.mk
+include $(SCRIPT_DIR)/define-$(ARCH).mk
 
 # mainfile/project name
 PROJECT = plipbox
-include ../../version.mk
-BUILD_DATE = $(shell date '+%Y%m%d')
-BUILD_TYPE ?= DEBUG
 
-# basename of output
-BASENAME = $(PROJECT)-$(VERSION)-$(UART_BAUD)-$(BOARD)-$(MCU)-$(BUILD_TYPE)
-# project
-OUTPUT = $(OUTDIR)/$(BASENAME)
-# dist dir
-DISTDIR = ../bin
+# --- arch dependent files ---
+SRC_avr = hw_persist.c hw_spi.c hw_system.c hw_timer.c hw_uart.c
+ASRC_avr = proto_low_asm.S
 
-# setup src search
-VPATH = .:net:eth:base:proto:req:param:mode:mode_mod:nic:nic_mod:net:command:arch/$(ARCH):arch/$(ARCH)/mach-$(MACH):arch/common
-
-# source files
-SRC := hw_system.c hw_timer.c hw_uart.c hw_spi.c hw_persist.c
+# --- common sources
+SRC += main.c
 SRC += util.c uartutil.c
 SRC += proto_atom.c proto_cmd.c req.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
@@ -148,232 +48,45 @@ SRC += dump.c stats.c
 SRC += mode.c mode_mod.c mode_cmd.c mode_def.c
 SRC += mode_loop_buf.c mode_nic.c nic_test.c
 SRC += nic.c nic_def.c nic_mod.c nic_loop.c nic_enc28j60.c enc28j60.c
-SRC += main.c
+SRC += $(SRC_$(ARCH))
 
-ASRC = proto_low_asm.S
+ASRC = $(ASRC_$(ARCH))
 
-# output format
-FORMAT = ihex
+PROJDIR = arch arch/$(ARCH)/mach-$(MACH) arch/$(ARCH) arch/common
+PROJDIR += base command mode mode_mod net nic nic_mod param proto req
 
-# build directory
-BUILD = BUILD
-OBJDIR = $(BUILD)/$(BASENAME)/obj
-DEPDIR = $(OBJDIR)
-OUTDIR = $(BUILD)
+# search paths
+VPATH = $(PROJDIR)
 
 # target files
 OBJ = $(patsubst %.c,$(OBJDIR)/%.o,$(SRC))
 OBJ += $(patsubst %.S,$(OBJDIR)/%.o,$(ASRC))
 
-# compiler switches
-CFLAGS = -g -std=gnu99 -fno-common
-CFLAGS += -Os
-#CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-#CFLAGS += -fno-inline
-CFLAGS += -Wall -Werror -Wstrict-prototypes
-CFLAGS += -mmcu=$(MCU)
-CFLAGS += -I. -Iarch -Iarch/$(ARCH) -Iarch/$(ARCH)/mach-$(MACH) -Iarch/common
-CFLAGS += -Ibase -Ieth -Iproto -I../../shared/include -Iparam -Imode -Icommand
-CFLAGS += -Inic -Imode_mod -Inic_mod -Inet -Ireq
-CFLAGS += -ffunction-sections -fdata-sections
- 
-CFLAGS_LOCAL = -Wa,-adhlns=$(OBJDIR)/$(notdir $(<:%.c=%.lst))
-CFLAGS_LOCAL += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(DEPDIR)/$(@F:.o=.d)
-CFLAGS_LOCAL += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
-CFLAGS_LOCAL += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
-CFLAGS_LOCAL += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
-CFLAGS_LOCAL += -DF_CPU=$(F_CPU) -DCONFIG_PTR_BITS=16
-CFLAGS_LOCAL += -DCONFIG_BAUD_RATE=$(UART_BAUD) -DCONFIG_SPI_NUM_CS=1
+# include paths
+FLAGS_COMMON += $(patsubst %,-I%,$(PROJDIR))
+FLAGS_COMMON += -I../../shared/include -I.
+
+FLAGS_COMMON += -DVERSION_MIN="$(VERSION_MIN)" -DVERSION_MAJ="$(VERSION_MAJ)"
+FLAGS_COMMON += -DVERSION="\"$(VERSION)\"" -DBUILD_DATE="\"$(BUILD_DATE)\""
+FLAGS_COMMON += -DHAVE_$(BOARD) -DUART_BAUD=$(UART_BAUD) -DBOARD=$(BOARD)
+FLAGS_COMMON += -DF_CPU=$(F_CPU) -DCONFIG_PTR_BITS=16
+FLAGS_COMMON += -DCONFIG_BAUD_RATE=$(UART_BAUD) -DCONFIG_SPI_NUM_CS=1
+
 # debug
 ifeq "$(BUILD_TYPE)" "DEBUG"
-#CFLAGS_LOCAL += -DDEBUG_PROTO_ATOM
-CFLAGS_LOCAL += -DDEBUG_PROTO_CMD
-#CFLAGS_LOCAL += -DDEBUG_DUMP_FRAMES
-#CFLAGS_LOCAL += -DDEBUG_MODE
-#CFLAGS_LOCAL += -DDEBUG_NIC
-CFLAGS_LOCAL += -DDEBUG_PARAM
-CFLAGS_LOCAL += -DDEBUG_ENC28J60
-endif
-
-CFLAGS_LOCAL += $(patsubst %,-D%,$(DEFINES))
-
-ASFLAGS = $(CFLAGS)
-ASFLAGS += -Wa,-gstabs -x assembler-with-cpp
-
-# linker switches
-LDFLAGS = -Wl,-Map=$(OUTPUT).map,--cref
-LDFLAGS += -lm -lc
-LDFLAGS += -Wl,--gc-sections
-
-# Define programs and commands.
-SHELL = sh
-CC = avr-gcc
-OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-SIZE = avr-size
-NM = avr-nm
-AVRDUDE = avrdude
-REMOVE = rm -f
-COPY = cp
-RANLIB = avr-ranlib
-AR = avr-ar
-
-# define V to see compile output
-ifdef V
-HIDE=
-else
-HIDE=@
+#FLAGS_COMMON += -DDEBUG_PROTO_ATOM
+FLAGS_COMMON += -DDEBUG_PROTO_CMD
+#FLAGS_COMMON += -DDEBUG_DUMP_FRAMES
+#FLAGS_COMMON += -DDEBUG_MODE
+#FLAGS_COMMON += -DDEBUG_NIC
+FLAGS_COMMON += -DDEBUG_PARAM
+FLAGS_COMMON += -DDEBUG_ENC28J60
 endif
 
 # ---------- RULES ----------
 
-all: build
-
-help:
-	@echo "$(OS)"
-	@echo
-	@echo "  supported boards: $(ALL_BOARDS)"
-	@echo
-	@echo "build [BOARD=<board>]"
-	@echo "prog [BOARD=<board>]"
-	@echo "clean"
-
-dirs:
-	@if [ ! -d $(BUILD) ]; then mkdir -p $(BUILD); fi 
-	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR); fi
-	@if [ ! -d $(DEPDIR) ]; then mkdir -p $(DEPDIR); fi
-	@if [ ! -d $(OUTDIR) ]; then mkdir -p $(OUTDIR); fi
-
-build: dirs hdr hex lss size
-
-hdr:
-	@echo "--- building BOARD=$(BOARD) F_CPU=$(F_CPU) MCU=$(MCU) FLASH_MCU=$(FLASH_MCU) ---"
-	@echo "             UART_BAUD=$(UART_BAUD) DEFINES=$(DEFINES)"
-
-elf: $(OUTPUT).elf $(OUTPUT).lss $(OUTPUT).sym
-	@echo "  --- resulting elf ---"
-	$(HIDE)$(SIZE) $(OUTPUT).elf -C --mcu=$(MCU)
-
-hex: $(OUTPUT).hex
-
-lss: $(OUTPUT).lss
-
-size: size_code size_data
-
-size_code: $(OUTPUT).elf
-	@SIZE=`$(SIZE) -C $(OUTPUT).elf | grep Program | awk '{ print $$2 }'` ; \
-	if [ $$SIZE -gt $(MAX_SIZE) ] ; then \
-		echo "  $$SIZE >  $(MAX_SIZE) bytes: code TOO LARGE" ; exit 1 ; \
-	else \
-		echo "  $$SIZE <= $(MAX_SIZE) bytes: code ok" ; \
-	fi
-
-size_data: $(OUTPUT).elf
-	@SIZE=`$(SIZE) -C $(OUTPUT).elf | fgrep Data | awk '{ print $$2 }'` ; \
-	if [ $$SIZE -gt $(MAX_SRAM) ] ; then \
-		echo "  $$SIZE >  $(MAX_SRAM) bytes: sram TOO LARGE" ; exit 1 ; \
-	else \
-		echo "  $$SIZE <= $(MAX_SRAM) bytes: sram ok" ; \
-	fi
-
-size_symbols: $(OUTPUT).elf
-	@$(NM) --size-sort --print-size $(OUTPUT).elf | egrep ' [bBdD] '
-
-clean:
-	rm -rf $(BUILD)
-
-clean_dist: clean
-	rm -rf $(DISTDIR)
-
-build_all: clean
-	@for a in $(DIST_BOARDS) ; do \
-		$(MAKE) build BOARD=$$a ;\
-		if [ $$? != 0 ]; then exit 1 ; fi ; \
-	done
-	$(MAKE) build BOARD=arduino MCU=atmega328
-
-dist:
-	$(MAKE) BUILD_TYPE=RELEASE
-
-rprog:
-	$(MAKE) BUILD_TYPE=RELEASE prog
-
-# ----- Helper Rules -----
-
-# final hex (flash) file from elf
-%.hex: %.elf
-	@echo "  making hex $@"
-	$(HIDE)$(OBJCOPY) -O $(FORMAT) -j .data -j .text $< $@
-
-# finale eeprom file from elf
-%.eep: %.elf
-	@echo "  making eep $@"
-	$(HIDE)$(OBJCOPY) -j .eeprom --change-section-lma .eeprom=0 -O $(FORMAT) $< $@
-
-# extended listing file
-%.lss: %.elf
-	@echo "  generating listing $@"
-	$(HIDE)$(OBJDUMP) -h -S $< > $@
-
-# Create a symbol table from ELF output file.
-%.sym: %.elf
-	@echo "  generating symbols $@"
-	$(HIDE)$(NM) -n $< > $@
-
-# link
-%.elf: $(OBJ)
-	@echo "  linking elf $@"
-	$(HIDE)$(CC) $(CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
-
-# compile
-$(OBJDIR)/%.o : %.c
-	@echo "  compiling $<"
-	$(HIDE)$(CC) -c $(CFLAGS) $(CFLAGS_LOCAL) $< -o $@ 
-
-# compile
-$(OBJDIR)/%.o : %.S
-	@echo "  compiling $<"
-	$(HIDE)$(CC) -c $(ASFLAGS) $< -o $@
+include $(SCRIPT_DIR)/rule.mk
+include $(SCRIPT_DIR)/rule-$(ARCH).mk
 
 # include dependencies
 -include $(shell mkdir -p $(DEPDIR) 2>/dev/null) $(wildcard $(DEPDIR)/*.d)
-
-.PRECIOUS: $(OBJ)
-.PHONY: all dirs elf hex prog clean avrlib clean.edit hdr size_code size_data size
-
-# ----- AVRdude --------------------------------------------------------------
-
-ifeq "$(OS)" "Darwin"
-LDR_PORT ?= $(shell ls /dev/cu.usbserial-* | tail -n 1)
-else
-LDR_PORT ?= $(shell ls /dev/ttyUSB* | tail -n 1)
-endif
-
-# commands
-AVRDUDE_WRITE_FLASH  = -U flash:w:$(OUTPUT).hex
-AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(OUTPUT).eep
-AVRDUDE_WRITE_FUSE   = -U lfuse:w:$(LFUSE_$(MCU)):m -U hfuse:w:$(HFUSE_$(MCU)):m
-
-AVRDUDE_LDR_FLAGS = -p $(FLASH_MCU) $(LDR_SPEC)
-
-ifdef AVRDUDE_DEBUG
-AVRDUDE_LDR_FLAGS += -v -v -v -v
-endif
-
-check_prog:
-	$(AVRDUDE) $(AVRDUDE_LDR_FLAGS) -U signature:r:sig.txt:h
-	@echo -n " device signature: "
-	@cat sig.txt
-	@rm -f sig.txt
-
-prog: $(OUTPUT).hex size
-	@echo "  --- programming flash ---"
-	$(AVRDUDE) $(AVRDUDE_LDR_FLAGS) $(AVRDUDE_WRITE_FLASH)
-
-read_fuse:
-	$(AVRDUDE) $(AVRDUDE_LDR_FLAGS) -U lfuse:r:lfuse.txt:h -U hfuse:r:hfuse.txt:h
-	@echo -n " lfuse: " 
-	@cat lfuse.txt
-	@echo -n " hfuse: "
-	@cat hfuse.txt
-	@rm -f lfuse.txt hfuse.txt

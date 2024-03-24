@@ -31,6 +31,8 @@
 #include "hw_spi_pins.h"
 #include "hw_spi_common.h"
 
+#define HW_SPI_NUM_CS     2
+
 extern void hw_spi_init(void);
 extern void hw_spi_set_speed(u08 speed);
 
@@ -44,12 +46,12 @@ INLINE u08 hw_spi_in(void) { return hw_spi_xfer(0xff); }
 #define hw_spi_enable_cs1()  hw_spi_pins_cs1_lo()
 #define hw_spi_disable_cs1() hw_spi_pins_cs1_hi()
 
-FORCE INLINE void hw_spi_enable(u08 cs) {
+FORCE_INLINE void hw_spi_enable(u08 cs) {
   if(cs == 0) hw_spi_enable_cs0();
   else hw_spi_enable_cs1();
 }
 
-FORCE INLINE void hw_spi_disable(u08 cs) {
+FORCE_INLINE void hw_spi_disable(u08 cs) {
   if(cs == 0) hw_spi_disable_cs0();
   else hw_spi_disable_cs1();
 }

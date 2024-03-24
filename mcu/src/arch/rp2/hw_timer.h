@@ -6,6 +6,10 @@
 
 typedef uint32_t hw_timer_ms_t;
 
+INLINE void hw_timer_init(void)
+{
+}
+
 INLINE hw_timer_ms_t hw_timer_millis(void)
 {
     return (hw_timer_ms_t)(time_us_64() / 1000);

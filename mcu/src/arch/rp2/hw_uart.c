@@ -20,3 +20,13 @@ void hw_uart_send(u08 data)
 {
   uart_putc_raw(uart0, data);
 }
+
+u08 hw_uart_read_data_available(void)
+{
+  return uart_is_readable(uart0);
+}
+
+u08 hw_uart_read(void)
+{
+  return uart_getc(uart0);
+}
