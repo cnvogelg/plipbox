@@ -279,6 +279,18 @@ u08 param_get_nic_port(void)
   return (u08)param.nic_port;
 }
 
+#ifdef HAVE_WIFI
+const u08 *param_get_wifi_ssid(void)
+{
+  return param.wifi_ssid;
+}
+
+const u08 *param_get_wifi_pass(void)
+{
+  return param.wifi_pass;
+}
+#endif
+
 u08 param_init(void)
 {
   u08 res = param_load();

@@ -50,8 +50,11 @@ typedef u08  (*nic_mod_tx_direct_end_t)(u16 size);
 
 typedef u08  (*nic_mod_ioctl_t)(u08 ioctl, u08 *value);
 
+/* optional wifi extension */
+struct nic_wifi_mod;
+
 /* device structure */
-typedef struct {
+typedef struct nic_mod {
   const char         *name;
   u16                 caps;
 
@@ -73,6 +76,8 @@ typedef struct {
   nic_mod_tx_direct_end_t    tx_direct_end;
 
   nic_mod_ioctl_t     ioctl;
+
+  const struct nic_wifi_mod *wifi_ext;
 } nic_mod_t;
 
 typedef const nic_mod_t *nic_mod_ptr_t;
@@ -187,6 +192,12 @@ static inline u08 nic_mod_ioctl(u08 id, u08 *value)
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_ioctl_t ioctl = (nic_mod_ioctl_t)read_rom_rom_ptr(&pd->ioctl);
   return ioctl(id, value);
+}
+
+static inline const struct nic_wifi_mod *nic_mod_wifi_ext(void)
+{
+  nic_mod_ptr_t pd = nic_mod_ptr;
+  return (const struct nic_wifi_mod *)read_rom_rom_ptr(&pd->wifi_ext);
 }
 
 #endif

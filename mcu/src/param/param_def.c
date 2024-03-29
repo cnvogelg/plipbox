@@ -15,7 +15,11 @@ const param_t ROM_ATTR default_param = {
   .nic_caps = 0,
   .nic_port = 0,
   .ip_addr = { 10, 0, 0, 2 },
-  .net_mask = { 255, 255, 255, 0}
+  .net_mask = { 255, 255, 255, 0},
+#ifdef HAVE_WIFI
+  .wifi_ssid = "ssid",
+  .wifi_pass = "pass",
+#endif
 };
 
 // descriptions
@@ -26,6 +30,10 @@ static const char ROM_ATTR desc_nic_caps[] = "NIC flags";
 static const char ROM_ATTR desc_nic_port[] = "NIC port";
 static const char ROM_ATTR desc_ip_addr[] = "test IP addr";
 static const char ROM_ATTR desc_net_mask[] = "test net mask";
+#ifdef HAVE_WIFI
+static const char ROM_ATTR desc_wifi_ssid[] = "Wifi SSID";
+static const char ROM_ATTR desc_wifi_pass[] = "Wifi password";
+#endif
 
 // parameter description
 const param_def_t ROM_ATTR param_defs[] = {
@@ -91,7 +99,27 @@ const param_def_t ROM_ATTR param_defs[] = {
     .size = IP_ADDR_SIZE,
     .data = (u08 *)&param.net_mask,
     .desc = desc_net_mask
+  },
+#ifdef HAVE_WIFI
+  {
+    .index = 7,
+    .tag = PARAM_TAG_WIFI_SSID,
+    .type = PARAM_TYPE_BYTE_ARRAY,
+    .format = PARAM_FORMAT_STR,
+    .size = NIC_WIFI_SSID_SIZE,
+    .data = (u08 *)&param.wifi_ssid,
+    .desc = desc_wifi_ssid
+  },
+  {
+    .index = 8,
+    .tag = PARAM_TAG_WIFI_PASS,
+    .type = PARAM_TYPE_BYTE_ARRAY,
+    .format = PARAM_FORMAT_STR,
+    .size = NIC_WIFI_PASS_SIZE,
+    .data = (u08 *)&param.wifi_pass,
+    .desc = desc_wifi_pass
   }
+#endif
 };
 
 const size_t param_defs_size = sizeof(param_defs) / sizeof(param_def_t);

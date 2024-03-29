@@ -34,6 +34,10 @@
 #include "debug.h"
 #include "nic.h"
 #include "nic_mod.h"
+#ifdef HAVE_WIFI
+#include "nic_wifi.h"
+#include "nic_wifi_mod.h"
+#endif
 
 #include "uartutil.h"
 #include "param.h"
@@ -46,12 +50,19 @@ static u16 caps_in_use;
 void nic_init(void)
 {
   nic_mod_init();
+#ifdef HAVE_WIFI
+  nic_wifi_init();
+#endif
+
   is_attached = 0;
 }
 
 void nic_set_device(u08 device)
 {
   nic_mod_set_current(device);
+#ifdef HAVE_WIFI
+  nic_wifi_mod_set_current();
+#endif
 }
 
 u08 nic_attach_params(void)

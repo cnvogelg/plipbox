@@ -5,6 +5,7 @@
 #include "arch.h"
 #include "param.h"
 #include "hw_persist.h"
+#include "nic_shared.h"
 
 typedef struct {
   // first reserved entry for persistence
@@ -17,6 +18,10 @@ typedef struct {
   u16   nic_port;
   ip_addr_t  ip_addr;
   ip_addr_t  net_mask;
+#ifdef HAVE_WIFI
+  char  wifi_ssid[NIC_WIFI_SSID_SIZE];
+  char  wifi_pass[NIC_WIFI_PASS_SIZE];
+#endif
 } param_t;
 
 extern const param_t ROM_ATTR default_param;

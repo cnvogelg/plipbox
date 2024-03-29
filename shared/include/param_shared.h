@@ -14,6 +14,9 @@
 // test tags
 #define PARAM_TAG_IP            MAKE_TAG('I','P',0,0)
 #define PARAM_TAG_NMSK          MAKE_TAG('N','M','S','K')
+// wifi tags
+#define PARAM_TAG_WIFI_SSID     MAKE_TAG('S','S','I','D')
+#define PARAM_TAG_WIFI_PASS     MAKE_TAG('P','A','S','S')
 
 // param description
 // +00 u08 index

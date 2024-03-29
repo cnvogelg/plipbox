@@ -9,7 +9,8 @@ $(BASE_DIR)/Makefile: CMakeLists.txt
 		-DVERSION=$(VERSION) \
 		-DVERSION_MAJ=$(VERSION_MAJ) \
 		-DVERSION_MIN=$(VERSION_MIN) \
-		-DBUILD_DATE=$(BUILD_DATE)
+		-DBUILD_DATE=$(BUILD_DATE) \
+		-DPICO_BOARD=pico_w
 
 prog_arch:
 	@echo "flash pico"

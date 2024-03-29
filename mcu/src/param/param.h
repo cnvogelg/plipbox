@@ -78,4 +78,10 @@ void param_get_def(u08 index, param_def_t *def);
 u08 *param_get_data(u08 index);
 u16  param_get_size(u08 index);
 
+#ifdef HAVE_WIFI
+// wifi params
+const u08 *param_get_wifi_ssid(void);
+const u08 *param_get_wifi_pass(void);
+#endif
+
 #endif

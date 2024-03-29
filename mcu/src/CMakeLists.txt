@@ -19,6 +19,7 @@ set(PB_PICO_LIBS
   hardware_uart
   hardware_sync
   pico_stdlib
+  pico_cyw43_arch_poll
 )
 
 # source lists
@@ -50,10 +51,13 @@ set(SRCS
   nic/nic.c
   nic/nic_mod.c
   nic/nic_test.c
+  nic/nic_wifi_mod.c
+  nic/nic_wifi.c
 
   nic_mod/enc28j60.c
   nic_mod/nic_def.c
   nic_mod/nic_enc28j60.c
+  nic_mod/nic_cyw43.c
   nic_mod/nic_loop.c
 
   param/param.c
@@ -82,6 +86,11 @@ add_compile_definitions(
   VERSION="${VERSION}"
   VERSION_MAJ=${VERSION_MAJ}
   VERSION_MIN=${VERSION_MIN}
+  HAVE_WIFI=1
+  HAVE_CYW43=1
+  HAVE_ENC28J60=1
+  CYW43_LWIP=0
+  CYW43_USE_OTP_MAC=0
 )
 
 include_directories(

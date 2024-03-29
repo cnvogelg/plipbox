@@ -2,7 +2,7 @@
 
 #include "types.h"
 
-#ifdef DEBUG_PROTO_REQ
+#ifdef DEBUG_REQ
 #define DEBUG
 #endif
 
