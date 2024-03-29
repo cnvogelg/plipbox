@@ -61,7 +61,6 @@ set(SRCS
   nic_mod/nic_loop.c
 
   param/param.c
-  param/param_cmd.c
   param/param_def.c
 
   proto/proto_atom.c

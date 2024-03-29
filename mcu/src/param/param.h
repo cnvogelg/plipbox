@@ -32,13 +32,10 @@
 #include "hw_persist.h"
 
 struct param_def {
-  // --- shared via protocol
-  u08   index;
   u08   type;
   u08   format;
   u16   size;
   u32   tag;
-  // --- internal
   u08  *data;
   rom_pchar desc;
 };

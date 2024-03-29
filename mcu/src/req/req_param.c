@@ -44,7 +44,7 @@ void req_param_get_def(proto_cmd_req_t *req)
   // +06 u32 tag
   // =10
   u08 *p = req->out_buf;
-  p[0] = def.index;
+  p[0] = index;
   p[1] = def.type;
   p[2] = def.format;
   p[3] = 0;

@@ -155,8 +155,7 @@ void param_dump(void)
   for(int i=0;i<param_defs_size;i++) {
     // index
     uart_send('#');
-    u08 index = read_rom_char(&def->index);
-    uart_send_hex_byte(index);
+    uart_send_hex_byte(i);
     uart_send(' ');
 
     // dump tag

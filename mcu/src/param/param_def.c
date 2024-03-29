@@ -38,7 +38,6 @@ static const char ROM_ATTR desc_wifi_pass[] = "Wifi password";
 // parameter description
 const param_def_t ROM_ATTR param_defs[] = {
   {
-    .index = 0,
     .tag = PARAM_TAG_MAC_ADDR,
     .type = PARAM_TYPE_BYTE_ARRAY,
     .format = PARAM_FORMAT_HEX,
@@ -47,7 +46,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_mac
   },
   {
-    .index = 1,
     .tag = PARAM_TAG_MODE,
     .type = PARAM_TYPE_WORD,
     .format = PARAM_FORMAT_DEC,
@@ -56,7 +54,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_mode
   },
   {
-    .index = 2,
     .tag = PARAM_TAG_NIC,
     .type = PARAM_TYPE_WORD,
     .format = PARAM_FORMAT_DEC,
@@ -65,7 +62,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_nic
   },
   {
-    .index = 3,
     .tag = PARAM_TAG_NCAP,
     .type = PARAM_TYPE_WORD,
     .format = PARAM_FORMAT_BIN,
@@ -74,7 +70,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_nic_caps
   },
   {
-    .index = 4,
     .tag = PARAM_TAG_NPRT,
     .type = PARAM_TYPE_WORD,
     .format = PARAM_FORMAT_BIN,
@@ -83,7 +78,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_nic_port
   },
   {
-    .index = 5,
     .tag = PARAM_TAG_IP,
     .type = PARAM_TYPE_BYTE_ARRAY,
     .format = PARAM_FORMAT_DEC,
@@ -92,7 +86,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_ip_addr
   },
   {
-    .index = 6,
     .tag = PARAM_TAG_NMSK,
     .type = PARAM_TYPE_BYTE_ARRAY,
     .format = PARAM_FORMAT_DEC,
@@ -102,7 +95,6 @@ const param_def_t ROM_ATTR param_defs[] = {
   },
 #ifdef HAVE_WIFI
   {
-    .index = 7,
     .tag = PARAM_TAG_WIFI_SSID,
     .type = PARAM_TYPE_BYTE_ARRAY,
     .format = PARAM_FORMAT_STR,
@@ -111,7 +103,6 @@ const param_def_t ROM_ATTR param_defs[] = {
     .desc = desc_wifi_ssid
   },
   {
-    .index = 8,
     .tag = PARAM_TAG_WIFI_PASS,
     .type = PARAM_TYPE_BYTE_ARRAY,
     .format = PARAM_FORMAT_STR,
