@@ -40,7 +40,7 @@ ASRC_avr = proto_low_asm.S
 # --- common sources
 SRC += main.c
 SRC += util.c uartutil.c
-SRC += proto_atom.c proto_cmd.c req.c
+SRC += proto_atom.c proto_cmd.c req.c req_param.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
 SRC += param_def.c param.c param_cmd.c
 SRC += pkt_buf.c net.c arp.c

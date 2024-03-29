@@ -68,6 +68,7 @@ set(SRCS
   proto/proto_cmd.c
 
   req/req.c
+  req/req_param.c
 
   pkt_buf.c
   net/net.c

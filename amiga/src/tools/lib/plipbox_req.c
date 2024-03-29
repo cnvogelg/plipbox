@@ -101,12 +101,10 @@ int plipbox_req_param_set_word(sanadev_handle_t *sh, UBYTE id, UWORD value)
   return plipbox_req_param_set_val(sh, id, 2, data);
 }
 
-// ----- prefs -----
-
-int plipbox_req_prefs_reset(sanadev_handle_t *sh)
+int plipbox_req_param_reset(sanadev_handle_t *sh)
 {
   s2pb_request_t req = {
-    .command = REQ_PREFS_RESET,
+    .command = REQ_PARAM_RESET,
     .in_size = 0,
     .in_data = NULL,
     .out_size = 0,
@@ -116,10 +114,10 @@ int plipbox_req_prefs_reset(sanadev_handle_t *sh)
   return plipbox_cmd_do_request(sh, &req);
 }
 
-int plipbox_req_prefs_load(sanadev_handle_t *sh)
+int plipbox_req_param_load(sanadev_handle_t *sh)
 {
   s2pb_request_t req = {
-    .command = REQ_PREFS_LOAD,
+    .command = REQ_PARAM_LOAD,
     .in_size = 0,
     .in_data = NULL,
     .out_size = 0,
@@ -129,10 +127,10 @@ int plipbox_req_prefs_load(sanadev_handle_t *sh)
   return plipbox_cmd_do_request(sh, &req);
 }
 
-int plipbox_req_prefs_save(sanadev_handle_t *sh)
+int plipbox_req_param_save(sanadev_handle_t *sh)
 {
   s2pb_request_t req = {
-    .command = REQ_PREFS_SAVE,
+    .command = REQ_PARAM_SAVE,
     .in_size = 0,
     .in_data = NULL,
     .out_size = 0,

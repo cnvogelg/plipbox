@@ -15,9 +15,8 @@ int  plipbox_req_param_set_val(sanadev_handle_t *sh, UBYTE id, UWORD size, UBYTE
 int  plipbox_req_param_get_word(sanadev_handle_t *sh, UBYTE id, UWORD *value);
 int  plipbox_req_param_set_word(sanadev_handle_t *sh, UBYTE id, UWORD value);
 
-/* prefs */
-int  plipbox_req_prefs_reset(sanadev_handle_t *sh);
-int  plipbox_req_prefs_load(sanadev_handle_t *sh);
-int  plipbox_req_prefs_save(sanadev_handle_t *sh);
+int  plipbox_req_param_reset(sanadev_handle_t *sh);
+int  plipbox_req_param_load(sanadev_handle_t *sh);
+int  plipbox_req_param_save(sanadev_handle_t *sh);
 
 #endif

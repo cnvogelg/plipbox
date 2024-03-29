@@ -194,7 +194,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   if (params.prefs_load)
   {
     PutStr("Loading device parameters from flash...");
-    res = plipbox_req_prefs_load(sh);
+    res = plipbox_req_param_load(sh);
     Printf("result=%ld\n", (ULONG)res);
     if (res != REQ_OK)
     {
@@ -205,7 +205,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   else if (params.prefs_reset)
   {
     PutStr("Reset device parameters to factory defaults...");
-    res = plipbox_req_prefs_reset(sh);
+    res = plipbox_req_param_reset(sh);
     Printf("result=%ld\n", (ULONG)res);
     if (res != REQ_OK)
     {
@@ -301,7 +301,7 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   if (params.prefs_save)
   {
     PutStr("Saving device parameters to flash...");
-    res = plipbox_req_prefs_save(sh);
+    res = plipbox_req_param_save(sh);
     Printf("result=%ld\n", (ULONG)res);
     if (res != REQ_OK)
     {
