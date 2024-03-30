@@ -1,6 +1,8 @@
 #ifndef NIC_SHARED_H
 #define NIC_SHARED_H
 
+#include "tag.h"
+
 /* options */
 #define NIC_OPT_FAST_IO         1 /* prefer direct if available */
 #define NIC_OPT_LOOP_BACK       2
@@ -50,5 +52,20 @@
 #define NIC_WIFI_LINK_BAD_AUTH  3
 #define NIC_WIFI_LINK_FAIL      4
 #define NIC_WIFI_LINK_UNKNOWN   99
+
+// nic_def
+// +00 u08 index
+// +01 u32 tag
+// +05 u16 caps
+// =07
+#define NIC_DEF_SIZE      7
+
+// if an id was not found
+#define NIC_ID_INVALID    0xff
+
+// tags
+#define NIC_TAG_LOOP            MAKE_TAG('L','O','O','P')
+#define NIC_TAG_ENC             MAKE_TAG('E','N','C', 0)
+#define NIC_TAG_CYW             MAKE_TAG('C','Y','W', 0)
 
 #endif

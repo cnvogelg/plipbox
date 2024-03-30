@@ -62,6 +62,7 @@ static const char ROM_ATTR name[] = "loop";
 const nic_mod_t ROM_ATTR nic_mod_loop = {
   .name = name,
   .caps = NIC_CAP_LOOP_BACK | NIC_CAP_BUFFER_IO,
+  .tag = NIC_TAG_LOOP,
 
   .attach = attach,
   .detach = detach,

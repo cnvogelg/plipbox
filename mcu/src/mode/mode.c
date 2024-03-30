@@ -48,6 +48,28 @@ void mode_init(void)
   mode_mod_init();
 }
 
+u08 mode_get_num_modes(void)
+{
+  return mode_mod_get_num_modes();
+}
+
+u08 mode_find_tag(u32 tag)
+{
+  u08 num = mode_get_num_modes();
+  for(u08 i=0;i<num;i++) {
+    u32 mtag = mode_mod_tag_at(i);
+    if(mtag == tag) {
+      return i;
+    }
+  }
+  return MODE_ID_INVALID;
+}
+
+void mode_get_def(u08 index, mode_def_t *def)
+{
+  mode_mod_def_at(index, def);
+}
+
 u08 mode_get_proto_status(void)
 {
   return proto_status;

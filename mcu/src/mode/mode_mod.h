@@ -29,6 +29,7 @@
 
 #include "arch.h"
 #include "types.h"
+#include "mode.h"
 
 /* function pointers */
 typedef u08  (*mode_mod_attach_t)(void);
@@ -47,6 +48,7 @@ typedef u08  (*mode_mod_rx_end_t)(u16 size);
 /* device structure */
 typedef struct {
   const char         *name;
+  u32                 tag;
 
   mode_mod_attach_t       attach;
   mode_mod_detach_t       detach;
@@ -67,9 +69,12 @@ typedef const mode_mod_t *mode_mod_ptr_t;
 extern mode_mod_ptr_t   mode_mod_ptr;
 
 void mode_mod_init(void);
-u08  mode_mod_get_num_modules(void);
+u08  mode_mod_get_num_modes(void);
 void mode_mod_set_current(u08 index);
 u08  mode_mod_get_current(void);
+
+u32  mode_mod_tag_at(u08 index);
+void mode_mod_def_at(u08 index, mode_def_t *def);
 
 /* access device data from PROGMEM mode_mod_t */
 
@@ -77,6 +82,12 @@ static inline const rom_pchar mode_mod_name(void)
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
   return (rom_pchar)read_rom_rom_ptr(&pd->name);
+}
+
+static inline u32 mode_mod_tag(void)
+{
+  mode_mod_ptr_t pd = mode_mod_ptr;
+  return read_rom_long(&pd->tag);
 }
 
 static inline u08 mode_mod_attach(void)

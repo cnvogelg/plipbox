@@ -130,6 +130,7 @@ static u08 rx_end(u16 size)
 static const char ROM_ATTR mod_name[] = "nic";
 const mode_mod_t ROM_ATTR mode_mod_nic = {
   .name = mod_name,
+  .tag = MODE_TAG_NIC,
 
   .attach = attach,
   .detach = detach,

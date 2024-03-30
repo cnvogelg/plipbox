@@ -19,7 +19,7 @@ void mode_mod_init(void)
   current_index = 0;
 }
 
-u08 mode_mod_get_num_modules(void)
+u08 mode_mod_get_num_modes(void)
 {
   return mode_defs_size;
 }
@@ -35,4 +35,16 @@ void mode_mod_set_current(u08 index)
 u08 mode_mod_get_current(void)
 {
   return current_index;
+}
+
+u32 mode_mod_tag_at(u08 index)
+{
+  mode_mod_ptr_t pd = (mode_mod_ptr_t)read_rom_rom_ptr(mode_defs + index);
+  return read_rom_long(&pd->tag);
+}
+
+void mode_mod_def_at(u08 index, mode_def_t *def)
+{
+  mode_mod_ptr_t pd = (mode_mod_ptr_t)read_rom_rom_ptr(mode_defs + index);
+  def->tag = read_rom_long(&pd->tag);
 }

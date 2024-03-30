@@ -12,6 +12,8 @@
 #include "req_shared.h"
 #include "param_shared.h"
 #include "req_param.h"
+#include "req_mode.h"
+#include "req_nic.h"
 
 static u08 in_buf[REQ_IN_BUF_SIZE];
 static u08 out_buf[REQ_OUT_BUF_SIZE];
@@ -65,6 +67,34 @@ static void dispatch_req(proto_cmd_req_t *req)
   // MAC_SET_CUR: in:mac
   case REQ_PARAM_SET_CUR_MAC:
     req_param_set_cur_mac(req);
+    break;
+
+  // --- mode requests ---
+  // GET_NUM: in:- out:(u08)total_modes
+  case REQ_MODE_GET_NUM:
+    req_mode_get_num(req);
+    break;
+  // FIND_TAG: in:(u32)tag  out_extra:mode_index
+  case REQ_MODE_FIND_TAG:
+    req_mode_find_tag(req);
+    break;
+  // GET_DEF: in_extra:mode_index out:mode_def
+  case REQ_MODE_GET_DEF:
+    req_mode_get_def(req);
+    break;
+
+  // --- nic requests ---
+  // GET_NUM: in:- out:(u08)total_nics
+  case REQ_NIC_GET_NUM:
+    req_nic_get_num(req);
+    break;
+  // FIND_TAG: in:(u32)tag  out_extra:nic_index
+  case REQ_NIC_FIND_TAG:
+    req_nic_find_tag(req);
+    break;
+  // GET_DEF: in_extra:nic_index out:nic_def
+  case REQ_NIC_GET_DEF:
+    req_nic_get_def(req);
     break;
 
   // unknown command

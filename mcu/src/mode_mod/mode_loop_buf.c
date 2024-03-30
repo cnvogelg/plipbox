@@ -68,6 +68,7 @@ static u08 rx_end(u16 size)
 static const char ROM_ATTR mod_name[] = "loop_buf";
 const mode_mod_t ROM_ATTR mode_mod_loop_buf = {
   .name = mod_name,
+  .tag = MODE_TAG_LOOP,
 
   .attach = attach,
   .detach = detach,

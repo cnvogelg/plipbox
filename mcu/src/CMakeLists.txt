@@ -68,6 +68,8 @@ set(SRCS
 
   req/req.c
   req/req_param.c
+  req/req_mode.c
+  req/req_nic.c
 
   buf/pkt_buf.c
   buf/rx_buf.c

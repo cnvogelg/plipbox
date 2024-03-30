@@ -29,6 +29,7 @@
 
 #include "arch.h"
 #include "types.h"
+#include "nic.h"
 
 /* function pointers */
 typedef u08  (*nic_mod_attach_t)(u16 caps, u08 port, mac_t mac);
@@ -57,6 +58,7 @@ struct nic_wifi_mod;
 typedef struct nic_mod {
   const char         *name;
   u16                 caps;
+  u32                 tag;
 
   nic_mod_attach_t    attach;
   nic_mod_detach_t    detach;
@@ -85,9 +87,12 @@ typedef const nic_mod_t *nic_mod_ptr_t;
 extern nic_mod_ptr_t   nic_mod_ptr;
 
 extern void nic_mod_init(void);
-extern u08  nic_mod_get_num_modules(void);
+extern u08  nic_mod_get_num_nics(void);
 extern void nic_mod_set_current(u08 index);
 extern u08  nic_mod_get_current(void);
+
+extern u32  nic_mod_tag_at(u08 index);
+extern void nic_mod_def_at(u08 index, nic_def_t *def);
 
 /* access device data from PROGMEM nic_mod_t */
 
@@ -95,6 +100,12 @@ static inline rom_pchar nic_mod_name(void)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
   return (rom_pchar)read_rom_rom_ptr(&pd->name);
+}
+
+static inline u32 nic_mod_tag(void)
+{
+  nic_mod_ptr_t pd = nic_mod_ptr;
+  return read_rom_long(&pd->tag);
 }
 
 static inline u16 nic_mod_caps(void)

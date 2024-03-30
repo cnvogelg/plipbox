@@ -199,6 +199,7 @@ const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
   .name = name,
   .caps= NIC_CAP_LOOP_BACK | NIC_CAP_BUFFER_IO | NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS |
          NIC_CAP_RX_BROADCAST | NIC_CAP_FULL_DUPLEX | NIC_CAP_FLOW_CONTROL,
+  .tag = NIC_TAG_ENC,
 
   .attach = attach,
   .detach = detach,

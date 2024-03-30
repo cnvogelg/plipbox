@@ -289,6 +289,7 @@ static const char ROM_ATTR name[] = "cyw43";
 const nic_mod_t ROM_ATTR nic_mod_cyw43 = {
   .name = name,
   .caps = NIC_CAP_DIRECT_IO,
+  .tag = NIC_TAG_CYW,
 
   .attach = attach,
   .detach = detach,

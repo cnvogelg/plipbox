@@ -65,6 +65,28 @@ void nic_set_device(u08 device)
 #endif
 }
 
+u08 nic_get_num_nics(void)
+{
+  return nic_mod_get_num_nics();
+}
+
+u08 nic_find_tag(u32 tag)
+{
+  u08 num = nic_get_num_nics();
+  for(u08 i=0;i<num;i++) {
+    u32 mtag = nic_mod_tag_at(i);
+    if(mtag == tag) {
+      return i;
+    }
+  }
+  return NIC_ID_INVALID;
+}
+
+void nic_get_def(u08 index, nic_def_t *def)
+{
+  nic_mod_def_at(index, def);
+}
+
 u08 nic_attach_params(void)
 {
   u08 nic = param_get_nic();

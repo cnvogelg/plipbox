@@ -27,10 +27,20 @@
 #ifndef MODE_H
 #define MODE_H
 
+#include "mode_shared.h"
+
 #define MODE_OK           0
 #define MODE_ERROR        1
 
+typedef struct {
+  u32  tag;
+} mode_def_t;
+
 void mode_init(void);
+
+u08  mode_get_num_modes(void);
+u08  mode_find_tag(u32 tag);
+void mode_get_def(u08 index, mode_def_t *def);
 
 u08  mode_get_proto_status(void);
 void mode_ping(void);

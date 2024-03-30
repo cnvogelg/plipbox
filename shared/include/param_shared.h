@@ -2,8 +2,7 @@
 #define PARAM_SHARED_H
 
 #include "types.h"
-
-#define MAKE_TAG(a,b,c,d)      ( (((u32)a)<<24) | (((u32)b)<<16) | (((u32)c)<<8) | ((u32)d) )
+#include "tag.h"
 
 // tags
 #define PARAM_TAG_MAC_ADDR      MAKE_TAG('M','A','C',0)
