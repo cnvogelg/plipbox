@@ -10,7 +10,7 @@
 #include "nic_enc28j60.h"
 #include "pkt_buf.h"
 
-static u08 attach(u16 *caps, u08 port, mac_t mac)
+static u08 attach(u16 caps, u08 port, mac_t mac)
 {
   pkt_size = 0;
   return 0;
@@ -61,7 +61,7 @@ static u08 ioctl(u08 ioctl, u08 *value)
 static const char ROM_ATTR name[] = "loop";
 const nic_mod_t ROM_ATTR nic_mod_loop = {
   .name = name,
-  .caps = NIC_CAP_LOOP_BACK,
+  .caps = NIC_CAP_LOOP_BACK | NIC_CAP_BUFFER_IO,
 
   .attach = attach,
   .detach = detach,

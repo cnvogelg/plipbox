@@ -1,12 +1,18 @@
 #ifndef NIC_SHARED_H
 #define NIC_SHARED_H
 
-/* capabilities bit field (requested in NCAP) */
-#define NIC_CAP_DIRECT_IO       1
-#define NIC_CAP_LOOP_BACK       2
-#define NIC_CAP_LINK_STATUS     4
+/* options */
+#define NIC_OPT_FAST_IO         1 /* prefer direct if available */
+#define NIC_OPT_LOOP_BACK       2
+#define NIC_OPT_FULL_DUPLEX     4
 
-#define NIC_CAP_BROADCAST       0x10
+/* capabilities bit field */
+#define NIC_CAP_BUFFER_IO       1
+#define NIC_CAP_DIRECT_IO       2
+#define NIC_CAP_LOOP_BACK       4
+#define NIC_CAP_LINK_STATUS     8
+
+#define NIC_CAP_RX_BROADCAST    0x10
 #define NIC_CAP_FULL_DUPLEX     0x20
 #define NIC_CAP_FLOW_CONTROL    0x40
 

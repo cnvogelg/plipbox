@@ -87,7 +87,7 @@ static int wifi_scan_result(void *env, const cyw43_ev_scan_result_t *result)
 
 // --- nic API ---
 
-static u08 attach(u16 *caps, u08 port, mac_t mac)
+static u08 attach(u16 caps, u08 port, mac_t mac)
 {
   // setup cyw43
   DT; DS(("cyw43: init:mac=")); DM(mac);

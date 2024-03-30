@@ -31,7 +31,7 @@
 #include "types.h"
 
 /* function pointers */
-typedef u08  (*nic_mod_attach_t)(u16 *caps, u08 port, mac_t mac);
+typedef u08  (*nic_mod_attach_t)(u16 caps, u08 port, mac_t mac);
 typedef void (*nic_mod_detach_t)(void);
 
 typedef void (*nic_mod_ping_t)(void);
@@ -43,9 +43,9 @@ typedef u08  (*nic_mod_rx_data_t)(u08 *buf, u16 size);
 
 typedef u08  (*nic_mod_tx_data_t)(const u08 *buf, u16 size);
 
-typedef void (*nic_mod_rx_direct_begin_t)(u16 size);
+typedef u08 *(*nic_mod_rx_direct_begin_t)(u16 size);
 typedef u08  (*nic_mod_rx_direct_end_t)(u16 size);
-typedef void (*nic_mod_tx_direct_begin_t)(u16 size);
+typedef u08 *(*nic_mod_tx_direct_begin_t)(u16 size);
 typedef u08  (*nic_mod_tx_direct_end_t)(u16 size);
 
 typedef u08  (*nic_mod_ioctl_t)(u08 ioctl, u08 *value);
@@ -103,7 +103,7 @@ static inline u16 nic_mod_caps(void)
   return read_rom_word(&pd->caps);
 }
 
-static inline u08 nic_mod_attach(u16 *caps, u08 port, mac_t mac)
+static inline u08 nic_mod_attach(u16 caps, u08 port, mac_t mac)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_attach_t attach = (nic_mod_attach_t)read_rom_rom_ptr(&pd->attach);
@@ -159,11 +159,11 @@ static inline u08 nic_mod_tx_data(const u08 *buf, u16 size)
   return tx_data(buf, size);
 }
 
-static inline void nic_mod_rx_direct_begin(u16 size)
+static inline u08 *nic_mod_rx_direct_begin(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_rx_direct_begin_t rx_direct_begin = (nic_mod_rx_direct_begin_t)read_rom_rom_ptr(&pd->rx_direct_begin);
-  rx_direct_begin(size);
+  return rx_direct_begin(size);
 }
 
 static inline u08 nic_mod_rx_direct_end(u16 size)
@@ -173,11 +173,11 @@ static inline u08 nic_mod_rx_direct_end(u16 size)
   return rx_direct_end(size);
 }
 
-static inline void nic_mod_tx_direct_begin(u16 size)
+static inline u08 *nic_mod_tx_direct_begin(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
   nic_mod_tx_direct_begin_t tx_direct_begin = (nic_mod_tx_direct_begin_t)read_rom_rom_ptr(&pd->tx_direct_begin);
-  tx_direct_begin(size);
+  return tx_direct_begin(size);
 }
 
 static inline u08 nic_mod_tx_direct_end(u16 size)

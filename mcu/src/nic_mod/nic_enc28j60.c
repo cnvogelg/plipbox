@@ -25,7 +25,7 @@ static void map_caps(u16 caps)
   }
 
   enc_flags = 0;
-  if((caps & NIC_CAP_BROADCAST)) {
+  if((caps & NIC_CAP_RX_BROADCAST)) {
     enc_flags |= ENC28J60_FLAG_RX_BROADCAST;
   }
   if((caps & NIC_CAP_FULL_DUPLEX)) {
@@ -36,7 +36,7 @@ static void map_caps(u16 caps)
   }
 }
 
-static u08 attach(u16 *caps, u08 port, mac_t mac)
+static u08 attach(u16 caps, u08 port, mac_t mac)
 {
   // check port
   if(port > enc28j60_num_ports()) {
@@ -49,7 +49,7 @@ static u08 attach(u16 *caps, u08 port, mac_t mac)
     return NIC_ERROR_DEVICE_NOT_FOUND;
   }
 
-  map_caps(*caps);
+  map_caps(caps);
   enc28j60_setup_buffers();
 
   if(mode == MODE_LOOP_BUF) {
@@ -137,7 +137,7 @@ static u08 tx_data(const u08 *buf, u16 size)
   return NIC_OK;
 }
 
-static void rx_direct_begin(u16 size)
+static u08 *rx_direct_begin(u16 size)
 {
   if(mode == MODE_LOOP_BUF) {
     enc28j60_rx_begin_loop_back();
@@ -145,6 +145,7 @@ static void rx_direct_begin(u16 size)
   } else {
     enc28j60_rx_begin();
   }
+  return NULL;
 }
 
 static u08 rx_direct_end(u16 size)
@@ -157,7 +158,7 @@ static u08 rx_direct_end(u16 size)
   return NIC_OK;
 }
 
-static void tx_direct_begin(u16 size)
+static u08 *tx_direct_begin(u16 size)
 {
   if(mode == MODE_LOOP_BUF) {
     enc28j60_tx_begin_loop_back();
@@ -165,6 +166,7 @@ static void tx_direct_begin(u16 size)
   } else {
     enc28j60_tx_begin();
   }
+  return NULL;
 }
 
 static u08 tx_direct_end(u16 size)
@@ -195,8 +197,8 @@ static u08 ioctl(u08 cmd, u08 *value)
 static const char ROM_ATTR name[] = "enc28j60";
 const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
   .name = name,
-  .caps= NIC_CAP_LOOP_BACK | NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS |
-         NIC_CAP_BROADCAST | NIC_CAP_FULL_DUPLEX | NIC_CAP_FLOW_CONTROL,
+  .caps= NIC_CAP_LOOP_BACK | NIC_CAP_BUFFER_IO | NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS |
+         NIC_CAP_RX_BROADCAST | NIC_CAP_FULL_DUPLEX | NIC_CAP_FLOW_CONTROL,
 
   .attach = attach,
   .detach = detach,

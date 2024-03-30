@@ -94,14 +94,14 @@ void nic_test_toggle_duplex(void)
 {
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("nic_test_toggle_duplex:"));
-  u16 caps = param_get_nic_caps();
-  if(caps & NIC_CAP_FULL_DUPLEX) {
-    caps &= NIC_CAP_FULL_DUPLEX;
+  u16 opts = param_get_nic_opts();
+  if(opts & NIC_OPT_FULL_DUPLEX) {
+    opts &= NIC_OPT_FULL_DUPLEX;
     uart_send_pstring(PSTR("OFF"));
   } else {
-    caps |= NIC_CAP_FULL_DUPLEX;
+    opts |= NIC_OPT_FULL_DUPLEX;
     uart_send_pstring(PSTR("ON"));
   }
-  param_set_nic_caps(caps);
+  param_set_nic_opts(opts);
   uart_send_crlf();
 }

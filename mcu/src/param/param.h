@@ -60,9 +60,9 @@ void param_set_cur_mac(mac_t mac);
 // mode and nic
 u08 param_get_mode(void);
 u08 param_get_nic(void);
-u16 param_get_nic_caps(void);
+u16 param_get_nic_opts(void);
 u08 param_get_nic_port(void);
-void param_set_nic_caps(u16 caps);
+void param_set_nic_opts(u16 caps);
 
 // test ip/netmask
 void param_get_ip_addr(ip_addr_t ip);

@@ -7,7 +7,7 @@
 extern int param_tag_mode_set(sanadev_handle_t *sh, UWORD mode);
 extern int param_tag_mode_get(sanadev_handle_t *sh, UWORD *mode);
 
-extern int param_tag_ncap_set(sanadev_handle_t *sh, UWORD mode);
-extern int param_tag_ncap_get(sanadev_handle_t *sh, UWORD *mode);
+extern int param_tag_nopt_set(sanadev_handle_t *sh, UWORD mode);
+extern int param_tag_nopt_get(sanadev_handle_t *sh, UWORD *mode);
 
 #endif

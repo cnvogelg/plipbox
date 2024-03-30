@@ -68,23 +68,57 @@ void nic_set_device(u08 device)
 u08 nic_attach_params(void)
 {
   u08 nic = param_get_nic();
-  u16 nic_caps = param_get_nic_caps();
+  u16 nic_opts = param_get_nic_opts();
   u08 nic_port = param_get_nic_port();
   mac_t mac;
   param_get_cur_mac(mac);
 
   nic_set_device(nic);
-  u08 res = nic_attach(nic_caps, nic_port, mac);
+  u08 res = nic_attach(nic_opts, nic_port, mac);
 
   return res;
 }
 
-u08 nic_attach(u16 caps, u08 port, mac_t mac)
+static void add_opt(u16 opts, u16 opt_flag, u16 *caps, u16 cap_flag)
+{
+  if((opts & opt_flag) == opt_flag) {
+    *caps |= cap_flag;
+  }
+}
+
+static u16 map_opts(u16 opts, u16 caps)
+{
+  u16 caps_req = 0;
+
+  // pick io mode
+  const u16 io_mask = NIC_CAP_BUFFER_IO | NIC_CAP_DIRECT_IO;
+  if((caps & io_mask) == io_mask) {
+    // both i/o available
+    if(opts & NIC_OPT_FAST_IO) {
+      // prefer fast
+      caps_req = NIC_CAP_DIRECT_IO;
+    } else {
+      caps_req = NIC_CAP_BUFFER_IO;
+    }
+  } else {
+    // take the one we have
+    caps_req = caps & io_mask;
+  }
+
+  add_opt(opts, NIC_OPT_LOOP_BACK, &caps_req, NIC_CAP_LOOP_BACK);
+  add_opt(opts, NIC_OPT_FULL_DUPLEX, &caps_req, NIC_CAP_FULL_DUPLEX);
+
+  return caps_req;
+}
+
+u08 nic_attach(u16 opts, u08 port, mac_t mac)
 {
   u08 device = nic_mod_get_current();
 
   // get caps device has to offer
   u16 caps_available = nic_caps_available();
+  // caps we want to use
+  caps_in_use = map_opts(opts, caps_available);
 
   // show hello
   uart_send_time_stamp_spc();
@@ -95,28 +129,20 @@ u08 nic_attach(u16 caps, u08 port, mac_t mac)
   // dev name
   rom_pchar name = nic_mod_name();
   uart_send_pstring(name);
+
   // caps
+  uart_send_pstring(PSTR(" opts="));
+  uart_send_hex_word(opts);
   uart_send_pstring(PSTR(" caps="));
-  uart_send_hex_word(caps);
-  uart_send_pstring(PSTR("/"));
   uart_send_hex_word(caps_available);
+  uart_send('/');
+  uart_send_hex_word(caps_in_use);
   // port
   uart_send_pstring(PSTR(" port="));
   uart_send_hex_byte(port);
   // mac
   uart_send_pstring(PSTR(" mac="));
   uart_send_hex_mac(mac);
-
-  // the caps we can use
-  u16 caps_req = caps & caps_available;
-
-  // check for direct io?
-  if(caps_req & NIC_CAP_DIRECT_IO) {
-    uart_send_pstring(PSTR(" DIO"));
-    is_direct_io = 1;
-  } else {
-    is_direct_io = 0;
-  }
 
   if(is_attached) {
     uart_send_pstring(PSTR(": already attached!"));
@@ -125,14 +151,19 @@ u08 nic_attach(u16 caps, u08 port, mac_t mac)
   }
 
   // call init
-  u08 result = nic_mod_attach(&caps_req, port, mac);
+  u08 result = nic_mod_attach(caps_in_use, port, mac);
   if(result == NIC_OK) {
 
     is_attached = 1;
-    caps_in_use = caps_req;
+    uart_send_pstring(PSTR(": ok"));
 
-    uart_send_pstring(PSTR(": ok, res_caps="));
-    uart_send_hex_word(caps_req);
+    // check for direct io?
+    if(caps_in_use & NIC_CAP_DIRECT_IO) {
+      uart_send_pstring(PSTR(" dio"));
+      is_direct_io = 1;
+    } else {
+      is_direct_io = 0;
+    }
 
     // show revision
     u08 rev;
@@ -143,7 +174,7 @@ u08 nic_attach(u16 caps, u08 port, mac_t mac)
     }
 
     // if device has link status
-    if(caps_available & NIC_CAP_LINK_STATUS) {
+    if(caps_in_use & NIC_CAP_LINK_STATUS) {
       cap_link_status = 1;
       // show link status
       u08 status;
@@ -177,7 +208,6 @@ void nic_detach(void)
   nic_mod_detach();
 
   is_attached = 0;
-  caps_in_use = 0;
 }
 
 u08 nic_is_attached(void)
@@ -255,10 +285,12 @@ u08 nic_tx_data(const u08 *buf, u16 size)
   }
 }
 
-void nic_rx_direct_begin(u16 size)
+u08 *nic_rx_direct_begin(u16 size)
 {
   if(is_attached) {
-    nic_mod_rx_direct_begin(size);
+    return nic_mod_rx_direct_begin(size);
+  } else {
+    return NULL;
   }
 }
 
@@ -271,10 +303,12 @@ u08 nic_rx_direct_end(u16 size)
   }
 }
 
-void nic_tx_direct_begin(u16 size)
+u08 *nic_tx_direct_begin(u16 size)
 {
   if(is_attached) {
-    nic_mod_tx_direct_begin(size);
+    return nic_mod_tx_direct_begin(size);
+  } else {
+    return NULL;
   }
 }
 

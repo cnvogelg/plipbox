@@ -41,7 +41,7 @@ static const char *TEMPLATE =
     "LOOPBACK_INT/S,"
     "LOOPBACK_EXT/S,"
     "FULL_DUPLEX/S,"
-    "DIRECT_SPI/S,"
+    "FAST_IO/S,"
     "LOOPS/N/K,"
     "DELAY/N/K,"
     "TIMEOUT/N/K,"
@@ -56,7 +56,7 @@ typedef struct
   ULONG loopback_int;
   ULONG loopback_ext;
   ULONG full_duplex;
-  ULONG direct_spi;
+  ULONG fast_io;
   ULONG *loops;
   ULONG *delay;
   ULONG *timeout;
@@ -66,12 +66,12 @@ typedef struct
 static params_t params;
 
 static UWORD old_mode;
-static UWORD old_ncap;
+static UWORD old_nopt;
 
 static BOOL set_mode_and_flags(sanadev_handle_t *sh)
 {
   int res;
-  UWORD ncap = 0;
+  UWORD nopt = 0;
   UWORD mode = 0;
 
   // save old mode
@@ -92,13 +92,13 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
   {
     LOG(("Mode: loopback internal with NIC\n"));
     mode = MODE_NIC;
-    ncap = NIC_CAP_LOOP_BACK;
+    nopt = NIC_OPT_LOOP_BACK;
   }
   else if (params.loopback_ext)
   {
     LOG(("Mode: loopback external with loopback cablel\n"));
     mode = MODE_NIC;
-    ncap = NIC_CAP_FULL_DUPLEX;
+    nopt = NIC_OPT_FULL_DUPLEX;
   }
   LOG(("Setting mode: %ld\n", (LONG)mode));
   res = param_tag_mode_set(sh, mode);
@@ -108,28 +108,28 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
   }
 
   // save old nic caps
-  res = param_tag_ncap_get(sh, &old_ncap);
+  res = param_tag_nopt_get(sh, &old_nopt);
   if (res != REQ_OK)
   {
     return FALSE;
   }
-  LOG(("Old NIC Caps: $%lx\n", (LONG)old_ncap));
+  LOG(("Old NIC Caps: $%lx\n", (LONG)old_nopt));
 
   // full duplex
   if (params.full_duplex)
   {
     LOG(("NIC Cap: Full Duplex\n"));
-    ncap |= NIC_CAP_FULL_DUPLEX;
+    nopt |= NIC_OPT_FULL_DUPLEX;
   }
 
   // set new flag
-  if (params.direct_spi)
+  if (params.fast_io)
   {
-    LOG(("NIC Cap: direct SPI transfer to NIC\n"));
-    ncap |= NIC_CAP_DIRECT_IO;
+    LOG(("NIC Cap: fast I/O\n"));
+    nopt |= NIC_OPT_FAST_IO;
   }
-  LOG(("Setting NIC Caps: $%lx\n", (LONG)ncap));
-  res = param_tag_ncap_set(sh, ncap);
+  LOG(("Setting NIC Caps: $%lx\n", (LONG)nopt));
+  res = param_tag_nopt_set(sh, nopt);
   return (res == REQ_OK);
 }
 
@@ -144,8 +144,8 @@ static BOOL restore_mode_and_flags(sanadev_handle_t *sh)
     return FALSE;
   }
 
-  LOG(("Restore NIC Caps: %ld\n", (LONG)old_ncap));
-  res = param_tag_ncap_set(sh, old_ncap);
+  LOG(("Restore NIC Caps: %ld\n", (LONG)old_nopt));
+  res = param_tag_nopt_set(sh, old_nopt);
   return (res == REQ_OK) ? TRUE : FALSE;
 }
 

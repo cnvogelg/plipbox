@@ -14,7 +14,7 @@ typedef struct {
   mac_t mac_addr;
   u16   mode;
   u16   nic;
-  u16   nic_caps;
+  u16   nic_opts;
   u16   nic_port;
   ip_addr_t  ip_addr;
   ip_addr_t  net_mask;

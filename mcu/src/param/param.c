@@ -263,14 +263,14 @@ u08 param_get_nic(void)
   return (u08)param.nic;
 }
 
-u16 param_get_nic_caps(void)
+u16 param_get_nic_opts(void)
 {
-  return param.nic_caps;
+  return param.nic_opts;
 }
 
-void param_set_nic_caps(u16 caps)
+void param_set_nic_opts(u16 opts)
 {
-  param.nic_caps = caps;
+  param.nic_opts = opts;
 }
 
 u08 param_get_nic_port(void)

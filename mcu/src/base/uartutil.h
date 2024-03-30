@@ -29,6 +29,7 @@
 
 #include "types.h"
 #include "arch.h"
+#include "hw_uart.h"
 
 #define uart_send hw_uart_send
 

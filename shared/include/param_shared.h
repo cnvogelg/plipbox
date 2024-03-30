@@ -9,7 +9,7 @@
 #define PARAM_TAG_MAC_ADDR      MAKE_TAG('M','A','C',0)
 #define PARAM_TAG_MODE          MAKE_TAG('M','O','D','E')
 #define PARAM_TAG_NIC           MAKE_TAG('N','I','C',0)
-#define PARAM_TAG_NCAP          MAKE_TAG('N','C','A','P')
+#define PARAM_TAG_NOPT          MAKE_TAG('N','O','P','T')
 #define PARAM_TAG_NPRT          MAKE_TAG('N','P','R','T')
 // test tags
 #define PARAM_TAG_IP            MAKE_TAG('I','P',0,0)

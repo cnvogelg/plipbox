@@ -30,12 +30,12 @@ int param_tag_mode_get(sanadev_handle_t *sh, UWORD *mode)
   return plipbox_req_param_get_word(sh, id, mode);
 }
 
-// ncap
+// nopt
 
-int param_tag_ncap_set(sanadev_handle_t *sh, UWORD flag)
+int param_tag_nopt_set(sanadev_handle_t *sh, UWORD flag)
 {
   UBYTE id = 0;
-  int res = plipbox_req_param_find_tag(sh, PARAM_TAG_NCAP, &id);
+  int res = plipbox_req_param_find_tag(sh, PARAM_TAG_NOPT, &id);
   if (res != REQ_OK)
   {
     return res;
@@ -43,10 +43,10 @@ int param_tag_ncap_set(sanadev_handle_t *sh, UWORD flag)
   return plipbox_req_param_set_word(sh, id, flag);
 }
 
-int param_tag_ncap_get(sanadev_handle_t *sh, UWORD *flag)
+int param_tag_nopt_get(sanadev_handle_t *sh, UWORD *flag)
 {
   UBYTE id = 0;
-  int res = plipbox_req_param_find_tag(sh, PARAM_TAG_NCAP, &id);
+  int res = plipbox_req_param_find_tag(sh, PARAM_TAG_NOPT, &id);
   if (res != REQ_OK)
   {
     return res;

@@ -40,15 +40,16 @@ extern void nic_init(void);
 extern void nic_set_device(u08 device);
 
 extern u08 nic_attach_params(void);
-extern u08 nic_attach(u16 caps, u08 port, mac_t mac);
+extern u08 nic_attach(u16 opts, u08 port, mac_t mac);
 extern void nic_detach(void);
 extern u08 nic_is_attached(void);
 
 extern void nic_ping(void);
 extern void nic_status(void);
 
+extern u16 nic_opts(void);
 extern u16 nic_caps_available(void);
-extern u16 nic_caps_in_use(void);
+extern u16 nic_caps_available(void);
 extern u08 nic_is_direct(void);
 extern u08 nic_has_link_status(void);
 
@@ -60,9 +61,9 @@ extern u08 nic_rx_data(u08 *buf, u16 size);
 extern u08 nic_tx_data(const u08 *buf, u16 size);
 
 // direct API rx/tx
-extern void nic_rx_direct_begin(u16 size);
+extern u08 *nic_rx_direct_begin(u16 size);
 extern u08 nic_rx_direct_end(u16 size);
-extern void nic_tx_direct_begin(u16 size);
+extern u08 *nic_tx_direct_begin(u16 size);
 extern u08 nic_tx_direct_end(u16 size);
 
 extern u08 nic_ioctl(u08 status_id, u08 *value);
