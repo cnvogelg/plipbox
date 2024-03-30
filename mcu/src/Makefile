@@ -53,7 +53,7 @@ SRC += $(SRC_$(ARCH))
 ASRC = $(ASRC_$(ARCH))
 
 PROJDIR = arch arch/$(ARCH)/mach-$(MACH) arch/$(ARCH) arch/common
-PROJDIR += base command mode mode_mod net nic nic_mod param proto req
+PROJDIR += base buf command mode mode_mod net nic nic_mod param proto req
 
 # search paths
 VPATH = $(PROJDIR)

@@ -15,22 +15,25 @@
 #include "nic_wifi_mod.h"
 #include "nic_cyw43.h"
 #include "pkt_buf.h"
+#include "rx_buf.h"
 #include "param.h"
 #include "net.h"
 
 static u08 link_up;
-static u08 rx_pending;
-static u08 rx_buf[PKT_BUF_SIZE];
-static u16 rx_got_size;
 
 // --- driver callbacks ---
 
 void cyw43_cb_process_ethernet(void *cb_data, int itf, size_t len, const uint8_t *buf)
 {
-  DT; DS(("cyw43: rx:")); DW(len); DNL;
-  memcpy(rx_buf, buf, len);
-  rx_pending = 1;
-  rx_got_size = len;
+  DT; DS(("cyw43: rx:")); DW(len);
+  u08 *rx_buf = rx_buf_add(len);
+  if(rx_buf != NULL) {
+    memcpy(rx_buf, buf, len);
+    DS(" add");
+  } else {
+    DS(" - no buf!");
+  }
+  DNL;
 }
 
 void cyw43_cb_tcpip_set_link_down(cyw43_t *self, int itf)
@@ -123,8 +126,7 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
   DS(("ok\n"));
 
   link_up = 0;
-  rx_pending = 0;
-  rx_got_size = 0;
+  rx_buf_init();
 
   return NIC_OK;
 }
@@ -132,6 +134,8 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
 static void detach(void)
 {
   DT; DS(("cyw43: exit:"));
+  cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
+
   cyw43_arch_disable_sta_mode();
 
   cyw43_arch_deinit();
@@ -152,27 +156,34 @@ static u08 rx_num_pending(void)
   cyw43_arch_poll();
 #endif
 
-  return rx_pending;
+  return rx_buf_size();
 }
 
 static u08 rx_size(u16 *got_size)
 {
-  *got_size = rx_got_size;
+  *got_size = rx_buf_peek_buf_size();
   return NIC_OK;
 }
 
-static u08 rx_data(u08 *buf, u16 size)
+static u08 *rx_direct_begin(u16 size)
 {
-  memcpy(buf, rx_buf, size);
-  rx_pending = 0;
-  rx_got_size = 0;
+  return rx_buf_add(size);
+}
+
+static u08 rx_direct_end(u16 size)
+{
   return NIC_OK;
 }
 
-static u08 tx_data(const u08 *buf, u16 size)
+static u08 *tx_direct_begin(u16 size)
+{
+  return pkt_buf;
+}
+
+static u08 tx_direct_end(u16 size)
 {
   DS(("cyw43: tx:")); DW(size);
-  int ret = cyw43_send_ethernet(&cyw43_state, CYW43_ITF_STA, size, buf, 0);
+  int ret = cyw43_send_ethernet(&cyw43_state, CYW43_ITF_STA, size, pkt_buf, 0);
   if(ret != PICO_OK) {
     DS((":ERROR!\n"));
     return NIC_ERROR_TX;
@@ -277,7 +288,7 @@ static const nic_wifi_mod_t ROM_ATTR nic_wifi_mod_cyw43 = {
 static const char ROM_ATTR name[] = "cyw43";
 const nic_mod_t ROM_ATTR nic_mod_cyw43 = {
   .name = name,
-  .caps = 0,
+  .caps = NIC_CAP_DIRECT_IO,
 
   .attach = attach,
   .detach = detach,
@@ -287,8 +298,10 @@ const nic_mod_t ROM_ATTR nic_mod_cyw43 = {
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,
-  .rx_data = rx_data,
-  .tx_data = tx_data,
+  .rx_direct_begin = rx_direct_begin,
+  .rx_direct_end = rx_direct_end,
+  .tx_direct_begin = tx_direct_begin,
+  .tx_direct_end = tx_direct_end,
 
   .ioctl = ioctl,
   .wifi_ext = &nic_wifi_mod_cyw43

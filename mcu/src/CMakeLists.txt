@@ -69,13 +69,14 @@ set(SRCS
   req/req.c
   req/req_param.c
 
-  pkt_buf.c
+  buf/pkt_buf.c
+  buf/rx_buf.c
+
   net/net.c
   net/arp.c
 
   dump.c
   main.c
-  pkt_buf.c
   stats.c
 )
 
@@ -99,6 +100,7 @@ include_directories(
   arch/rp2
   arch/rp2/mach-pico
   base
+  buf
   command
   mode
   mode_mod
