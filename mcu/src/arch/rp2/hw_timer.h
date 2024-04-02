@@ -1,6 +1,7 @@
 #ifndef HW_TIMER_H
 #define HW_TIMER_H
 
+#include "pico/time.h"
 #include "hardware/timer.h"
 #include "arch.h"
 
@@ -12,7 +13,7 @@ INLINE void hw_timer_init(void)
 
 INLINE hw_timer_ms_t hw_timer_millis(void)
 {
-    return (hw_timer_ms_t)(time_us_64() / 1000);
+    return to_ms_since_boot(get_absolute_time());
 }
 
 INLINE int hw_timer_millis_timed_out(hw_timer_ms_t start, uint16_t timeout)

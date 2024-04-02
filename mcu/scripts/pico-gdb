@@ -1,6 +1,6 @@
 #!/bin/bash
 arm-none-eabi-gdb --quiet \
-    -ex "target remote localhost:3333" \
+    -ex "target extended-remote localhost:3333" \
     -ex "load" \
     -ex "monitor reset init" \
     -ex "continue" \
