@@ -24,6 +24,8 @@
  *
  */
 
+#include <string.h>
+
 #include "arch.h"
 #include "param.h"
 #include "uartutil.h"
@@ -100,7 +102,13 @@ static void dump_data(const u08 *data, u16 size, u08 type, u08 format)
       break;
     }
     case PARAM_TYPE_BYTE_ARRAY:
-      dump_byte_array(data, size);
+      if(format == PARAM_FORMAT_STR) {
+        uart_send('"');
+        uart_send_string(data);
+        uart_send('"');
+      } else {
+        dump_byte_array(data, size);
+      }
       break;
     case PARAM_TYPE_WORD_ARRAY:
       dump_word_array((const u16 *)data, size >> 1);
@@ -111,7 +119,7 @@ static void dump_data(const u08 *data, u16 size, u08 type, u08 format)
   }
 }
 
-static u16 calc_data_size(u16 size, u08 type, u08 format)
+static u16 calc_data_size(u08 *data, u16 size, u08 type, u08 format)
 {
   switch(type) {
     case PARAM_TYPE_WORD:
@@ -119,7 +127,11 @@ static u16 calc_data_size(u16 size, u08 type, u08 format)
     case PARAM_TYPE_LONG:
       return 8;
     case PARAM_TYPE_BYTE_ARRAY:
-      return size * 3 - 1;
+      if(format == PARAM_FORMAT_STR) {
+        return strlen(data) + 2;
+      } else {
+        return size * 3 - 1;
+      }
     case PARAM_TYPE_WORD_ARRAY:
       return size * 5 - 1;
     case PARAM_TYPE_LONG_ARRAY:
@@ -137,7 +149,8 @@ static u16 calc_max_data_size(void)
     u16 size = read_rom_word(&def->size);
     u08 type = read_rom_char(&def->type);
     u08 format = read_rom_char(&def->format);
-    u16 data_size = calc_data_size(size, type, format);
+    u08 *data = (u08 *)read_rom_ram_ptr(&def->data);
+    u16 data_size = calc_data_size(data, size, type, format);
     if(data_size > max_size) {
       max_size = data_size;
     }
@@ -175,7 +188,7 @@ void param_dump(void)
     u08 type = read_rom_char(&def->type);
     u08 format = read_rom_char(&def->format);
     dump_data(data, size, type, format);
-    u16 data_size = calc_data_size(size, type, format);
+    u16 data_size = calc_data_size(data, size, type, format);
 
     // pad value
     if(data_size < max_data_size) {

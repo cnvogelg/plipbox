@@ -29,3 +29,8 @@ HIDE=
 else
 HIDE=@
 endif
+
+# default wifi params
+# set your parameters in build env
+CONFIG_WIFI_SSID ?= "ssid"
+CONFIG_WIFI_PASS ?= "pass"

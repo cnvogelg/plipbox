@@ -1,5 +1,6 @@
 .PHONY: all base_dir dirs hdr clean clean_dist
 .PHONY: build rbuild prog rprog build_all rbuild_all
+.PHONY: debug debug_arch prog_arch
 
 all: build
 
@@ -12,6 +13,8 @@ help:
 	@echo
 	@echo "rbuild [BOARD=<board>] build board (release)"
 	@echo "rprog  [BOARD=<board>] program/flash board (release)"
+	@echo
+	@echo "debug  [BOARD=<board>] debug board with debugger"
 	@echo
 	@echo "build_all              build all boards: debug"
 	@echo "rbuild_all             build all boards: release"
@@ -59,6 +62,8 @@ prog: prog_arch
 
 rprog:
 	$(HIDE)$(MAKE) BUILD_TYPE=RELEASE prog
+
+debug: debug_arch
 
 .PRECIOUS: $(OBJ)
 

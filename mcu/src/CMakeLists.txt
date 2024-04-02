@@ -29,6 +29,7 @@ set(SRCS
   arch/rp2/hw_spi.c
   arch/rp2/hw_persist.c
   arch/common/proto_low.c
+  arch/common/crc.c
 
   base/util.c
   base/uartutil.c
@@ -85,6 +86,8 @@ set(SRCS
 add_compile_definitions(
   CONFIG_BAUD_RATE=115200
   CONFIG_SPI_NUM_CS=2
+  CONFIG_WIFI_SSID="${CONFIG_WIFI_SSID}"
+  CONFIG_WIFI_PASS="${CONFIG_WIFI_PASS}"
   BUILD_DATE="${BUILD_DATE}"
   VERSION="${VERSION}"
   VERSION_MAJ=${VERSION_MAJ}

@@ -1,1 +1,2 @@
 CMAKE=cmake
+OUTPUT=$(BASE_DIR)/$(PROJECT)

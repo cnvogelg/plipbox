@@ -17,8 +17,8 @@ const param_t ROM_ATTR default_param = {
   .ip_addr = { 10, 0, 0, 2 },
   .net_mask = { 255, 255, 255, 0},
 #ifdef HAVE_WIFI
-  .wifi_ssid = "ssid",
-  .wifi_pass = "pass",
+  .wifi_ssid = CONFIG_WIFI_SSID,
+  .wifi_pass = CONFIG_WIFI_PASS,
 #endif
 };
 
