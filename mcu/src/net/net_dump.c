@@ -1,5 +1,5 @@
 /*
- * dump.c - helper functions for debugging
+ * net_dump.c - helper functions for debugging
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,7 +24,7 @@
  *
  */
 
-#include "dump.h"
+#include "net_dump.h"
 #include "hw_uart.h"
 #include "uartutil.h"
 #include "net/net.h"
@@ -36,7 +36,7 @@
 #include "param.h"
 #include "util.h"
 
-void dump_eth_pkt(const u08 *eth_buf, u16 size)
+void net_dump_eth_pkt(const u08 *eth_buf, u16 size)
 {
   u08 buf[4];
   
@@ -53,7 +53,7 @@ void dump_eth_pkt(const u08 *eth_buf, u16 size)
   uart_send(' ');
 }
 
-void dump_arp_pkt(const u08 *arp_buf)
+void net_dump_arp_pkt(const u08 *arp_buf)
 {
   uart_send_pstring(PSTR("[ARP:"));
 
@@ -87,7 +87,7 @@ void dump_arp_pkt(const u08 *arp_buf)
   uart_send(' ');
 }
 
-void dump_ip_pkt(const u08 *ip_buf)
+void net_dump_ip_pkt(const u08 *ip_buf)
 {
   uart_send_pstring(PSTR("[IP4:"));
 
@@ -143,7 +143,7 @@ static void dump_tcp_port(u16 port)
   }
 }
 
-extern void dump_ip_protocol(const u08 *ip_buf)
+void net_dump_ip_protocol(const u08 *ip_buf)
 {
   const u08 *proto_buf = ip_buf + ip_get_hdr_length(ip_buf);
   u08 proto = ip_get_protocol(ip_buf);
@@ -184,16 +184,16 @@ extern void dump_ip_protocol(const u08 *ip_buf)
   }
 }
 
-extern void dump_pkt(const u08 *eth_buf, u16 size)
+void net_dump_pkt(const u08 *eth_buf, u16 size)
 {
-  dump_eth_pkt(eth_buf, size);
+  net_dump_eth_pkt(eth_buf, size);
   
   const u08 *ip_buf = eth_buf + ETH_HDR_SIZE;
   u16 type = eth_get_pkt_type(eth_buf);
   if(type == ETH_TYPE_ARP) {
-    dump_arp_pkt(ip_buf);
+    net_dump_arp_pkt(ip_buf);
   } else if(type == ETH_TYPE_IPV4) {
-    dump_ip_pkt(ip_buf);
-    dump_ip_protocol(ip_buf);
+    net_dump_ip_pkt(ip_buf);
+    net_dump_ip_protocol(ip_buf);
   }
 }

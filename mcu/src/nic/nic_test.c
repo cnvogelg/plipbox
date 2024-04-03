@@ -14,7 +14,7 @@
 #include "arp.h"
 #include "eth.h"
 #include "param.h"
-#include "dump.h"
+#include "net_dump.h"
 
 void nic_test_status(void)
 {
@@ -57,7 +57,7 @@ void nic_test_tx(void)
   uart_send_crlf();
 
   if(res == NIC_OK) {
-    dump_pkt(pkt_buf, total_size);
+    net_dump_pkt(pkt_buf, total_size);
     uart_send_crlf();
   }
 }
@@ -83,7 +83,7 @@ void nic_test_rx(void)
       uart_send_hex_byte(res);
       if(res == NIC_OK) {
         uart_send_crlf();
-        dump_pkt(pkt_buf, size);
+        net_dump_pkt(pkt_buf, size);
       }
     }
     uart_send_crlf();

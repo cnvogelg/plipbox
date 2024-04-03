@@ -77,8 +77,8 @@ set(SRCS
 
   net/net.c
   net/arp.c
+  net/net_dump.c
 
-  dump.c
   main.c
   stats.c
 )

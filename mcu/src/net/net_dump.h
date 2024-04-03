@@ -1,5 +1,5 @@
 /*
- * dump.h - helper functions for debugging
+ * net_dump.h - helper functions for debugging
  *
  * Written by
  *  Christian Vogelgsang <chris@vogelgsang.org>
@@ -24,16 +24,16 @@
  *
  */
 
-#ifndef DUMP_H
-#define DUMP_H
+#ifndef NET_DUMP_H
+#define NET_DUMP_H
 
 #include "types.h"
 
-extern void dump_eth_pkt(const u08 *eth_buf, u16 size);
-extern void dump_arp_pkt(const u08 *arp_buf);
-extern void dump_ip_pkt(const u08 *ip_buf);
-extern void dump_ip_protocol(const u08 *ip_buf);
+extern void net_dump_eth_pkt(const u08 *eth_buf, u16 size);
+extern void net_dump_arp_pkt(const u08 *arp_buf);
+extern void net_dump_ip_pkt(const u08 *ip_buf);
+extern void net_dump_ip_protocol(const u08 *ip_buf);
 
-extern void dump_pkt(const u08 *eth_buf, u16 size);
+extern void net_dump_pkt(const u08 *eth_buf, u16 size);
 
 #endif

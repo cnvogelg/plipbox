@@ -71,8 +71,8 @@ void net_put_long(u08 *buf, u32 value)
   buf[3] = (u08)(value & 0xff);
 }
 
-static char *mac_str = "00:00:00:00:00:00";
-static char *ip_str = "000.000.000.000";
+static char mac_str[] = "00:00:00:00:00:00";
+static char ip_str[] = "000.000.000.000";
 
 void net_dump_mac(const u08 *in)
 {
