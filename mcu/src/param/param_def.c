@@ -16,6 +16,7 @@ const param_t ROM_ATTR default_param = {
   .nic_port = 0,
   .ip_addr = { 10, 0, 0, 2 },
   .net_mask = { 255, 255, 255, 0},
+  .peer_addr = { 10, 0, 0, 1 },
 #ifdef HAVE_WIFI
   .wifi_ssid = CONFIG_WIFI_SSID,
   .wifi_pass = CONFIG_WIFI_PASS,
@@ -23,13 +24,14 @@ const param_t ROM_ATTR default_param = {
 };
 
 // descriptions
-static const char ROM_ATTR desc_mac[] = "mac adress";
+static const char ROM_ATTR desc_mac[] = "mac address";
 static const char ROM_ATTR desc_mode[] = "operation mode";
 static const char ROM_ATTR desc_nic[] = "NIC device";
 static const char ROM_ATTR desc_nic_caps[] = "NIC options";
 static const char ROM_ATTR desc_nic_port[] = "NIC port";
 static const char ROM_ATTR desc_ip_addr[] = "test IP addr";
 static const char ROM_ATTR desc_net_mask[] = "test net mask";
+static const char ROM_ATTR desc_peer_addr[] = "test peer addr";
 #ifdef HAVE_WIFI
 static const char ROM_ATTR desc_wifi_ssid[] = "Wifi SSID";
 static const char ROM_ATTR desc_wifi_pass[] = "Wifi password";
@@ -92,6 +94,14 @@ const param_def_t ROM_ATTR param_defs[] = {
     .size = IP_ADDR_SIZE,
     .data = (u08 *)&param.net_mask,
     .desc = desc_net_mask
+  },
+  {
+    .tag = PARAM_TAG_PIP,
+    .type = PARAM_TYPE_BYTE_ARRAY,
+    .format = PARAM_FORMAT_DEC,
+    .size = IP_ADDR_SIZE,
+    .data = (u08 *)&param.peer_addr,
+    .desc = desc_peer_addr
   },
 #ifdef HAVE_WIFI
   {

@@ -40,13 +40,23 @@ static u08 rx_size(u16 *got_size)
   return NIC_OK;
 }
 
-static u08 rx_data(u08 *buf, u16 size)
+static u08 *rx_begin(u16 size)
+{
+  return pkt_buf;
+}
+
+static u08 rx_end(u16 size)
 {
   pkt_size = 0;
   return NIC_OK;
 }
 
-static u08 tx_data(const u08 *buf, u16 size)
+static u08 *tx_begin(u16 size)
+{
+  return pkt_buf;
+}
+
+static u08 tx_end(u16 size)
 {
   pkt_size = size;
   return NIC_OK;
@@ -61,7 +71,7 @@ static u08 ioctl(u08 ioctl, u08 *value)
 static const char ROM_ATTR name[] = "loop";
 const nic_mod_t ROM_ATTR nic_mod_loop = {
   .name = name,
-  .caps = NIC_CAP_LOOP_BACK | NIC_CAP_BUFFER_IO,
+  .caps = NIC_CAP_LOOP_BACK,
   .tag = NIC_TAG_LOOP,
 
   .attach = attach,
@@ -72,8 +82,12 @@ const nic_mod_t ROM_ATTR nic_mod_loop = {
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,
-  .rx_data = rx_data,
-  .tx_data = tx_data,
+
+  .rx_begin = rx_begin,
+  .rx_end = rx_end,
+
+  .tx_begin = tx_begin,
+  .tx_end = tx_end,
 
   .ioctl = ioctl
 };

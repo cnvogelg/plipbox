@@ -16,6 +16,7 @@
 
 static u08 mode;
 static u08 enc_flags;
+static u08 direct_io;
 
 static void map_caps(u16 caps)
 {
@@ -33,6 +34,12 @@ static void map_caps(u16 caps)
   }
   if((caps & NIC_CAP_FLOW_CONTROL)) {
     enc_flags |= ENC28J60_FLAG_FLOW_CONTROL;
+  }
+
+  if((caps & NIC_CAP_DIRECT_IO)) {
+    direct_io = 1;
+  } else {
+    direct_io = 0;
   }
 }
 
@@ -107,37 +114,7 @@ static u08 rx_size(u16 *got_size)
   return NIC_OK;
 }
 
-static u08 rx_data(u08 *buf, u16 size)
-{
-  if(mode == MODE_LOOP_BUF) {
-    enc28j60_rx_begin_loop_back();
-    enc28j60_rx_data(buf, size);
-    enc28j60_rx_end_loop_back();
-    pkt_size = 0;
-  } else {
-    enc28j60_rx_begin();
-    enc28j60_rx_data(buf, size);
-    enc28j60_rx_end();
-  }
-  return NIC_OK;
-}
-
-static u08 tx_data(const u08 *buf, u16 size)
-{
-  if(mode == MODE_LOOP_BUF) {
-    enc28j60_tx_begin_loop_back();
-    enc28j60_tx_data(buf, size);
-    enc28j60_tx_end_loop_back();
-    pkt_size = size;
-  } else {
-    enc28j60_tx_begin();
-    enc28j60_tx_data(buf, size);
-    enc28j60_tx_end(size);
-  }
-  return NIC_OK;
-}
-
-static u08 *rx_direct_begin(u16 size)
+static u08 *rx_begin(u16 size)
 {
   if(mode == MODE_LOOP_BUF) {
     enc28j60_rx_begin_loop_back();
@@ -145,10 +122,16 @@ static u08 *rx_direct_begin(u16 size)
   } else {
     enc28j60_rx_begin();
   }
-  return NULL;
+
+  if(direct_io) {
+    return NULL;
+  } else {
+    enc28j60_rx_data(pkt_buf, size);
+    return pkt_buf;
+  }
 }
 
-static u08 rx_direct_end(u16 size)
+static u08 rx_end(u16 size)
 {
   if(mode == MODE_LOOP_BUF) {
     enc28j60_rx_end_loop_back();
@@ -158,7 +141,7 @@ static u08 rx_direct_end(u16 size)
   return NIC_OK;
 }
 
-static u08 *tx_direct_begin(u16 size)
+static u08 *tx_begin(u16 size)
 {
   if(mode == MODE_LOOP_BUF) {
     enc28j60_tx_begin_loop_back();
@@ -166,16 +149,26 @@ static u08 *tx_direct_begin(u16 size)
   } else {
     enc28j60_tx_begin();
   }
-  return NULL;
+
+  if(direct_io) {
+    return NULL;
+  } else {
+    return pkt_buf;
+  }
 }
 
-static u08 tx_direct_end(u16 size)
+static u08 tx_end(u16 size)
 {
+  if(!direct_io) {
+    enc28j60_tx_data(pkt_buf, size);
+  }
+
   if(mode == MODE_LOOP_BUF) {
     enc28j60_tx_end_loop_back();
   } else {
     enc28j60_tx_end(size);
   }
+
   return NIC_OK;
 }
 
@@ -197,7 +190,7 @@ static u08 ioctl(u08 cmd, u08 *value)
 static const char ROM_ATTR name[] = "enc28j60";
 const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
   .name = name,
-  .caps= NIC_CAP_LOOP_BACK | NIC_CAP_BUFFER_IO | NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS |
+  .caps= NIC_CAP_LOOP_BACK | NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS |
          NIC_CAP_RX_BROADCAST | NIC_CAP_FULL_DUPLEX | NIC_CAP_FLOW_CONTROL,
   .tag = NIC_TAG_ENC,
 
@@ -209,13 +202,11 @@ const nic_mod_t ROM_ATTR nic_mod_enc28j60 = {
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,
-  .rx_data = rx_data,
-  .tx_data = tx_data,
 
-  .rx_direct_begin = rx_direct_begin,
-  .rx_direct_end = rx_direct_end,
-  .tx_direct_begin = tx_direct_begin,
-  .tx_direct_end = tx_direct_end,
+  .rx_begin = rx_begin,
+  .rx_end = rx_end,
+  .tx_begin = tx_begin,
+  .tx_end = tx_end,
 
   .ioctl = ioctl
 };

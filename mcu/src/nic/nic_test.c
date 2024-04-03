@@ -9,7 +9,6 @@
 #include "nic.h"
 #include "nic_test.h"
 #include "uartutil.h"
-#include "pkt_buf.h"
 #include "param.h"
 #include "arp.h"
 #include "eth.h"
@@ -40,26 +39,25 @@ void nic_test_tx(void)
 {
   mac_t my_mac;
   ip_addr_t my_ip;
+  ip_addr_t peer_ip;
 
   param_get_cur_mac(my_mac);
   param_get_ip_addr(my_ip);
+  param_get_peer_addr(peer_ip);
 
-  u16 off = eth_make_bcast(pkt_buf, my_mac);
-  eth_set_pkt_type(pkt_buf, ETH_TYPE_ARP);
-  u16 size = arp_make_reply(pkt_buf + off, my_mac, my_ip);
+  u16 size = ARP_SIZE + ETH_HDR_SIZE;
+  u08 *buf = nic_tx_begin(size);
 
-  u16 total_size = size + off;
+  eth_make_bcast(buf, my_mac, ETH_TYPE_ARP);
+  arp_make_request(buf + ETH_HDR_SIZE, my_mac, my_ip, peer_ip);
+
+  net_dump_pkt(buf, size);
 
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("nic_test_tx:res="));
-  u08 res = nic_tx_data(pkt_buf, total_size);
+  u08 res = nic_tx_end(size);
   uart_send_hex_byte(res);
   uart_send_crlf();
-
-  if(res == NIC_OK) {
-    net_dump_pkt(pkt_buf, total_size);
-    uart_send_crlf();
-  }
 }
 
 void nic_test_rx(void)
@@ -78,13 +76,14 @@ void nic_test_rx(void)
     uart_send_pstring(PSTR(",size="));
     uart_send_hex_word(size);
     if(size > 0) {
-      res = nic_rx_data(pkt_buf, size);
+      const u08 *buf = nic_rx_begin(size);
       uart_send_pstring(PSTR(",res="));
       uart_send_hex_byte(res);
       if(res == NIC_OK) {
         uart_send_crlf();
-        net_dump_pkt(pkt_buf, size);
+        net_dump_pkt(buf, size);
       }
+      nic_rx_end(size);
     }
     uart_send_crlf();
   }

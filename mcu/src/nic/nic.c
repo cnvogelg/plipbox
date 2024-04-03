@@ -112,21 +112,7 @@ static u16 map_opts(u16 opts, u16 caps)
 {
   u16 caps_req = 0;
 
-  // pick io mode
-  const u16 io_mask = NIC_CAP_BUFFER_IO | NIC_CAP_DIRECT_IO;
-  if((caps & io_mask) == io_mask) {
-    // both i/o available
-    if(opts & NIC_OPT_FAST_IO) {
-      // prefer fast
-      caps_req = NIC_CAP_DIRECT_IO;
-    } else {
-      caps_req = NIC_CAP_BUFFER_IO;
-    }
-  } else {
-    // take the one we have
-    caps_req = caps & io_mask;
-  }
-
+  add_opt(opts, NIC_OPT_DIRECT_IO, &caps_req, NIC_CAP_DIRECT_IO);
   add_opt(opts, NIC_OPT_LOOP_BACK, &caps_req, NIC_CAP_LOOP_BACK);
   add_opt(opts, NIC_OPT_FULL_DUPLEX, &caps_req, NIC_CAP_FULL_DUPLEX);
 
@@ -289,55 +275,37 @@ u08 nic_rx_size(u16 *got_size)
   }
 }
 
-u08 nic_rx_data(u08 *buf, u16 size)
+u08 *nic_rx_begin(u16 size)
 {
   if(is_attached) {
-    return nic_mod_rx_data(buf, size);
-  } else {
-    return NIC_ERROR_NOT_ATTACHED;
-  }
-}
-
-u08 nic_tx_data(const u08 *buf, u16 size)
-{
-  if(is_attached) {
-    return nic_mod_tx_data(buf, size);
-  } else {
-    return NIC_ERROR_NOT_ATTACHED;
-  }
-}
-
-u08 *nic_rx_direct_begin(u16 size)
-{
-  if(is_attached) {
-    return nic_mod_rx_direct_begin(size);
+    return nic_mod_rx_begin(size);
   } else {
     return NULL;
   }
 }
 
-u08 nic_rx_direct_end(u16 size)
+u08 nic_rx_end(u16 size)
 {
   if(is_attached) {
-    return nic_mod_rx_direct_end(size);
+    return nic_mod_rx_end(size);
   } else {
     return NIC_ERROR_NOT_ATTACHED;
   }
 }
 
-u08 *nic_tx_direct_begin(u16 size)
+u08 *nic_tx_begin(u16 size)
 {
   if(is_attached) {
-    return nic_mod_tx_direct_begin(size);
+    return nic_mod_tx_begin(size);
   } else {
     return NULL;
   }
 }
 
-u08 nic_tx_direct_end(u16 size)
+u08 nic_tx_end(u16 size)
 {
   if(is_attached) {
-    return nic_mod_tx_direct_end(size);
+    return nic_mod_tx_end(size);
   } else {
     return NIC_ERROR_NOT_ATTACHED;
   }

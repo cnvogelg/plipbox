@@ -272,6 +272,13 @@ void param_get_net_mask(ip_addr_t nm)
   }
 }
 
+void param_get_peer_addr(ip_addr_t ip)
+{
+  for(u08 i=0;i<sizeof(ip_addr_t);i++) {
+    ip[i] = param.peer_addr[i];
+  }
+}
+
 u08 param_get_mode(void)
 {
   return (u08)param.mode;

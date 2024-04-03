@@ -14,13 +14,13 @@ struct buffer {
 };
 
 static struct buffer buffers[CONFIG_RX_BUF_NUM];
-static u08 pos_add;
+static u08 pos_put;
 static u08 pos_get;
 static u08 size;
 
 void rx_buf_init(void)
 {
-  pos_add = 0;
+  pos_put = 0;
   pos_get = 0;
   size = 0;
 }
@@ -40,7 +40,7 @@ u08 rx_buf_free(void)
   return CONFIG_RX_BUF_NUM - size;
 }
 
-u08 *rx_buf_add(u16 buf_size)
+u08 *rx_buf_put_begin(u16 buf_size)
 {
   if((size == CONFIG_RX_BUF_NUM)) {
     return NULL;
@@ -49,32 +49,36 @@ u08 *rx_buf_add(u16 buf_size)
     return NULL;
   }
 
-  u08 old_pos = pos_add;
-  pos_add++;
-  if(pos_add == CONFIG_RX_BUF_NUM) {
-    pos_add = 0;
-  }
-  size++;
-
-  buffers[old_pos].size = buf_size;
-  return buffers[old_pos].data;
+  buffers[pos_put].size = buf_size;
+  return buffers[pos_put].data;
 }
 
-u08 *rx_buf_get(u16 *buf_size)
+void rx_buf_put_end(void)
+{
+  pos_put++;
+  if(pos_put == CONFIG_RX_BUF_NUM) {
+    pos_put = 0;
+  }
+  size++;
+}
+
+u08 *rx_buf_get_begin(u16 *buf_size)
 {
   if(size == 0) {
     return NULL;
   }
 
-  u08 old_pos = pos_get;
+  *buf_size = buffers[pos_get].size;
+  return buffers[pos_get].data;
+}
+
+void rx_buf_get_end(void)
+{
   pos_get++;
   if(pos_get == CONFIG_RX_BUF_NUM) {
     pos_get = 0;
   }
   size--;
-
-  *buf_size = buffers[old_pos].size;
-  return buffers[old_pos].data;
 }
 
 u16 rx_buf_peek_buf_size(void)

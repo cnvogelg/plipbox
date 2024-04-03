@@ -26,9 +26,10 @@ static u08 link_up;
 void cyw43_cb_process_ethernet(void *cb_data, int itf, size_t len, const uint8_t *buf)
 {
   DT; DS(("cyw43: rx:")); DW(len);
-  u08 *rx_buf = rx_buf_add(len);
+  u08 *rx_buf = rx_buf_put_begin(len);
   if(rx_buf != NULL) {
     memcpy(rx_buf, buf, len);
+    rx_buf_put_end();
     DS(" add");
   } else {
     DS(" - no buf!");
@@ -165,22 +166,24 @@ static u08 rx_size(u16 *got_size)
   return NIC_OK;
 }
 
-static u08 *rx_direct_begin(u16 size)
+static u08 *rx_begin(u16 size)
 {
-  return rx_buf_add(size);
+  u16 got_size = 0;
+  return rx_buf_get_begin(&size);
 }
 
-static u08 rx_direct_end(u16 size)
+static u08 rx_end(u16 size)
 {
+  rx_buf_get_end();
   return NIC_OK;
 }
 
-static u08 *tx_direct_begin(u16 size)
+static u08 *tx_begin(u16 size)
 {
   return pkt_buf;
 }
 
-static u08 tx_direct_end(u16 size)
+static u08 tx_end(u16 size)
 {
   DS(("cyw43: tx:")); DW(size);
   int ret = cyw43_send_ethernet(&cyw43_state, CYW43_ITF_STA, size, pkt_buf, 0);
@@ -288,7 +291,7 @@ static const nic_wifi_mod_t ROM_ATTR nic_wifi_mod_cyw43 = {
 static const char ROM_ATTR name[] = "cyw43";
 const nic_mod_t ROM_ATTR nic_mod_cyw43 = {
   .name = name,
-  .caps = NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS,
+  .caps = NIC_CAP_LINK_STATUS,
   .tag = NIC_TAG_CYW,
 
   .attach = attach,
@@ -299,10 +302,11 @@ const nic_mod_t ROM_ATTR nic_mod_cyw43 = {
 
   .rx_num_pending = rx_num_pending,
   .rx_size = rx_size,
-  .rx_direct_begin = rx_direct_begin,
-  .rx_direct_end = rx_direct_end,
-  .tx_direct_begin = tx_direct_begin,
-  .tx_direct_end = tx_direct_end,
+  .rx_begin = rx_begin,
+  .rx_end = rx_end,
+
+  .tx_begin = tx_begin,
+  .tx_end = tx_end,
 
   .ioctl = ioctl,
   .wifi_ext = &nic_wifi_mod_cyw43

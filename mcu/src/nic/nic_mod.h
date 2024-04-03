@@ -40,14 +40,12 @@ typedef void (*nic_mod_status_t)(void);
 
 typedef u08  (*nic_mod_rx_num_pending_t)(void);
 typedef u08  (*nic_mod_rx_size_t)(u16 *got_size);
-typedef u08  (*nic_mod_rx_data_t)(u08 *buf, u16 size);
 
-typedef u08  (*nic_mod_tx_data_t)(const u08 *buf, u16 size);
+typedef u08 *(*nic_mod_rx_begin_t)(u16 size);
+typedef u08  (*nic_mod_rx_end_t)(u16 size);
 
-typedef u08 *(*nic_mod_rx_direct_begin_t)(u16 size);
-typedef u08  (*nic_mod_rx_direct_end_t)(u16 size);
-typedef u08 *(*nic_mod_tx_direct_begin_t)(u16 size);
-typedef u08  (*nic_mod_tx_direct_end_t)(u16 size);
+typedef u08 *(*nic_mod_tx_begin_t)(u16 size);
+typedef u08  (*nic_mod_tx_end_t)(u16 size);
 
 typedef u08  (*nic_mod_ioctl_t)(u08 ioctl, u08 *value);
 
@@ -69,13 +67,11 @@ typedef struct nic_mod {
   nic_mod_rx_num_pending_t  rx_num_pending;
   nic_mod_rx_size_t   rx_size;
 
-  nic_mod_rx_data_t   rx_data;
-  nic_mod_tx_data_t   tx_data;
+  nic_mod_rx_begin_t  rx_begin;
+  nic_mod_rx_end_t    rx_end;
 
-  nic_mod_rx_direct_begin_t  rx_direct_begin;
-  nic_mod_rx_direct_end_t    rx_direct_end;
-  nic_mod_tx_direct_begin_t  tx_direct_begin;
-  nic_mod_tx_direct_end_t    tx_direct_end;
+  nic_mod_tx_begin_t  tx_begin;
+  nic_mod_tx_end_t    tx_end;
 
   nic_mod_ioctl_t     ioctl;
 
@@ -156,46 +152,32 @@ static inline u08 nic_mod_rx_size(u16 *got_size)
   return rx_size(got_size);
 }
 
-static inline u08 nic_mod_rx_data(u08 *buf, u16 size)
+static inline u08 *nic_mod_rx_begin(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_data_t rx_data = (nic_mod_rx_data_t)read_rom_rom_ptr(&pd->rx_data);
-  return rx_data(buf, size);
+  nic_mod_rx_begin_t rx_begin = (nic_mod_rx_begin_t)read_rom_rom_ptr(&pd->rx_begin);
+  return rx_begin(size);
 }
 
-static inline u08 nic_mod_tx_data(const u08 *buf, u16 size)
+static inline u08 nic_mod_rx_end(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_tx_data_t tx_data = (nic_mod_tx_data_t)read_rom_rom_ptr(&pd->tx_data);
-  return tx_data(buf, size);
+  nic_mod_rx_end_t rx_end = (nic_mod_rx_end_t)read_rom_rom_ptr(&pd->rx_end);
+  return rx_end(size);
 }
 
-static inline u08 *nic_mod_rx_direct_begin(u16 size)
+static inline u08 *nic_mod_tx_begin(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_direct_begin_t rx_direct_begin = (nic_mod_rx_direct_begin_t)read_rom_rom_ptr(&pd->rx_direct_begin);
-  return rx_direct_begin(size);
+  nic_mod_tx_begin_t tx_begin = (nic_mod_tx_begin_t)read_rom_rom_ptr(&pd->tx_begin);
+  return tx_begin(size);
 }
 
-static inline u08 nic_mod_rx_direct_end(u16 size)
+static inline u08 nic_mod_tx_end(u16 size)
 {
   nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_rx_direct_end_t rx_direct_end = (nic_mod_rx_direct_end_t)read_rom_rom_ptr(&pd->rx_direct_end);
-  return rx_direct_end(size);
-}
-
-static inline u08 *nic_mod_tx_direct_begin(u16 size)
-{
-  nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_tx_direct_begin_t tx_direct_begin = (nic_mod_tx_direct_begin_t)read_rom_rom_ptr(&pd->tx_direct_begin);
-  return tx_direct_begin(size);
-}
-
-static inline u08 nic_mod_tx_direct_end(u16 size)
-{
-  nic_mod_ptr_t pd = nic_mod_ptr;
-  nic_mod_tx_direct_end_t tx_direct_end = (nic_mod_tx_direct_end_t)read_rom_rom_ptr(&pd->tx_direct_end);
-  return tx_direct_end(size);
+  nic_mod_tx_end_t tx_end = (nic_mod_tx_end_t)read_rom_rom_ptr(&pd->tx_end);
+  return tx_end(size);
 }
 
 static inline u08 nic_mod_ioctl(u08 id, u08 *value)

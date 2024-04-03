@@ -41,7 +41,20 @@ u08 arp_is_ipv4(const u08 *buf, u16 len)
   return (hw_type == 1) && (pt_type == 0x800) && (hw_size == 6) && (pt_size == 4);
 }
 
-u16 arp_make_reply(u08 *buf, const u08 *my_mac, const u08 *my_ip)
+void arp_make_request(u08 *buf, const u08 *my_mac, const u08 *my_ip, const u08 *peer_ip)
+{
+  net_put_word(buf + ARP_OFF_HW_TYPE, 1);
+  net_put_word(buf + ARP_OFF_PROT_TYPE, 0x800);
+  buf[ARP_OFF_HW_SIZE] = 6;
+  buf[ARP_OFF_PROT_SIZE] = 4;
+  net_put_word(buf + ARP_OFF_OP, ARP_REQUEST);
+  net_copy_ip(my_ip, buf + ARP_OFF_SRC_IP);
+  net_copy_ip(peer_ip, buf + ARP_OFF_TGT_IP);
+  net_copy_mac(my_mac, buf + ARP_OFF_SRC_MAC);
+  net_copy_bcast_mac(buf + ARP_OFF_TGT_MAC);
+}
+
+void arp_make_reply(u08 *buf, const u08 *my_mac, const u08 *my_ip)
 {
 	// make a reply
 	net_put_word(buf + ARP_OFF_OP, ARP_REPLY);
@@ -49,5 +62,4 @@ u16 arp_make_reply(u08 *buf, const u08 *my_mac, const u08 *my_ip)
 	net_copy_ip(buf + ARP_OFF_SRC_IP, buf + ARP_OFF_TGT_IP);
 	net_copy_mac(my_mac, buf + ARP_OFF_SRC_MAC);
 	net_copy_ip(my_ip, buf + ARP_OFF_SRC_IP);
-  return ARP_SIZE;
 }

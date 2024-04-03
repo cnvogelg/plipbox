@@ -11,8 +11,12 @@ extern u08  rx_buf_capacity(void);
 extern u08  rx_buf_size(void);
 extern u08  rx_buf_free(void);
 
-extern u08 *rx_buf_add(u16 size);
-extern u08 *rx_buf_get(u16 *size);
+extern u08 *rx_buf_put_begin(u16 size);
+extern void rx_buf_put_end(void);
+
+extern u08 *rx_buf_get_begin(u16 *size);
+extern void rx_buf_get_end(void);
+
 extern u16  rx_buf_peek_buf_size(void);
 
 #endif

@@ -67,6 +67,7 @@ void param_set_nic_opts(u16 caps);
 // test ip/netmask
 void param_get_ip_addr(ip_addr_t ip);
 void param_get_net_mask(ip_addr_t nm);
+void param_get_peer_addr(ip_addr_t nm);
 
 // generic param functions
 u08 param_get_num(void);

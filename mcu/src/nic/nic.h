@@ -65,15 +65,11 @@ extern u08 nic_has_link_status(void);
 extern u08 nic_rx_num_pending(void);
 extern u08 nic_rx_size(u16 *got_size);
 
-// buffer API rx/tx
-extern u08 nic_rx_data(u08 *buf, u16 size);
-extern u08 nic_tx_data(const u08 *buf, u16 size);
+extern u08 *nic_rx_begin(u16 size);
+extern u08 nic_rx_end(u16 size);
 
-// direct API rx/tx
-extern u08 *nic_rx_direct_begin(u16 size);
-extern u08 nic_rx_direct_end(u16 size);
-extern u08 *nic_tx_direct_begin(u16 size);
-extern u08 nic_tx_direct_end(u16 size);
+extern u08 *nic_tx_begin(u16 size);
+extern u08 nic_tx_end(u16 size);
 
 extern u08 nic_ioctl(u08 status_id, u08 *value);
 

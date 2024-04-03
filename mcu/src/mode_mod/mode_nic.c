@@ -66,24 +66,12 @@ static u08 poll_status(void)
 
 static u08 *tx_begin(u16 size)
 {
-  if(nic_is_direct()) {
-    nic_tx_direct_begin(size);
-    return NULL;
-  } else {
-    return pkt_buf;
-  }
+  return nic_tx_begin(size);
 }
 
 static u08 tx_end(u16 size)
 {
-  u08 res;
-
-  if(nic_is_direct()) {
-    res = nic_tx_direct_end(size);
-  } else {
-    res = nic_tx_data(pkt_buf, size);
-  }
-
+  u08 res = nic_tx_end(size);
   if(res != NIC_OK) {
     return PROTO_CMD_STATUS_TX_ERROR;
   }
@@ -101,25 +89,12 @@ static u08 rx_size(u16 *got_size)
 
 static u08 *rx_begin(u16 size)
 {
-  if(nic_is_direct()) {
-    nic_rx_direct_begin(size);
-    return NULL;
-  } else {
-    rx_res = nic_rx_data(pkt_buf, size);
-    return pkt_buf;
-  }
+  return nic_rx_begin(size);
 }
 
 static u08 rx_end(u16 size)
 {
-  u08 res;
-
-  if(nic_is_direct()) {
-    res = nic_rx_direct_end(size);
-  } else {
-    res = rx_res;
-  }
-
+  u08 res = nic_rx_end(size);
   if(res != NIC_OK) {
     return PROTO_CMD_STATUS_RX_ERROR;
   }
