@@ -13,8 +13,6 @@
 #include "param.h"
 #include "proto_cmd_shared.h"
 
-static u08 rx_res;
-
 static u08 attach(void)
 {
   u08 res = nic_attach_params();

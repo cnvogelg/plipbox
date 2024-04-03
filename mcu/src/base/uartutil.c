@@ -50,7 +50,7 @@ void uart_send_string(const char *str)
   }
 }
 
-void uart_send_data(u08 *data,u08 len)
+void uart_send_data(const u08 *data,u08 len)
 {
   for(u08 i=0;i<len;i++) {
     uart_send(data[i]);

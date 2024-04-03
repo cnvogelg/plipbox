@@ -38,7 +38,7 @@ void uart_send_pstring(rom_pchar data);
 // send a c string
 void uart_send_string(const char *data);
 // send data
-void uart_send_data(u08 *data,u08 size);
+void uart_send_data(const u08 *data,u08 size);
 // send a CR+LF
 void uart_send_crlf(void);
 // send a Space

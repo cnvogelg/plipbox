@@ -105,7 +105,7 @@ static void dump_data(const u08 *data, u16 size, u08 type, u08 format)
     case PARAM_TYPE_BYTE_ARRAY:
       if(format == PARAM_FORMAT_STR) {
         uart_send('"');
-        uart_send_string(data);
+        uart_send_string((const char *)data);
         uart_send('"');
       } else {
         dump_byte_array(data, size);
@@ -129,7 +129,7 @@ static u16 calc_data_size(u08 *data, u16 size, u08 type, u08 format)
       return 8;
     case PARAM_TYPE_BYTE_ARRAY:
       if(format == PARAM_FORMAT_STR) {
-        return strlen(data) + 2;
+        return strlen((const char *)data) + 2;
       } else {
         return size * 3 - 1;
       }
