@@ -30,6 +30,7 @@
 #include "param.h"
 #include "uartutil.h"
 #include "hw_uart.h"
+#include "hw_system.h"
 #include "net/net.h"
 #include "proto_cmd_shared.h"
 #include "param_shared.h"
@@ -226,6 +227,11 @@ void param_reset(void)
   u08 *out = (u08 *)&param;
   const u08 *in = (const u08 *)&default_param;
   rom_copy(in, out, sizeof(param_t));
+
+  // if available use OTP mac
+#ifdef HAVE_OTP_MAC
+  hw_system_otp_mac(param.mac_addr);
+#endif
 }
 
 // ----- get specific paramters -----

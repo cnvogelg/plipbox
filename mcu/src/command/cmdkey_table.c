@@ -92,7 +92,7 @@ COMMAND_KEY(cmd_load_param)
 COMMAND_KEY(cmd_save_param)
 {
   uart_send_pstring(PSTR("saving parameters...\r\n"));
-  param_load();
+  param_save();
   return CMD_WORKER_DONE;
 }
 
