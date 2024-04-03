@@ -88,6 +88,7 @@ add_compile_definitions(
   CONFIG_SPI_NUM_CS=2
   CONFIG_WIFI_SSID="${CONFIG_WIFI_SSID}"
   CONFIG_WIFI_PASS="${CONFIG_WIFI_PASS}"
+  CONFIG_PTR_BITS=32
   BUILD_DATE="${BUILD_DATE}"
   VERSION="${VERSION}"
   VERSION_MAJ=${VERSION_MAJ}
@@ -97,6 +98,7 @@ add_compile_definitions(
   HAVE_ENC28J60=1
   CYW43_LWIP=0
   CYW43_USE_OTP_MAC=0
+  DEBUG_CYW43=1
 )
 
 include_directories(

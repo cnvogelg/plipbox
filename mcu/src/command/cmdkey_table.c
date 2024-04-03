@@ -75,6 +75,27 @@ COMMAND_KEY(cmd_dump_param)
   return CMD_WORKER_DONE;
 }
 
+COMMAND_KEY(cmd_reset_param)
+{
+  uart_send_pstring(PSTR("resetting parameters...\r\n"));
+  param_reset();
+  return CMD_WORKER_DONE;
+}
+
+COMMAND_KEY(cmd_load_param)
+{
+  uart_send_pstring(PSTR("loading parameters...\r\n"));
+  param_load();
+  return CMD_WORKER_DONE;
+}
+
+COMMAND_KEY(cmd_save_param)
+{
+  uart_send_pstring(PSTR("saving parameters...\r\n"));
+  param_load();
+  return CMD_WORKER_DONE;
+}
+
 COMMAND_KEY(cmd_nic_test_status)
 {
   nic_test_status();
@@ -111,6 +132,9 @@ CMDKEY_HELP(cmd_print_version, "print version");
 CMDKEY_HELP(cmd_attach, "attach device");
 CMDKEY_HELP(cmd_detach, "detach device");
 CMDKEY_HELP(cmd_dump_param, "dump parameters");
+CMDKEY_HELP(cmd_reset_param, "reset parameters");
+CMDKEY_HELP(cmd_load_param, "load parameters");
+CMDKEY_HELP(cmd_save_param, "save parameters");
 CMDKEY_HELP(cmd_nic_test_status, "test NIC status");
 CMDKEY_HELP(cmd_nic_test_tx, "test NIC tx");
 CMDKEY_HELP(cmd_nic_test_rx, "test NIC rx");
@@ -125,6 +149,9 @@ const cmdkey_table_t ROM_ATTR cmdkey_table[] = {
   CMDKEY_ENTRY('a', cmd_attach),
   CMDKEY_ENTRY('d', cmd_detach),
   CMDKEY_ENTRY('p', cmd_dump_param),
+  CMDKEY_ENTRY('P', cmd_reset_param),
+  CMDKEY_ENTRY('l', cmd_load_param),
+  CMDKEY_ENTRY('L', cmd_save_param),
   CMDKEY_ENTRY('n', cmd_nic_test_status),
   CMDKEY_ENTRY('t', cmd_nic_test_tx),
   CMDKEY_ENTRY('r', cmd_nic_test_rx),

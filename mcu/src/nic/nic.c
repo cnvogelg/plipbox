@@ -189,19 +189,19 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
 
     // show revision
     u08 rev;
-    result = nic_mod_ioctl(NIC_IOCTL_GET_HW_VERSION, &rev);
-    if(result == NIC_OK) {
+    u08 res2 = nic_mod_ioctl(NIC_IOCTL_GET_HW_VERSION, &rev);
+    if(res2 == NIC_OK) {
       uart_send_pstring(PSTR(" rev="));
       uart_send_hex_byte(rev);
     }
 
     // if device has link status
-    if(caps_in_use & NIC_CAP_LINK_STATUS) {
+    if(caps_available & NIC_CAP_LINK_STATUS) {
       cap_link_status = 1;
       // show link status
       u08 status;
-      result = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &status);
-      if(result == NIC_OK) {
+      res2 = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &status);
+      if(res2 == NIC_OK) {
         uart_send_pstring(PSTR(" link="));
         uart_send_hex_byte(status);
       }

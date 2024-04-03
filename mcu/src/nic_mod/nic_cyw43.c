@@ -95,7 +95,7 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
   // setup cyw43
   DT; DS(("cyw43: init:mac=")); DM(mac);
   if(cyw43_arch_init()) {
-    DS(("FAILED!\n");)
+    DS(("FAILED!\n"));
     return NIC_ERROR_DEVICE_NOT_FOUND;
   }
 
@@ -288,7 +288,7 @@ static const nic_wifi_mod_t ROM_ATTR nic_wifi_mod_cyw43 = {
 static const char ROM_ATTR name[] = "cyw43";
 const nic_mod_t ROM_ATTR nic_mod_cyw43 = {
   .name = name,
-  .caps = NIC_CAP_DIRECT_IO,
+  .caps = NIC_CAP_DIRECT_IO | NIC_CAP_LINK_STATUS,
   .tag = NIC_TAG_CYW,
 
   .attach = attach,
