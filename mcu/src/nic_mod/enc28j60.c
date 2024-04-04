@@ -65,7 +65,7 @@
 #define EPMM6            (0x0E|0x20)
 #define EPMM7            (0x0F|0x20)
 #define EPMCS           (0x10|0x20)
-// #define EPMO            (0x14|0x20)
+#define EPMO            (0x14|0x20)
 #define EWOLIE           (0x16|0x20)
 #define EWOLIR           (0x17|0x20)
 #define ERXFCON          (0x18|0x20)
@@ -289,7 +289,7 @@ static uint8_t readRegByte (uint8_t address) {
 }
 
 static uint16_t readReg(uint8_t address) {
-    return readRegByte(address) + (readRegByte(address+1) << 8);
+    return readRegByte(address) | (readRegByte(address+1) << 8);
 }
 
 static void writeRegByte (uint8_t address, uint8_t data) {
@@ -402,7 +402,10 @@ void enc28j60_setup_mac_phy(const mac_t macaddr, u08 flags)
   // 06 08 -- ff ff ff ff ff ff -> ip checksum for theses bytes=f7f9
   // in binary these poitions are:11 0000 0011 1111
   // This is hex 303F->EPMM0=0x3f,EPMM1=0x30
-  u16 fcon = ERXFCON_UCEN|ERXFCON_CRCEN|ERXFCON_PMEN;
+  //
+  // Note errata 18: Receive Filter does not work for short packets if other
+  // filters are active -> need manual post filtering!
+  u08 fcon = ERXFCON_UCEN|ERXFCON_CRCEN|ERXFCON_PMEN;
   if(flags & ENC28J60_FLAG_RX_BROADCAST) {
     fcon |= ERXFCON_BCEN;
   }
@@ -521,11 +524,7 @@ void enc28j60_tx_begin_loop_back(void)
 
 void enc28j60_tx_data(const u08 *data, u16 size)
 {
-  // copy data to SPI
-  u16 num = size;
-  while(num--) {
-    hw_spi_out(*data++);
-  }
+  hw_spi_write_block(data, size);
 }
 
 void enc28j60_tx_end(u16 size)
@@ -565,9 +564,7 @@ static inline void next_pkt(void)
 static void read_buf(uint16_t len, uint8_t* data) {
   spi_enable_eth();
   hw_spi_out(ENC28J60_READ_BUF_MEM);
-  while (len--) {
-      *data++ = hw_spi_in();
-  }
+  hw_spi_read_block(data, len);
   spi_disable_eth();
 }
 

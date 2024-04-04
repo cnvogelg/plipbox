@@ -99,7 +99,8 @@ add_compile_definitions(
   HAVE_OTP_MAC=1
   CYW43_LWIP=0
   CYW43_USE_OTP_MAC=0
-  DEBUG_CYW43=1
+#  DEBUG_CYW43=1
+#  DEBUG_ENC28J60=1
 )
 
 include_directories(

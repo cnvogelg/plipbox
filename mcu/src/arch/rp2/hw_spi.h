@@ -27,6 +27,8 @@
 #ifndef HW_SPI_H
 #define HW_SPI_H
 
+#include "hardware/spi.h"
+
 #include "types.h"
 #include "hw_spi_pins.h"
 #include "hw_spi_common.h"
@@ -39,6 +41,16 @@ extern void hw_spi_set_speed(u08 speed);
 extern u08 hw_spi_xfer(u08 data);
 INLINE void hw_spi_out(u08 data) { hw_spi_xfer(data); }
 INLINE u08 hw_spi_in(void) { return hw_spi_xfer(0xff); }
+
+INLINE void hw_spi_read_block(u08 *data, u16 size)
+{
+  spi_read_blocking(spi0, 0, data, size);
+}
+
+INLINE void hw_spi_write_block(const u08 *data, u16 size)
+{
+  spi_write_blocking(spi0, data, size);
+}
 
 #define hw_spi_enable_cs0()  hw_spi_pins_cs0_lo()
 #define hw_spi_disable_cs0() hw_spi_pins_cs0_hi()

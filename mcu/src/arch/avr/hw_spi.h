@@ -52,6 +52,20 @@ FORCE_INLINE u08 hw_spi_in(void)
   return SPDR;
 }
 
+INLINE void hw_spi_read_block(u08 *data, u16 size)
+{
+  while(size--) {
+    *(data++) = hw_spi_in();
+  }
+}
+
+INLINE void hw_spi_write_block(const u08 *data, u16 size)
+{
+  while(size--) {
+    hw_spi_out(*(data++));
+  }
+}
+
 FORCE_INLINE void hw_spi_enable_cs0(void) { PORTB &= ~SPI_SS_MASK; }
 FORCE_INLINE void hw_spi_disable_cs0(void) { PORTB |= SPI_SS_MASK; }
 
