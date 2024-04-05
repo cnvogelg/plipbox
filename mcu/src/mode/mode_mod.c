@@ -43,6 +43,12 @@ u32 mode_mod_tag_at(u08 index)
   return read_rom_long(&pd->tag);
 }
 
+const char *mode_mod_name_at(u08 index)
+{
+  mode_mod_ptr_t pd = (mode_mod_ptr_t)read_rom_rom_ptr(mode_defs + index);
+  return read_rom_rom_ptr(&pd->name);
+}
+
 void mode_mod_def_at(u08 index, mode_def_t *def)
 {
   mode_mod_ptr_t pd = (mode_mod_ptr_t)read_rom_rom_ptr(mode_defs + index);

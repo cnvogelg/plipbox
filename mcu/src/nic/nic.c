@@ -65,6 +65,34 @@ void nic_set_device(u08 device)
 #endif
 }
 
+void nic_dump_nics(void)
+{
+  uart_send_pstring(PSTR("NICs:"));
+  uart_send_crlf();
+
+  u08 num = nic_mod_get_num_nics();
+  for(u08 i=0;i<num;i++) {
+    uart_send('#');
+    uart_send_hex_byte(i);
+    uart_send_spc();
+
+    u32 tag = nic_mod_tag_at(i);
+    uart_send_tag(tag);
+    uart_send_spc();
+
+    u16 caps = nic_mod_caps_at(i);
+    uart_send_hex_word(caps);
+    uart_send_spc();
+
+    uart_send_spc();
+    const char *name = nic_mod_name_at(i);
+    uart_send_pstring(name);
+
+    uart_send_crlf();
+  }
+  uart_send_crlf();
+}
+
 u08 nic_get_num_nics(void)
 {
   return nic_mod_get_num_nics();

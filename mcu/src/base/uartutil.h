@@ -65,6 +65,8 @@ void uart_send_hex_mac(const mac_t mac);
 void uart_send_hex_line(u16 addr, const u08 *data, u08 size);
 // send hex buf
 void uart_send_hex_buf(u16 addr, const u08 *data, u16 size);
+// send a tag
+void uart_send_tag(u32 tag);
 
 #ifdef DEBUG
 // send free stack

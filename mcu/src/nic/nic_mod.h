@@ -88,7 +88,9 @@ extern void nic_mod_set_current(u08 index);
 extern u08  nic_mod_get_current(void);
 
 extern u32  nic_mod_tag_at(u08 index);
+extern u16  nic_mod_caps_at(u08 index);
 extern void nic_mod_def_at(u08 index, nic_def_t *def);
+extern const char *nic_mod_name_at(u08 index);
 
 /* access device data from PROGMEM nic_mod_t */
 

@@ -167,6 +167,20 @@ void uart_send_hex_buf(u16 addr, const u08 *data, u16 size)
   }
 }
 
+void uart_send_tag(u32 tag)
+{
+  u32 shift = 24;
+  for(int i=0;i<4;i++) {
+    u08 val = (tag >> shift) & 0xff;
+    if(val != 0) {
+      uart_send(val);
+    } else {
+      uart_send(' ');
+    }
+    shift -= 8;
+  }
+}
+
 #ifdef DEBUG
 void uart_send_free_stack(void)
 {

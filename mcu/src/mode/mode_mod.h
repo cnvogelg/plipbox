@@ -74,6 +74,7 @@ void mode_mod_set_current(u08 index);
 u08  mode_mod_get_current(void);
 
 u32  mode_mod_tag_at(u08 index);
+const char *mode_mod_name_at(u08 index);
 void mode_mod_def_at(u08 index, mode_def_t *def);
 
 /* access device data from PROGMEM mode_mod_t */

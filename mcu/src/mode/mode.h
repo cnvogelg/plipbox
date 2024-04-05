@@ -38,6 +38,8 @@ typedef struct {
 
 void mode_init(void);
 
+void mode_dump_modes(void);
+
 u08  mode_get_num_modes(void);
 u08  mode_find_tag(u32 tag);
 void mode_get_def(u08 index, mode_def_t *def);

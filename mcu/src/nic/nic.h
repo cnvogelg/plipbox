@@ -44,6 +44,8 @@ typedef struct {
 extern void nic_init(void);
 extern void nic_set_device(u08 device);
 
+extern void nic_dump_nics(void);
+
 extern u08  nic_get_num_nics(void);
 extern u08  nic_find_tag(u32 tag);
 extern void nic_get_def(u08 index, nic_def_t *def);

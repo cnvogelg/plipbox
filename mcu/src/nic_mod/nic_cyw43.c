@@ -9,6 +9,7 @@
 #endif
 
 #include "debug.h"
+#include "uartutil.h"
 #include "nic.h"
 #include "nic_mod.h"
 #include "nic_wifi.h"
@@ -26,13 +27,11 @@ static u08 link_up;
 void cyw43_cb_process_ethernet(void *cb_data, int itf, size_t len, const uint8_t *buf)
 {
   DT; DS(("cyw43: rx:")); DW(len);
-  u08 *rx_buf = rx_buf_put_begin(len);
-  if(rx_buf != NULL) {
-    memcpy(rx_buf, buf, len);
-    rx_buf_put_end();
+  u08 added = rx_buf_put(buf, len);
+  if(added) {
     DS(" add");
   } else {
-    DS(" - no buf!");
+    DS(" drop - no buf!");
   }
   DNL;
 }
@@ -149,6 +148,10 @@ static void ping(void)
 
 static void status(void)
 {
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("cyw43 status:"));
+  rx_buf_dump();
+  uart_send_crlf();
 }
 
 static u08 rx_num_pending(void)
@@ -157,7 +160,7 @@ static u08 rx_num_pending(void)
   cyw43_arch_poll();
 #endif
 
-  return rx_buf_size();
+  return rx_buf_get_num_pkt();
 }
 
 static u08 rx_size(u16 *got_size)
@@ -168,13 +171,12 @@ static u08 rx_size(u16 *got_size)
 
 static u08 *rx_begin(u16 size)
 {
-  u16 got_size = 0;
-  return rx_buf_get_begin(&size);
+  rx_buf_get(pkt_buf);
+  return pkt_buf;
 }
 
 static u08 rx_end(u16 size)
 {
-  rx_buf_get_end();
   return NIC_OK;
 }
 

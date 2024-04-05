@@ -110,7 +110,7 @@ int main(void)
   hw_spi_init();
   
   // send welcome
-  uart_send_pstring(PSTR("\r\nWelcome to plipbox " VERSION " " BUILD_DATE "\r\n"));
+  uart_send_pstring(PSTR("\033E\r\nWelcome to plipbox " VERSION " " BUILD_DATE "\r\n"));
   uart_send_pstring(PSTR("by lallafa (http://www.lallafa.de/blog)\r\n\r\n"));
 
   // param init
@@ -129,8 +129,6 @@ int main(void)
 #endif
 
   // parallel proto init
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("proto: init\r\n"));
   proto_cmd_init();
 
   // main ops: waiting for driver and main loop
@@ -138,7 +136,10 @@ int main(void)
   while(1) {
 
     mode_init();
+    mode_dump_modes();
+
     nic_init();
+    nic_dump_nics();
 
     if(result == LOOP_DONE) {
       result = init_loop();

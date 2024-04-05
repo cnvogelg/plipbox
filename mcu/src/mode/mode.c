@@ -48,6 +48,30 @@ void mode_init(void)
   mode_mod_init();
 }
 
+void mode_dump_modes(void)
+{
+  uart_send_pstring(PSTR("Modes:"));
+  uart_send_crlf();
+
+  u08 num = mode_mod_get_num_modes();
+  for(u08 i=0;i<num;i++) {
+    uart_send('#');
+    uart_send_hex_byte(i);
+    uart_send_spc();
+
+    u32 tag = mode_mod_tag_at(i);
+    uart_send_tag(tag);
+    uart_send_spc();
+
+    uart_send_spc();
+    const char *name = mode_mod_name_at(i);
+    uart_send_pstring(name);
+
+    uart_send_crlf();
+  }
+  uart_send_crlf();
+}
+
 u08 mode_get_num_modes(void)
 {
   return mode_mod_get_num_modes();

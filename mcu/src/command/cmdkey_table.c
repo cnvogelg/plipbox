@@ -120,9 +120,26 @@ COMMAND_KEY(cmd_nic_test_toggle_duplex)
   return CMD_WORKER_DONE;
 }
 
+COMMAND_KEY(cmd_nic_toggle)
+{
+  nic_test_toggle_nic();
+  return CMD_WORKER_DONE;
+}
+
+COMMAND_KEY(cmd_nic_port_toggle)
+{
+  nic_test_toggle_port();
+  return CMD_WORKER_DONE;
+}
+
 COMMAND_KEY(cmd_exit)
 {
   return CMD_WORKER_EXIT;
+}
+
+COMMAND_KEY(cmd_reset)
+{
+  return CMD_WORKER_RESET;
 }
 
 CMDKEY_HELP(cmd_dump_stats, "dump statistics");
@@ -139,7 +156,10 @@ CMDKEY_HELP(cmd_nic_test_status, "test NIC status");
 CMDKEY_HELP(cmd_nic_test_tx, "test NIC tx");
 CMDKEY_HELP(cmd_nic_test_rx, "test NIC rx");
 CMDKEY_HELP(cmd_nic_test_toggle_duplex, "toggle NIC duplex");
+CMDKEY_HELP(cmd_nic_toggle, "toggle NIC");
+CMDKEY_HELP(cmd_nic_port_toggle, "toggle NIC port");
 CMDKEY_HELP(cmd_exit, "exit current loop");
+CMDKEY_HELP(cmd_reset, "reset device");
 
 const cmdkey_table_t ROM_ATTR cmdkey_table[] = {
   CMDKEY_ENTRY('s', cmd_dump_stats),
@@ -156,6 +176,9 @@ const cmdkey_table_t ROM_ATTR cmdkey_table[] = {
   CMDKEY_ENTRY('t', cmd_nic_test_tx),
   CMDKEY_ENTRY('r', cmd_nic_test_rx),
   CMDKEY_ENTRY('f', cmd_nic_test_toggle_duplex),
+  CMDKEY_ENTRY('i', cmd_nic_toggle),
+  CMDKEY_ENTRY('o', cmd_nic_port_toggle),
   CMDKEY_ENTRY('x', cmd_exit),
+  CMDKEY_ENTRY('X', cmd_reset),
   { 0,0 }
 };

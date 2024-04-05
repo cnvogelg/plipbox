@@ -42,20 +42,6 @@
 
 #include "debug.h"
 
-static void dump_tag(u32 tag)
-{
-  u32 shift = 24;
-  for(int i=0;i<4;i++) {
-    u08 val = (tag >> shift) & 0xff;
-    if(val != 0) {
-      uart_send(val);
-    } else {
-      uart_send(' ');
-    }
-    shift -= 8;
-  }
-}
-
 static void dump_byte_array(const u08 *data, u16 size)
 {
   for(u16 i=0; i<size; i++) {
@@ -165,16 +151,18 @@ void param_dump(void)
 {
   u16 max_data_size = calc_max_data_size();
 
+  uart_send_pstring(PSTR("Parameters:"));
+  uart_send_crlf();
   const param_def_t *def = param_defs;
   for(int i=0;i<param_defs_size;i++) {
     // index
     uart_send('#');
     uart_send_hex_byte(i);
-    uart_send(' ');
+    uart_send_spc();
 
     // dump tag
     u32 tag = read_rom_long(&def->tag);
-    dump_tag(tag);
+    uart_send_tag(tag);
     uart_send(' ');
 
     // size
@@ -182,7 +170,7 @@ void param_dump(void)
     uart_send('[');
     uart_send_hex_word(size);
     uart_send(']');
-    uart_send(' ');
+    uart_send_spc();
 
     // value
     u08 *data = (u08 *)read_rom_ram_ptr(&def->data);
@@ -195,13 +183,13 @@ void param_dump(void)
     if(data_size < max_data_size) {
       u16 delta = max_data_size - data_size;
       for(u16 i=0;i<delta;i++) {
-        uart_send(' ');
+        uart_send_spc();
       }
     }
 
     // desc
-    uart_send(' ');
-    uart_send(' ');
+    uart_send_spc();
+    uart_send_spc();
     rom_pchar desc = read_rom_rom_ptr(&def->desc);
     uart_send_pstring(desc);
 
@@ -289,6 +277,11 @@ u08 param_get_nic(void)
   return (u08)param.nic;
 }
 
+void param_set_nic(u08 nic)
+{
+  param.nic = nic;
+}
+
 u16 param_get_nic_opts(void)
 {
   return param.nic_opts;
@@ -302,6 +295,11 @@ void param_set_nic_opts(u16 opts)
 u08 param_get_nic_port(void)
 {
   return (u08)param.nic_port;
+}
+
+void param_set_nic_port(u08 port)
+{
+  param.nic_port = port;
 }
 
 #ifdef HAVE_WIFI

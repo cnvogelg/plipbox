@@ -43,6 +43,18 @@ u32 nic_mod_tag_at(u08 index)
   return read_rom_long(&pd->tag);
 }
 
+u16 nic_mod_caps_at(u08 index)
+{
+  nic_mod_ptr_t pd = (nic_mod_ptr_t)read_rom_rom_ptr(nic_defs + index);
+  return read_rom_word(&pd->caps);
+}
+
+const char *nic_mod_name_at(u08 index)
+{
+  nic_mod_ptr_t pd = (nic_mod_ptr_t)read_rom_rom_ptr(nic_defs + index);
+  return read_rom_rom_ptr(&pd->name);
+}
+
 void nic_mod_def_at(u08 index, nic_def_t *def)
 {
   nic_mod_ptr_t pd = (nic_mod_ptr_t)read_rom_rom_ptr(nic_defs + index);

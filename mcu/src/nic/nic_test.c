@@ -5,9 +5,11 @@
 #define DEBUG
 #endif
 
+#include "hw_spi.h"
 #include "debug.h"
 #include "nic.h"
 #include "nic_test.h"
+#include "nic_mod.h"
 #include "uartutil.h"
 #include "param.h"
 #include "arp.h"
@@ -33,6 +35,8 @@ void nic_test_status(void)
   }
 
   uart_send_crlf();
+
+  nic_status();
 }
 
 void nic_test_tx(void)
@@ -92,7 +96,7 @@ void nic_test_rx(void)
 void nic_test_toggle_duplex(void)
 {
   uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("nic_test_toggle_duplex:"));
+  uart_send_pstring(PSTR("duplex:"));
   u16 opts = param_get_nic_opts();
   if(opts & NIC_OPT_FULL_DUPLEX) {
     opts &= NIC_OPT_FULL_DUPLEX;
@@ -102,5 +106,33 @@ void nic_test_toggle_duplex(void)
     uart_send_pstring(PSTR("ON"));
   }
   param_set_nic_opts(opts);
+  uart_send_crlf();
+}
+
+void nic_test_toggle_nic(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("nic:"));
+  u08 nic = param_get_nic();
+  nic++;
+  if(nic >= nic_mod_get_num_nics()) {
+    nic=0;
+  }
+  param_set_nic(nic);
+  uart_send_hex_byte(nic);
+  uart_send_crlf();
+}
+
+void nic_test_toggle_port(void)
+{
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("port:"));
+  u08 port = param_get_nic_port();
+  port++;
+  if(port >= HW_SPI_NUM_CS) {
+    port=0;
+  }
+  param_set_nic_port(port);
+  uart_send_hex_byte(port);
   uart_send_crlf();
 }
