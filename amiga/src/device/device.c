@@ -258,6 +258,7 @@ ASM SAVEDS LONG DevOpen(REG(a1, struct IOSana2Req *ios2), REG(d0, ULONG unit), R
               else
               {
                 d(("ERROR: server task failed\n"));
+                pb->pb_Server = NULL;
               }
             }
             else
@@ -366,27 +367,31 @@ ASM SAVEDS BPTR DevExpunge(REG(a6, BASEPTR))
     /* detach device from system list */
     Remove((struct Node *)pb);
 
-    /* stop the servr task */
-    d2(("killing server task\n"));
-    pb->pb_Task = FindTask(0L);
-    /* We must allocate a new signal, as we don't know in whose
-    ** context we're running. If we get no signal, we poll
-    ** for the server-exits flag.
-    */
-    sigb = AllocSignal(-1);
-    pb->pb_ServerStoppedSigMask = (sigb == -1) ? 0 : (1 << sigb);
-    Signal((struct Task *)pb->pb_Server, SIGBREAKF_CTRL_C);
-    if (pb->pb_ServerStoppedSigMask)
-    {
-      Wait(pb->pb_ServerStoppedSigMask);
-      FreeSignal(sigb);
+    /* stop the server task */
+    if(pb->pb_Server != NULL) {
+      d2(("killing server task\n"));
+      pb->pb_Task = FindTask(0L);
+      /* We must allocate a new signal, as we don't know in whose
+      ** context we're running. If we get no signal, we poll
+      ** for the server-exits flag.
+      */
+      sigb = AllocSignal(-1);
+      pb->pb_ServerStoppedSigMask = (sigb == -1) ? 0 : (1 << sigb);
+      Signal((struct Task *)pb->pb_Server, SIGBREAKF_CTRL_C);
+      if (pb->pb_ServerStoppedSigMask)
+      {
+        Wait(pb->pb_ServerStoppedSigMask);
+        FreeSignal(sigb);
+      }
+      else
+      {
+        while (!(pb->pb_Flags & PLIPF_SERVERSTOPPED))
+          Delay(10);
+      }
+      d2(("server task has gone\n"));
+    } else {
+      d2(("no server task to kill!\n"));
     }
-    else
-    {
-      while (!(pb->pb_Flags & PLIPF_SERVERSTOPPED))
-        Delay(10);
-    }
-    d2(("server task has gone\n"));
 
     /* clean up track */
     freetracktypes(pb);
