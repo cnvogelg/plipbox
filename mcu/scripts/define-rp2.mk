@@ -1,2 +1,3 @@
 CMAKE=cmake
 OUTPUT=$(BASE_DIR)/$(PROJECT)
+OPENOCD_HOST?=localhost

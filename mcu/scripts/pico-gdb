@@ -1,8 +1,10 @@
 #!/bin/bash
-arm-none-eabi-gdb --quiet \
-    -ex "target extended-remote localhost:3333" \
+ELF="$1"
+HOST="$2"
+exec arm-none-eabi-gdb --quiet \
+    -ex "target extended-remote ${HOST}:3333" \
     -ex "load" \
     -ex "monitor reset init" \
     -ex "continue" \
-	$1
+    ${ELF}
 

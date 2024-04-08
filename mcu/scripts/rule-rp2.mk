@@ -29,7 +29,7 @@ prog_arch: $(OUTPUT).elf
 
 debug_arch: rebuild
 	@echo "debug pico"
-	$(HIDE)$(SCRIPT_DIR)/pico-gdb $(OUTPUT).elf
+	$(HIDE)$(SCRIPT_DIR)/pico-gdb $(OUTPUT).elf $(OPENOCD_HOST)
 
 ocd:
 	@echo "running OCD for debug probe"
