@@ -41,7 +41,7 @@ static const char *TEMPLATE =
     "LOOPBACK_INT/S,"
     "LOOPBACK_EXT/S,"
     "FULL_DUPLEX/S,"
-    "FAST_IO/S,"
+    "DIRECT_IO/S,"
     "LOOPS/N/K,"
     "DELAY/N/K,"
     "TIMEOUT/N/K,"
@@ -56,7 +56,7 @@ typedef struct
   ULONG loopback_int;
   ULONG loopback_ext;
   ULONG full_duplex;
-  ULONG fast_io;
+  ULONG direct_io;
   ULONG *loops;
   ULONG *delay;
   ULONG *timeout;
@@ -123,10 +123,10 @@ static BOOL set_mode_and_flags(sanadev_handle_t *sh)
   }
 
   // set new flag
-  if (params.fast_io)
+  if (params.direct_io)
   {
-    LOG(("NIC Cap: fast I/O\n"));
-    nopt |= NIC_OPT_FAST_IO;
+    LOG(("NIC Cap: direct I/O\n"));
+    nopt |= NIC_OPT_DIRECT_IO;
   }
   LOG(("Setting NIC Caps: $%lx\n", (LONG)nopt));
   res = param_tag_nopt_set(sh, nopt);
