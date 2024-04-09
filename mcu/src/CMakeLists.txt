@@ -101,6 +101,7 @@ add_compile_definitions(
   CYW43_USE_OTP_MAC=0
 #  DEBUG_CYW43=1
 #  DEBUG_ENC28J60=1
+#  DEBUG_PROTO_CMD=1
 )
 
 include_directories(

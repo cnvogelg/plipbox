@@ -30,3 +30,8 @@ u08 hw_uart_read(void)
 {
   return uart_getc(uart0);
 }
+
+void hw_uart_flush(void)
+{
+  uart_tx_wait_blocking(uart0);
+}

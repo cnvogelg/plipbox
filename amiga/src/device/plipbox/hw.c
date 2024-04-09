@@ -165,6 +165,24 @@ REGARGS BOOL hw_reinit(struct PLIPBase *pb)
 
   d(("reinit:\n"));
 
+  // reset device
+  d(("soft RESET device\n"));
+  int res = proto_cmd_reset(hwb->proto);
+  if (res != PROTO_RET_OK)
+  {
+    d(("ERROR: cmd reset failed! ret=%ld\n", (LONG)res));
+    return FALSE;
+  }
+
+  // wait for alive
+  d(("waiting for ALIVE\n"));
+  res = proto_cmd_alive(hwb->proto);
+  if (res != PROTO_RET_OK)
+  {
+    d(("ERROR: cmd alive failed! ret=%ld\n", (LONG)res));
+    return FALSE;
+  }
+
   // set non-null (random) driver token
   time_stamp_t ts;
   timer_get_sys_time(hwb->timer, &ts);
@@ -174,7 +192,7 @@ REGARGS BOOL hw_reinit(struct PLIPBase *pb)
   // check if device reacts to proto protocol and setup token on device
   // the token allows to check later on with PING if the device was reset/or not
   d(("send INIT: token=%lx\n", (ULONG)hwb->token));
-  int res = proto_cmd_init(hwb->proto, hwb->token);
+  res = proto_cmd_init(hwb->proto, hwb->token);
   if (res != PROTO_RET_OK)
   {
     d(("ERROR: cmd init failed! ret=%ld\n", (LONG)res));

@@ -8,6 +8,26 @@
 #include "proto_cmd_shared.h"
 #include "param_shared.h"
 
+int proto_cmd_reset(proto_handle_t *proto)
+{
+  int res;
+
+  d8(("proto_cmd_reset:"));
+  res = proto_atom_action(proto, PROTO_CMD_RESET);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
+int proto_cmd_alive(proto_handle_t *proto)
+{
+  int res;
+
+  d8(("proto_cmd_alive:"));
+  res = proto_atom_action_no_busy(proto, PROTO_CMD_ALIVE);
+  d8r((" res=%ld\n", (LONG)res));
+  return res;
+}
+
 int proto_cmd_init(proto_handle_t *proto, UWORD token)
 {
   int res;

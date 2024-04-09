@@ -56,6 +56,9 @@ static int init_loop(void)
     if(res == PROTO_CMD_HANDLE_INIT) {
       return LOOP_DONE;
     }
+    else if(res == PROTO_CMD_HANDLE_RESET) {
+      return LOOP_RESET;
+    }
 
     // handle commands
     res = cmd_worker();
@@ -82,8 +85,11 @@ static int main_loop(void)
     if(res == PROTO_CMD_HANDLE_EXIT) {
       return LOOP_DONE;
     }
-    if(res == PROTO_CMD_HANDLE_INIT) {
+    else if(res == PROTO_CMD_HANDLE_INIT) {
       return LOOP_RESTART;
+    }
+    else if(res == PROTO_CMD_HANDLE_RESET) {
+      return LOOP_RESET;
     }
 
     // handle current mode
@@ -157,6 +163,7 @@ int main(void)
   // wait a bit and reset
   uart_send_time_stamp_spc();
   uart_send_pstring(PSTR("resetting...\r\n"));
+  hw_uart_flush();
   hw_system_reset();
 
   // never reach this

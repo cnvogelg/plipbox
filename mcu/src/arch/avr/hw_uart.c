@@ -160,3 +160,7 @@ u08 hw_uart_read(void)
   return data;
 }
 
+void uart_flush(void)
+{
+  // NOP
+}

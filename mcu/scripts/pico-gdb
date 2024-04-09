@@ -4,7 +4,6 @@ HOST="$2"
 exec arm-none-eabi-gdb --quiet \
     -ex "target extended-remote ${HOST}:3333" \
     -ex "load" \
-    -ex "monitor reset init" \
     -ex "continue" \
     ${ELF}
 

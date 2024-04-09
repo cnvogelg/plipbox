@@ -6,6 +6,7 @@
 #define PROTO_CMD_HANDLE_UNKNOWN  2
 #define PROTO_CMD_HANDLE_INIT     3
 #define PROTO_CMD_HANDLE_EXIT     4
+#define PROTO_CMD_HANDLE_RESET    5
 
 // protocol state
 #define PROTO_CMD_STATE_IDLE    0

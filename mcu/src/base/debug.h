@@ -25,7 +25,7 @@
 #if CONFIG_PTR_BITS == 16
 #define DP(x)  uart_send_hex_word((u16)x)
 #elif CONFIG_PTR_BITS == 32
-#define DP(x)  uart_send_hex_long((u32)x)
+#define DP(x)  uart_send_hex_dword((u32)x)
 #else
 #error invalid CONFIG_PTR_BITS
 #endif

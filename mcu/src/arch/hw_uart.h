@@ -37,4 +37,6 @@ u08 hw_uart_read_data_available(void);
 
 u08 hw_uart_read(void);
 
+void hw_uart_flush(void);
+
 #endif

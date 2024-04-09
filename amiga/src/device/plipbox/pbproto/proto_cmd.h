@@ -23,6 +23,9 @@ struct proto_cmd_req
 };
 typedef struct proto_cmd_req proto_cmd_req_t;
 
+extern int proto_cmd_reset(proto_handle_t *proto);
+extern int proto_cmd_alive(proto_handle_t *proto);
+
 extern int proto_cmd_init(proto_handle_t *proto, UWORD token);
 extern int proto_cmd_ping(proto_handle_t *proto, UWORD *token);
 extern int proto_cmd_exit(proto_handle_t *proto);

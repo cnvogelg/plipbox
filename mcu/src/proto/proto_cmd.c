@@ -71,6 +71,14 @@ u08 proto_cmd_handle_init(void)
       proto_atom_read_word(token);
       proto_cmd_api_ping();
       break;
+    case PROTO_CMD_RESET:
+      DS("RESET"); DNL;
+      proto_atom_action();
+      return PROTO_CMD_HANDLE_RESET;
+    case PROTO_CMD_ALIVE:
+      DS("ALIVE"); DNL;
+      proto_atom_action();
+      break;
     default:
       DC('?'); DNL;
       result = PROTO_CMD_HANDLE_UNKNOWN;
@@ -92,6 +100,10 @@ u08 proto_cmd_handle_main(void)
   u08 result = PROTO_CMD_HANDLE_DONE;
 
   switch(cmd) {
+    case PROTO_CMD_RESET:
+      DS("RESET"); DNL;
+      proto_atom_action();
+      return PROTO_CMD_HANDLE_RESET;
     case PROTO_CMD_INIT:
       DS("INIT:");
       token = proto_atom_write_word();
