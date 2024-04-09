@@ -119,7 +119,7 @@ int proto_cmd_request(proto_handle_t *proto, proto_cmd_req_t *req)
   // has input data
   if(in_size > 0) {
     // round to even
-    if((in_size % 2) != 0) {
+    if((in_size & 1) != 0) {
       in_size++;
     }
     res = proto_atom_write_block(proto, PROTO_CMD_REQ_IN_DATA, req->in_buf, in_size);
@@ -146,11 +146,11 @@ int proto_cmd_request(proto_handle_t *proto, proto_cmd_req_t *req)
   // has output data?
   if(out_size > 0) {
     // round to even
-    if((out_size % 2) != 0) {
+    if((out_size & 1) != 0) {
       out_size++;
     }
     res = proto_atom_read_block(proto, PROTO_CMD_REQ_OUT_DATA, req->out_buf, out_size);
-    d8r((" res_in_data=%ld\n", (LONG)res));
+    d8r((" res_out_data=%ld\n", (LONG)res));
     if(res != PROTO_RET_OK) {
       return res;
     }

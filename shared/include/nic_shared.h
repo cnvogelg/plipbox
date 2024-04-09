@@ -53,11 +53,10 @@
 #define NIC_WIFI_LINK_UNKNOWN   99
 
 // nic_def
-// +00 u08 index
-// +01 u32 tag
-// +05 u16 caps
-// =07
-#define NIC_DEF_SIZE      7
+// +00 u32 tag
+// +04 u16 caps
+// =06
+#define NIC_DEF_SIZE      6
 
 // if an id was not found
 #define NIC_ID_INVALID    0xff

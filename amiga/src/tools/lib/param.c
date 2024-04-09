@@ -347,16 +347,20 @@ static int print_number(char *str, int base, ULONG num, int value_bytes, int pre
   return PARAM_PARSE_OK;
 }
 
+void param_tag_to_str(ULONG in_tag, UBYTE tag[5])
+{
+  tag[0] = (UBYTE)((in_tag >> 24) & 0xff);
+  tag[1] = (UBYTE)((in_tag >> 16) & 0xff);
+  tag[2] = (UBYTE)((in_tag >> 8) & 0xff);
+  tag[3] = (UBYTE)(in_tag & 0xff);
+  tag[4] = 0;
+}
+
 static int print_def(char *str, param_def_t *def)
 {
   // convert tag
   UBYTE tag[5];
-  tag[0] = (UBYTE)((def->tag >> 24) & 0xff);
-  tag[1] = (UBYTE)((def->tag >> 16) & 0xff);
-  tag[2] = (UBYTE)((def->tag >> 8) & 0xff);
-  tag[3] = (UBYTE)(def->tag & 0xff);
-  tag[4] = 0;
-
+  param_tag_to_str(def->tag, tag);
   return sprintf(str, "#%03lu %-4s [%4lu]  ", (ULONG)def->index, tag, (ULONG)def->size);
 }
 
@@ -431,6 +435,7 @@ static int print_array(char *str, param_def_t *def, const UBYTE *data, int value
   if ((def->format & PARAM_FORMAT_STR) == PARAM_FORMAT_STR)
   {
     strcpy(str, data);
+    strcat(str, "\n");
     return PARAM_PARSE_OK;
   }
 

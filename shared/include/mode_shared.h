@@ -8,10 +8,9 @@
 #define MODE_LOOP_BUF     0x01  // loopback in plipbox buffer (no nic)
 
 // mode_def
-// +00 u08 index
-// +01 u32 tag
-// =05
-#define MODE_DEF_SIZE      5
+// +00 u32 tag
+// =04
+#define MODE_DEF_SIZE      4
 
 // if an id was not found
 #define MODE_ID_INVALID    0xff

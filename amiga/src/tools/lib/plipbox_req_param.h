@@ -1,11 +1,11 @@
-#ifndef PLIPBOX_REQ_H
-#define PLIPBOX_REQ_H
+#ifndef PLIPBOX_REQ_PARAM_H
+#define PLIPBOX_REQ_PARAM_H
 
 #include "sanadev.h"
 #include "param.h"
 #include "req_shared.h"
 
-/* params */
+/* param reqs */
 int  plipbox_req_param_get_num(sanadev_handle_t *sh, UBYTE *num);
 int  plipbox_req_param_find_tag(sanadev_handle_t *sh, ULONG tag, UBYTE *id);
 int  plipbox_req_param_get_def(sanadev_handle_t *sh, UBYTE id, param_def_t *def);

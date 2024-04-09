@@ -4,7 +4,8 @@ include $(SCRIPT_DIR)/define.mk
 
 # lib files
 LIBTOOL_SRC = atimer.c param.c param_tag.c pktbuf.c
-LIBTOOL_SRC += plipbox_cmd.c plipbox_req.c sanadev.c
+LIBTOOL_SRC += plipbox_cmd.c sanadev.c
+LIBTOOL_SRC += plipbox_req_param.c plipbox_req_nic.c plipbox_req_mode.c
 LIBTOOL_BASE = libtool
 LIBTOOL_NAME = $(LIBTOOL_BASE)$(LIB_EXT)
 LIBTOOL_PATH = $(OBJ_PATH)/$(LIBTOOL_NAME)

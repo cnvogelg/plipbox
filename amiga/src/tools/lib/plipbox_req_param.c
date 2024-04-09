@@ -4,7 +4,7 @@
 
 #include "compiler.h"
 #include "sanadev.h"
-#include "plipbox_req.h"
+#include "plipbox_req_param.h"
 #include "plipbox_cmd.h"
 #include "param.h"
 #include "req_shared.h"

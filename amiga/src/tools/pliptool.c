@@ -6,7 +6,9 @@
 
 #include "sanadev.h"
 #include "param.h"
-#include "plipbox_req.h"
+#include "plipbox_req_param.h"
+#include "plipbox_req_mode.h"
+#include "plipbox_req_nic.h"
 #include "plipbox_cmd.h"
 
 #define LOG(x)          \
@@ -168,7 +170,7 @@ static BOOL dump_params(sanadev_handle_t *sh)
     return FALSE;
   }
 
-  Printf("Number of Parameters: %ld\n", (ULONG)num_param);
+  Printf("Parameters: (%ld total)\n", (ULONG)num_param);
   for (i = 0; i < num_param; i++)
   {
     param_def_t def;
@@ -180,6 +182,66 @@ static BOOL dump_params(sanadev_handle_t *sh)
     }
 
     dump_param(sh, &def);
+  }
+
+  return TRUE;
+}
+
+static BOOL dump_nics(sanadev_handle_t *sh)
+{
+  UWORD i;
+  UBYTE num_nics = 0;
+  int res = plipbox_req_nic_get_num(sh, &num_nics);
+  if (res != REQ_OK)
+  {
+    Printf("Error %ld getting number of NICs from device!\n", (ULONG)res);
+    return FALSE;
+  }
+
+  Printf("NICs: (%ld total)\n", (ULONG)num_nics);
+  for (i = 0; i < num_nics; i++)
+  {
+    nic_def_t def;
+    res = plipbox_req_nic_get_def(sh, i, &def);
+    if (res != REQ_OK)
+    {
+      Printf("Error getting NIC definition #%ld\n", (ULONG)i);
+      return FALSE;
+    }
+
+    UBYTE tag[5];
+    param_tag_to_str(def.tag, tag);
+    Printf("#%03lu  %-4s  %05lx\n", (ULONG)i, tag, def.caps);
+  }
+
+  return TRUE;
+}
+
+static BOOL dump_modes(sanadev_handle_t *sh)
+{
+  UWORD i;
+  UBYTE num_modes = 0;
+  int res = plipbox_req_mode_get_num(sh, &num_modes);
+  if (res != REQ_OK)
+  {
+    Printf("Error %ld getting number of modes from device!\n", (ULONG)res);
+    return FALSE;
+  }
+
+  Printf("Modes: (%ld total)\n", (ULONG)num_modes);
+  for (i = 0; i < num_modes; i++)
+  {
+    mode_def_t def;
+    res = plipbox_req_mode_get_def(sh, i, &def);
+    if (res != REQ_OK)
+    {
+      Printf("Error getting mode definition #%ld\n", (ULONG)i);
+      return FALSE;
+    }
+
+    UBYTE tag[5];
+    param_tag_to_str(def.tag, tag);
+    Printf("#%03lu  %-4s\n", (ULONG)i, tag);
   }
 
   return TRUE;
@@ -292,6 +354,18 @@ static BOOL process_cmds(sanadev_handle_t *sh)
   {
     BOOL ok = dump_params(sh);
     if (!ok)
+    {
+      return FALSE;
+    }
+
+    ok = dump_modes(sh);
+    if(!ok)
+    {
+      return FALSE;
+    }
+
+    ok = dump_nics(sh);
+    if(!ok)
     {
       return FALSE;
     }

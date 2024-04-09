@@ -36,11 +36,9 @@ void req_mode_get_def(proto_cmd_req_t *req)
   DS("MODE_GET_DEF"); DB(index); DNL;
   // convert mode_def_t to wire format
   // param description
-  // +00 u08 index
-  // +01 u32 tag
-  // =05
+  // +00 u32 tag
+  // =04
   u08 *p = req->out_buf;
-  p[0] = index;
-  wire_h2w_u32(def.tag, &p[1]);
+  wire_h2w_u32(def.tag, &p[0]);
   req->out_size = MODE_DEF_SIZE;
 }

@@ -36,13 +36,11 @@ void req_nic_get_def(proto_cmd_req_t *req)
   DS("NIC_GET_DEF"); DB(index); DNL;
   // convert mode_def_t to wire format
   // param description
-  // +00 u08 index
-  // +01 u32 tag
-  // +05 u16 caps
-  // =07
+  // +00 u32 tag
+  // +04 u16 caps
+  // =06
   u08 *p = req->out_buf;
-  p[0] = index;
-  wire_h2w_u32(def.tag, &p[1]);
-  wire_h2w_u16(def.caps, &p[5]);
+  wire_h2w_u32(def.tag, &p[0]);
+  wire_h2w_u16(def.caps, &p[4]);
   req->out_size = NIC_DEF_SIZE;
 }
