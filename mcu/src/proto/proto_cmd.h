@@ -29,12 +29,12 @@ extern u16  proto_cmd_api_get_status(void);
 extern void proto_cmd_api_ping(void);
 extern u16  proto_cmd_api_get_version(void);
 
-extern u08  proto_cmd_api_rx_size(u16 *go_size);
+extern u16  proto_cmd_api_rx_size(void);
 extern u08 *proto_cmd_api_rx_begin(u16 size);
-extern u08  proto_cmd_api_rx_end(u16 size);
+extern u16  proto_cmd_api_rx_end(u16 size);
 
 extern u08 *proto_cmd_api_tx_begin(u16 size);
-extern u08  proto_cmd_api_tx_end(u16 size);
+extern u16  proto_cmd_api_tx_end(u16 size);
 
 // ----- request -----
 struct proto_cmd_req {

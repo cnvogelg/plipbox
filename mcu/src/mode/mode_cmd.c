@@ -56,16 +56,16 @@ u08 *proto_cmd_api_tx_begin(u16 size)
   return mode_tx_begin(size);
 }
 
-u08 proto_cmd_api_tx_end(u16 size)
+u16 proto_cmd_api_tx_end(u16 size)
 {
   return mode_tx_end(size);
 }
 
 // ----- rx packet from pio and send to parallel port -----
 
-u08 proto_cmd_api_rx_size(u16 *got_size)
+u16 proto_cmd_api_rx_size()
 {
-  return mode_rx_size(got_size);
+  return mode_rx_size();
 }
 
 u08 *proto_cmd_api_rx_begin(u16 size)
@@ -73,7 +73,7 @@ u08 *proto_cmd_api_rx_begin(u16 size)
   return mode_rx_begin(size);
 }
 
-u08 proto_cmd_api_rx_end(u16 size)
+u16 proto_cmd_api_rx_end(u16 size)
 {
   return mode_rx_end(size);
 }

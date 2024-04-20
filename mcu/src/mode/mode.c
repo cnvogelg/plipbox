@@ -243,7 +243,7 @@ u08 *mode_tx_begin(u16 size)
   }
 }
 
-u08 mode_tx_end(u16 size)
+u16 mode_tx_end(u16 size)
 {
   if(attached) {
     u08 tx_status = mode_mod_tx_end(size);
@@ -255,14 +255,13 @@ u08 mode_tx_end(u16 size)
   }
 }
 
-u08 mode_rx_size(u16 *got_size)
+u16 mode_rx_size()
 {
   if(attached) {
-    return mode_mod_rx_size(got_size);
+    return mode_mod_rx_size();
   } else {
     DS("rx_size"); not_attached();
-    *got_size = 0;
-    return MODE_ERROR;
+    return 0;
   }
 }
 
@@ -276,7 +275,7 @@ u08 *mode_rx_begin(u16 size)
   }
 }
 
-u08 mode_rx_end(u16 size)
+u16 mode_rx_end(u16 size)
 {
   if(attached) {
     u08 rx_status = mode_mod_rx_end(size);

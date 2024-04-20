@@ -41,17 +41,17 @@ static u08 *tx_begin(u16 size)
   return pkt_buf;
 }
 
-static u08 tx_end(u16 size)
+static u16 tx_end(u16 size)
 {
   loop_size = size;
   return 0;
 }
 
-static u08 rx_size(u16 *got_size)
+static u16 rx_size()
 {
-  *got_size = loop_size;
+  u16 result = loop_size;
   loop_size = 0;
-  return MODE_OK;
+  return result;
 }
 
 static u08 *rx_begin(u16 size)
@@ -59,7 +59,7 @@ static u08 *rx_begin(u16 size)
   return pkt_buf;
 }
 
-static u08 rx_end(u16 size)
+static u16 rx_end(u16 size)
 {
   return 0;
 }

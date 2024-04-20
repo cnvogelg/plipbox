@@ -39,11 +39,11 @@ typedef void (*mode_mod_ping_t)(void);
 typedef u08  (*mode_mod_poll_status_t)(void);
 
 typedef u08* (*mode_mod_tx_begin_t)(u16 size);
-typedef u08  (*mode_mod_tx_end_t)(u16 size);
+typedef u16  (*mode_mod_tx_end_t)(u16 size);
 
-typedef u08  (*mode_mod_rx_size_t)(u16 *got_size);
+typedef u16 (*mode_mod_rx_size_t)(void);
 typedef u08* (*mode_mod_rx_begin_t)(u16 size);
-typedef u08  (*mode_mod_rx_end_t)(u16 size);
+typedef u16  (*mode_mod_rx_end_t)(u16 size);
 
 /* device structure */
 typedef struct {
@@ -126,18 +126,18 @@ static inline u08 *mode_mod_tx_begin(u16 size)
   return tx_begin(size);
 }
 
-static inline u08 mode_mod_tx_end(u16 size)
+static inline u16 mode_mod_tx_end(u16 size)
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
   mode_mod_tx_end_t tx_end = (mode_mod_tx_end_t)read_rom_rom_ptr(&pd->tx_end);
   return tx_end(size);
 }
 
-static inline u08 mode_mod_rx_size(u16 *got_size)
+static inline u16 mode_mod_rx_size()
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
   mode_mod_rx_size_t rx_size = (mode_mod_rx_size_t)read_rom_rom_ptr(&pd->rx_size);
-  return rx_size(got_size);
+  return rx_size();
 }
 
 static inline u08 *mode_mod_rx_begin(u16 size)
@@ -147,7 +147,7 @@ static inline u08 *mode_mod_rx_begin(u16 size)
   return rx_begin(size);
 }
 
-static inline u08 mode_mod_rx_end(u16 size)
+static inline u16 mode_mod_rx_end(u16 size)
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
   mode_mod_rx_end_t rx_end = (mode_mod_rx_end_t)read_rom_rom_ptr(&pd->rx_end);

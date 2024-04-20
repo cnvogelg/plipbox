@@ -67,7 +67,7 @@ static u08 *tx_begin(u16 size)
   return nic_tx_begin(size);
 }
 
-static u08 tx_end(u16 size)
+static u16 tx_end(u16 size)
 {
   u08 res = nic_tx_end(size);
   if(res != NIC_OK) {
@@ -76,13 +76,14 @@ static u08 tx_end(u16 size)
   return 0;
 }
 
-static u08 rx_size(u16 *got_size)
+static u16 rx_size()
 {
-  u08 res = nic_rx_size(got_size);
+  u16 got_size = 0;
+  u08 res = nic_rx_size(&got_size);
   if(res != NIC_OK) {
-    return MODE_ERROR;
+    return 0;
   }
-  return MODE_OK;
+  return got_size;
 }
 
 static u08 *rx_begin(u16 size)
@@ -90,7 +91,7 @@ static u08 *rx_begin(u16 size)
   return nic_rx_begin(size);
 }
 
-static u08 rx_end(u16 size)
+static u16 rx_end(u16 size)
 {
   u08 res = nic_rx_end(size);
   if(res != NIC_OK) {
