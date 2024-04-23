@@ -226,10 +226,15 @@ void param_reset(void)
 
 void param_get_def_mac(mac_t mac)
 {
+  // if available use OTP mac
+#ifdef HAVE_OTP_MAC
+  hw_system_otp_mac(param.mac_addr);
+#else
   // restore default param
   u08 *out = mac;
   const u08 *in = default_param.mac_addr;
   rom_copy(in, out, sizeof(mac_t));
+#endif
 }
 
 void param_get_cur_mac(mac_t mac)
