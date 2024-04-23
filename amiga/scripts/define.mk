@@ -46,3 +46,36 @@ endif
 
 # where to put test files
 TEST_DIR ?= $(HOME)/proj/plipbox
+
+# macros
+
+# --- def_tool ---
+# $1 = var
+# $2 = tool name
+define def_tool
+$1_PATH = $(BIN_PATH)/$2
+$1_SRC = $2.c $3
+$1_OBJ = $(patsubst %.c,$(OBJ_PATH)/%.o,$2.c $3)
+
+TOOLS += $2
+TOOL_PATHS += $(BIN_PATH)/$2
+endef
+
+# $1 = var
+# $2 = tool name
+define add_tool
+$2: $($1_PATH)
+
+clean-$2:
+	@echo "  CLEAN $2"
+	$(H)rm -f $($1_PATH) $($1_OBJ)
+
+test-$2:
+	@echo "  TEST $2"
+	$(H)cp $($1_PATH) $(TEST_DIR)/
+
+$($1_PATH): $($1_OBJ) $(LIBTOOL_PATH)
+	@echo "  LNK $$@"
+	$(H)$(LD) $(LDFLAGS_PRE) $(subst $(OBJ_DIR),$($(PREFIX)OBJ_DIR),$($1_OBJ)) \
+	$(LDFLAGS_APP) $(LDFLAGS_$(BUILD_TYPE)) $(subst $(BIN_DIR),$($(PREFIX)BIN_DIR),$$@)
+endef
