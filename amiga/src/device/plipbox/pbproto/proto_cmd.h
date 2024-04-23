@@ -33,12 +33,21 @@ extern int proto_cmd_get_version(proto_handle_t *proto, UWORD *version);
 
 extern int proto_cmd_attach(proto_handle_t *proto);
 extern int proto_cmd_detach(proto_handle_t *proto);
-extern int proto_cmd_get_status(proto_handle_t *proto, UWORD *status);
 
-extern int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWORD *status);
-extern int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWORD *num_bytes, UWORD *status);
+extern int proto_cmd_event_mask(proto_handle_t *proto, UWORD *event_mask);
+extern int proto_cmd_link_status(proto_handle_t *proto, UWORD *link_status);
+extern int proto_cmd_hw_status(proto_handle_t *proto, UWORD *hw_status);
+
+extern int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWORD *ret_event_mask);
+extern int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWORD *num_bytes, UWORD *ret_event_mask);
+
+extern int proto_cmd_rx_error(proto_handle_t *proto, UWORD *rx_error);
+extern int proto_cmd_tx_error(proto_handle_t *proto, UWORD *tx_error);
+
+extern int proto_cmd_rx_drop_count(proto_handle_t *proto, UWORD *rx_drops);
+extern int proto_cmd_tx_drop_count(proto_handle_t *proto, UWORD *tx_drops);
 
 extern int proto_cmd_request(proto_handle_t *proto, proto_cmd_req_t *req);
-extern int proto_cmd_request_events(proto_handle_t *proto, UWORD *req_events);
+extern int proto_cmd_request_event_mask(proto_handle_t *proto, UWORD *event_mask);
 
 #endif

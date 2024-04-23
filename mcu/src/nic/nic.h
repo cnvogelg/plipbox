@@ -73,6 +73,6 @@ extern u08 nic_rx_end(u16 size);
 extern u08 *nic_tx_begin(u16 size);
 extern u08 nic_tx_end(u16 size);
 
-extern u08 nic_ioctl(u08 status_id, u08 *value);
+extern u08 nic_ioctl(u08 status_id, void *value);
 
 #endif

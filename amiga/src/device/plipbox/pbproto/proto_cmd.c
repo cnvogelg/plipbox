@@ -78,13 +78,33 @@ int proto_cmd_detach(proto_handle_t *proto)
   return res;
 }
 
-int proto_cmd_get_status(proto_handle_t *proto, UWORD *status)
+int proto_cmd_event_mask(proto_handle_t *proto, UWORD *event_mask)
 {
   int res;
 
-  d8(("proto_cmd_get_status:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_GET_STATUS, status);
-  d8r((" status=%lx res=%ld\n", (ULONG)*status, (LONG)res));
+  d8(("proto_cmd_event_mask:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_EVENT_MASK, event_mask);
+  d8r((" mask=%lx res=%ld\n", (ULONG)*event_mask, (LONG)res));
+  return res;
+}
+
+int proto_cmd_link_status(proto_handle_t *proto, UWORD *link_status)
+{
+  int res;
+
+  d8(("proto_cmd_link_status:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_LINK_STATUS, link_status);
+  d8r((" status=%lx res=%ld\n", (ULONG)*link_status, (LONG)res));
+  return res;
+}
+
+int proto_cmd_hw_status(proto_handle_t *proto, UWORD *hw_status)
+{
+  int res;
+
+  d8(("proto_cmd_hw_status:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_HW_STATUS, hw_status);
+  d8r((" status=%lx res=%ld\n", (ULONG)*hw_status, (LONG)res));
   return res;
 }
 
@@ -161,20 +181,20 @@ int proto_cmd_request(proto_handle_t *proto, proto_cmd_req_t *req)
   return PROTO_RET_OK;
 }
 
-int proto_cmd_request_events(proto_handle_t *proto, UWORD *req_events)
+int proto_cmd_request_event_mask(proto_handle_t *proto, UWORD *req_event_mask)
 {
   int res;
 
-  d8(("proto_cmd_request_events:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_REQ_EVENTS, req_events);
-  d8r((" events=%lx res=%ld\n", *req_events, (LONG)res));
+  d8(("proto_cmd_request_event_mask:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_REQ_EVENT_MASK, req_event_mask);
+  d8r((" events=%lx res=%ld\n", *req_event_mask, (LONG)res));
 
   return res;
 }
 
 // ----- RX/TX -----
 
-int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWORD *status)
+int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWORD *ret_event_mask)
 {
   int res;
 
@@ -200,8 +220,8 @@ int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWO
     return res;
   }
 
-  res = proto_atom_read_word(proto, PROTO_CMD_TX_RESULT, status);
-  d8r((", status=%lx res=%ld\n", (ULONG)*status, (LONG)res));
+  res = proto_atom_read_word(proto, PROTO_CMD_TX_RESULT, ret_event_mask);
+  d8r((", event_mask=%lx res=%ld\n", (ULONG)*ret_event_mask, (LONG)res));
   if (res != PROTO_RET_OK)
   {
     return res;
@@ -210,7 +230,7 @@ int proto_cmd_send_frame(proto_handle_t *proto, UBYTE *buf, UWORD num_bytes, UWO
   return PROTO_RET_OK;
 }
 
-int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWORD *num_bytes, UWORD *status)
+int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWORD *num_bytes, UWORD *ret_event_mask)
 {
   int res;
 
@@ -248,12 +268,52 @@ int proto_cmd_recv_frame(proto_handle_t *proto, UBYTE *buf, UWORD max_bytes, UWO
     }
   }
 
-  res = proto_atom_read_word(proto, PROTO_CMD_RX_RESULT, status);
-  d8r((", status=%lx res=%ld\n", (ULONG)*status, (LONG)res));
+  res = proto_atom_read_word(proto, PROTO_CMD_RX_RESULT, ret_event_mask);
+  d8r((", event_mask=%lx res=%ld\n", (ULONG)*ret_event_mask, (LONG)res));
   if (res != PROTO_RET_OK)
   {
     return res;
   }
 
   return PROTO_RET_OK;
+}
+
+int proto_cmd_rx_error(proto_handle_t *proto, UWORD *rx_error)
+{
+  int res;
+
+  d8(("proto_cmd_rx_error:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_RX_ERROR, rx_error);
+  d8r((" rx_error=%lx res=%ld\n", (ULONG)*rx_error, (LONG)res));
+  return res;
+}
+
+int proto_cmd_tx_error(proto_handle_t *proto, UWORD *tx_error)
+{
+  int res;
+
+  d8(("proto_cmd_tx_error:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_TX_ERROR, tx_error);
+  d8r((" tx_error=%lx res=%ld\n", (ULONG)*tx_error, (LONG)res));
+  return res;
+}
+
+int proto_cmd_rx_drop_count(proto_handle_t *proto, UWORD *rx_drops)
+{
+  int res;
+
+  d8(("proto_cmd_rx_drops:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_RX_DROP_COUNT, rx_drops);
+  d8r((" drops=%lx res=%ld\n", (ULONG)*rx_drops, (LONG)res));
+  return res;
+}
+
+int proto_cmd_tx_drop_count(proto_handle_t *proto, UWORD *tx_drops)
+{
+  int res;
+
+  d8(("proto_cmd_tx_drops:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_TX_DROP_COUNT, tx_drops);
+  d8r((" drops=%lx res=%ld\n", (ULONG)*tx_drops, (LONG)res));
+  return res;
 }

@@ -9,9 +9,8 @@
 #endif
 
 /* wifi ioctl */
-#define NIC_WIFI_IOCTL_GET_EXT_LINK_STATUS  100 /* u08 wifi_link status */
-#define NIC_WIFI_IOCTL_GET_RSSI             101 /* s16 rssid */
-#define NIC_WIFI_IOCTL_GET_BSSID            102 /* mac_t bssid */
+#define NIC_WIFI_IOCTL_GET_RSSI             100 /* s16 rssid */
+#define NIC_WIFI_IOCTL_GET_BSSID            101 /* mac_t bssid */
 
 /* scan result */
 typedef struct nic_wifi_scan_result {
@@ -30,7 +29,6 @@ extern u08 nic_wifi_scan_busy(void);
 extern u08 nic_wifi_scan_num_result(void);
 extern const nic_wifi_scan_result_t *nic_wifi_scan_get_result(u08 index);
 
-extern u08 nic_wifi_get_ext_link_status(u08 *status);
 extern u08 nic_wifi_get_rssi(s16 *rssi);
 extern u08 nic_wifi_get_bssid(mac_t bssid);
 

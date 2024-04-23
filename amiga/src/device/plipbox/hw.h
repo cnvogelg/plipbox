@@ -62,7 +62,7 @@ REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);
 REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame);
 REGARGS BOOL hw_recv_frame(struct PLIPBase *pb, struct HWFrame *frame);
 
-REGARGS BOOL hw_get_link_status(struct PLIPBase *pb);
+REGARGS BOOL hw_get_link_status(struct PLIPBase *pb, BYTE *link_status);
 
 REGARGS ULONG hw_get_event_sigmask(struct PLIPBase *pb);
 REGARGS ULONG hw_get_extra_sigmask(struct PLIPBase *pb);

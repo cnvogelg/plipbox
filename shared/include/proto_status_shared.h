@@ -1,0 +1,18 @@
+#ifndef PROTO_STATUS_SHARED_H
+#define PROTO_STATUS_SHARED_H
+
+// link status
+#define PROTO_STATUS_LINK_UNKNOWN  0x00
+#define PROTO_STATUS_LINK_UP       0x01
+#define PROTO_STATUS_LINK_DOWN     0x02
+#define PROTO_STATUS_LINK_FAILED   0x03
+#define PROTO_STATUS_LINK_NO_NET   0x04
+#define PROTO_STATUS_LINK_BAD_AUTH 0x05
+
+// hw status
+#define PROTO_STATUS_HW_UNKNOWN    0x00
+#define PROTO_STATUS_HW_OFF        0x01
+#define PROTO_STATUS_HW_ON         0x02
+#define PROTO_STATUS_HW_ERROR_INIT 0x03
+
+#endif

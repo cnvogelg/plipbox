@@ -38,13 +38,13 @@ typedef struct {
 
 void mode_init(void);
 
+// mode_mod management
 void mode_dump_modes(void);
-
 u08  mode_get_num_modes(void);
 u08  mode_find_tag(u32 tag);
 void mode_get_def(u08 index, mode_def_t *def);
 
-u08  mode_get_proto_status(void);
+// callbacks from cmds
 void mode_ping(void);
 
 void mode_attach(void);
@@ -57,6 +57,7 @@ u16  mode_rx_size(void);
 u08 *mode_rx_begin(u16 size);
 u16  mode_rx_end(u16 size);
 
-void mode_handle(void);
+// main worker
+void mode_work(void);
 
 #endif

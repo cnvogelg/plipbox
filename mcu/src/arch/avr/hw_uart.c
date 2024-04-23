@@ -118,6 +118,12 @@ void hw_uart_send(u08 data)
   UDR = data;
 }
 
+void hw_uart_flush(void)
+{
+  // wait for transmitter to become ready
+  while(!( UCSRA & (1<<UDRE)));
+}
+
 // receiver interrupt
 #ifdef USART_RXC_vect
 ISR(USART_RXC_vect)

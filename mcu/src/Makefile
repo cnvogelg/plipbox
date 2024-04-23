@@ -47,7 +47,13 @@ SRC += pkt_buf.c net.c arp.c net_dump.c
 SRC += stats.c
 SRC += mode.c mode_mod.c mode_cmd.c mode_def.c
 SRC += mode_loop_buf.c mode_nic.c nic_test.c
-SRC += nic.c nic_def.c nic_mod.c nic_loop.c nic_enc28j60.c enc28j60.c
+SRC += nic.c nic_def.c nic_mod.c nic_loop.c
+ifeq "$(HAVE_ENC28J60)" "1"
+SRC += nic_enc28j60.c enc28j60.c
+endif
+ifeq "$(HAVE_CYW43)" "1"
+SRC += nic_cyw43.c
+endif
 SRC += $(SRC_$(ARCH))
 
 ASRC = $(ASRC_$(ARCH))

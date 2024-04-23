@@ -106,8 +106,3 @@ u08 nic_wifi_get_bssid(mac_t bssid)
 {
   return nic_mod_ioctl(NIC_WIFI_IOCTL_GET_BSSID, (u08 *)bssid);
 }
-
-u08 nic_wifi_get_ext_link_status(u08 *link_status)
-{
-  return nic_mod_ioctl(NIC_WIFI_IOCTL_GET_EXT_LINK_STATUS, link_status);
-}

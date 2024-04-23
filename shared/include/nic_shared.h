@@ -44,14 +44,6 @@
 #define NIC_WIFI_AUTH_WPA2      4
 #define NIC_WIFI_AUTH_UNKNOWN   99
 
-/* wifi ext link status */
-#define NIC_WIFI_LINK_DOWN      0
-#define NIC_WIFI_LINK_UP        1
-#define NIC_WIFI_LINK_NO_NET    2
-#define NIC_WIFI_LINK_BAD_AUTH  3
-#define NIC_WIFI_LINK_FAIL      4
-#define NIC_WIFI_LINK_UNKNOWN   99
-
 // nic_def
 // +00 u32 tag
 // +04 u16 caps

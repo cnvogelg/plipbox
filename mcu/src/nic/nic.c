@@ -213,11 +213,11 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
     if(caps_available & NIC_CAP_LINK_STATUS) {
       cap_link_status = 1;
       // show link status
-      u08 status;
-      res2 = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &status);
+      u16 link_status;
+      res2 = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &link_status);
       if(res2 == NIC_OK) {
         uart_send_pstring(PSTR(" link="));
-        uart_send_hex_byte(status);
+        uart_send_hex_word(link_status);
       }
     } else {
       cap_link_status = 0;
@@ -339,7 +339,7 @@ u08 nic_tx_end(u16 size)
   }
 }
 
-u08 nic_ioctl(u08 ioctl, u08 *value)
+u08 nic_ioctl(u08 ioctl, void *value)
 {
   if(is_attached) {
     return nic_mod_ioctl(ioctl, value);

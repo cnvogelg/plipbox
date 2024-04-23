@@ -22,6 +22,7 @@ MAX_SRAM = 2048
 #UART_BAUD = 250000
 UART_BAUD = 57600
 FLASHER = arduino
+HAVE_ENC28J60 = 1
 
 else
 ifeq "$(BOARD)" "nano"
@@ -35,6 +36,7 @@ MAX_SIZE = 30720
 MAX_SRAM = 2048
 UART_BAUD = 57600
 FLASHER = isp
+HAVE_ENC28J60 = 1
 
 else
 ifeq "$(BOARD)" "avrnetio"
@@ -48,6 +50,7 @@ MAX_SIZE = 32768
 MAX_SRAM = 2048
 UART_BAUD = 57600
 FLASHER = isp
+HAVE_ENC28J60 = 1
 
 else
 
@@ -57,6 +60,8 @@ ifeq "$(BOARD)" "picow"
 MCU = cortexm0
 ARCH = rp2
 MACH = pico
+HAVE_ENC28J60 = 1
+HAVE_CYW43 = 1
 
 else
 

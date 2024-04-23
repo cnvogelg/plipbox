@@ -153,13 +153,13 @@ static REGARGS void do_link_status(BASEPTR, BYTE link_status)
 
   /* actually no change? */
   if(link_status == pb->pb_LinkStatus) {
-    d4r(("L?"));
+    d4r(("L=%ld.", (ULONG)link_status));
     return;
   }
 
   /* update status */
   pb->pb_LinkStatus = link_status;
-  d4r(("L%ld", (ULONG)link_status));
+  d4r(("L%ld!", (ULONG)link_status));
 
   d2(("do_linkstatus: %ld\n", link_status));
 
@@ -774,7 +774,10 @@ static REGARGS void handle_hw_events(BASEPTR, UWORD hw_events)
 
   /* link up/down handling */
   if(hw_events & HW_EVENT_LINK_CHANGE) {
-    do_link_status(pb, hw_get_link_status(pb));
+    BYTE link_status = S2LINKSTATUS_UNKNOWN;
+    hw_get_link_status(pb, &link_status);
+    d4r(("l=(%ld)", (LONG)link_status));
+    do_link_status(pb, link_status);
   }
 
   /* reinit hardware?? */

@@ -62,7 +62,7 @@ static u08 tx_end(u16 size)
   return NIC_OK;
 }
 
-static u08 ioctl(u08 ioctl, u08 *value)
+static u08 ioctl(u08 ioctl, void *value)
 {
   return NIC_ERROR_IOCTL_NOT_FOUND;
 }

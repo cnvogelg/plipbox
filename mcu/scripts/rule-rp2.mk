@@ -16,7 +16,7 @@ $(BASE_DIR)/Makefile: CMakeLists.txt
 		-DCONFIG_WIFI_SSID="$(CONFIG_WIFI_SSID)" \
 		-DCONFIG_WIFI_PASS="$(CONFIG_WIFI_PASS)"
 
-$(OUTPUT).elf: $(BASE_DIR)/Makefile
+$(OUTPUT).elf: $(BASE_DIR)/Makefile $(SRC)
 	@echo "  CMAKE  build"
 	$(HIDE)$(CMAKE) --build $(BASE_DIR)
 

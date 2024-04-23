@@ -1,0 +1,15 @@
+#ifndef PROTO_EVENT_SHARED_H
+#define PROTO_EVENT_SHARED_H
+
+// bitmask of event mask
+#define PROTO_EVENT_RX_PENDING     0x0001
+#define PROTO_EVENT_LINK_STATUS    0x0002
+#define PROTO_EVENT_HW_STATUS      0x0004
+#define PROTO_EVENT_REQ_EVENTS     0x0008
+
+#define PROTO_EVENT_TX_ERROR       0x0010
+#define PROTO_EVENT_TX_DROPS       0x0020
+#define PROTO_EVENT_RX_ERROR       0x0040
+#define PROTO_EVENT_RX_DROPS       0x0080
+
+#endif

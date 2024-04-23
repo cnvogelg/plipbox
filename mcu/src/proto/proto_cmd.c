@@ -130,11 +130,26 @@ u08 proto_cmd_handle_main(void)
       proto_cmd_api_detach();
       break;
 
-    case PROTO_CMD_GET_STATUS: {
+    // ----- events -----
+    case PROTO_CMD_EVENT_MASK: {
       CHECK_STATE(PROTO_CMD_STATE_IDLE);
-      u16 status = proto_cmd_api_get_status();
-      DS("get_status:"); DW(status); DNL;
-      proto_atom_read_word(status);
+      u16 event_mask = proto_cmd_api_event_mask();
+      DS("event_mask:"); DW(event_mask); DNL;
+      proto_atom_read_word(event_mask);
+      break;
+    }
+    case PROTO_CMD_LINK_STATUS: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 link_status = proto_cmd_api_link_status();
+      DS("link_status:"); DW(link_status); DNL;
+      proto_atom_read_word(link_status);
+      break;
+    }
+    case PROTO_CMD_HW_STATUS: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 hw_status = proto_cmd_api_hw_status();
+      DS("hw_status:"); DW(hw_status); DNL;
+      proto_atom_read_word(hw_status);
       break;
     }
 
@@ -159,12 +174,27 @@ u08 proto_cmd_handle_main(void)
       DT; DS("tx_bufe:"); DW(status); DNL;
       break;
     }
-    case PROTO_CMD_TX_RESULT:
+    case PROTO_CMD_TX_RESULT: {
       CHECK_STATE(PROTO_CMD_STATE_TX);
       cmd_state = PROTO_CMD_STATE_IDLE;
       DS("tx_res:"); DW(status); DNL;
       proto_atom_read_word(status);
       break;
+    }
+    case PROTO_CMD_TX_ERROR: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 tx_error = proto_cmd_api_tx_error();
+      DS("tx_error:"); DW(tx_error); DNL;
+      proto_atom_read_word(tx_error);
+      break;
+    }
+    case PROTO_CMD_TX_DROP_COUNT: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 tx_drop_count = proto_cmd_api_tx_drop_count();
+      DS("tx_drop_count:"); DW(tx_drop_count); DNL;
+      proto_atom_read_word(tx_drop_count);
+      break;
+    }
 
     // ----- rx -----
     case PROTO_CMD_RX_SIZE: {
@@ -188,12 +218,27 @@ u08 proto_cmd_handle_main(void)
       DT; DS("rx_bufe:"); DW(status); DNL;
       break;
     }
-    case PROTO_CMD_RX_RESULT:
+    case PROTO_CMD_RX_RESULT: {
       CHECK_STATE(PROTO_CMD_STATE_RX);
       cmd_state = PROTO_CMD_STATE_IDLE;
       DS("rx_res:"); DW(status); DNL;
       proto_atom_read_word(status);
       break;
+    }
+    case PROTO_CMD_RX_ERROR: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 rx_error = proto_cmd_api_rx_error();
+      DS("rx_error:"); DW(rx_error); DNL;
+      proto_atom_read_word(rx_error);
+      break;
+    }
+    case PROTO_CMD_RX_DROP_COUNT: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 rx_drop_count = proto_cmd_api_rx_drop_count();
+      DS("rx_drop_count:"); DW(rx_drop_count); DNL;
+      proto_atom_read_word(rx_drop_count);
+      break;
+    }
 
     // ----- param -----
     case PROTO_CMD_GET_VERSION: {
@@ -237,6 +282,13 @@ u08 proto_cmd_handle_main(void)
       DS("req_out_data:"); DW(req.out_size); DNL;
       proto_atom_read_block(req.out_buf, req.out_size);
       cmd_state = PROTO_CMD_STATE_IDLE;
+      break;
+    }
+    case PROTO_CMD_REQ_EVENT_MASK: {
+      CHECK_STATE(PROTO_CMD_STATE_IDLE);
+      u16 event_mask = proto_cmd_api_req_event_mask();
+      DS("req_event_mask:"); DW(event_mask); DNL;
+      proto_atom_read_word(event_mask);
       break;
     }
 

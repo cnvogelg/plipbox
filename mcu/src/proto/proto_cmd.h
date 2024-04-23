@@ -22,19 +22,28 @@ extern void proto_cmd_trigger_status(void);
 extern u08  proto_cmd_get_state(void);
 
 // ----- API calls (defined in your app) -----
+extern void proto_cmd_api_ping(void);
+extern u16  proto_cmd_api_get_version(void);
+
 extern void proto_cmd_api_attach(void);
 extern void proto_cmd_api_detach(void);
 
-extern u16  proto_cmd_api_get_status(void);
-extern void proto_cmd_api_ping(void);
-extern u16  proto_cmd_api_get_version(void);
+extern u16  proto_cmd_api_event_mask(void);
+extern u16  proto_cmd_api_link_status(void);
+extern u16  proto_cmd_api_hw_status(void);
 
 extern u16  proto_cmd_api_rx_size(void);
 extern u08 *proto_cmd_api_rx_begin(u16 size);
 extern u16  proto_cmd_api_rx_end(u16 size);
+extern u16  proto_cmd_api_rx_error(void);
+extern u16  proto_cmd_api_rx_drop_count(void);
 
 extern u08 *proto_cmd_api_tx_begin(u16 size);
 extern u16  proto_cmd_api_tx_end(u16 size);
+extern u16  proto_cmd_api_tx_error(void);
+extern u16  proto_cmd_api_tx_drop_count(void);
+
+extern u16  proto_cmd_api_req_event_mask(void);
 
 // ----- request -----
 struct proto_cmd_req {

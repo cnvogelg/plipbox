@@ -10,6 +10,7 @@
 #include "nic_enc28j60.h"
 #include "enc28j60.h"
 #include "pkt_buf.h"
+#include "proto_status_shared.h"
 
 #define MODE_NORMAL         0
 #define MODE_LOOP_BUF       1
@@ -172,15 +173,23 @@ static u08 tx_end(u16 size)
   return NIC_OK;
 }
 
-static u08 ioctl(u08 cmd, u08 *value)
+static u08 ioctl(u08 cmd, void *value)
 {
   switch(cmd) {
-  case NIC_IOCTL_GET_HW_VERSION:
-    *value = enc28j60_hw_revision();
+  case NIC_IOCTL_GET_HW_VERSION: {
+    u08 *ptr = (u08 *)value;
+    *ptr = enc28j60_hw_revision();
     return NIC_OK;
-  case NIC_IOCTL_GET_LINK_STATUS:
-    *value = enc28j60_link_up();
+  }
+  case NIC_IOCTL_GET_LINK_STATUS: {
+    u16 *ptr = (u16 *)value;
+    if(enc28j60_link_up()) {
+      *ptr = PROTO_STATUS_LINK_UP;
+    } else {
+      *ptr = PROTO_STATUS_LINK_DOWN;
+    }
     return NIC_OK;
+  }
   default:
     return NIC_ERROR_IOCTL_NOT_FOUND;
   }

@@ -19,6 +19,7 @@
 #include "rx_buf.h"
 #include "param.h"
 #include "net.h"
+#include "proto_status_shared.h"
 
 static u08 link_up;
 
@@ -198,34 +199,31 @@ static u08 tx_end(u16 size)
   return NIC_OK;
 }
 
-static u08 ioctl(u08 cmd, u08 *value)
+static u08 ioctl(u08 cmd, void *ptr)
 {
   switch(cmd) {
   case NIC_IOCTL_GET_LINK_STATUS:
-    *value = link_up;
-    return NIC_OK;
-
-  case NIC_WIFI_IOCTL_GET_EXT_LINK_STATUS:
     {
+      u16 *value = (u16 *)ptr;
       int state = cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA);
       switch(state) {
       case CYW43_LINK_JOIN:
-        *value = NIC_WIFI_LINK_UP;
+        *value = PROTO_STATUS_LINK_UP;
         break;
       case CYW43_LINK_FAIL:
-        *value = NIC_WIFI_LINK_FAIL;
+        *value = PROTO_STATUS_LINK_FAILED;;
         break;
       case CYW43_LINK_NONET:
-        *value = NIC_WIFI_LINK_NO_NET;
+        *value = PROTO_STATUS_LINK_NO_NET;
         break;
       case CYW43_LINK_BADAUTH:
-        *value = NIC_WIFI_LINK_BAD_AUTH;
+        *value = PROTO_STATUS_LINK_BAD_AUTH;
         break;
       case CYW43_LINK_DOWN:
-        *value = NIC_WIFI_LINK_DOWN;
+        *value = PROTO_STATUS_LINK_DOWN;
         break;
       default:
-        *value = NIC_WIFI_LINK_UNKNOWN;
+        *value = PROTO_STATUS_LINK_UNKNOWN;
         break;
       }
       return NIC_OK;
@@ -233,7 +231,7 @@ static u08 ioctl(u08 cmd, u08 *value)
 
   case NIC_WIFI_IOCTL_GET_RSSI:
     {
-      s16 *rssi = (s16 *)value;
+      s16 *rssi = (s16 *)ptr;
       int32_t cy_rssi;
       int res = cyw43_wifi_get_rssi(&cyw43_state, &cy_rssi);
       if(res != 0) {
@@ -244,7 +242,8 @@ static u08 ioctl(u08 cmd, u08 *value)
 
   case NIC_WIFI_IOCTL_GET_BSSID:
     {
-      int res = cyw43_wifi_get_bssid(&cyw43_state, value);
+      u08 *mac = (u08 *)ptr;
+      int res = cyw43_wifi_get_bssid(&cyw43_state, mac);
       if(res != 0) {
         return NIC_ERROR_DEVICE_ERROR;
       }

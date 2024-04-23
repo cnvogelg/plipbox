@@ -36,7 +36,7 @@ typedef u08  (*mode_mod_attach_t)(void);
 typedef void (*mode_mod_detach_t)(void);
 
 typedef void (*mode_mod_ping_t)(void);
-typedef u08  (*mode_mod_poll_status_t)(void);
+typedef void (*mode_mod_work_t)(void);
 
 typedef u08* (*mode_mod_tx_begin_t)(u16 size);
 typedef u16  (*mode_mod_tx_end_t)(u16 size);
@@ -54,7 +54,7 @@ typedef struct {
   mode_mod_detach_t       detach;
 
   mode_mod_ping_t         ping;
-  mode_mod_poll_status_t  poll_status;
+  mode_mod_work_t         work;
 
   mode_mod_tx_begin_t     tx_begin;
   mode_mod_tx_end_t       tx_end;
@@ -112,11 +112,11 @@ static inline void mode_mod_ping(void)
   ping();
 }
 
-static inline u08 mode_mod_poll_status(void)
+static inline void mode_mod_work(void)
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
-  mode_mod_poll_status_t poll_status = (mode_mod_poll_status_t)read_rom_rom_ptr(&pd->poll_status);
-  return poll_status();
+  mode_mod_work_t work = (mode_mod_work_t)read_rom_rom_ptr(&pd->work);
+  work();
 }
 
 static inline u08 *mode_mod_tx_begin(u16 size)
@@ -133,7 +133,7 @@ static inline u16 mode_mod_tx_end(u16 size)
   return tx_end(size);
 }
 
-static inline u16 mode_mod_rx_size()
+static inline u16 mode_mod_rx_size(void)
 {
   mode_mod_ptr_t pd = mode_mod_ptr;
   mode_mod_rx_size_t rx_size = (mode_mod_rx_size_t)read_rom_rom_ptr(&pd->rx_size);

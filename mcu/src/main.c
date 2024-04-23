@@ -92,8 +92,8 @@ static int main_loop(void)
       return LOOP_RESET;
     }
 
-    // handle current mode
-    mode_handle();
+    // let the current mode work
+    mode_work();
 
     // handle commands
     res = cmd_worker();

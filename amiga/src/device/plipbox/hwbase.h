@@ -23,8 +23,11 @@ struct HWBase
   UWORD token;
 
   /* internal state */
+  UWORD event_mask;
+  UWORD link_status;
   UWORD hw_status;
-  UWORD hw_events;
+  UWORD tx_error;
+  UWORD rx_error;
   ULONG num_rx;
   ULONG num_tx;
 
