@@ -18,9 +18,16 @@ BIN_PATH = $(BIN_DIR)/$(BUILD_DIR)
 # wb             - HD install of workbench 3.1
 # sc             - install directory of SAS C 6.58 compiler
 # roadshow       - Roadshow SDK installation
-AMIGA_DIR?=$(HOME)/projects/amidev
-NETINC=$(AMIGA_DIR)/roadshow
-export AMIGA_DIR
+NDK_DIR?=$(HOME)/proj/amiga/NDK_3.2
+export NDK_DIR
+
+NDK_INC = $(NDK_DIR)/include_h
+NDK_LIB = $(NDK_DIR)/lib
+NDK_INC_ASM = $(NDK_DIR)/include_i
+
+NDK_NET_DIR = $(NDK_DIR)/SANA+RoadshowTCP-IP
+NDK_NET_INC = $(NDK_NET_DIR)/netinclude
+NDK_DEV_INC = $(NDK_NET_DIR)/include
 
 # include compiler setup
 ifeq "$(COMPILER)" "vbcc"
@@ -45,7 +52,7 @@ H := @
 endif
 
 # where to put test files
-TEST_DIR ?= $(HOME)/proj/plipbox
+TEST_DIR ?= $(HOME)/extproj/plipbox
 
 # macros
 

@@ -3,22 +3,12 @@ CC=vc +aos68km -c
 LD=vc +aos68km
 AS=vasmm68k_mot
 
-# NDK includes/libs
-NDK_DIR ?= $(AMIGA_DIR)/ndk3.2r4
-NDK_INC = $(NDK_DIR)/include_h
-NDK_LIB = $(NDK_DIR)/lib
-NDK_INC_ASM = $(NDK_DIR)/include_i
-
-# netinclude
-NET_INC ?= $(AMIGA_DIR)/roadshow/netinclude
-DEV_INC ?= $(AMIGA_DIR)/roadshow/include
-
 VBCC_TARGET_AMIGAOS ?= $(VBCC)/targets/m68k-amigaos/
 VBCC_INC = $(VBCC_TARGET_AMIGAOS)/include
 VBCC_LIB = $(VBCC_TARGET_AMIGAOS)/lib
 
 CFLAGS = -c99 -cpu=68$(CPUSUFFIX) -Os -+ -sc
-CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NET_INC) -I$(DEV_INC)
+CFLAGS += -I$(VBCC_INC) -I$(NDK_INC) -I$(NDK_NET_INC) -I$(NDK_DEV_INC)
 CFLAGS += -I../../../shared/include -I../include
 CFLAGS += $(COMMON_DEFINES)
 
