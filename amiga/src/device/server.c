@@ -739,6 +739,7 @@ static void cleanup(BASEPTR)
 
   handle_offline(pb);
 
+  /* STRANGE: better move to dev expunge */
   while (bm = (struct BufferManagement *)RemHead((struct List *)&pb->pb_BufferManagement))
     FreeVec(bm);
 

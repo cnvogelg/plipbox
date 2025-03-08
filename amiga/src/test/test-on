@@ -2,10 +2,6 @@
 echo "Flush devices"
 avail flush
 
-echo "Copy plipbox.device"
-copy proj:plipbox/plipbox.device ram:
-copy proj:plipbox/plipbox ram:
-
 echo "Shutting down Roadshow"
 NetShutdown
 

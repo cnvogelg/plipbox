@@ -1,8 +1,5 @@
 echo "shutdown net"
 NetShutdown
 
-echo "add if xsurf"
-AddNetInterface xsurf
-
-echo "network startup"
+echo "restart default network startup"
 Execute S:Network-Startup

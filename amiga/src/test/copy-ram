@@ -1,0 +1,5 @@
+echo "Copy plipbox stuff to ram:"
+copy proj:plipbox/#? ram:
+protect ram:test-on +s
+protect ram:test-off +s
+echo "done"
