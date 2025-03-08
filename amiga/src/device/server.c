@@ -84,7 +84,7 @@ static REGARGS BOOL handle_online(BASEPTR)
 
   if (pb->pb_Flags & PLIPF_OFFLINE)
   {
-    if (!hw_attach(pb))
+    if (!hw_online(pb))
     {
       d(("online: ERROR!\n"));
       rc = FALSE;
@@ -108,7 +108,7 @@ static REGARGS void handle_offline(BASEPTR)
   d2(("offline\n"));
   if (!(pb->pb_Flags & PLIPF_OFFLINE))
   {
-    hw_detach(pb);
+    hw_offline(pb);
 
     pb->pb_Flags |= PLIPF_OFFLINE;
     DoEvent(pb, S2EVENT_OFFLINE);

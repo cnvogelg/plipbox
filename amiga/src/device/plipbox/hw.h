@@ -53,8 +53,8 @@ REGARGS BOOL hw_set_mac(struct PLIPBase *pb, UBYTE *cur_mac);
 REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd);
 REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline);
 
-REGARGS BOOL hw_attach(struct PLIPBase *pb);
-REGARGS void hw_detach(struct PLIPBase *pb);
+REGARGS BOOL hw_online(struct PLIPBase *pb);
+REGARGS void hw_offline(struct PLIPBase *pb);
 
 REGARGS void hw_get_sys_time(struct PLIPBase *pb, struct timeval *time);
 REGARGS void hw_get_eclock(struct PLIPBase *pb, S2QUAD *quad);

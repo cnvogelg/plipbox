@@ -325,9 +325,9 @@ REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, B
 }
 
 /*
- * hwattach - setup hardware if device gets online
+ * hw_online - setup hardware to get device online
  */
-REGARGS BOOL hw_attach(struct PLIPBase *pb)
+REGARGS BOOL hw_online(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
@@ -349,9 +349,9 @@ REGARGS BOOL hw_attach(struct PLIPBase *pb)
 }
 
 /*
- * shutdown hardware if device gets offline
+ * hw_offline - device goes offline
  */
-REGARGS void hw_detach(struct PLIPBase *pb)
+REGARGS void hw_offline(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
