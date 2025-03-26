@@ -34,12 +34,15 @@ set(SRCS
   base/util.c
   base/uartutil.c
 
+  proto/proto_atom.c
+  proto/proto_cmd.c
+  proto/proto_api.c
+
   command/cmd.c
   command/cmd_table.c
   command/cmdkey_table.c
 
   mode/mode.c
-  mode/mode_cmd.c
   mode/mode_mod.c
 
   mode_mod/mode_def.c
@@ -63,9 +66,6 @@ set(SRCS
 
   param/param.c
   param/param_def.c
-
-  proto/proto_atom.c
-  proto/proto_cmd.c
 
   req/req.c
   req/req_param.c

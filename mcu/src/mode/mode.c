@@ -33,18 +33,26 @@
 #include "debug.h"
 #include "mode.h"
 #include "mode_mod.h"
-#include "mode_cmd.h"
 #include "param.h"
 #include "uartutil.h"
+#include "proto_api.h"
 
+static u08 request_mode;
+static u08 attached_mode;
 static u08 attached;
+static u08 status;
 
 void mode_init(void)
 {
+  request_mode = MODE_FROM_PARAM;
+  attached_mode = MODE_NONE;
   attached = 0;
+  status = MODE_STATUS_DETACHED;
+
   mode_mod_init();
-  mode_cmd_init();
 }
+
+// ----- mode module query -----
 
 void mode_dump_modes(void)
 {
@@ -102,30 +110,45 @@ void mode_work(void)
 
     // if a trigger is set then raise it
     // so the host can read out the event mask and other regs
-    mode_cmd_process_trigger();
+    proto_api_process_trigger();
   }
 }
 
-void mode_attach(void)
+u08 mode_attach(void)
 {
   if(attached) {
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("mode: already attached!"));
     uart_send_crlf();
-    return;
+    status = MODE_STATUS_ERROR_ALREADY_ATTACHED;
+    return status;
+  }
+
+  // select mode
+  u08 mode = request_mode;
+
+  // pick mode from param?
+  if(mode == MODE_FROM_PARAM) {
+    mode = param_get_mode();
+  }
+
+  // valid mode?
+  if(mode > mode_mod_get_num_modes()) {
+    uart_send_time_stamp_spc();
+    uart_send_pstring(PSTR("mode: invalid mode: "));
+    uart_send_hex_byte(mode);
+    uart_send_crlf();
+    status = MODE_STATUS_ERROR_INVALID_MODE;
   }
 
   // get current module index from param
-  u08 mod_index = param_get_mode();
-  mode_mod_set_current(mod_index);
+  mode_mod_set_current(mode);
 
   // attach and init status
-  u08 result = mode_mod_attach();
-  if(result == MODE_OK) {
+  status = mode_mod_attach();
+  if(status == MODE_STATUS_ATTACHED) {
     attached = 1;
-    mode_cmd_set_hw_status(PROTO_STATUS_HW_ON);
-  } else {
-    mode_cmd_set_hw_status(PROTO_STATUS_HW_ERROR_INIT);
+    attached_mode = mode;
   }
 
   uart_send_time_stamp_spc();
@@ -134,8 +157,24 @@ void mode_attach(void)
   uart_send_spc();
   uart_send_pstring(mode_mod_name());
   uart_send_pstring(PSTR(" -> "));
-  uart_send_hex_byte(result);
+  uart_send_hex_byte(status);
   uart_send_crlf();
+
+  return status;
+}
+
+u08 mode_get_attached_mode(void)
+{
+  if(attached) {
+    return attached_mode;
+  } else {
+    return MODE_NONE;
+  }
+}
+
+void mode_set_request_mode(u08 mode)
+{
+  request_mode = mode;
 }
 
 static void not_attached(void)
@@ -143,22 +182,26 @@ static void not_attached(void)
   DS(": not attached!!"); DNL;
 }
 
-void mode_detach(void)
+u08 mode_detach(void)
 {
   if(attached) {
     attached = 0;
+    attached_mode = MODE_NONE;
+    status = MODE_STATUS_DETACHED;
     mode_mod_detach();
 
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("mode: detached."));
     uart_send_crlf();
-
-    mode_cmd_set_hw_status(PROTO_STATUS_HW_OFF);
   } else {
+    status = MODE_STATUS_ERROR_ALREADY_DETACHED;
+
     uart_send_time_stamp_spc();
     uart_send_pstring(PSTR("mode: already detached!"));
     uart_send_crlf();
   }
+
+  return status;
 }
 
 void mode_ping(void)
@@ -167,6 +210,8 @@ void mode_ping(void)
     mode_mod_ping();
   }
 }
+
+// ----- mode packet I/O -----
 
 u08 *mode_tx_begin(u16 size)
 {
@@ -182,11 +227,11 @@ u16 mode_tx_end(u16 size)
 {
   if(attached) {
     u16 tx_error = mode_mod_tx_end(size);
-    mode_cmd_set_tx_error(tx_error);
+    proto_api_set_tx_error(tx_error);
     // let the mode work so an rx_pending might be set
     mode_mod_work();
     // take current event mask and return now
-    u16 event_mask = mode_cmd_take_event_mask();
+    u16 event_mask = proto_api_take_event_mask();
     return event_mask;
   } else {
     DS("tx_end"); not_attached();
@@ -218,11 +263,11 @@ u16 mode_rx_end(u16 size)
 {
   if(attached) {
     u16 rx_error = mode_mod_rx_end(size);
-    mode_cmd_set_rx_error(rx_error);
+    proto_api_set_rx_error(rx_error);
     // let the mode work so an rx_pending might be set
     mode_mod_work();
     // take current event mask and return now
-    u16 event_mask = mode_cmd_take_event_mask();
+    u16 event_mask = proto_api_take_event_mask();
     return event_mask;
   } else {
     DS("rx_end"); not_attached();

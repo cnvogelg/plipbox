@@ -29,9 +29,6 @@
 
 #include "mode_shared.h"
 
-#define MODE_OK           0
-#define MODE_ERROR        1
-
 typedef struct {
   u32  tag;
 } mode_def_t;
@@ -45,11 +42,13 @@ u08  mode_find_tag(u32 tag);
 void mode_get_def(u08 index, mode_def_t *def);
 
 // callbacks from cmds
+u08 mode_attach(void);
+u08 mode_detach(void);
+u08 mode_get_attached_mode(void);
+void mode_set_request_mode(u08 mode);
 void mode_ping(void);
 
-void mode_attach(void);
-void mode_detach(void);
-
+// packet io
 u08 *mode_tx_begin(u16 size);
 u16  mode_tx_end(u16 size);
 

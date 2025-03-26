@@ -38,6 +38,8 @@ typedef struct s2pb_request s2pb_request_t;
 // plipbox extra commands
 #define S2PB_GET_VERSION    (S2PB_BASE + 0)
 #define S2PB_DO_REQUEST     (S2PB_BASE + 1)
+#define S2PB_MODE_ATTACH    (S2PB_BASE + 2)
+#define S2PB_MODE_DETACH    (S2PB_BASE + 3)
 
 /*
   S2PB_GET_VERSION
@@ -70,6 +72,24 @@ typedef struct s2pb_request s2pb_request_t;
       ios2_Data: out fields in s2pb_request
 
     Execute a custom request on the plipbox device.
+
+  S2PB_MODE_ATTACH
+
+    in:
+      ios2_WireError = new mode
+    out:
+      ios2_WireError = set mode
+        or
+      ios2_Req.ioError + ios2_WireError = error
+
+  S2PB_MODE_DETACH
+
+    in:
+      ios2_WireError = mode to detach
+    out:
+      ios2_WireError = set mode
+        or
+      ios2_Req.ioError + ios2_WireError = error
 */
 
 #endif

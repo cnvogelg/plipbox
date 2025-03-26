@@ -17,21 +17,31 @@
 #define NIC_CAP_FULL_DUPLEX     0x20
 #define NIC_CAP_FLOW_CONTROL    0x40
 
-/* result values */
-#define NIC_OK                        0
-#define NIC_ERROR_INVALID_PORT        1
-#define NIC_ERROR_DEVICE_NOT_FOUND    2
-#define NIC_ERROR_IOCTL_NOT_FOUND     3
-#define NIC_ERROR_RX                  4
-#define NIC_ERROR_TX                  5
-#define NIC_ERROR_ALREADY_ATTACHED    6
-#define NIC_ERROR_NOT_ATTACHED        7
-#define NIC_ERROR_CONNECT_FAILED      8
-#define NIC_ERROR_DEVICE_ERROR        9
+/* --- nic status --- */
+#define NIC_STATUS_OK                        0
+#define NIC_STATUS_UNKNOWN                   0
+#define NIC_STATUS_ATTACHED                  1
+#define NIC_STATUS_DETACHED                  2
+#define NIC_STATUS_ERROR_INVALID_PORT        10
+#define NIC_STATUS_ERROR_DEVICE_NOT_FOUND    11
+#define NIC_STATUS_ERROR_IOCTL_NOT_FOUND     12
+#define NIC_STATUS_ERROR_RX                  13
+#define NIC_STATUS_ERROR_TX                  14
+#define NIC_STATUS_ERROR_ALREADY_ATTACHED    15
+#define NIC_STATUS_ERROR_NOT_ATTACHED        16
+#define NIC_STATUS_ERROR_CONNECT_FAILED      17
+#define NIC_STATUS_ERROR_DEVICE_ERROR        18
+/* wifi nic extended status */
+#define NIC_STATUS_ERROR_WIFI_NOT_SUPPORTED  100
+#define NIC_STATUS_ERROR_WIFI_SCAN_BUSY      101
 
-/* wifi results */
-#define NIC_ERROR_WIFI_NOT_SUPPORTED  100
-#define NIC_ERROR_WIFI_SCAN_BUSY      101
+/* --- link status --- */
+#define NIC_LINK_STATUS_UNKNOWN       0x00
+#define NIC_LINK_STATUS_UP            0x01
+#define NIC_LINK_STATUS_DOWN          0x02
+#define NIC_LINK_STATUS_FAILED        0x03
+#define NIC_LINK_STATUS_NO_NET        0x04
+#define NIC_LINK_STATUS_BAD_AUTH      0x05
 
 /* wifi parameter sizes */
 #define NIC_WIFI_SSID_SIZE      32
@@ -44,7 +54,7 @@
 #define NIC_WIFI_AUTH_WPA2      4
 #define NIC_WIFI_AUTH_UNKNOWN   99
 
-// nic_def
+/* ----- nic_def ----- */
 // +00 u32 tag
 // +04 u16 caps
 // =06

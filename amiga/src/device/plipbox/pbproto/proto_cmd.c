@@ -8,6 +8,8 @@
 #include "proto_cmd_shared.h"
 #include "param_shared.h"
 
+// low level ops
+
 int proto_cmd_reset(proto_handle_t *proto)
 {
   int res;
@@ -27,6 +29,8 @@ int proto_cmd_alive(proto_handle_t *proto)
   d8r((" res=%ld\n", (LONG)res));
   return res;
 }
+
+// driver control
 
 int proto_cmd_init(proto_handle_t *proto, UWORD token)
 {
@@ -58,25 +62,59 @@ int proto_cmd_exit(proto_handle_t *proto)
   return res;
 }
 
-int proto_cmd_attach(proto_handle_t *proto)
+int proto_cmd_get_version(proto_handle_t *proto, UWORD *version)
 {
   int res;
 
-  d8(("proto_cmd_attach:"));
-  res = proto_atom_action(proto, PROTO_CMD_ATTACH);
+  d8(("proto_cmd_get_version:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_GET_VERSION, version);
+  d8r((" version=%lx res=%ld\n", (ULONG)*version, (LONG)res));
+  return res;
+}
+
+// mode
+
+int proto_cmd_mode_attach(proto_handle_t *proto, UWORD *result)
+{
+  int res;
+
+  d8(("proto_cmd_mode_attach:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_MODE_ATTACH, result);
+  d8r((" mode=%lx res=%ld\n", (ULONG)*result, (LONG)res));
+  return res;
+}
+
+int proto_cmd_mode_detach(proto_handle_t *proto, UWORD *result)
+{
+  int res;
+
+  d8(("proto_cmd_mode_detach:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_MODE_DETACH, result);
+  d8r((" mode=%lx res=%ld\n", (ULONG)*result, (LONG)res));
+  return res;
+}
+
+int proto_cmd_mode_set(proto_handle_t *proto, UWORD mode)
+{
+  int res;
+
+  d8(("proto_cmd_mode_set: mode=%lx", (ULONG)mode));
+  res = proto_atom_write_word(proto, PROTO_CMD_MODE_SET, mode);
   d8r((" res=%ld\n", (LONG)res));
   return res;
 }
 
-int proto_cmd_detach(proto_handle_t *proto)
+int proto_cmd_mode_get(proto_handle_t *proto, UWORD *mode)
 {
   int res;
 
-  d8(("proto_cmd_detach:"));
-  res = proto_atom_action(proto, PROTO_CMD_DETACH);
-  d8r((" res=%ld\n", (LONG)res));
+  d8(("proto_cmd_mode_get:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_MODE_GET, mode);
+  d8r((" mode=%lx res=%ld\n", (ULONG)*mode, (LONG)res));
   return res;
 }
+
+// status
 
 int proto_cmd_event_mask(proto_handle_t *proto, UWORD *event_mask)
 {
@@ -92,35 +130,35 @@ int proto_cmd_link_status(proto_handle_t *proto, UWORD *link_status)
 {
   int res;
 
-  d8(("proto_cmd_link_status:"));
+  d8(("proto_cmd_nic_link_status:"));
   res = proto_atom_read_word(proto, PROTO_CMD_LINK_STATUS, link_status);
   d8r((" status=%lx res=%ld\n", (ULONG)*link_status, (LONG)res));
   return res;
 }
 
-int proto_cmd_hw_status(proto_handle_t *proto, UWORD *hw_status)
+int proto_cmd_nic_status(proto_handle_t *proto, UWORD *nic_status)
 {
   int res;
 
-  d8(("proto_cmd_hw_status:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_HW_STATUS, hw_status);
-  d8r((" status=%lx res=%ld\n", (ULONG)*hw_status, (LONG)res));
+  d8(("proto_cmd_nic_status:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_NIC_STATUS, nic_status);
+  d8r((" status=%lx res=%ld\n", (ULONG)*nic_status, (LONG)res));
   return res;
 }
 
-int proto_cmd_get_version(proto_handle_t *proto, UWORD *version)
+int proto_cmd_mode_status(proto_handle_t *proto, UWORD *mode_status)
 {
   int res;
 
-  d8(("proto_cmd_get_version:"));
-  res = proto_atom_read_word(proto, PROTO_CMD_GET_VERSION, version);
-  d8r((" version=%lx res=%ld\n", (ULONG)*version, (LONG)res));
+  d8(("proto_cmd_mode_status:"));
+  res = proto_atom_read_word(proto, PROTO_CMD_MODE_STATUS, mode_status);
+  d8r((" status=%lx res=%ld\n", (ULONG)*mode_status, (LONG)res));
   return res;
 }
 
 // ----- Request -----
 
-int proto_cmd_request(proto_handle_t *proto, proto_cmd_req_t *req)
+int proto_cmd_request(proto_handle_t *proto, proto_api_req_t *req)
 {
   int res;
   ULONG data;

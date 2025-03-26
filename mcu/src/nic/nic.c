@@ -183,12 +183,12 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
   if(is_attached) {
     uart_send_pstring(PSTR(": already attached!"));
     uart_send_crlf();
-    return NIC_ERROR_ALREADY_ATTACHED;
+    return NIC_STATUS_ERROR_ALREADY_ATTACHED;
   }
 
   // call init
   u08 result = nic_mod_attach(caps_in_use, port, mac);
-  if(result == NIC_OK) {
+  if(result == NIC_STATUS_OK) {
 
     is_attached = 1;
     uart_send_pstring(PSTR(": ok"));
@@ -204,7 +204,7 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
     // show revision
     u08 rev;
     u08 res2 = nic_mod_ioctl(NIC_IOCTL_GET_HW_VERSION, &rev);
-    if(res2 == NIC_OK) {
+    if(res2 == NIC_STATUS_OK) {
       uart_send_pstring(PSTR(" rev="));
       uart_send_hex_byte(rev);
     }
@@ -215,7 +215,7 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
       // show link status
       u16 link_status;
       res2 = nic_mod_ioctl(NIC_IOCTL_GET_LINK_STATUS, &link_status);
-      if(res2 == NIC_OK) {
+      if(res2 == NIC_STATUS_OK) {
         uart_send_pstring(PSTR(" link="));
         uart_send_hex_word(link_status);
       }
@@ -299,7 +299,7 @@ u08 nic_rx_size(u16 *got_size)
   if(is_attached) {
     return nic_mod_rx_size(got_size);
   } else {
-    return NIC_ERROR_NOT_ATTACHED;
+    return NIC_STATUS_ERROR_NOT_ATTACHED;
   }
 }
 
@@ -317,7 +317,7 @@ u08 nic_rx_end(u16 size)
   if(is_attached) {
     return nic_mod_rx_end(size);
   } else {
-    return NIC_ERROR_NOT_ATTACHED;
+    return NIC_STATUS_ERROR_NOT_ATTACHED;
   }
 }
 
@@ -335,7 +335,7 @@ u08 nic_tx_end(u16 size)
   if(is_attached) {
     return nic_mod_tx_end(size);
   } else {
-    return NIC_ERROR_NOT_ATTACHED;
+    return NIC_STATUS_ERROR_NOT_ATTACHED;
   }
 }
 
@@ -344,6 +344,6 @@ u08 nic_ioctl(u08 ioctl, void *value)
   if(is_attached) {
     return nic_mod_ioctl(ioctl, value);
   } else {
-    return NIC_ERROR_NOT_ATTACHED;
+    return NIC_STATUS_ERROR_NOT_ATTACHED;
   }
 }

@@ -8,34 +8,34 @@
 #include "mode_mod.h"
 #include "mode.h"
 #include "mode_nic.h"
-#include "mode_cmd.h"
 #include "pkt_buf.h"
 #include "nic.h"
 #include "param.h"
 #include "proto_error_shared.h"
+#include "proto_api.h"
 
 static u08 signalled_rx_pending = 0;
 
 static u08 attach(void)
 {
   u08 res = nic_attach_params();
-  if(res != NIC_OK) {
-    return MODE_ERROR;
+  if(res != NIC_STATUS_ATTACHED) {
+    return MODE_STATUS_ERROR_NIC_INIT;
   }
 
   // fake link status
   if(!nic_has_link_status()) {
-    mode_cmd_set_link_status(PROTO_STATUS_LINK_UP);
+    proto_api_set_link_status(NIC_LINK_STATUS_UP);
   }
 
   signalled_rx_pending = 0;
 
-  return MODE_OK;
+  return MODE_STATUS_ATTACHED;
 }
 
 static void detach(void)
 {
-  mode_cmd_set_link_status(PROTO_STATUS_LINK_DOWN);
+  proto_api_set_link_status(NIC_LINK_STATUS_DOWN);
 
   nic_detach();
 }
@@ -50,7 +50,7 @@ static void work(void)
   // set rx pending
   if(!signalled_rx_pending) {
     if(nic_rx_num_pending() > 0) {
-      mode_cmd_set_rx_pending();
+      proto_api_set_rx_pending();
       signalled_rx_pending = 1;
     }
   }
@@ -59,13 +59,13 @@ static void work(void)
   if(nic_has_link_status()) {
     u16 link_status = 0;
     u08 ok = nic_ioctl(NIC_IOCTL_GET_LINK_STATUS, &link_status);
-    if(ok == NIC_OK) {
-      u16 current_status = mode_cmd_get_link_status();
+    if(ok == NIC_STATUS_OK) {
+      u16 current_status = proto_api_get_link_status();
       if(link_status != current_status) {
-        mode_cmd_set_link_status(link_status);
+        proto_api_set_link_status(link_status);
       }
     } else {
-      mode_cmd_set_link_status(PROTO_STATUS_LINK_UNKNOWN);
+      proto_api_set_link_status(NIC_LINK_STATUS_UNKNOWN);
     }
   }
 }
@@ -78,7 +78,7 @@ static u08 *tx_begin(u16 size)
 static u16 tx_end(u16 size)
 {
   u08 res = nic_tx_end(size);
-  if(res != NIC_OK) {
+  if(res != NIC_STATUS_OK) {
     return PROTO_ERROR_TX_FAILED;
   }
   return PROTO_ERROR_TX_OK;
@@ -88,7 +88,7 @@ static u16 rx_size(void)
 {
   u16 got_size = 0;
   u08 res = nic_rx_size(&got_size);
-  if(res != NIC_OK) {
+  if(res != NIC_STATUS_OK) {
     return 0;
   }
   return got_size;
@@ -104,7 +104,7 @@ static u16 rx_end(u16 size)
   signalled_rx_pending = 0;
 
   u08 res = nic_rx_end(size);
-  if(res != NIC_OK) {
+  if(res != NIC_STATUS_OK) {
     return PROTO_ERROR_RX_FAILED;
   }
   return PROTO_ERROR_RX_OK;

@@ -11,7 +11,7 @@
 int proto_req_get_cur_mac(proto_handle_t *proto, mac_t mac)
 {
   int res;
-  proto_cmd_req_t req = {
+  proto_api_req_t req = {
     .command = REQ_PARAM_GET_CUR_MAC,
     .in_size = 0,
     .out_size = MAC_SIZE,
@@ -29,7 +29,7 @@ int proto_req_get_cur_mac(proto_handle_t *proto, mac_t mac)
 int proto_req_get_def_mac(proto_handle_t *proto, mac_t mac)
 {
   int res;
-  proto_cmd_req_t req = {
+  proto_api_req_t req = {
     .command = REQ_PARAM_GET_DEF_MAC,
     .in_size = 0,
     .out_size = MAC_SIZE,
@@ -47,7 +47,7 @@ int proto_req_get_def_mac(proto_handle_t *proto, mac_t mac)
 int proto_req_set_cur_mac(proto_handle_t *proto, mac_t mac)
 {
   int res;
-  proto_cmd_req_t req = {
+  proto_api_req_t req = {
     .command = REQ_PARAM_SET_CUR_MAC,
     .in_size = MAC_SIZE,
     .in_buf = mac,

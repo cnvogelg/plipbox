@@ -18,7 +18,7 @@ BIN_PATH = $(BIN_DIR)/$(BUILD_DIR)
 # wb             - HD install of workbench 3.1
 # sc             - install directory of SAS C 6.58 compiler
 # roadshow       - Roadshow SDK installation
-NDK_DIR?=$(HOME)/proj/amiga/NDK_3.2
+NDK_DIR?=$(HOME)/proj/amiga/NDK/NDK_3.2
 export NDK_DIR
 
 NDK_INC = $(NDK_DIR)/include_h

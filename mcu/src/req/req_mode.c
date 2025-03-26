@@ -13,13 +13,13 @@
 #include "req_mode.h"
 #include "req_shared.h"
 
-void req_mode_get_num(proto_cmd_req_t *req)
+void req_mode_get_num(proto_api_req_t *req)
 {
   req->out_extra = mode_get_num_modes();
   DS("MODE_GET_NUM:"); DB(req->out_extra); DNL;
 }
 
-void req_mode_find_tag(proto_cmd_req_t *req)
+void req_mode_find_tag(proto_api_req_t *req)
 {
   u32 tag = 0;
   wire_w2h_u32(req->in_buf, &tag);
@@ -28,7 +28,7 @@ void req_mode_find_tag(proto_cmd_req_t *req)
   req->out_extra = index;
 }
 
-void req_mode_get_def(proto_cmd_req_t *req)
+void req_mode_get_def(proto_api_req_t *req)
 {
   u08 index = req->in_extra;
   mode_def_t def;

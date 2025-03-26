@@ -13,13 +13,13 @@
 #include "req_param.h"
 #include "req_shared.h"
 
-void req_param_get_num(proto_cmd_req_t *req)
+void req_param_get_num(proto_api_req_t *req)
 {
   req->out_extra = param_get_num();
   DS("PARAM_GET_NUM:"); DB(req->out_extra); DNL;
 }
 
-void req_param_find_tag(proto_cmd_req_t *req)
+void req_param_find_tag(proto_api_req_t *req)
 {
   u32 tag = 0;
   wire_w2h_u32(req->in_buf, &tag);
@@ -28,7 +28,7 @@ void req_param_find_tag(proto_cmd_req_t *req)
   req->out_extra = index;
 }
 
-void req_param_get_def(proto_cmd_req_t *req)
+void req_param_get_def(proto_api_req_t *req)
 {
   u08 index = req->in_extra;
   param_def_t def;
@@ -53,7 +53,7 @@ void req_param_get_def(proto_cmd_req_t *req)
   req->out_size = PARAM_DEF_SIZE;
 }
 
-void req_param_get_val(proto_cmd_req_t *req)
+void req_param_get_val(proto_api_req_t *req)
 {
   u08 index = req->in_extra;
   DS("PARAM_GET_VAL:"); DB(index);
@@ -76,7 +76,7 @@ void req_param_get_val(proto_cmd_req_t *req)
   DNL;
 }
 
-void req_param_set_val(proto_cmd_req_t *req)
+void req_param_set_val(proto_api_req_t *req)
 {
   u08 index = req->in_extra;
   DS("PARAM_SET_VAL:"); DB(index);
@@ -99,13 +99,13 @@ void req_param_set_val(proto_cmd_req_t *req)
   DNL;
 }
 
-void req_param_reset(proto_cmd_req_t *req)
+void req_param_reset(proto_api_req_t *req)
 {
   DS("PREFS_RESET"); DNL;
   param_reset();
 }
 
-void req_param_load(proto_cmd_req_t *req)
+void req_param_load(proto_api_req_t *req)
 {
   u08 res = param_load();
   DS("PREFS_LOAD:"); DB(res); DNL;
@@ -114,7 +114,7 @@ void req_param_load(proto_cmd_req_t *req)
   }
 }
 
-void req_param_save(proto_cmd_req_t *req)
+void req_param_save(proto_api_req_t *req)
 {
   u08 res = param_save();
   DS("PREFS_SAVE:"); DB(res); DNL;
@@ -123,7 +123,7 @@ void req_param_save(proto_cmd_req_t *req)
   }
 }
 
-void req_param_get_def_mac(proto_cmd_req_t *req)
+void req_param_get_def_mac(proto_api_req_t *req)
 {
   mac_t mac;
   param_get_def_mac(mac);
@@ -132,7 +132,7 @@ void req_param_get_def_mac(proto_cmd_req_t *req)
   req->out_size = MAC_SIZE;
 }
 
-void req_param_get_cur_mac(proto_cmd_req_t *req)
+void req_param_get_cur_mac(proto_api_req_t *req)
 {
   mac_t mac;
   param_get_cur_mac(mac);
@@ -141,7 +141,7 @@ void req_param_get_cur_mac(proto_cmd_req_t *req)
   req->out_size = MAC_SIZE;
 }
 
-void req_param_set_cur_mac(proto_cmd_req_t *req)
+void req_param_set_cur_mac(proto_api_req_t *req)
 {
   DS("MAC_SET_CUR:"); DNL;
   if(req->in_size != MAC_SIZE) {

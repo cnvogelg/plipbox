@@ -7,7 +7,7 @@
 #endif
 
 #include "debug.h"
-#include "proto_cmd.h"
+#include "proto_api.h"
 #include "req.h"
 #include "req_shared.h"
 #include "param_shared.h"
@@ -18,7 +18,7 @@
 static u08 in_buf[REQ_IN_BUF_SIZE];
 static u08 out_buf[REQ_OUT_BUF_SIZE];
 
-static void dispatch_req(proto_cmd_req_t *req)
+static void dispatch_req(proto_api_req_t *req)
 {
   DS("dispatch_req:"); DB(req->command); DNL;
   switch(req->command) {
@@ -105,7 +105,7 @@ static void dispatch_req(proto_cmd_req_t *req)
   }
 }
 
-void proto_cmd_api_req_in(proto_cmd_req_t *req)
+void proto_api_cmd_req_in(proto_api_req_t *req)
 {
   // check in_size
   if(req->in_size > REQ_IN_BUF_SIZE) {
@@ -117,7 +117,7 @@ void proto_cmd_api_req_in(proto_cmd_req_t *req)
   req->in_buf = in_buf;
 }
 
-void proto_cmd_api_req_out(proto_cmd_req_t *req)
+void proto_api_cmd_req_out(proto_api_req_t *req)
 {
   req->out_buf = out_buf;
   req->out_size = 0;

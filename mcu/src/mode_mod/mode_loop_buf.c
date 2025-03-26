@@ -6,10 +6,11 @@
 
 #include "debug.h"
 #include "mode_mod.h"
-#include "mode_cmd.h"
 #include "mode.h"
 #include "pkt_buf.h"
 #include "proto_error_shared.h"
+#include "proto_api.h"
+#include "nic.h"
 
 static u16 loop_size;
 
@@ -18,14 +19,14 @@ static u08 attach(void)
   loop_size = 0;
 
   // fake link up
-  mode_cmd_set_link_status(PROTO_STATUS_LINK_UP);
+  proto_api_set_link_status(NIC_LINK_STATUS_UP);
 
-  return MODE_OK;
+  return MODE_STATUS_ATTACHED;
 }
 
 static void detach(void)
 {
-  mode_cmd_set_link_status(PROTO_STATUS_LINK_DOWN);
+  proto_api_set_link_status(NIC_LINK_STATUS_DOWN);
 }
 
 static void ping(void)
@@ -44,7 +45,7 @@ static u08 *tx_begin(u16 size)
 static u16 tx_end(u16 size)
 {
   loop_size = size;
-  mode_cmd_set_rx_pending();
+  proto_api_set_rx_pending();
   return PROTO_ERROR_TX_OK;
 }
 

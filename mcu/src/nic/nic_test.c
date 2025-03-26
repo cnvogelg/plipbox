@@ -27,7 +27,7 @@ void nic_test_status(void)
   u16 link_status = 0;
   u08 ok = nic_ioctl(NIC_IOCTL_GET_LINK_STATUS, &link_status);
   uart_send_pstring(PSTR(",link="));
-  if(ok == NIC_OK) {
+  if(ok == NIC_STATUS_OK) {
     uart_send_hex_word(link_status);
   } else {
     uart_send_pstring(PSTR("err="));
@@ -83,7 +83,7 @@ void nic_test_rx(void)
       const u08 *buf = nic_rx_begin(size);
       uart_send_pstring(PSTR(",res="));
       uart_send_hex_byte(res);
-      if(res == NIC_OK) {
+      if(res == NIC_STATUS_OK) {
         uart_send_crlf();
         net_dump_pkt(buf, size);
       }

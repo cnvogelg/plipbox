@@ -37,6 +37,7 @@
 
 #include "proto_cmd.h"
 #include "proto_cmd_shared.h"
+#include "proto_api.h"
 #include "mode.h"
 #include "nic.h"
 
@@ -135,7 +136,7 @@ int main(void)
 #endif
 
   // parallel proto init
-  proto_cmd_init();
+  proto_api_init();
 
   // main ops: waiting for driver and main loop
   int result = LOOP_DONE;

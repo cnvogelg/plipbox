@@ -37,7 +37,7 @@ static u08 rx_num_pending(void)
 static u08 rx_size(u16 *got_size)
 {
   *got_size = pkt_size;
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 *rx_begin(u16 size)
@@ -48,7 +48,7 @@ static u08 *rx_begin(u16 size)
 static u08 rx_end(u16 size)
 {
   pkt_size = 0;
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 *tx_begin(u16 size)
@@ -59,12 +59,12 @@ static u08 *tx_begin(u16 size)
 static u08 tx_end(u16 size)
 {
   pkt_size = size;
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 ioctl(u08 ioctl, void *value)
 {
-  return NIC_ERROR_IOCTL_NOT_FOUND;
+  return NIC_STATUS_ERROR_IOCTL_NOT_FOUND;
 }
 
 // ----- NIC module -----

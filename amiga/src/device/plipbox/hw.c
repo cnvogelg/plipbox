@@ -12,9 +12,10 @@
 #include "hw.h"
 #include "hwbase.h"
 #include "proto_cmd.h"
-#include "proto_status_shared.h"
 #include "proto_event_shared.h"
 #include "proto_req.h"
+#include "mode_shared.h"
+#include "nic_shared.h"
 #include "devices/plipbox.h"
 #include "devices/sana2link.h"
 
@@ -263,8 +264,57 @@ REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
   {
   case S2PB_GET_VERSION:
   case S2PB_DO_REQUEST:
+  case S2PB_MODE_ATTACH:
+  case S2PB_MODE_DETACH:
     return TRUE;
   default:
+    return FALSE;
+  }
+}
+
+static BOOL mode_attach(struct PLIPBase *pb, UWORD *mode)
+{
+  int ok;
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+
+  // first check that no other mode is active
+  UWORD old_mode = 0;
+  ok = proto_cmd_mode_get(hwb->proto, &old_mode);
+  if(ok != PROTO_RET_OK) {
+    return FALSE;
+  }
+  if(old_mode != MODE_NONE) {
+    return FALSE;
+  }
+
+  // set new mode
+  ok = proto_cmd_mode_set(hwb->proto, *mode);
+  if(ok != PROTO_RET_OK) {
+    return FALSE;
+  }
+
+  // attach to mode
+  ok = proto_cmd_mode_attach(hwb->proto, &hwb->mode_status);
+  if(ok != PROTO_RET_OK) {
+    return FALSE;
+  }
+
+  // get actual mode
+  ok = proto_cmd_mode_get(hwb->proto, mode);
+  if(ok != PROTO_RET_OK) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+static BOOL mode_detach(struct PLIPBase *pb)
+{
+  int ok;
+  struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
+
+  ok = proto_cmd_mode_detach(hwb->proto, &hwb->mode_status);
+  if(ok != PROTO_RET_OK) {
     return FALSE;
   }
 }
@@ -272,16 +322,9 @@ REGARGS BOOL hw_can_handle_special_cmd(struct PLIPBase *pb, UWORD cmd)
 REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
-  int res = PROTO_RET_OK;
+  BOOL ok = TRUE;
+  int res;
   int return_value = HW_SPECIAL_CMD_OK;
-
-  /* commands need offline mode */
-  if (!offline)
-  {
-    req->ios2_Req.io_Error = S2ERR_BAD_STATE;
-    req->ios2_WireError = S2WERR_UNIT_ONLINE;
-    return HW_SPECIAL_CMD_ERROR;
-  }
 
   switch (req->ios2_Req.io_Command)
   {
@@ -295,16 +338,45 @@ REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, B
   }
   case S2PB_DO_REQUEST:
   {
-    if (req->ios2_DataLength != sizeof(proto_cmd_req_t))
+    if (req->ios2_DataLength != sizeof(proto_api_req_t))
     {
       req->ios2_Req.io_Error = S2ERR_BAD_ARGUMENT;
       req->ios2_WireError = S2WERR_GENERIC_ERROR;
     }
     else
     {
-      proto_cmd_req_t *preq = (proto_cmd_req_t *)req->ios2_Data;
+      proto_api_req_t *preq = (proto_api_req_t *)req->ios2_Data;
       res = proto_cmd_request(hwb->proto, preq);
+      if(res != PROTO_RET_OK) {
+        ok = FALSE;
+      }
     }
+    break;
+  }
+  case S2PB_MODE_ATTACH:
+  {
+    /* commands need offline mode */
+    if (!offline)
+    {
+      req->ios2_Req.io_Error = S2ERR_BAD_STATE;
+      req->ios2_WireError = S2WERR_UNIT_ONLINE;
+      return HW_SPECIAL_CMD_ERROR;
+    }
+    UWORD mode = (UWORD)req->ios2_WireError;
+    ok = mode_attach(pb, &mode);
+    req->ios2_WireError = mode;
+    break;
+  }
+  case S2PB_MODE_DETACH:
+  {
+    /* commands need offline mode */
+    if (!offline)
+    {
+      req->ios2_Req.io_Error = S2ERR_BAD_STATE;
+      req->ios2_WireError = S2WERR_UNIT_ONLINE;
+      return HW_SPECIAL_CMD_ERROR;
+    }
+    ok = mode_detach(pb);
     break;
   }
   default:
@@ -312,7 +384,7 @@ REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, B
   }
 
   /* update error in req */
-  if (res != PROTO_RET_OK)
+  if (!ok)
   {
     req->ios2_Req.io_Error = S2ERR_SOFTWARE;
     req->ios2_WireError = S2WERR_GENERIC_ERROR;
@@ -331,21 +403,20 @@ REGARGS BOOL hw_online(struct PLIPBase *pb)
 {
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
-  // attach to device
-  d4r(("A"));
-  int ok = proto_cmd_attach(hwb->proto);
-  if(ok != PROTO_RET_OK) {
-    return FALSE;
-  }
+  d4r(("A:"));
+
+  UWORD mode = MODE_FROM_PARAM;
+  BOOL ok = mode_attach(pb, &mode);
 
   // reset status
   hwb->event_mask = 0;
-  hwb->link_status = PROTO_STATUS_LINK_UNKNOWN;
-  hwb->hw_status = PROTO_STATUS_HW_UNKNOWN;
+  hwb->link_status = NIC_LINK_STATUS_UNKNOWN;
   hwb->rx_error = 0;
   hwb->tx_error = 0;
 
-  return TRUE;
+  d4r(("%ld", (ULONG)hwb->mode_status));
+
+  return ok;
 }
 
 /*
@@ -356,8 +427,11 @@ REGARGS void hw_offline(struct PLIPBase *pb)
   struct HWBase *hwb = (struct HWBase *)pb->pb_HWBase;
 
   // detach from device
-  d4r(("D"));
-  proto_cmd_detach(hwb->proto);
+  d4r(("D:"));
+
+  mode_detach(pb);
+
+  d4r(("%ld", (ULONG)hwb->mode_status));
 }
 
 REGARGS BOOL hw_send_frame(struct PLIPBase *pb, struct HWFrame *frame)
@@ -559,10 +633,10 @@ REGARGS BOOL hw_get_link_status(struct PLIPBase *pb, BYTE *link_status)
 
   // map link status
   switch(proto_link_status) {
-  case PROTO_STATUS_LINK_UP:
+  case NIC_LINK_STATUS_UP:
     *link_status = S2LINKSTATUS_UP;
     break;
-  case PROTO_STATUS_LINK_UNKNOWN:
+  case NIC_LINK_STATUS_UNKNOWN:
     *link_status = S2LINKSTATUS_UNKNOWN;
     break;
   default:

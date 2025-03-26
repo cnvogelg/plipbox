@@ -4,7 +4,7 @@
 // bitmask of event mask
 #define PROTO_EVENT_RX_PENDING     0x0001
 #define PROTO_EVENT_LINK_STATUS    0x0002
-#define PROTO_EVENT_HW_STATUS      0x0004
+#define PROTO_EVENT_NIC_STATUS     0x0004
 #define PROTO_EVENT_REQ_EVENTS     0x0008
 
 #define PROTO_EVENT_TX_ERROR       0x0010

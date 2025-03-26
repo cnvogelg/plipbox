@@ -25,7 +25,8 @@ struct HWBase
   /* internal state */
   UWORD event_mask;
   UWORD link_status;
-  UWORD hw_status;
+  UWORD nic_status;
+  UWORD mode_status;
   UWORD tx_error;
   UWORD rx_error;
   ULONG num_rx;

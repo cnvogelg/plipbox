@@ -10,7 +10,6 @@
 #include "nic_enc28j60.h"
 #include "enc28j60.h"
 #include "pkt_buf.h"
-#include "proto_status_shared.h"
 
 #define MODE_NORMAL         0
 #define MODE_LOOP_BUF       1
@@ -48,13 +47,13 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
 {
   // check port
   if(port > enc28j60_num_ports()) {
-    return NIC_ERROR_INVALID_PORT;
+    return NIC_STATUS_ERROR_INVALID_PORT;
   }
 
   // try to reset enc and identify
   u08 res = enc28j60_reset_and_find(port);
   if(res == ENC28J60_ERROR_NOT_FOUND) {
-    return NIC_ERROR_DEVICE_NOT_FOUND;
+    return NIC_STATUS_ERROR_DEVICE_NOT_FOUND;
   }
 
   map_caps(caps);
@@ -70,7 +69,7 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
     enc28j60_enable_rx();
   }
 
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static void detach(void)
@@ -109,10 +108,10 @@ static u08 rx_size(u16 *got_size)
   } else {
     u08 ok = enc28j60_rx_size(got_size);
     if(ok != ENC28J60_OK) {
-      return NIC_ERROR_RX;
+      return NIC_STATUS_ERROR_RX;
     }
   }
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 *rx_begin(u16 size)
@@ -139,7 +138,7 @@ static u08 rx_end(u16 size)
   } else {
     enc28j60_rx_end();
   }
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 *tx_begin(u16 size)
@@ -170,7 +169,7 @@ static u08 tx_end(u16 size)
     enc28j60_tx_end(size);
   }
 
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 ioctl(u08 cmd, void *value)
@@ -179,19 +178,19 @@ static u08 ioctl(u08 cmd, void *value)
   case NIC_IOCTL_GET_HW_VERSION: {
     u08 *ptr = (u08 *)value;
     *ptr = enc28j60_hw_revision();
-    return NIC_OK;
+    return NIC_STATUS_OK;
   }
   case NIC_IOCTL_GET_LINK_STATUS: {
     u16 *ptr = (u16 *)value;
     if(enc28j60_link_up()) {
-      *ptr = PROTO_STATUS_LINK_UP;
+      *ptr = NIC_LINK_STATUS_UP;
     } else {
-      *ptr = PROTO_STATUS_LINK_DOWN;
+      *ptr = NIC_LINK_STATUS_DOWN;
     }
-    return NIC_OK;
+    return NIC_STATUS_OK;
   }
   default:
-    return NIC_ERROR_IOCTL_NOT_FOUND;
+    return NIC_STATUS_ERROR_IOCTL_NOT_FOUND;
   }
 }
 

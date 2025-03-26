@@ -55,7 +55,7 @@ u08 nic_wifi_is_available(void)
 u08 nic_wifi_scan_start(void)
 {
   if(scan_active) {
-    return NIC_ERROR_WIFI_SCAN_BUSY;
+    return NIC_STATUS_ERROR_WIFI_SCAN_BUSY;
   }
 
   num_scan_results = 0;
@@ -65,7 +65,7 @@ u08 nic_wifi_scan_start(void)
   u08 res = nic_wifi_mod_scan_start(wifi_scan_cb);
   uart_send_hex_byte(res);
   uart_send_crlf();
-  if(res == NIC_OK) {
+  if(res == NIC_STATUS_OK) {
     scan_active = 1;
   }
   return res;

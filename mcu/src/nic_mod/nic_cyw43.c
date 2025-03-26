@@ -19,7 +19,6 @@
 #include "rx_buf.h"
 #include "param.h"
 #include "net.h"
-#include "proto_status_shared.h"
 
 static u08 link_up;
 
@@ -97,7 +96,7 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
   DT; DS(("cyw43: init:mac=")); DM(mac);
   if(cyw43_arch_init()) {
     DS(("FAILED!\n"));
-    return NIC_ERROR_DEVICE_NOT_FOUND;
+    return NIC_STATUS_ERROR_DEVICE_NOT_FOUND;
   }
 
   // set mac
@@ -111,7 +110,7 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
   cyw43_wifi_get_mac(&cyw43_state, CYW43_ITF_STA, amac);
   DS((",got=")); DM(amac); DNL;
   if(!net_compare_mac(mac, amac)) {
-    return NIC_ERROR_DEVICE_ERROR;
+    return NIC_STATUS_ERROR_DEVICE_ERROR;
   }
 
   // start connection
@@ -122,14 +121,14 @@ static u08 attach(u16 caps, u08 port, mac_t mac)
   int res = cyw43_arch_wifi_connect_async(ssid, pass, CYW43_AUTH_WPA2_MIXED_PSK);
   if(res != PICO_OK) {
     DS(("FAILED!\n"));
-    return NIC_ERROR_CONNECT_FAILED;
+    return NIC_STATUS_ERROR_CONNECT_FAILED;
   }
   DS(("ok\n"));
 
   link_up = 0;
   rx_buf_init();
 
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static void detach(void)
@@ -167,7 +166,7 @@ static u08 rx_num_pending(void)
 static u08 rx_size(u16 *got_size)
 {
   *got_size = rx_buf_peek_buf_size();
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 *rx_begin(u16 size)
@@ -178,7 +177,7 @@ static u08 *rx_begin(u16 size)
 
 static u08 rx_end(u16 size)
 {
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 *tx_begin(u16 size)
@@ -192,11 +191,11 @@ static u08 tx_end(u16 size)
   int ret = cyw43_send_ethernet(&cyw43_state, CYW43_ITF_STA, size, pkt_buf, 0);
   if(ret != PICO_OK) {
     DS((":ERROR!\n"));
-    return NIC_ERROR_TX;
+    return NIC_STATUS_ERROR_TX;
   }
   DS((":ok\n"));
 
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 static u08 ioctl(u08 cmd, void *ptr)
@@ -208,25 +207,25 @@ static u08 ioctl(u08 cmd, void *ptr)
       int state = cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA);
       switch(state) {
       case CYW43_LINK_JOIN:
-        *value = PROTO_STATUS_LINK_UP;
+        *value = NIC_LINK_STATUS_UP;
         break;
       case CYW43_LINK_FAIL:
-        *value = PROTO_STATUS_LINK_FAILED;;
+        *value = NIC_LINK_STATUS_FAILED;;
         break;
       case CYW43_LINK_NONET:
-        *value = PROTO_STATUS_LINK_NO_NET;
+        *value = NIC_LINK_STATUS_NO_NET;
         break;
       case CYW43_LINK_BADAUTH:
-        *value = PROTO_STATUS_LINK_BAD_AUTH;
+        *value = NIC_LINK_STATUS_BAD_AUTH;
         break;
       case CYW43_LINK_DOWN:
-        *value = PROTO_STATUS_LINK_DOWN;
+        *value = NIC_LINK_STATUS_DOWN;
         break;
       default:
-        *value = PROTO_STATUS_LINK_UNKNOWN;
+        *value = NIC_LINK_STATUS_UNKNOWN;
         break;
       }
-      return NIC_OK;
+      return NIC_STATUS_OK;
     }
 
   case NIC_WIFI_IOCTL_GET_RSSI:
@@ -235,9 +234,9 @@ static u08 ioctl(u08 cmd, void *ptr)
       int32_t cy_rssi;
       int res = cyw43_wifi_get_rssi(&cyw43_state, &cy_rssi);
       if(res != 0) {
-        return NIC_ERROR_DEVICE_ERROR;
+        return NIC_STATUS_ERROR_DEVICE_ERROR;
       }
-      return NIC_OK;
+      return NIC_STATUS_OK;
     }
 
   case NIC_WIFI_IOCTL_GET_BSSID:
@@ -245,13 +244,13 @@ static u08 ioctl(u08 cmd, void *ptr)
       u08 *mac = (u08 *)ptr;
       int res = cyw43_wifi_get_bssid(&cyw43_state, mac);
       if(res != 0) {
-        return NIC_ERROR_DEVICE_ERROR;
+        return NIC_STATUS_ERROR_DEVICE_ERROR;
       }
-      return NIC_OK;
+      return NIC_STATUS_OK;
     }
 
   default:
-    return NIC_ERROR_IOCTL_NOT_FOUND;
+    return NIC_STATUS_ERROR_IOCTL_NOT_FOUND;
   }
 }
 
@@ -261,7 +260,7 @@ u08 wifi_scan_start(nic_wifi_mod_scan_result_t result_cb)
 {
   // can't start new scan since a scan is still busy
   if(cyw43_wifi_scan_active(&cyw43_state)) {
-    return NIC_ERROR_WIFI_SCAN_BUSY;
+    return NIC_STATUS_ERROR_WIFI_SCAN_BUSY;
   }
 
   // start scan
@@ -270,11 +269,11 @@ u08 wifi_scan_start(nic_wifi_mod_scan_result_t result_cb)
   int res= cyw43_wifi_scan(&cyw43_state, &scan_options, result_cb, wifi_scan_result);
   if(res != PICO_OK) {
     DS(("ERROR\n"));
-    return NIC_ERROR_DEVICE_ERROR;
+    return NIC_STATUS_ERROR_DEVICE_ERROR;
   }
   DS(("ok\n"));
 
-  return NIC_OK;
+  return NIC_STATUS_OK;
 }
 
 u08 wifi_scan_busy(void)

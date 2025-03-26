@@ -40,12 +40,13 @@ ASRC_avr = proto_low_asm.S
 # --- common sources
 SRC += main.c
 SRC += util.c uartutil.c
-SRC += proto_atom.c proto_cmd.c req.c req_param.c req_mode.c req_nic.c
+SRC += proto_atom.c proto_cmd.c proto_api.c
+SRC += req.c req_param.c req_mode.c req_nic.c
 SRC += cmd.c cmdkey_table.c cmd_table.c
 SRC += param_def.c param.c
 SRC += pkt_buf.c net.c arp.c net_dump.c
 SRC += stats.c
-SRC += mode.c mode_mod.c mode_cmd.c mode_def.c
+SRC += mode.c mode_mod.c mode_def.c
 SRC += mode_loop_buf.c mode_nic.c nic_test.c
 SRC += nic.c nic_def.c nic_mod.c nic_loop.c
 ifeq "$(HAVE_ENC28J60)" "1"
