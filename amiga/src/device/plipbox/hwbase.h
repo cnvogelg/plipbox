@@ -27,6 +27,7 @@ struct HWBase
   UWORD link_status;
   UWORD nic_status;
   UWORD mode_status;
+  UWORD cur_mode;
   UWORD tx_error;
   UWORD rx_error;
   ULONG num_rx;

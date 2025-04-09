@@ -393,7 +393,7 @@ static int pliptool(const char *device, LONG unit)
   UWORD error;
   BOOL ok;
 
-  LOG(("Opening device '%s' unit #%ld\n", device, unit));
+  Printf("Opening device '%s' unit #%ld\n", device, unit);
   sh = sanadev_open(device, unit, 0, &error);
   if (sh == NULL)
   {

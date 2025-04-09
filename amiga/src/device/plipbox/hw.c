@@ -154,6 +154,8 @@ REGARGS BOOL hw_init(struct PLIPBase *pb)
   hwb->num_rx = 0;
   hwb->num_tx = 0;
 
+  hwb->cur_mode = MODE_NONE;
+
   d(("init: OK!\n"));
 
   // do the reinit part
@@ -305,6 +307,8 @@ static BOOL mode_attach(struct PLIPBase *pb, UWORD *mode)
     return FALSE;
   }
 
+  hwb->cur_mode = *mode;
+
   return TRUE;
 }
 
@@ -317,6 +321,10 @@ static BOOL mode_detach(struct PLIPBase *pb)
   if(ok != PROTO_RET_OK) {
     return FALSE;
   }
+
+  hwb->cur_mode = MODE_NONE;
+
+  return TRUE;
 }
 
 REGARGS int hw_handle_special_cmd(struct PLIPBase *pb, struct IOSana2Req *req, BOOL offline)

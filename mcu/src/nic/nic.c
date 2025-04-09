@@ -192,6 +192,7 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
 
     is_attached = 1;
     uart_send_pstring(PSTR(": ok"));
+    result = NIC_STATUS_ATTACHED;
 
     // check for direct io?
     if(caps_in_use & NIC_CAP_DIRECT_IO) {
@@ -233,12 +234,15 @@ u08 nic_attach(u16 opts, u08 port, mac_t mac)
 
 void nic_detach(void)
 {
+  uart_send_time_stamp_spc();
+  uart_send_pstring(PSTR("nic_detach"));
+
   if(!is_attached) {
+    uart_send_pstring(PSTR(": already attached!"));
+    uart_send_crlf();
     return;
   }
 
-  uart_send_time_stamp_spc();
-  uart_send_pstring(PSTR("nic_detach"));
   uart_send_crlf();
 
   nic_mod_detach();
